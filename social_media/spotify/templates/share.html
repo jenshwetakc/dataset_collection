@@ -1,0 +1,990 @@
+{% extends "base.html" %}
+
+{% block title %}
+Spotify Share
+{% endblock %}
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .share-shell {
+        position: relative;
+        width: 100%;
+        min-height: 100vh;
+        overflow: hidden;
+        background: var(--background);
+        color: var(--text-primary);
+    }
+
+    .share-main {
+        min-height: 100vh;
+        margin-left: var(--sidebar-width);
+        padding: 24px var(--page-gap) 120px;
+    }
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: var(--sidebar-width);
+        padding: 20px 12px;
+        background: var(--surface);
+        border-right: 1px solid var(--border-subtle);
+    }
+
+    .sidebar-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 48px;
+        padding: 0 12px;
+    }
+
+    .sidebar-logo-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .sidebar-logo-text {
+        color: var(--text-primary);
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .sidebar-navigation {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-height: 48px;
+        padding: 0 12px;
+        border-radius: 8px;
+        color: var(--text-secondary);
+    }
+
+    .sidebar-item.selected {
+        background: var(--surface-variant);
+        color: var(--text-primary);
+    }
+
+    .sidebar-item-label {
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    /* ======================================================
+       Background Page
+       ====================================================== */
+
+    .background-header {
+        margin-bottom: 26px;
+    }
+
+    .background-title {
+        color: var(--text-primary);
+        font-size: 32px;
+        font-weight: 800;
+    }
+
+    .background-subtitle {
+        margin-top: 6px;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .background-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(280px, 360px);
+        gap: 24px;
+        align-items: start;
+    }
+
+    .background-card {
+        padding: 18px;
+        border-radius: 14px;
+        background: var(--surface);
+    }
+
+    .background-now-playing {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+    }
+
+    .background-now-playing-image {
+        width: 120px;
+        height: 120px;
+        flex: 0 0 auto;
+        object-fit: cover;
+        border-radius: 10px;
+    }
+
+    .background-now-playing-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .background-now-playing-title {
+        color: var(--text-primary);
+        font-size: 24px;
+        font-weight: 750;
+        line-height: 1.15;
+    }
+
+    .background-now-playing-artist {
+        margin-top: 8px;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .background-chip-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+    }
+
+    .background-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: var(--surface-variant);
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .background-list-title {
+        margin-bottom: 12px;
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .background-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .background-track-row {
+        display: grid;
+        grid-template-columns: 52px minmax(0, 1fr) auto auto;
+        gap: 12px;
+        align-items: center;
+        min-height: 60px;
+        padding: 6px 4px;
+        border-radius: 8px;
+    }
+
+    .background-track-image {
+        width: 52px;
+        height: 52px;
+        border-radius: 6px;
+        object-fit: cover;
+    }
+
+    .background-track-info {
+        min-width: 0;
+    }
+
+    .background-track-title {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 650;
+    }
+
+    .background-track-artist {
+        margin-top: 3px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    .background-track-duration {
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    .background-track-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        color: var(--icon-secondary);
+    }
+
+    /* ======================================================
+       Overlay
+       ====================================================== */
+
+    .share-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(0, 0, 0, 0.56);
+    }
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .share-dialog {
+        width: min(520px, 100%);
+        max-width: 520px;
+        border-radius: 20px;
+        background: var(--surface);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
+        overflow: hidden;
+    }
+
+    .share-dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 68px;
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .share-dialog-title {
+        color: var(--text-primary);
+        font-size: 22px;
+        font-weight: 750;
+    }
+
+    .share-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        color: var(--icon-secondary);
+    }
+
+    .share-dialog-content {
+        padding: 20px;
+    }
+
+    /* ======================================================
+       Entity Preview
+       ====================================================== */
+
+    .share-entity {
+        display: grid;
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 14px;
+        align-items: center;
+        padding: 12px;
+        border-radius: 12px;
+        background: var(--background);
+    }
+
+    .share-entity-image {
+        width: 88px;
+        height: 88px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .share-entity-info {
+        min-width: 0;
+    }
+
+    .share-entity-type {
+        color: var(--text-secondary);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .share-entity-title {
+        margin-top: 6px;
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 750;
+        line-height: 1.2;
+    }
+
+    .share-entity-subtitle {
+        margin-top: 6px;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .share-entity-meta {
+        margin-top: 4px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    /* ======================================================
+       Section Titles
+       ====================================================== */
+
+    .share-section-title {
+        margin: 22px 0 12px;
+        color: var(--text-primary);
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    /* ======================================================
+       Share Actions
+       ====================================================== */
+
+    .share-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .share-action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        min-height: 88px;
+        padding: 10px 6px;
+        border-radius: 12px;
+        background: var(--background);
+        color: var(--text-primary);
+    }
+
+    .share-action-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--surface-variant);
+        color: var(--icon);
+    }
+
+    .share-action-label {
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    /* ======================================================
+       Link Copy
+       ====================================================== */
+
+    .share-link-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 48px;
+        padding: 0 12px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--background);
+    }
+
+    .share-link-icon {
+        flex: 0 0 auto;
+        color: var(--icon-secondary);
+    }
+
+    .share-link-input {
+        flex: 1;
+        min-width: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--text-primary);
+        font: inherit;
+        font-size: 13px;
+    }
+
+    .copy-link-button {
+        margin-top: 14px;
+        width: 100%;
+        min-height: 44px;
+        border-radius: 999px;
+        background: var(--primary);
+        color: var(--on-primary);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+        display: none;
+    }
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+
+        .sidebar-logo-text,
+        .sidebar-item-label {
+            display: none;
+        }
+
+        .sidebar {
+            align-items: center;
+        }
+
+        .sidebar-logo,
+        .sidebar-item {
+            justify-content: center;
+            width: 52px;
+            padding: 0;
+        }
+
+        .background-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .share-actions-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (max-width: 767px) {
+
+        .sidebar {
+            display: none;
+        }
+
+        .share-main {
+            margin-left: 0;
+            padding: 16px 12px calc(var(--mobile-navigation-height) + 32px);
+        }
+
+        .background-title {
+            font-size: 26px;
+        }
+
+        .background-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .background-now-playing {
+            align-items: flex-start;
+        }
+
+        .background-now-playing-image {
+            width: 88px;
+            height: 88px;
+        }
+
+        .background-now-playing-title {
+            font-size: 18px;
+        }
+
+        .background-track-row {
+            grid-template-columns: 44px minmax(0, 1fr) auto;
+        }
+
+        .background-track-image {
+            width: 44px;
+            height: 44px;
+        }
+
+        .background-track-action {
+            display: none;
+        }
+
+        .share-overlay {
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .share-dialog {
+            width: min(420px, calc(100vw - 32px));
+            max-width: 420px;
+            border-radius: 18px;
+        }
+
+        .share-dialog-header {
+            min-height: 60px;
+            padding: 10px 14px;
+        }
+
+        .share-dialog-title {
+            font-size: 20px;
+        }
+
+        .share-dialog-content {
+            padding: 16px;
+        }
+
+        .share-entity {
+            grid-template-columns: 70px minmax(0, 1fr);
+        }
+
+        .share-entity-image {
+            width: 70px;
+            height: 70px;
+        }
+
+        .share-entity-title {
+            font-size: 16px;
+        }
+
+        .share-actions-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .share-action {
+            min-height: 82px;
+        }
+
+        .mobile-navigation {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 20;
+            display: flex;
+            height: var(--mobile-navigation-height);
+            background: var(--surface);
+        }
+
+        .mobile-nav-item {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: var(--text-secondary);
+        }
+
+        .mobile-nav-item.selected {
+            color: var(--text-primary);
+        }
+
+        .mobile-nav-label {
+            font-size: 10px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="share-shell">
+
+    {% set navigation = share.navigation %}
+    {% include "components/sidebar.html" %}
+
+    <main class="share-main">
+
+        <header class="background-header">
+            <div
+                class="background-title"
+                data-class="text"
+                data-semantic="share_background_title"
+            >
+                {{ share.background.title }}
+            </div>
+
+            <div
+                class="background-subtitle"
+                data-class="text"
+                data-semantic="share_background_subtitle"
+            >
+                {{ share.background.subtitle }}
+            </div>
+        </header>
+
+        <section
+            class="background-grid"
+            data-class="section"
+            data-semantic="share_background_content"
+        >
+
+            <article
+                class="background-card"
+                data-class="card"
+                data-semantic="share_background_hero"
+            >
+                <div class="background-now-playing">
+
+                    {% if share.entity.image %}
+                    <img
+                        class="background-now-playing-image"
+                        src="{{ share.entity.image }}"
+                        data-class="image"
+                        data-semantic="share_background_entity_image"
+                        alt=""
+                    >
+                    {% endif %}
+
+                    <div class="background-now-playing-info">
+
+                        <div
+                            class="background-now-playing-title"
+                            data-class="text"
+                            data-semantic="share_background_entity_title"
+                        >
+                            {{ share.entity.title }}
+                        </div>
+
+                        <div
+                            class="background-now-playing-artist"
+                            data-class="text"
+                            data-semantic="share_background_entity_subtitle"
+                        >
+                            {{ share.entity.subtitle }}
+                        </div>
+
+                        <div class="background-chip-row">
+
+                            <span
+                                class="background-chip"
+                                data-class="badge"
+                                data-semantic="share_background_chip"
+                            >
+                                {{ share.entity.meta }}
+                            </span>
+
+                            <span
+                                class="background-chip"
+                                data-class="badge"
+                                data-semantic="share_background_chip"
+                            >
+                                Spotify
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </article>
+
+            <article
+                class="background-card"
+                data-class="section"
+                data-semantic="share_background_track_list"
+            >
+                <div
+                    class="background-list-title"
+                    data-class="text"
+                    data-semantic="share_background_list_title"
+                >
+                    Recommended tracks
+                </div>
+
+                <div class="background-list">
+
+                    {% for item in share.background.tracks %}
+
+                    <div
+                        class="background-track-row"
+                        data-class="list_item"
+                        data-semantic="share_background_track_item"
+                    >
+
+                        {% if item.image %}
+                        <img
+                            class="background-track-image"
+                            src="{{ item.image }}"
+                            data-class="image"
+                            data-semantic="share_background_track_image"
+                            alt=""
+                        >
+                        {% endif %}
+
+                        <div class="background-track-info">
+                            <div
+                                class="background-track-title"
+                                data-class="text"
+                                data-semantic="share_background_track_title"
+                            >
+                                {{ item.title }}
+                            </div>
+
+                            <div
+                                class="background-track-artist"
+                                data-class="text"
+                                data-semantic="share_background_track_artist"
+                            >
+                                {{ item.artist }}
+                            </div>
+                        </div>
+
+                        <div
+                            class="background-track-duration"
+                            data-class="timestamp"
+                            data-semantic="share_background_track_duration"
+                        >
+                            {{ item.duration }}
+                        </div>
+
+                        <button
+                            class="background-track-action"
+                            data-class="button"
+                            data-semantic="share_background_track_more"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="share_background_track_more_icon"
+                            >
+                                more_horiz
+                            </span>
+                        </button>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+            </article>
+
+        </section>
+
+    </main>
+
+    {% set navigation = share.navigation %}
+    {% include "components/mobile_navigation.html" %}
+
+    <div class="share-overlay">
+
+        <section
+            class="share-dialog"
+            data-class="dialog"
+            data-semantic="share_dialog"
+            data-occluder="true"
+        >
+
+            <header
+                class="share-dialog-header"
+                data-class="app_bar"
+                data-semantic="share_dialog_header"
+            >
+
+                <div
+                    class="share-dialog-title"
+                    data-class="text"
+                    data-semantic="share_dialog_title"
+                >
+                    {{ share.dialog_title }}
+                </div>
+
+                <button
+                    class="share-close"
+                    data-class="button"
+                    data-semantic="close_share_dialog"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_share_dialog_icon"
+                    >
+                        close
+                    </span>
+                </button>
+
+            </header>
+
+            <div class="share-dialog-content">
+
+                <section
+                    class="share-entity"
+                    data-class="media_item"
+                    data-semantic="shared_entity_preview"
+                >
+
+                    {% if share.entity.image %}
+                    <img
+                        class="share-entity-image"
+                        src="{{ share.entity.image }}"
+                        data-class="image"
+                        data-semantic="shared_entity_image"
+                        alt=""
+                    >
+                    {% endif %}
+
+                    <div class="share-entity-info">
+
+                        <div
+                            class="share-entity-type"
+                            data-class="text"
+                            data-semantic="shared_entity_type"
+                        >
+                            {{ share.entity.type }}
+                        </div>
+
+                        <div
+                            class="share-entity-title"
+                            data-class="text"
+                            data-semantic="shared_entity_title"
+                        >
+                            {{ share.entity.title }}
+                        </div>
+
+                        <div
+                            class="share-entity-subtitle"
+                            data-class="text"
+                            data-semantic="shared_entity_subtitle"
+                        >
+                            {{ share.entity.subtitle }}
+                        </div>
+
+                        <div
+                            class="share-entity-meta"
+                            data-class="text"
+                            data-semantic="shared_entity_meta"
+                        >
+                            {{ share.entity.meta }}
+                        </div>
+
+                    </div>
+
+                </section>
+
+                <div
+                    class="share-section-title"
+                    data-class="text"
+                    data-semantic="share_destinations_title"
+                >
+                    Share to
+                </div>
+
+                <section
+                    class="share-actions-grid"
+                    data-class="section"
+                    data-semantic="share_destinations"
+                >
+
+                    {% for action in share.actions %}
+
+                    <button
+                        class="share-action"
+                        data-class="button"
+                        data-semantic="share_destination"
+                    >
+
+                        <div class="share-action-icon">
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="share_destination_icon"
+                            >
+                                {{ action.icon }}
+                            </span>
+                        </div>
+
+                        <span
+                            class="share-action-label"
+                            data-class="text"
+                            data-semantic="share_destination_label"
+                        >
+                            {{ action.label }}
+                        </span>
+
+                    </button>
+
+                    {% endfor %}
+
+                </section>
+
+                <div
+                    class="share-section-title"
+                    data-class="text"
+                    data-semantic="share_link_title"
+                >
+                    Link
+                </div>
+
+                <div
+                    class="share-link-box"
+                    data-class="section"
+                    data-semantic="share_link_box"
+                >
+
+                    <span
+                        class="material-symbols-rounded share-link-icon"
+                        data-class="icon"
+                        data-semantic="share_link_icon"
+                    >
+                        link
+                    </span>
+
+                    <input
+                        class="share-link-input"
+                        type="text"
+                        value="{{ share.entity.share_url }}"
+                        readonly
+                        data-class="input_field"
+                        data-semantic="share_link_input"
+                    >
+
+                </div>
+
+                <button
+                    class="copy-link-button"
+                    data-class="button"
+                    data-semantic="copy_share_link"
+                >
+                    {{ share.copy_button_label }}
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</div>
+
+{% endblock %}

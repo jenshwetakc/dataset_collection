@@ -1,0 +1,1897 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Spotify Lyrics
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .lyrics-shell {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Background
+       ====================================================== */
+
+    .lyrics-background {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            0;
+
+        overflow:
+            hidden;
+
+        pointer-events:
+            none;
+    }
+
+
+    .lyrics-background-image {
+
+        position:
+            absolute;
+
+        inset:
+            -40px;
+
+        width:
+            calc(
+                100%
+                + 80px
+            );
+
+        height:
+            calc(
+                100%
+                + 80px
+            );
+
+        object-fit:
+            cover;
+
+        filter:
+            blur(
+                48px
+            );
+
+        opacity:
+            0.22;
+
+        transform:
+            scale(
+                1.08
+            );
+    }
+
+
+    .lyrics-background-overlay {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        background:
+            linear-gradient(
+                to bottom,
+                var(--background),
+                transparent 32%,
+                var(--background)
+            );
+
+        opacity:
+            0.88;
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .lyrics-main {
+
+        position:
+            relative;
+
+        z-index:
+            2;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .sidebar {
+
+        position:
+            fixed;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            20;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        width:
+            var(--sidebar-width);
+
+        padding:
+            20px 12px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+    }
+
+
+    .sidebar-logo-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .sidebar-logo-text {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-navigation {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            4px;
+    }
+
+
+    .sidebar-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-item.selected {
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .sidebar-item-label {
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .lyrics-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        flex:
+            0 0 auto;
+
+        min-height:
+            68px;
+
+        padding:
+            10px
+            var(--page-gap);
+    }
+
+
+    .lyrics-header-left,
+    .lyrics-header-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .lyrics-header-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+
+        background:
+            var(--surface);
+    }
+
+
+    .lyrics-header-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Main Content
+       ====================================================== */
+
+    .lyrics-content {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                260px,
+                360px
+            )
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            clamp(
+                28px,
+                5vw,
+                72px
+            );
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        width:
+            min(
+                1280px,
+                100%
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            20px
+            var(--page-gap)
+            180px;
+    }
+
+
+    /* ======================================================
+       Track Panel
+       ====================================================== */
+
+    .lyrics-track-panel {
+
+        position:
+            sticky;
+
+        top:
+            90px;
+
+        align-self:
+            flex-start;
+    }
+
+
+    .lyrics-artwork {
+
+        width:
+            100%;
+
+        aspect-ratio:
+            1;
+
+        object-fit:
+            cover;
+
+        border-radius:
+            14px;
+    }
+
+
+    .lyrics-track-title {
+
+        margin-top:
+            18px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            22px;
+
+        font-weight:
+            750;
+    }
+
+
+    .lyrics-track-artist {
+
+        margin-top:
+            5px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            14px;
+    }
+
+
+    .lyrics-track-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        margin-top:
+            18px;
+    }
+
+
+    .track-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon-secondary);
+
+        background:
+            var(--surface);
+    }
+
+
+    .track-action.active {
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Lyrics Region
+       ====================================================== */
+
+    .lyrics-region {
+
+        position:
+            relative;
+
+        min-width:
+            0;
+
+        padding:
+            20px 0 60px;
+    }
+
+
+    .lyrics-heading {
+
+        margin:
+            0 0 26px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            22px;
+
+        font-weight:
+            750;
+    }
+
+
+    .lyrics-lines {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+    }
+
+
+    .lyric-line {
+
+        padding:
+            8px 0;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            clamp(
+                24px,
+                3vw,
+                42px
+            );
+
+        font-weight:
+            700;
+
+        line-height:
+            1.22;
+
+        opacity:
+            0.38;
+    }
+
+
+    .lyric-line.past {
+
+        opacity:
+            0.25;
+    }
+
+
+    .lyric-line.future {
+
+        opacity:
+            0.45;
+    }
+
+
+    .lyric-line.active {
+
+        color:
+            var(--text-primary);
+
+        opacity:
+            1;
+
+        font-size:
+            clamp(
+                30px,
+                3.6vw,
+                50px
+            );
+
+        font-weight:
+            820;
+    }
+
+
+    /* ======================================================
+       Playback Dock
+       ====================================================== */
+
+    .lyrics-player {
+
+        position:
+            fixed;
+
+        left:
+            var(--sidebar-width);
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            60;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                180px,
+                1fr
+            )
+            minmax(
+                380px,
+                1.5fr
+            )
+            minmax(
+                180px,
+                1fr
+            );
+
+        align-items:
+            center;
+
+        min-height:
+            108px;
+
+        padding:
+            12px
+            var(--page-gap);
+
+        background:
+            var(--surface);
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    /* ======================================================
+       Player Track
+       ====================================================== */
+
+    .player-track-info {
+
+        min-width:
+            0;
+    }
+
+
+    .player-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+    }
+
+
+    .player-artist {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Center Controls
+       ====================================================== */
+
+    .player-center {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+    }
+
+
+    .player-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            16px;
+    }
+
+
+    .player-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .player-button.active {
+
+        color:
+            var(--primary);
+    }
+
+
+    .player-main-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Progress
+       ====================================================== */
+
+    .player-progress-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        width:
+            min(
+                100%,
+                620px
+            );
+    }
+
+
+    .player-time {
+
+        flex:
+            0 0 auto;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .lyrics-progress {
+
+        flex:
+            1;
+
+        height:
+            5px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .lyrics-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Player Right
+       ====================================================== */
+
+    .player-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .sidebar-logo-text,
+        .sidebar-item-label {
+
+            display:
+                none;
+        }
+
+
+        .sidebar {
+
+            align-items:
+                center;
+        }
+
+
+        .sidebar-logo,
+        .sidebar-item {
+
+            justify-content:
+                center;
+
+            width:
+                52px;
+
+            padding:
+                0;
+        }
+
+
+        .lyrics-content {
+
+            grid-template-columns:
+                240px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap:
+                30px;
+        }
+
+
+        .lyric-line {
+
+            font-size:
+                clamp(
+                    22px,
+                    3vw,
+                    34px
+                );
+        }
+
+
+        .lyric-line.active {
+
+            font-size:
+                clamp(
+                    28px,
+                    3.6vw,
+                    40px
+                );
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .sidebar {
+
+            display:
+                none;
+        }
+
+
+        .lyrics-main {
+
+            margin-left:
+                0;
+        }
+
+
+        .lyrics-header {
+
+            min-height:
+                56px;
+
+            padding:
+                8px 12px;
+        }
+
+
+        .lyrics-header-title {
+
+            font-size:
+                13px;
+        }
+
+
+        .lyrics-header-button {
+
+            width:
+                36px;
+
+            height:
+                36px;
+        }
+
+
+        .lyrics-content {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                24px;
+
+            width:
+                100%;
+
+            padding:
+                12px
+                20px
+                190px;
+        }
+
+
+        .lyrics-track-panel {
+
+            position:
+                static;
+
+            display:
+                grid;
+
+            grid-template-columns:
+                84px
+                minmax(
+                    0,
+                    1fr
+                )
+                auto;
+
+            gap:
+                12px;
+
+            align-items:
+                center;
+        }
+
+
+        .lyrics-artwork {
+
+            width:
+                84px;
+
+            height:
+                84px;
+
+            border-radius:
+                8px;
+        }
+
+
+        .lyrics-track-meta {
+
+            min-width:
+                0;
+        }
+
+
+        .lyrics-track-title {
+
+            margin-top:
+                0;
+
+            font-size:
+                16px;
+        }
+
+
+        .lyrics-track-artist {
+
+            font-size:
+                12px;
+        }
+
+
+        .lyrics-track-actions {
+
+            margin-top:
+                0;
+        }
+
+
+        .track-action:not(
+            :first-child
+        ) {
+
+            display:
+                none;
+        }
+
+
+        .lyrics-region {
+
+            padding:
+                4px 0 30px;
+        }
+
+
+        .lyrics-heading {
+
+            margin-bottom:
+                16px;
+
+            font-size:
+                18px;
+        }
+
+
+        .lyrics-lines {
+
+            gap:
+                5px;
+        }
+
+
+        .lyric-line {
+
+            padding:
+                7px 0;
+
+            font-size:
+                clamp(
+                    24px,
+                    7vw,
+                    31px
+                );
+
+            line-height:
+                1.25;
+        }
+
+
+        .lyric-line.active {
+
+            font-size:
+                clamp(
+                    29px,
+                    8.5vw,
+                    38px
+                );
+        }
+
+
+        /* ----------------------------------------------
+           Playback Dock
+           ---------------------------------------------- */
+
+        .lyrics-player {
+
+            left:
+                8px;
+
+            right:
+                8px;
+
+            bottom:
+                calc(
+                    var(--mobile-navigation-height)
+                    + 8px
+                );
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                8px;
+
+            min-height:
+                118px;
+
+            padding:
+                10px 12px;
+
+            border:
+                none;
+
+            border-radius:
+                14px;
+
+            background:
+                var(--surface);
+        }
+
+
+        .player-track-info {
+
+            width:
+                100%;
+
+            text-align:
+                center;
+        }
+
+
+        .player-controls {
+
+            gap:
+                18px;
+        }
+
+
+        .player-right {
+
+            display:
+                none;
+        }
+
+
+        .player-progress-row {
+
+            width:
+                100%;
+        }
+
+
+        /* ----------------------------------------------
+           Mobile Navigation
+           ---------------------------------------------- */
+
+        .mobile-navigation {
+
+            position:
+                fixed;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            z-index:
+                50;
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-navigation-height);
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex:
+                1;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                4px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="lyrics-shell">
+
+
+    {# ====================================================
+       Background
+       ==================================================== #}
+
+    {% if lyrics.show_background_art and lyrics.track.image %}
+
+    <div class="lyrics-background">
+
+        <img
+            class="lyrics-background-image"
+            src="{{ lyrics.track.image }}"
+            alt=""
+        >
+
+        <div class="lyrics-background-overlay"></div>
+
+    </div>
+
+    {% endif %}
+
+
+    {# ====================================================
+       Sidebar
+       ==================================================== #}
+
+    {% set navigation = lyrics.navigation %}
+
+    {% include "components/sidebar.html" %}
+
+
+    <main class="lyrics-main">
+
+
+        {# =================================================
+           App Bar
+           ================================================= #}
+
+        <header
+            class="lyrics-header"
+            data-class="app_bar"
+            data-semantic="lyrics_app_bar"
+        >
+
+            <div class="lyrics-header-left">
+
+                <button
+                    class="lyrics-header-button"
+                    data-class="button"
+                    data-semantic="close_lyrics"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_lyrics_icon"
+                    >
+                        keyboard_arrow_down
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <div
+                class="lyrics-header-title"
+                data-class="text"
+                data-semantic="lyrics_header_title"
+            >
+                Lyrics
+            </div>
+
+
+            <div class="lyrics-header-right">
+
+                <button
+                    class="lyrics-header-button"
+                    data-class="button"
+                    data-semantic="lyrics_options"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="lyrics_options_icon"
+                    >
+                        more_horiz
+                    </span>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+        {# =================================================
+           Main Content
+           ================================================= #}
+
+        <section
+            class="lyrics-content"
+            data-class="section"
+            data-semantic="lyrics_content"
+        >
+
+
+            {# =============================================
+               Track Panel
+               ============================================= #}
+
+            <section
+                class="lyrics-track-panel"
+                data-class="media_item"
+                data-semantic="lyrics_track"
+            >
+
+
+                {% if lyrics.track.image %}
+
+                <img
+                    class="lyrics-artwork"
+                    src="{{ lyrics.track.image }}"
+                    data-class="image"
+                    data-semantic="lyrics_track_artwork"
+                    alt=""
+                >
+
+                {% endif %}
+
+
+                <div class="lyrics-track-meta">
+
+                    <div
+                        class="lyrics-track-title"
+                        data-class="text"
+                        data-semantic="lyrics_track_title"
+                    >
+                        {{ lyrics.track.title }}
+                    </div>
+
+
+                    <div
+                        class="lyrics-track-artist"
+                        data-class="text"
+                        data-semantic="lyrics_track_artist"
+                    >
+                        {{ lyrics.track.artist }}
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="lyrics-track-actions"
+                    data-class="toolbar"
+                    data-semantic="lyrics_track_actions"
+                >
+
+
+                    <button
+                        class="
+                            track-action
+
+                            {% if lyrics.track.liked %}
+                            active
+                            {% endif %}
+                        "
+                        data-class="button"
+                        data-semantic="like_lyrics_track"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="like_lyrics_track_icon"
+                        >
+                            {% if lyrics.track.liked %}
+                            favorite
+                            {% else %}
+                            favorite_border
+                            {% endif %}
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="track-action"
+                        data-class="button"
+                        data-semantic="share_lyrics"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="share_lyrics_icon"
+                        >
+                            share
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            {# =============================================
+               Lyrics
+               ============================================= #}
+
+            <section
+                class="lyrics-region"
+                data-class="section"
+                data-semantic="lyrics_lines"
+            >
+
+                <h1
+                    class="lyrics-heading"
+                    data-class="text"
+                    data-semantic="lyrics_heading"
+                >
+                    Lyrics
+                </h1>
+
+
+                <div class="lyrics-lines">
+
+                    {% for line in lyrics.lyrics %}
+
+                    <div
+                        class="
+                            lyric-line
+                            {{ line.state }}
+                        "
+                        data-class="text"
+                        data-semantic="lyric_line_{{ line.state }}"
+                    >
+                        {{ line.text }}
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+        </section>
+
+    </main>
+
+
+    {# ====================================================
+       Playback Dock
+       ==================================================== #}
+
+    <section
+        class="lyrics-player"
+        data-class="media_item"
+        data-semantic="lyrics_player"
+        data-occluder="true"
+    >
+
+
+        {# ================================================
+           Track
+           ================================================ #}
+
+        <div class="player-track-info">
+
+            <div
+                class="player-title"
+                data-class="text"
+                data-semantic="player_track_title"
+            >
+                {{ lyrics.track.title }}
+            </div>
+
+
+            <div
+                class="player-artist"
+                data-class="text"
+                data-semantic="player_track_artist"
+            >
+                {{ lyrics.track.artist }}
+            </div>
+
+        </div>
+
+
+        {# ================================================
+           Center
+           ================================================ #}
+
+        <div class="player-center">
+
+
+            <div
+                class="player-controls"
+                data-class="toolbar"
+                data-semantic="lyrics_playback_controls"
+            >
+
+
+                <button
+                    class="
+                        player-button
+
+                        {% if lyrics.shuffle %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="lyrics_shuffle"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="lyrics_shuffle_icon"
+                    >
+                        shuffle
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="player-button"
+                    data-class="button"
+                    data-semantic="lyrics_previous"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="lyrics_previous_icon"
+                    >
+                        skip_previous
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="player-main-button"
+                    data-class="button"
+                    data-semantic="lyrics_play_pause"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="lyrics_play_pause_icon"
+                    >
+
+                        {% if lyrics.playing %}
+                        pause
+                        {% else %}
+                        play_arrow
+                        {% endif %}
+
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="player-button"
+                    data-class="button"
+                    data-semantic="lyrics_next"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="lyrics_next_icon"
+                    >
+                        skip_next
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="
+                        player-button
+
+                        {% if lyrics.repeat %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="lyrics_repeat"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="lyrics_repeat_icon"
+                    >
+                        repeat
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <div class="player-progress-row">
+
+
+                <span
+                    class="player-time"
+                    data-class="timestamp"
+                    data-semantic="lyrics_elapsed_time"
+                >
+                    {{ lyrics.track.elapsed }}
+                </span>
+
+
+                <div
+                    class="lyrics-progress"
+                    data-class="progress_bar"
+                    data-semantic="lyrics_progress"
+                >
+
+                    <div
+                        class="lyrics-progress-value"
+                        style="
+                            width:
+                            {{ lyrics.track.progress * 100 }}%;
+                        "
+                    ></div>
+
+                </div>
+
+
+                <span
+                    class="player-time"
+                    data-class="timestamp"
+                    data-semantic="lyrics_duration"
+                >
+                    {{ lyrics.track.duration }}
+                </span>
+
+            </div>
+
+        </div>
+
+
+        {# ================================================
+           Right Actions
+           ================================================ #}
+
+        <div class="player-right">
+
+
+            <button
+                class="player-button"
+                data-class="button"
+                data-semantic="open_queue_from_lyrics"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="lyrics_queue_icon"
+                >
+                    queue_music
+                </span>
+
+            </button>
+
+
+            <button
+                class="player-button"
+                data-class="button"
+                data-semantic="lyrics_devices"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="lyrics_devices_icon"
+                >
+                    devices
+                </span>
+
+            </button>
+
+        </div>
+
+    </section>
+
+
+    {# ====================================================
+       Mobile Navigation
+       ==================================================== #}
+
+    {% set navigation = lyrics.navigation %}
+
+    {% include "components/mobile_navigation.html" %}
+
+
+</div>
+
+{% endblock %}

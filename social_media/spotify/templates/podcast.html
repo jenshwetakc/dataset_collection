@@ -1,0 +1,2159 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Spotify Podcast
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Layout
+       ====================================================== */
+
+    .podcast-shell {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .podcast-main {
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+
+        padding-bottom:
+            calc(
+                var(--player-height)
+                + 40px
+            );
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .sidebar {
+
+        position:
+            fixed;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        bottom:
+            var(--player-height);
+
+        z-index:
+            20;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        width:
+            var(--sidebar-width);
+
+        padding:
+            20px 12px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+    }
+
+
+    .sidebar-logo-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .sidebar-logo-text {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-navigation {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            4px;
+    }
+
+
+    .sidebar-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-item.selected {
+
+        color:
+            var(--text-primary);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .sidebar-item-label {
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .podcast-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            15;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            64px;
+
+        padding:
+            8px
+            var(--page-gap);
+
+        background:
+            var(--background);
+    }
+
+
+    .podcast-history {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .round-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Hero
+       ====================================================== */
+
+    .podcast-hero {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        gap:
+            26px;
+
+        min-height:
+            300px;
+
+        padding:
+            36px
+            var(--page-gap)
+            30px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .podcast-cover {
+
+        flex:
+            0 0 auto;
+
+        width:
+            clamp(
+                180px,
+                18vw,
+                250px
+            );
+
+        aspect-ratio:
+            1;
+
+        object-fit:
+            cover;
+
+        border-radius:
+            14px;
+    }
+
+
+    .podcast-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .podcast-type {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        text-transform:
+            uppercase;
+    }
+
+
+    .podcast-name {
+
+        margin:
+            7px 0 0;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            clamp(
+                34px,
+                5vw,
+                68px
+            );
+
+        font-weight:
+            800;
+
+        line-height:
+            1.05;
+    }
+
+
+    .podcast-publisher {
+
+        margin-top:
+            12px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            650;
+    }
+
+
+    .podcast-description {
+
+        max-width:
+            720px;
+
+        margin-top:
+            12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+    }
+
+
+    .podcast-meta {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            8px;
+
+        margin-top:
+            14px;
+    }
+
+
+    .podcast-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        min-height:
+            26px;
+
+        padding:
+            0 9px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Actions
+       ====================================================== */
+
+    .podcast-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        min-height:
+            88px;
+
+        padding:
+            14px
+            var(--page-gap);
+    }
+
+
+    .podcast-play-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            56px;
+
+        height:
+            56px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .podcast-follow {
+
+        min-height:
+            38px;
+
+        padding:
+            0 18px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            999px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .podcast-follow.active {
+
+        color:
+            var(--primary);
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .podcast-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Episodes Header
+       ====================================================== */
+
+    .episodes-section {
+
+        padding:
+            12px
+            var(--page-gap)
+            46px;
+    }
+
+
+    .episodes-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            18px;
+
+        margin-bottom:
+            14px;
+    }
+
+
+    .episodes-title {
+
+        margin:
+            0;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            24px;
+
+        font-weight:
+            750;
+    }
+
+
+    .episode-sort {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            36px;
+
+        padding:
+            0 10px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    /* ======================================================
+       Episode
+       ====================================================== */
+
+    .episode-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+    }
+
+
+    .episode-item {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            120px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            16px;
+
+        padding:
+            14px;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .episode-image {
+
+        width:
+            120px;
+
+        height:
+            120px;
+
+        object-fit:
+            cover;
+
+        border-radius:
+            8px;
+    }
+
+
+    .episode-content {
+
+        min-width:
+            0;
+    }
+
+
+    .episode-top {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+    }
+
+
+    .episode-title {
+
+        margin:
+            0;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            700;
+
+        line-height:
+            1.35;
+    }
+
+
+    .episode-description {
+
+        margin-top:
+            7px;
+
+        display:
+            -webkit-box;
+
+        overflow:
+            hidden;
+
+        -webkit-line-clamp:
+            2;
+
+        -webkit-box-orient:
+            vertical;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        line-height:
+            1.45;
+    }
+
+
+    .episode-meta {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            7px;
+
+        margin-top:
+            10px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .episode-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            20px;
+
+        padding:
+            0 6px;
+
+        border-radius:
+            4px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    .video-badge {
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Episode Actions
+       ====================================================== */
+
+    .episode-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        margin-top:
+            14px;
+    }
+
+
+    .episode-play {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+    }
+
+
+    .episode-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .episode-action.active {
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Player
+       ====================================================== */
+
+    .playback-player {
+
+        position:
+            fixed;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            50;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(220px, 1fr)
+            minmax(320px, 1.5fr)
+            minmax(220px, 1fr);
+
+        align-items:
+            center;
+
+        height:
+            var(--player-height);
+
+        padding:
+            10px 16px;
+
+        background:
+            var(--surface);
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .player-track {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-width:
+            0;
+    }
+
+
+    .player-image {
+
+        width:
+            56px;
+
+        height:
+            56px;
+
+        border-radius:
+            4px;
+
+        object-fit:
+            cover;
+    }
+
+
+    .player-track-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .player-track-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .player-track-artist {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .player-center {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    .player-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+    }
+
+
+    .player-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .main-play-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+    }
+
+
+    .player-progress-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        width:
+            min(
+                100%,
+                560px
+            );
+    }
+
+
+    .player-progress {
+
+        flex:
+            1;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .player-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    .player-time {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .player-right {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .volume-progress {
+
+        width:
+            90px;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .volume-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .sidebar-logo-text,
+        .sidebar-item-label {
+
+            display:
+                none;
+        }
+
+
+        .sidebar {
+
+            align-items:
+                center;
+        }
+
+
+        .sidebar-logo,
+        .sidebar-item {
+
+            justify-content:
+                center;
+
+            width:
+                52px;
+
+            padding:
+                0;
+        }
+
+
+        .podcast-cover {
+
+            width:
+                190px;
+        }
+
+
+        .podcast-name {
+
+            font-size:
+                44px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .sidebar {
+
+            display:
+                none;
+        }
+
+
+        .podcast-main {
+
+            margin-left:
+                0;
+
+            padding-bottom:
+                calc(
+                    var(--mobile-player-height)
+                    +
+                    var(--mobile-navigation-height)
+                    +
+                    28px
+                );
+        }
+
+
+        .podcast-app-bar {
+
+            min-height:
+                56px;
+
+            padding:
+                8px 12px;
+        }
+
+
+        .podcast-history
+        .round-button:nth-child(2) {
+
+            display:
+                none;
+        }
+
+
+        .podcast-hero {
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            min-height:
+                auto;
+
+            padding:
+                20px 16px 24px;
+
+            text-align:
+                center;
+        }
+
+
+        .podcast-cover {
+
+            width:
+                min(
+                    58vw,
+                    220px
+                );
+        }
+
+
+        .podcast-name {
+
+            font-size:
+                clamp(
+                    28px,
+                    9vw,
+                    38px
+                );
+        }
+
+
+        .podcast-meta {
+
+            justify-content:
+                center;
+        }
+
+
+        .podcast-actions {
+
+            min-height:
+                72px;
+
+            padding:
+                8px 14px;
+        }
+
+
+        .podcast-play-button {
+
+            width:
+                52px;
+
+            height:
+                52px;
+        }
+
+
+        .episodes-section {
+
+            padding:
+                12px 10px 36px;
+        }
+
+
+        .episodes-title {
+
+            font-size:
+                21px;
+        }
+
+
+        .episode-item {
+
+            grid-template-columns:
+                82px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap:
+                12px;
+
+            padding:
+                10px;
+        }
+
+
+        .episode-image {
+
+            width:
+                82px;
+
+            height:
+                82px;
+        }
+
+
+        .episode-title {
+
+            font-size:
+                14px;
+        }
+
+
+        .episode-description {
+
+            -webkit-line-clamp:
+                2;
+
+            font-size:
+                11px;
+        }
+
+
+        /* ----------------------------------------------
+           Player
+           ---------------------------------------------- */
+
+        .playback-player {
+
+            left:
+                8px;
+
+            right:
+                8px;
+
+            bottom:
+                var(--mobile-navigation-height);
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-player-height);
+
+            padding:
+                6px 8px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                var(--surface-variant);
+        }
+
+
+        .player-track {
+
+            flex:
+                1;
+        }
+
+
+        .player-image {
+
+            width:
+                48px;
+
+            height:
+                48px;
+        }
+
+
+        .player-center,
+        .player-right {
+
+            display:
+                none;
+        }
+
+
+        .mobile-player-action {
+
+            display:
+                flex !important;
+        }
+
+
+        /* ----------------------------------------------
+           Mobile Navigation
+           ---------------------------------------------- */
+
+        .mobile-navigation {
+
+            position:
+                fixed;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            z-index:
+                45;
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-navigation-height);
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex:
+                1;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                4px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="podcast-shell">
+
+
+    {% set navigation = podcast.navigation %}
+
+    {% include "components/sidebar.html" %}
+
+
+    <main class="podcast-main">
+
+
+        {# =================================================
+           App Bar
+           ================================================= #}
+
+        <header
+            class="podcast-app-bar"
+            data-class="app_bar"
+            data-semantic="podcast_app_bar"
+        >
+
+            <div class="podcast-history">
+
+                <button
+                    class="round-button"
+                    data-class="button"
+                    data-semantic="navigate_back"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="navigate_back_icon"
+                    >
+                        chevron_left
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="round-button"
+                    data-class="button"
+                    data-semantic="navigate_forward"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="navigate_forward_icon"
+                    >
+                        chevron_right
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <button
+                class="round-button"
+                data-class="button"
+                data-semantic="podcast_more"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="podcast_more_icon"
+                >
+                    more_horiz
+                </span>
+
+            </button>
+
+        </header>
+
+
+        {# =================================================
+           Hero
+           ================================================= #}
+
+        <section
+            class="podcast-hero"
+            data-class="section"
+            data-semantic="podcast_header"
+        >
+
+
+            {% if podcast.show.image %}
+
+            <img
+                class="podcast-cover"
+                src="{{ podcast.show.image }}"
+                data-class="image"
+                data-semantic="podcast_cover"
+                alt=""
+            >
+
+            {% endif %}
+
+
+            <div class="podcast-info">
+
+
+                <div
+                    class="podcast-type"
+                    data-class="text"
+                    data-semantic="podcast_type"
+                >
+                    Podcast
+                </div>
+
+
+                <h1
+                    class="podcast-name"
+                    data-class="text"
+                    data-semantic="podcast_name"
+                >
+                    {{ podcast.show.name }}
+                </h1>
+
+
+                <div
+                    class="podcast-publisher"
+                    data-class="text"
+                    data-semantic="podcast_publisher"
+                >
+                    {{ podcast.show.publisher }}
+                </div>
+
+
+                <div
+                    class="podcast-description"
+                    data-class="text"
+                    data-semantic="podcast_description"
+                >
+                    {{ podcast.show.description }}
+                </div>
+
+
+                <div class="podcast-meta">
+
+                    <span
+                        class="podcast-badge"
+                        data-class="badge"
+                        data-semantic="podcast_rating"
+                    >
+                        ★ {{ podcast.show.rating }}
+                    </span>
+
+
+                    {% for category in podcast.show.categories %}
+
+                    <span
+                        class="podcast-badge"
+                        data-class="badge"
+                        data-semantic="podcast_category"
+                    >
+                        {{ category }}
+                    </span>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        {# =================================================
+           Actions
+           ================================================= #}
+
+        <div
+            class="podcast-actions"
+            data-class="toolbar"
+            data-semantic="podcast_actions"
+        >
+
+
+            <button
+                class="podcast-play-button"
+                data-class="button"
+                data-semantic="play_podcast"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="play_podcast_icon"
+                >
+                    play_arrow
+                </span>
+
+            </button>
+
+
+            <button
+                class="
+                    podcast-follow
+
+                    {% if podcast.show.followed %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="follow_podcast"
+            >
+
+                {% if podcast.show.followed %}
+                Following
+                {% else %}
+                Follow
+                {% endif %}
+
+            </button>
+
+
+            <button
+                class="podcast-action"
+                data-class="button"
+                data-semantic="podcast_notifications"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="podcast_notifications_icon"
+                >
+                    notifications
+                </span>
+
+            </button>
+
+
+            <button
+                class="podcast-action"
+                data-class="button"
+                data-semantic="share_podcast"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="share_podcast_icon"
+                >
+                    share
+                </span>
+
+            </button>
+
+        </div>
+
+
+        {# =================================================
+           Episodes
+           ================================================= #}
+
+        <section
+            class="episodes-section"
+            data-class="section"
+            data-semantic="podcast_episodes"
+        >
+
+
+            <header class="episodes-header">
+
+                <h2
+                    class="episodes-title"
+                    data-class="text"
+                    data-semantic="episodes_title"
+                >
+                    All Episodes
+                </h2>
+
+
+                <button
+                    class="episode-sort"
+                    data-class="button"
+                    data-semantic="episode_sort"
+                >
+
+                    <span
+                        data-class="text"
+                        data-semantic="episode_sort_label"
+                    >
+                        {{ podcast.sort }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="episode_sort_icon"
+                    >
+                        sort
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <div class="episode-list">
+
+
+                {% for episode in podcast.episodes %}
+
+                <article
+                    class="episode-item"
+                    data-class="list_item"
+                    data-semantic="podcast_episode"
+                >
+
+
+                    {% if episode.image %}
+
+                    <img
+                        class="episode-image"
+                        src="{{ episode.image }}"
+                        data-class="image"
+                        data-semantic="episode_artwork"
+                        alt=""
+                    >
+
+                    {% endif %}
+
+
+                    <div class="episode-content">
+
+
+                        <div class="episode-top">
+
+                            <div>
+
+                                <h3
+                                    class="episode-title"
+                                    data-class="text"
+                                    data-semantic="episode_title"
+                                >
+                                    {{ episode.title }}
+                                </h3>
+
+
+                                <div
+                                    class="episode-description"
+                                    data-class="text"
+                                    data-semantic="episode_description"
+                                >
+                                    {{ episode.description }}
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                class="episode-action"
+                                data-class="button"
+                                data-semantic="episode_more"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="episode_more_icon"
+                                >
+                                    more_vert
+                                </span>
+
+                            </button>
+
+                        </div>
+
+
+                        <div class="episode-meta">
+
+
+                            <span
+                                data-class="timestamp"
+                                data-semantic="episode_date"
+                            >
+                                {{ episode.date }}
+                            </span>
+
+
+                            <span>•</span>
+
+
+                            <span
+                                data-class="timestamp"
+                                data-semantic="episode_duration"
+                            >
+                                {{ episode.duration }}
+                            </span>
+
+
+                            {% if episode.explicit %}
+
+                            <span
+                                class="episode-badge"
+                                data-class="badge"
+                                data-semantic="explicit_badge"
+                            >
+                                E
+                            </span>
+
+                            {% endif %}
+
+
+                            {% if episode.has_video %}
+
+                            <span
+                                class="
+                                    episode-badge
+                                    video-badge
+                                "
+                                data-class="badge"
+                                data-semantic="video_episode_badge"
+                            >
+                                Video
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div
+                            class="episode-actions"
+                            data-class="toolbar"
+                            data-semantic="episode_actions"
+                        >
+
+
+                            <button
+                                class="episode-play"
+                                data-class="button"
+                                data-semantic="play_episode"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="play_episode_icon"
+                                >
+                                    {% if episode.played %}
+                                    replay
+                                    {% else %}
+                                    play_arrow
+                                    {% endif %}
+                                </span>
+
+                            </button>
+
+
+                            <button
+                                class="
+                                    episode-action
+
+                                    {% if episode.saved %}
+                                    active
+                                    {% endif %}
+                                "
+                                data-class="button"
+                                data-semantic="save_episode"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="save_episode_icon"
+                                >
+
+                                    {% if episode.saved %}
+                                    check_circle
+                                    {% else %}
+                                    add_circle
+                                    {% endif %}
+
+                                </span>
+
+                            </button>
+
+
+                            <button
+                                class="
+                                    episode-action
+
+                                    {% if episode.downloaded %}
+                                    active
+                                    {% endif %}
+                                "
+                                data-class="button"
+                                data-semantic="download_episode"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="download_episode_icon"
+                                >
+                                    download_for_offline
+                                </span>
+
+                            </button>
+
+
+                            <button
+                                class="episode-action"
+                                data-class="button"
+                                data-semantic="share_episode"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="share_episode_icon"
+                                >
+                                    share
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    {% set player = podcast.player %}
+
+    {% include "components/player.html" %}
+
+
+    {% set navigation = podcast.navigation %}
+
+    {% include "components/mobile_navigation.html" %}
+
+
+</div>
+
+{% endblock %}

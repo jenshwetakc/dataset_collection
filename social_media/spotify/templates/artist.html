@@ -1,0 +1,2225 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Spotify Artist
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Layout
+       ====================================================== */
+
+    .artist-shell {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .artist-main {
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+
+        padding-bottom:
+            calc(
+                var(--player-height)
+                + 40px
+            );
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .sidebar {
+
+        position:
+            fixed;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        bottom:
+            var(--player-height);
+
+        z-index:
+            20;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        width:
+            var(--sidebar-width);
+
+        padding:
+            20px 12px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+    }
+
+
+    .sidebar-logo-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .sidebar-logo-text {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-navigation {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            4px;
+    }
+
+
+    .sidebar-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-item.selected {
+
+        color:
+            var(--text-primary);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .sidebar-item-label {
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    .sidebar-divider {
+
+        height:
+            1px;
+
+        margin:
+            16px 12px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .sidebar-library-title {
+
+        padding:
+            0 12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .artist-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            15;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            64px;
+
+        padding:
+            8px
+            var(--page-gap);
+
+        background:
+            var(--background);
+    }
+
+
+    .artist-history {
+
+        display:
+            flex;
+
+        gap:
+            8px;
+    }
+
+
+    .round-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ======================================================
+       Hero
+       ====================================================== */
+
+    .artist-hero {
+
+        position:
+            relative;
+
+        min-height:
+            360px;
+
+        overflow:
+            hidden;
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        padding:
+            40px
+            var(--page-gap);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .artist-banner {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+
+        opacity:
+            0.38;
+    }
+
+
+    .artist-hero-overlay {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        background:
+            linear-gradient(
+                to top,
+                var(--background),
+                transparent
+            );
+    }
+
+
+    .artist-hero-content {
+
+        position:
+            relative;
+
+        z-index:
+            2;
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        gap:
+            24px;
+
+        width:
+            100%;
+    }
+
+
+    .artist-avatar {
+
+        flex:
+            0 0 auto;
+
+        width:
+            clamp(
+                140px,
+                16vw,
+                220px
+            );
+
+        aspect-ratio:
+            1;
+
+        border-radius:
+            50%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .artist-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .verified-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        margin-bottom:
+            8px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+    }
+
+
+    .verified-icon {
+
+        color:
+            var(--primary);
+    }
+
+
+    .artist-name {
+
+        margin:
+            0;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            clamp(
+                42px,
+                6vw,
+                84px
+            );
+
+        font-weight:
+            850;
+
+        line-height:
+            1;
+    }
+
+
+    .artist-listeners {
+
+        margin-top:
+            14px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            14px;
+    }
+
+
+    /* ======================================================
+       Actions
+       ====================================================== */
+
+    .artist-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        min-height:
+            92px;
+
+        padding:
+            16px
+            var(--page-gap);
+    }
+
+
+    .artist-play {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            56px;
+
+        height:
+            56px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .artist-play
+    .material-symbols-rounded {
+
+        font-size:
+            30px;
+    }
+
+
+    .follow-button {
+
+        min-height:
+            36px;
+
+        padding:
+            0 18px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            999px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .follow-button.active {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .artist-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Sections
+       ====================================================== */
+
+    .artist-section {
+
+        padding:
+            18px
+            var(--page-gap)
+            36px;
+    }
+
+
+    .section-heading {
+
+        margin:
+            0 0 16px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            24px;
+
+        font-weight:
+            750;
+    }
+
+
+    /* ======================================================
+       Popular Tracks
+       ====================================================== */
+
+    .popular-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+    }
+
+
+    .popular-track {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            36px
+            minmax(
+                220px,
+                2fr
+            )
+            minmax(
+                100px,
+                1fr
+            )
+            90px;
+
+        align-items:
+            center;
+
+        min-height:
+            62px;
+
+        padding:
+            6px 10px;
+
+        border-radius:
+            8px;
+    }
+
+
+    .popular-track:hover {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .popular-number {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .popular-primary {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-width:
+            0;
+    }
+
+
+    .popular-cover {
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            4px;
+
+        object-fit:
+            cover;
+    }
+
+
+    .popular-title {
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    .popular-plays {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .popular-end {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .popular-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .popular-button.active {
+
+        color:
+            var(--primary);
+    }
+
+
+    .popular-duration {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Cards
+       ====================================================== */
+
+    .card-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                5,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            16px;
+    }
+
+
+    .media-card {
+
+        min-width:
+            0;
+
+        padding:
+            12px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .media-card-image {
+
+        width:
+            100%;
+
+        aspect-ratio:
+            1;
+
+        object-fit:
+            cover;
+
+        border-radius:
+            8px;
+    }
+
+
+    .media-card-image.artist {
+
+        border-radius:
+            50%;
+    }
+
+
+    .media-card-title {
+
+        margin-top:
+            10px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            650;
+    }
+
+
+    .media-card-subtitle {
+
+        margin-top:
+            4px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    /* ======================================================
+       Player
+       ====================================================== */
+
+    .playback-player {
+
+        position:
+            fixed;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            50;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(220px, 1fr)
+            minmax(320px, 1.5fr)
+            minmax(220px, 1fr);
+
+        align-items:
+            center;
+
+        height:
+            var(--player-height);
+
+        padding:
+            10px 16px;
+
+        background:
+            var(--surface);
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .player-track {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-width:
+            0;
+    }
+
+
+    .player-image {
+
+        width:
+            56px;
+
+        height:
+            56px;
+
+        border-radius:
+            4px;
+
+        object-fit:
+            cover;
+    }
+
+
+    .player-track-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .player-track-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .player-track-artist {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .player-center {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    .player-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+    }
+
+
+    .player-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .main-play-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+    }
+
+
+    .player-progress-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        width:
+            min(
+                100%,
+                560px
+            );
+    }
+
+
+    .player-progress {
+
+        flex:
+            1;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .player-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    .player-time {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .player-right {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .volume-progress {
+
+        width:
+            90px;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .volume-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .sidebar-logo-text,
+        .sidebar-item-label,
+        .sidebar-library-title {
+
+            display:
+                none;
+        }
+
+
+        .sidebar {
+
+            align-items:
+                center;
+        }
+
+
+        .sidebar-logo,
+        .sidebar-item {
+
+            justify-content:
+                center;
+
+            width:
+                52px;
+
+            padding:
+                0;
+        }
+
+
+        .card-grid {
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .artist-name {
+
+            font-size:
+                54px;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .sidebar {
+
+            display:
+                none;
+        }
+
+
+        .artist-main {
+
+            margin-left:
+                0;
+
+            padding-bottom:
+                calc(
+                    var(--mobile-player-height)
+                    + var(--mobile-navigation-height)
+                    + 28px
+                );
+        }
+
+
+        .artist-app-bar {
+
+            min-height:
+                56px;
+
+            padding:
+                8px 12px;
+        }
+
+
+        .artist-history
+        .round-button:nth-child(2) {
+
+            display:
+                none;
+        }
+
+
+        .artist-hero {
+
+            min-height:
+                320px;
+
+            padding:
+                24px 16px;
+        }
+
+
+        .artist-hero-content {
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            text-align:
+                center;
+        }
+
+
+        .artist-avatar {
+
+            width:
+                150px;
+        }
+
+
+        .verified-row {
+
+            justify-content:
+                center;
+        }
+
+
+        .artist-name {
+
+            font-size:
+                clamp(
+                    36px,
+                    12vw,
+                    52px
+                );
+        }
+
+
+        .artist-actions {
+
+            min-height:
+                72px;
+
+            padding:
+                8px 14px;
+        }
+
+
+        .artist-play {
+
+            width:
+                52px;
+
+            height:
+                52px;
+        }
+
+
+        .artist-section {
+
+            padding:
+                14px 12px 28px;
+        }
+
+
+        .section-heading {
+
+            font-size:
+                21px;
+        }
+
+
+        .popular-track {
+
+            grid-template-columns:
+                28px
+                minmax(
+                    0,
+                    1fr
+                )
+                auto;
+
+            min-height:
+                62px;
+
+            padding:
+                6px;
+        }
+
+
+        .popular-plays {
+
+            display:
+                none;
+        }
+
+
+        .popular-duration {
+
+            display:
+                none;
+        }
+
+
+        .card-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                12px;
+        }
+
+
+        /* ----------------------------------------------
+           Player
+           ---------------------------------------------- */
+
+        .playback-player {
+
+            left:
+                8px;
+
+            right:
+                8px;
+
+            bottom:
+                var(--mobile-navigation-height);
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-player-height);
+
+            padding:
+                6px 8px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                var(--surface-variant);
+        }
+
+
+        .player-track {
+
+            flex:
+                1;
+        }
+
+
+        .player-image {
+
+            width:
+                48px;
+
+            height:
+                48px;
+        }
+
+
+        .player-center,
+        .player-right {
+
+            display:
+                none;
+        }
+
+
+        .mobile-player-action {
+
+            display:
+                flex !important;
+        }
+
+
+        /* ----------------------------------------------
+           Bottom Navigation
+           ---------------------------------------------- */
+
+        .mobile-navigation {
+
+            position:
+                fixed;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            z-index:
+                45;
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-navigation-height);
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex:
+                1;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                4px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-item.selected {
+
+            color:
+                var(--text-primary);
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+    }
+
+
+    @media (
+        min-width: 1800px
+    ) {
+
+        .card-grid {
+
+            grid-template-columns:
+                repeat(
+                    7,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="artist-shell">
+
+
+    {% set navigation = artist.navigation %}
+
+    {% include "components/sidebar.html" %}
+
+
+    <main class="artist-main">
+
+
+        {# =================================================
+           App Bar
+           ================================================= #}
+
+        <header
+            class="artist-app-bar"
+            data-class="app_bar"
+            data-semantic="artist_app_bar"
+        >
+
+            <div class="artist-history">
+
+                <button
+                    class="round-button"
+                    data-class="button"
+                    data-semantic="navigate_back"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="navigate_back_icon"
+                    >
+                        chevron_left
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="round-button"
+                    data-class="button"
+                    data-semantic="navigate_forward"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="navigate_forward_icon"
+                    >
+                        chevron_right
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <button
+                class="round-button"
+                data-class="button"
+                data-semantic="artist_options"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="artist_options_icon"
+                >
+                    more_horiz
+                </span>
+
+            </button>
+
+        </header>
+
+
+        {# =================================================
+           Hero
+           ================================================= #}
+
+        <section
+            class="artist-hero"
+            data-class="section"
+            data-semantic="artist_header"
+        >
+
+
+            {% if artist.artist.banner %}
+
+            <img
+                class="artist-banner"
+                src="{{ artist.artist.banner }}"
+                data-class="image"
+                data-semantic="artist_banner"
+                alt=""
+            >
+
+            {% endif %}
+
+
+            <div class="artist-hero-overlay"></div>
+
+
+            <div class="artist-hero-content">
+
+
+                {% if artist.artist.avatar %}
+
+                <img
+                    class="artist-avatar"
+                    src="{{ artist.artist.avatar }}"
+                    data-class="avatar"
+                    data-semantic="artist_avatar"
+                    alt=""
+                >
+
+                {% endif %}
+
+
+                <div class="artist-info">
+
+
+                    {% if artist.artist.verified %}
+
+                    <div
+                        class="verified-row"
+                        data-class="text"
+                        data-semantic="verified_artist"
+                    >
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                verified-icon
+                            "
+                            data-class="icon"
+                            data-semantic="verified_icon"
+                        >
+                            verified
+                        </span>
+
+                        <span>
+                            Verified Artist
+                        </span>
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <h1
+                        class="artist-name"
+                        data-class="text"
+                        data-semantic="artist_name"
+                    >
+                        {{ artist.artist.name }}
+                    </h1>
+
+
+                    <div
+                        class="artist-listeners"
+                        data-class="text"
+                        data-semantic="monthly_listeners"
+                    >
+                        {{ artist.artist.monthly_listeners }}
+                        monthly listeners
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        {# =================================================
+           Artist Actions
+           ================================================= #}
+
+        <div
+            class="artist-actions"
+            data-class="toolbar"
+            data-semantic="artist_actions"
+        >
+
+            <button
+                class="artist-play"
+                data-class="button"
+                data-semantic="play_artist"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="play_artist_icon"
+                >
+                    play_arrow
+                </span>
+
+            </button>
+
+
+            <button
+                class="
+                    follow-button
+
+                    {% if artist.artist.followed %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="follow_artist"
+            >
+
+                {% if artist.artist.followed %}
+                Following
+                {% else %}
+                Follow
+                {% endif %}
+
+            </button>
+
+
+            <button
+                class="artist-action"
+                data-class="button"
+                data-semantic="artist_more"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="artist_more_icon"
+                >
+                    more_horiz
+                </span>
+
+            </button>
+
+        </div>
+
+
+        {# =================================================
+           Popular
+           ================================================= #}
+
+        <section
+            class="artist-section"
+            data-class="section"
+            data-semantic="popular_tracks"
+        >
+
+            <h2
+                class="section-heading"
+                data-class="text"
+                data-semantic="popular_heading"
+            >
+                Popular
+            </h2>
+
+
+            <div class="popular-list">
+
+
+                {% for track in artist.popular_tracks %}
+
+                <article
+                    class="popular-track"
+                    data-class="list_item"
+                    data-semantic="popular_track"
+                >
+
+                    <div
+                        class="popular-number"
+                        data-class="text"
+                        data-semantic="popular_track_number"
+                    >
+                        {{ track.number }}
+                    </div>
+
+
+                    <div class="popular-primary">
+
+
+                        {% if track.image %}
+
+                        <img
+                            class="popular-cover"
+                            src="{{ track.image }}"
+                            data-class="image"
+                            data-semantic="popular_track_artwork"
+                            alt=""
+                        >
+
+                        {% endif %}
+
+
+                        <div
+                            class="popular-title"
+                            data-class="text"
+                            data-semantic="popular_track_title"
+                        >
+
+                            {% if track.explicit %}
+
+                            <span
+                                data-class="badge"
+                                data-semantic="explicit_badge"
+                            >
+                                E
+                            </span>
+
+                            {% endif %}
+
+                            {{ track.title }}
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="popular-plays"
+                        data-class="text"
+                        data-semantic="popular_track_plays"
+                    >
+                        {{ track.plays }}
+                    </div>
+
+
+                    <div class="popular-end">
+
+
+                        <button
+                            class="
+                                popular-button
+
+                                {% if track.liked %}
+                                active
+                                {% endif %}
+                            "
+                            data-class="button"
+                            data-semantic="like_popular_track"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="like_popular_track_icon"
+                            >
+
+                                {% if track.liked %}
+                                favorite
+                                {% else %}
+                                favorite_border
+                                {% endif %}
+
+                            </span>
+
+                        </button>
+
+
+                        <span
+                            class="popular-duration"
+                            data-class="timestamp"
+                            data-semantic="popular_track_duration"
+                        >
+                            {{ track.duration }}
+                        </span>
+
+
+                        <button
+                            class="popular-button"
+                            data-class="button"
+                            data-semantic="popular_track_more"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="popular_track_more_icon"
+                            >
+                                more_vert
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+
+        {# =================================================
+           Discography
+           ================================================= #}
+
+        <section
+            class="artist-section"
+            data-class="section"
+            data-semantic="discography"
+        >
+
+            <h2
+                class="section-heading"
+                data-class="text"
+                data-semantic="discography_heading"
+            >
+                Discography
+            </h2>
+
+
+            <div class="card-grid">
+
+
+                {% for item in artist.discography %}
+
+                <article
+                    class="media-card"
+                    data-class="card"
+                    data-semantic="discography_item"
+                >
+
+
+                    {% if item.image %}
+
+                    <img
+                        class="media-card-image"
+                        src="{{ item.image }}"
+                        data-class="image"
+                        data-semantic="discography_artwork"
+                        alt=""
+                    >
+
+                    {% endif %}
+
+
+                    <div
+                        class="media-card-title"
+                        data-class="text"
+                        data-semantic="discography_title"
+                    >
+                        {{ item.title }}
+                    </div>
+
+
+                    <div
+                        class="media-card-subtitle"
+                        data-class="text"
+                        data-semantic="discography_metadata"
+                    >
+                        {{ item.year }}
+                        •
+                        {{ item.type }}
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+
+        {# =================================================
+           Related Artists
+           ================================================= #}
+
+        <section
+            class="artist-section"
+            data-class="section"
+            data-semantic="related_artists"
+        >
+
+            <h2
+                class="section-heading"
+                data-class="text"
+                data-semantic="related_artists_heading"
+            >
+                Fans also like
+            </h2>
+
+
+            <div class="card-grid">
+
+
+                {% for related in artist.related_artists %}
+
+                <article
+                    class="media-card"
+                    data-class="card"
+                    data-semantic="related_artist"
+                >
+
+
+                    {% if related.image %}
+
+                    <img
+                        class="
+                            media-card-image
+                            artist
+                        "
+                        src="{{ related.image }}"
+                        data-class="avatar"
+                        data-semantic="related_artist_avatar"
+                        alt=""
+                    >
+
+                    {% endif %}
+
+
+                    <div
+                        class="media-card-title"
+                        data-class="text"
+                        data-semantic="related_artist_name"
+                    >
+                        {{ related.name }}
+                    </div>
+
+
+                    <div
+                        class="media-card-subtitle"
+                        data-class="text"
+                        data-semantic="related_artist_followers"
+                    >
+                        {{ related.followers }}
+                        followers
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    {% set player = artist.player %}
+
+    {% include "components/player.html" %}
+
+
+    {% set navigation = artist.navigation %}
+
+    {% include "components/mobile_navigation.html" %}
+
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,1749 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Spotify Now Playing
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .now-playing-shell {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .now-playing-main {
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+
+        padding-bottom:
+            var(--player-height);
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .sidebar {
+
+        position:
+            fixed;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            20;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        width:
+            var(--sidebar-width);
+
+        padding:
+            20px 12px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+    }
+
+
+    .sidebar-logo-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .sidebar-logo-text {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-navigation {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            4px;
+    }
+
+
+    .sidebar-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-item.selected {
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .sidebar-item-label {
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    .sidebar-divider {
+
+        height:
+            1px;
+
+        margin:
+            16px 12px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .sidebar-library-title {
+
+        padding:
+            0 12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .now-playing-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            64px;
+
+        padding:
+            10px
+            var(--page-gap);
+    }
+
+
+    .header-left,
+    .header-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .header-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+
+        background:
+            var(--surface);
+    }
+
+
+    .header-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Player Content
+       ====================================================== */
+
+    .player-content {
+
+        width:
+            min(
+                1100px,
+                100%
+            );
+
+        margin:
+            0 auto;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                320px,
+                1fr
+            )
+            minmax(
+                320px,
+                0.9fr
+            );
+
+        gap:
+            clamp(
+                32px,
+                5vw,
+                80px
+            );
+
+        align-items:
+            center;
+
+        padding:
+            30px
+            var(--page-gap)
+            60px;
+    }
+
+
+    /* ======================================================
+       Artwork
+       ====================================================== */
+
+    .artwork-section {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+    }
+
+
+    .now-playing-artwork {
+
+        width:
+            min(
+                100%,
+                560px
+            );
+
+        aspect-ratio:
+            1;
+
+        object-fit:
+            cover;
+
+        border-radius:
+            14px;
+
+        box-shadow:
+            0 18px 50px
+            rgba(
+                0,
+                0,
+                0,
+                0.25
+            );
+    }
+
+
+    /* ======================================================
+       Details
+       ====================================================== */
+
+    .track-panel {
+
+        min-width:
+            0;
+    }
+
+
+    .track-type {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        text-transform:
+            uppercase;
+    }
+
+
+    .track-name {
+
+        margin:
+            8px 0 0;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            clamp(
+                30px,
+                4vw,
+                58px
+            );
+
+        font-weight:
+            800;
+
+        line-height:
+            1.05;
+    }
+
+
+    .track-artist {
+
+        margin-top:
+            10px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            600;
+    }
+
+
+    .track-album {
+
+        margin-top:
+            5px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    /* ======================================================
+       Main Action Row
+       ====================================================== */
+
+    .main-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        margin-top:
+            30px;
+    }
+
+
+    .action-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .action-button.active {
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Progress
+       ====================================================== */
+
+    .progress-area {
+
+        margin-top:
+            26px;
+    }
+
+
+    .track-progress {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            5px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .track-progress-value {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    .progress-times {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        margin-top:
+            8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Playback Controls
+       ====================================================== */
+
+    .playback-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            20px;
+
+        margin-top:
+            28px;
+    }
+
+
+    .control-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .control-button.active {
+
+        color:
+            var(--primary);
+    }
+
+
+    .primary-play-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            64px;
+
+        height:
+            64px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+    }
+
+
+    .primary-play-button
+    .material-symbols-rounded {
+
+        font-size:
+            36px;
+    }
+
+
+    /* ======================================================
+       Bottom Actions
+       ====================================================== */
+
+    .secondary-actions {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+
+        margin-top:
+            30px;
+    }
+
+
+    .secondary-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            44px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    /* ======================================================
+       Device / Volume
+       ====================================================== */
+
+    .device-section {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        margin-top:
+            20px;
+
+        padding:
+            12px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .device-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .device-label {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .device-name {
+
+        margin-top:
+            2px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .volume-bar {
+
+        width:
+            100px;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .volume-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .sidebar-logo-text,
+        .sidebar-item-label,
+        .sidebar-library-title {
+
+            display:
+                none;
+        }
+
+
+        .sidebar {
+
+            align-items:
+                center;
+        }
+
+
+        .sidebar-logo,
+        .sidebar-item {
+
+            justify-content:
+                center;
+
+            width:
+                52px;
+
+            padding:
+                0;
+        }
+
+
+        .player-content {
+
+            grid-template-columns:
+                minmax(
+                    260px,
+                    0.9fr
+                )
+                minmax(
+                    300px,
+                    1fr
+                );
+
+            gap:
+                32px;
+        }
+
+
+        .now-playing-artwork {
+
+            max-width:
+                420px;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .sidebar {
+
+            display:
+                none;
+        }
+
+
+        .now-playing-main {
+
+            margin-left:
+                0;
+
+            padding-bottom:
+                var(
+                    --mobile-navigation-height
+                );
+        }
+
+
+        .now-playing-header {
+
+            min-height:
+                56px;
+
+            padding:
+                8px 14px;
+        }
+
+
+        .header-title {
+
+            font-size:
+                13px;
+        }
+
+
+        .header-button {
+
+            width:
+                36px;
+
+            height:
+                36px;
+        }
+
+
+        .player-content {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                24px;
+
+            width:
+                100%;
+
+            padding:
+                12px
+                20px
+                calc(
+                    var(--mobile-navigation-height)
+                    + 28px
+                );
+        }
+
+
+        .artwork-section {
+
+            width:
+                100%;
+        }
+
+
+        .now-playing-artwork {
+
+            width:
+                min(
+                    86vw,
+                    430px
+                );
+
+            border-radius:
+                10px;
+        }
+
+
+        .track-panel {
+
+            width:
+                100%;
+        }
+
+
+        .track-name {
+
+            font-size:
+                clamp(
+                    26px,
+                    8vw,
+                    36px
+                );
+        }
+
+
+        .track-artist {
+
+            font-size:
+                16px;
+        }
+
+
+        .main-actions {
+
+            margin-top:
+                18px;
+        }
+
+
+        .progress-area {
+
+            margin-top:
+                22px;
+        }
+
+
+        .playback-controls {
+
+            gap:
+                clamp(
+                    14px,
+                    6vw,
+                    28px
+                );
+
+            margin-top:
+                22px;
+        }
+
+
+        .secondary-actions {
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    1fr
+                );
+        }
+
+
+        .secondary-action {
+
+            flex-direction:
+                column;
+
+            gap:
+                4px;
+
+            min-height:
+                58px;
+
+            font-size:
+                10px;
+        }
+
+
+        .device-section {
+
+            margin-bottom:
+                12px;
+        }
+
+
+        /* ----------------------------------------------
+           Bottom Navigation
+           ---------------------------------------------- */
+
+        .mobile-navigation {
+
+            position:
+                fixed;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            z-index:
+                50;
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-navigation-height);
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex:
+                1;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                4px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-item.selected {
+
+            color:
+                var(--text-primary);
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="now-playing-shell">
+
+
+    {% set navigation = now_playing.navigation %}
+
+    {% include "components/sidebar.html" %}
+
+
+    <main class="now-playing-main">
+
+
+        {# =================================================
+           Header
+           ================================================= #}
+
+        <header
+            class="now-playing-header"
+            data-class="app_bar"
+            data-semantic="now_playing_app_bar"
+        >
+
+            <div class="header-left">
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="close_now_playing"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_now_playing_icon"
+                    >
+                        keyboard_arrow_down
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <div
+                class="header-title"
+                data-class="text"
+                data-semantic="now_playing_title"
+            >
+                Now Playing
+            </div>
+
+
+            <div class="header-right">
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="now_playing_more"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="now_playing_more_icon"
+                    >
+                        more_horiz
+                    </span>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+        {# =================================================
+           Main Player
+           ================================================= #}
+
+        <section
+            class="player-content"
+            data-class="section"
+            data-semantic="now_playing_content"
+        >
+
+
+            <div class="artwork-section">
+
+                {% if now_playing.track.image %}
+
+                <img
+                    class="now-playing-artwork"
+                    src="{{ now_playing.track.image }}"
+                    data-class="image"
+                    data-semantic="now_playing_artwork"
+                    alt=""
+                >
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="track-panel">
+
+
+                <div
+                    class="track-type"
+                    data-class="text"
+                    data-semantic="now_playing_media_type"
+                >
+                    Playing from album
+                </div>
+
+
+                <h1
+                    class="track-name"
+                    data-class="text"
+                    data-semantic="now_playing_track_title"
+                >
+                    {{ now_playing.track.title }}
+                </h1>
+
+
+                <div
+                    class="track-artist"
+                    data-class="text"
+                    data-semantic="now_playing_artist"
+                >
+                    {{ now_playing.track.artist }}
+                </div>
+
+
+                <div
+                    class="track-album"
+                    data-class="text"
+                    data-semantic="now_playing_album"
+                >
+                    {{ now_playing.track.album }}
+                </div>
+
+
+                {# =========================================
+                   Favorite / More
+                   ========================================= #}
+
+                <div
+                    class="main-actions"
+                    data-class="toolbar"
+                    data-semantic="now_playing_actions"
+                >
+
+                    <button
+                        class="
+                            action-button
+
+                            {% if now_playing.track.liked %}
+                            active
+                            {% endif %}
+                        "
+                        data-class="button"
+                        data-semantic="like_current_track"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="like_current_track_icon"
+                        >
+                            {% if now_playing.track.liked %}
+                            favorite
+                            {% else %}
+                            favorite_border
+                            {% endif %}
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="action-button"
+                        data-class="button"
+                        data-semantic="add_current_track"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="add_current_track_icon"
+                        >
+                            add_circle
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="action-button"
+                        data-class="button"
+                        data-semantic="current_track_more"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="current_track_more_icon"
+                        >
+                            more_horiz
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                {# =========================================
+                   Progress
+                   ========================================= #}
+
+                <div class="progress-area">
+
+                    <div
+                        class="track-progress"
+                        data-class="progress_bar"
+                        data-semantic="now_playing_progress"
+                    >
+
+                        <div
+                            class="track-progress-value"
+                            style="
+                                width:
+                                    {{ now_playing.track.progress * 100 }}%;
+                            "
+                        ></div>
+
+                    </div>
+
+
+                    <div class="progress-times">
+
+                        <span
+                            data-class="timestamp"
+                            data-semantic="elapsed_time"
+                        >
+                            {{ now_playing.track.elapsed }}
+                        </span>
+
+
+                        <span
+                            data-class="timestamp"
+                            data-semantic="track_duration"
+                        >
+                            {{ now_playing.track.duration }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                {# =========================================
+                   Playback Controls
+                   ========================================= #}
+
+                <div
+                    class="playback-controls"
+                    data-class="toolbar"
+                    data-semantic="playback_controls"
+                >
+
+
+                    <button
+                        class="
+                            control-button
+
+                            {% if now_playing.shuffle %}
+                            active
+                            {% endif %}
+                        "
+                        data-class="button"
+                        data-semantic="shuffle"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="shuffle_icon"
+                        >
+                            shuffle
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="control-button"
+                        data-class="button"
+                        data-semantic="previous_track"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="previous_track_icon"
+                        >
+                            skip_previous
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="primary-play-button"
+                        data-class="button"
+                        data-semantic="playback_toggle"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="playback_toggle_icon"
+                        >
+                            {% if now_playing.playing %}
+                            pause
+                            {% else %}
+                            play_arrow
+                            {% endif %}
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="control-button"
+                        data-class="button"
+                        data-semantic="next_track"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="next_track_icon"
+                        >
+                            skip_next
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="
+                            control-button
+
+                            {% if now_playing.repeat %}
+                            active
+                            {% endif %}
+                        "
+                        data-class="button"
+                        data-semantic="repeat"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="repeat_icon"
+                        >
+                            {% if now_playing.repeat_one %}
+                            repeat_one
+                            {% else %}
+                            repeat
+                            {% endif %}
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                {# =========================================
+                   Secondary Actions
+                   ========================================= #}
+
+                <div
+                    class="secondary-actions"
+                    data-class="toolbar"
+                    data-semantic="secondary_playback_actions"
+                >
+
+
+                    {% if now_playing.lyrics_available %}
+
+                    <button
+                        class="secondary-action"
+                        data-class="button"
+                        data-semantic="open_lyrics"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="lyrics_icon"
+                        >
+                            lyrics
+                        </span>
+
+                        <span
+                            data-class="text"
+                            data-semantic="lyrics_label"
+                        >
+                            Lyrics
+                        </span>
+
+                    </button>
+
+                    {% endif %}
+
+
+                    <button
+                        class="secondary-action"
+                        data-class="button"
+                        data-semantic="open_queue"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="queue_icon"
+                        >
+                            queue_music
+                        </span>
+
+                        <span
+                            data-class="text"
+                            data-semantic="queue_label"
+                        >
+                            Queue
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="secondary-action"
+                        data-class="button"
+                        data-semantic="open_devices"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="devices_icon"
+                        >
+                            devices
+                        </span>
+
+                        <span
+                            data-class="text"
+                            data-semantic="devices_label"
+                        >
+                            Devices
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                {# =========================================
+                   Device
+                   ========================================= #}
+
+                <section
+                    class="device-section"
+                    data-class="media_item"
+                    data-semantic="playback_device"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="device_icon"
+                    >
+                        speaker
+                    </span>
+
+
+                    <div class="device-info">
+
+                        <div
+                            class="device-label"
+                            data-class="text"
+                            data-semantic="device_label"
+                        >
+                            Playing on
+                        </div>
+
+
+                        <div
+                            class="device-name"
+                            data-class="text"
+                            data-semantic="device_name"
+                        >
+                            {{ now_playing.device }}
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="volume_icon"
+                    >
+                        volume_up
+                    </span>
+
+
+                    <div
+                        class="volume-bar"
+                        data-class="progress_bar"
+                        data-semantic="volume_level"
+                    >
+
+                        <div
+                            class="volume-value"
+                            style="
+                                width:
+                                    {{ now_playing.volume * 100 }}%;
+                            "
+                        ></div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    {% set navigation = now_playing.navigation %}
+
+    {% include "components/mobile_navigation.html" %}
+
+
+</div>
+
+{% endblock %}

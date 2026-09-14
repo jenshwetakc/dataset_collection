@@ -1,0 +1,1271 @@
+{% extends "base.html" %}
+
+{% block title %}
+Spotify Authentication
+{% endblock %}
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .auth-shell {
+        position: relative;
+        min-height: 100vh;
+        width: 100%;
+        background: var(--background);
+        color: var(--text-primary);
+        overflow-x: hidden;
+    }
+
+    .auth-background {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background:
+            radial-gradient(
+                circle at top left,
+                rgba(29, 185, 84, 0.16),
+                transparent 34%
+            ),
+            radial-gradient(
+                circle at bottom right,
+                rgba(29, 185, 84, 0.10),
+                transparent 28%
+            );
+        pointer-events: none;
+    }
+
+    .auth-layout {
+        position: relative;
+        z-index: 2;
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: minmax(340px, 1.05fr) minmax(360px, 520px);
+        gap: 0;
+    }
+
+    .auth-shell.centered .auth-layout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 36px 20px;
+    }
+
+    /* ======================================================
+       Brand Panel
+       ====================================================== */
+
+    .brand-panel {
+        position: relative;
+        min-height: 100vh;
+        overflow: hidden;
+        background: var(--surface);
+    }
+
+    .brand-media {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .brand-overlay {
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(
+                135deg,
+                rgba(0, 0, 0, 0.62),
+                rgba(0, 0, 0, 0.28)
+            );
+    }
+
+    .brand-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 100vh;
+        padding: 36px;
+        color: #FFFFFF;
+    }
+
+    .brand-lockup {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .brand-lockup-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #1DB954;
+        color: #FFFFFF;
+    }
+
+    .brand-lockup-text {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+    }
+
+    .brand-text-block {
+        max-width: 520px;
+    }
+
+    .brand-eyebrow {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.9px;
+        opacity: 0.88;
+    }
+
+    .brand-headline {
+        margin-top: 12px;
+        font-size: clamp(34px, 5vw, 60px);
+        line-height: 1.05;
+        font-weight: 800;
+    }
+
+    .brand-supporting {
+        margin-top: 14px;
+        max-width: 460px;
+        font-size: 16px;
+        line-height: 1.6;
+        opacity: 0.92;
+    }
+
+    .brand-bottom-note {
+        font-size: 13px;
+        opacity: 0.80;
+    }
+
+    .auth-shell.centered .brand-panel {
+        display: none;
+    }
+
+    /* ======================================================
+       Form Column
+       ====================================================== */
+
+    .auth-column {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 32px 20px;
+    }
+
+    .auth-card {
+        width: min(100%, 460px);
+        border-radius: 22px;
+        background: var(--surface);
+        border: 1px solid var(--border-subtle);
+        box-shadow: 0 20px 56px rgba(0, 0, 0, 0.10);
+        overflow: hidden;
+    }
+
+    .auth-card-inner {
+        padding: 28px 24px 24px;
+    }
+
+    .auth-card-banner {
+        display: none;
+        width: 100%;
+        height: 148px;
+        object-fit: cover;
+    }
+
+    .auth-shell.centered .auth-card-banner {
+        display: block;
+    }
+
+    .auth-form-lockup {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .auth-form-lockup-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .auth-form-lockup-text {
+        font-size: 21px;
+        font-weight: 800;
+    }
+
+    .auth-title {
+        font-size: 28px;
+        line-height: 1.15;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    .auth-subtitle {
+        margin-top: 8px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .auth-section {
+        margin-top: 22px;
+    }
+
+    .field-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .field-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .field-row.two {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .field-row.three {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .field-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .text-input {
+        width: 100%;
+        min-height: 48px;
+        padding: 0 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border-subtle);
+        background: var(--background);
+        color: var(--text-primary);
+        outline: none;
+        font: inherit;
+        font-size: 14px;
+    }
+
+    .input-with-trailing {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        min-height: 48px;
+        padding: 0 8px 0 0;
+        border-radius: 12px;
+        border: 1px solid var(--border-subtle);
+        background: var(--background);
+    }
+
+    .input-with-trailing .text-input {
+        min-height: 46px;
+        border: none;
+        background: transparent;
+        padding-right: 0;
+    }
+
+    .trailing-icon-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        color: var(--icon-secondary);
+        border-radius: 50%;
+    }
+
+    .helper-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 4px;
+    }
+
+    .text-link-button {
+        padding: 0;
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .selection-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 36px;
+        color: var(--text-secondary);
+    }
+
+    .selection-indicator-box,
+    .selection-indicator-radio {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        flex: 0 0 auto;
+        border: 1px solid var(--border-subtle);
+        background: var(--background);
+        color: transparent;
+    }
+
+    .selection-indicator-box {
+        border-radius: 6px;
+    }
+
+    .selection-indicator-radio {
+        border-radius: 50%;
+    }
+
+    .selection-indicator-box.selected,
+    .selection-indicator-radio.selected {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .selection-text {
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .gender-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .gender-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        padding: 0 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border-subtle);
+        background: var(--background);
+    }
+
+    .primary-button {
+        width: 100%;
+        min-height: 48px;
+        border-radius: 999px;
+        background: var(--primary);
+        color: var(--on-primary);
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .secondary-button {
+        width: 100%;
+        min-height: 46px;
+        border-radius: 999px;
+        border: 1px solid var(--border-subtle);
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .divider-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 18px 0;
+    }
+
+    .divider-line {
+        flex: 1;
+        height: 1px;
+        background: var(--border-subtle);
+    }
+
+    .divider-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .social-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .social-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        min-height: 48px;
+        border-radius: 999px;
+        border: 1px solid var(--border-subtle);
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .form-footer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .form-footer-text {
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .auth-helper-text {
+        margin-top: 10px;
+        color: var(--text-secondary);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+        .auth-layout {
+            grid-template-columns: minmax(280px, 0.9fr) minmax(340px, 420px);
+        }
+
+        .brand-content {
+            padding: 26px;
+        }
+
+        .brand-headline {
+            font-size: 38px;
+        }
+    }
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (max-width: 767px) {
+
+        .auth-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .brand-panel {
+            display: none;
+        }
+
+        .auth-shell.centered .auth-layout {
+            padding: 14px;
+        }
+
+        .auth-column {
+            width: 100%;
+            min-height: 100vh;
+            padding: 14px;
+        }
+
+        .auth-card {
+            width: 100%;
+            border-radius: 18px;
+        }
+
+        .auth-card-inner {
+            padding: 22px 18px 20px;
+        }
+
+        .auth-card-banner {
+            display: block;
+            height: 120px;
+        }
+
+        .auth-title {
+            font-size: 24px;
+        }
+
+        .field-row.two,
+        .field-row.three {
+            grid-template-columns: 1fr;
+        }
+
+        .helper-row {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .gender-group {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .gender-option {
+            justify-content: flex-start;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+{% if authentication.mode == "login" %}
+    {% set form = authentication.login %}
+{% elif authentication.mode == "signup" %}
+    {% set form = authentication.signup %}
+{% else %}
+    {% set form = authentication.forgot_password %}
+{% endif %}
+
+<div class="auth-shell {{ authentication.layout_variant }}">
+
+    <div class="auth-background"></div>
+
+    <div class="auth-layout">
+
+        {# ==================================================
+           Brand Panel
+           ================================================== #}
+
+        <section
+            class="brand-panel"
+            data-class="section"
+            data-semantic="authentication_brand_panel"
+        >
+            {% if authentication.branding.image %}
+            <img
+                class="brand-media"
+                src="{{ authentication.branding.image }}"
+                alt=""
+                data-class="image"
+                data-semantic="authentication_brand_image"
+            >
+            {% endif %}
+
+            <div class="brand-overlay"></div>
+
+            <div class="brand-content">
+
+                <div class="brand-lockup">
+                    <div
+                        class="brand-lockup-icon"
+                        data-class="icon"
+                        data-semantic="authentication_brand_icon"
+                    >
+                        <span class="material-symbols-rounded">music_note</span>
+                    </div>
+
+                    <div
+                        class="brand-lockup-text"
+                        data-class="text"
+                        data-semantic="authentication_brand_text"
+                    >
+                        Spotify
+                    </div>
+                </div>
+
+                <div class="brand-text-block">
+                    <div
+                        class="brand-eyebrow"
+                        data-class="text"
+                        data-semantic="authentication_brand_eyebrow"
+                    >
+                        {{ authentication.branding.eyebrow }}
+                    </div>
+
+                    <div
+                        class="brand-headline"
+                        data-class="text"
+                        data-semantic="authentication_brand_headline"
+                    >
+                        {{ authentication.branding.headline }}
+                    </div>
+
+                    <div
+                        class="brand-supporting"
+                        data-class="text"
+                        data-semantic="authentication_brand_supporting_text"
+                    >
+                        {{ authentication.branding.supporting_text }}
+                    </div>
+                </div>
+
+                <div
+                    class="brand-bottom-note"
+                    data-class="text"
+                    data-semantic="authentication_brand_footer_note"
+                >
+                    Music, podcasts, playlists, and more.
+                </div>
+            </div>
+        </section>
+
+        {# ==================================================
+           Form Column
+           ================================================== #}
+
+        <div class="auth-column">
+            <section
+                class="auth-card"
+                data-class="card"
+                data-semantic="authentication_card"
+            >
+
+                {% if authentication.branding.image %}
+                <img
+                    class="auth-card-banner"
+                    src="{{ authentication.branding.image }}"
+                    alt=""
+                    data-class="image"
+                    data-semantic="authentication_card_banner"
+                >
+                {% endif %}
+
+                <div class="auth-card-inner">
+
+                    <div class="auth-form-lockup">
+                        <div
+                            class="auth-form-lockup-icon"
+                            data-class="icon"
+                            data-semantic="authentication_form_icon"
+                        >
+                            <span class="material-symbols-rounded">music_note</span>
+                        </div>
+
+                        <div
+                            class="auth-form-lockup-text"
+                            data-class="text"
+                            data-semantic="authentication_form_brand_text"
+                        >
+                            Spotify
+                        </div>
+                    </div>
+
+                    <div
+                        class="auth-title"
+                        data-class="text"
+                        data-semantic="authentication_title"
+                    >
+                        {{ form.title }}
+                    </div>
+
+                    <div
+                        class="auth-subtitle"
+                        data-class="text"
+                        data-semantic="authentication_subtitle"
+                    >
+                        {{ form.subtitle }}
+                    </div>
+
+                    {# ==========================================
+                       LOGIN
+                       ========================================== #}
+
+                    {% if authentication.mode == "login" %}
+
+                    <section
+                        class="auth-section"
+                        data-class="section"
+                        data-semantic="login_form"
+                    >
+                        <div class="field-stack">
+
+                            <div class="field-group">
+                                <label
+                                    class="field-label"
+                                    data-class="text"
+                                    data-semantic="login_email_label"
+                                >
+                                    Email or username
+                                </label>
+
+                                <input
+                                    class="text-input"
+                                    type="text"
+                                    value="{{ form.email }}"
+                                    placeholder="Enter your email or username"
+                                    data-class="input_field"
+                                    data-semantic="login_email_input"
+                                >
+                            </div>
+
+                            <div class="field-group">
+                                <label
+                                    class="field-label"
+                                    data-class="text"
+                                    data-semantic="login_password_label"
+                                >
+                                    Password
+                                </label>
+
+                                <div class="input-with-trailing">
+                                    <input
+                                        class="text-input"
+                                        type="text"
+                                        value="{{ form.password }}"
+                                        placeholder="Enter your password"
+                                        data-class="input_field"
+                                        data-semantic="login_password_input"
+                                    >
+
+                                    <button
+                                        class="trailing-icon-button"
+                                        data-class="button"
+                                        data-semantic="login_toggle_password"
+                                    >
+                                        <span
+                                            class="material-symbols-rounded"
+                                            data-class="icon"
+                                            data-semantic="login_toggle_password_icon"
+                                        >
+                                            {% if form.show_password %}
+                                            visibility
+                                            {% else %}
+                                            visibility_off
+                                            {% endif %}
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="helper-row">
+                            <button
+                                class="selection-toggle"
+                                data-class="button"
+                                data-semantic="login_remember_me"
+                            >
+                                <span
+                                    class="
+                                        selection-indicator-box
+                                        {% if form.remember_me %}selected{% endif %}
+                                    "
+                                    data-class="selection_indicator"
+                                    data-semantic="login_remember_me_indicator"
+                                >
+                                    <span class="material-symbols-rounded" style="font-size:14px;">check</span>
+                                </span>
+
+                                <span
+                                    class="selection-text"
+                                    data-class="text"
+                                    data-semantic="login_remember_me_text"
+                                >
+                                    Remember me
+                                </span>
+                            </button>
+
+                            <button
+                                class="text-link-button"
+                                data-class="button"
+                                data-semantic="login_forgot_password"
+                            >
+                                {{ form.forgot_label }}
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 18px;">
+                            <button
+                                class="primary-button"
+                                data-class="button"
+                                data-semantic="login_submit"
+                            >
+                                {{ form.primary_cta }}
+                            </button>
+                        </div>
+
+                        <div class="divider-row">
+                            <div class="divider-line"></div>
+                            <div
+                                class="divider-label"
+                                data-class="text"
+                                data-semantic="login_divider_text"
+                            >
+                                or
+                            </div>
+                            <div class="divider-line"></div>
+                        </div>
+
+                        <div
+                            class="social-stack"
+                            data-class="section"
+                            data-semantic="login_social_buttons"
+                        >
+                            {% for item in form.social_buttons %}
+                            <button
+                                class="social-button"
+                                data-class="button"
+                                data-semantic="{{ item.semantic }}"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="{{ item.semantic }}_icon"
+                                >
+                                    {{ item.icon }}
+                                </span>
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="{{ item.semantic }}_label"
+                                >
+                                    {{ item.label }}
+                                </span>
+                            </button>
+                            {% endfor %}
+                        </div>
+
+                        <div
+                            class="form-footer"
+                            data-class="section"
+                            data-semantic="login_footer"
+                        >
+                            <span
+                                class="form-footer-text"
+                                data-class="text"
+                                data-semantic="login_footer_prompt"
+                            >
+                                {{ form.footer_prompt }}
+                            </span>
+
+                            <button
+                                class="text-link-button"
+                                data-class="button"
+                                data-semantic="login_footer_action"
+                            >
+                                {{ form.footer_action }}
+                            </button>
+                        </div>
+                    </section>
+
+                    {# ==========================================
+                       SIGNUP
+                       ========================================== #}
+
+                    {% elif authentication.mode == "signup" %}
+
+                    <section
+                        class="auth-section"
+                        data-class="section"
+                        data-semantic="signup_form"
+                    >
+                        <div class="field-stack">
+
+                            <div class="field-group">
+                                <label
+                                    class="field-label"
+                                    data-class="text"
+                                    data-semantic="signup_name_label"
+                                >
+                                    Display name
+                                </label>
+
+                                <input
+                                    class="text-input"
+                                    type="text"
+                                    value="{{ form.name }}"
+                                    placeholder="Enter your display name"
+                                    data-class="input_field"
+                                    data-semantic="signup_name_input"
+                                >
+                            </div>
+
+                            <div class="field-group">
+                                <label
+                                    class="field-label"
+                                    data-class="text"
+                                    data-semantic="signup_email_label"
+                                >
+                                    Email
+                                </label>
+
+                                <input
+                                    class="text-input"
+                                    type="text"
+                                    value="{{ form.email }}"
+                                    placeholder="Enter your email"
+                                    data-class="input_field"
+                                    data-semantic="signup_email_input"
+                                >
+                            </div>
+
+                            <div class="field-row two">
+
+                                <div class="field-group">
+                                    <label
+                                        class="field-label"
+                                        data-class="text"
+                                        data-semantic="signup_password_label"
+                                    >
+                                        Password
+                                    </label>
+
+                                    <div class="input-with-trailing">
+                                        <input
+                                            class="text-input"
+                                            type="text"
+                                            value="{{ form.password }}"
+                                            placeholder="Create password"
+                                            data-class="input_field"
+                                            data-semantic="signup_password_input"
+                                        >
+
+                                        <button
+                                            class="trailing-icon-button"
+                                            data-class="button"
+                                            data-semantic="signup_toggle_password"
+                                        >
+                                            <span
+                                                class="material-symbols-rounded"
+                                                data-class="icon"
+                                                data-semantic="signup_toggle_password_icon"
+                                            >
+                                                {% if form.show_password %}
+                                                visibility
+                                                {% else %}
+                                                visibility_off
+                                                {% endif %}
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="field-group">
+                                    <label
+                                        class="field-label"
+                                        data-class="text"
+                                        data-semantic="signup_confirm_password_label"
+                                    >
+                                        Confirm password
+                                    </label>
+
+                                    <div class="input-with-trailing">
+                                        <input
+                                            class="text-input"
+                                            type="text"
+                                            value="{{ form.confirm_password }}"
+                                            placeholder="Confirm password"
+                                            data-class="input_field"
+                                            data-semantic="signup_confirm_password_input"
+                                        >
+
+                                        <button
+                                            class="trailing-icon-button"
+                                            data-class="button"
+                                            data-semantic="signup_toggle_confirm_password"
+                                        >
+                                            <span
+                                                class="material-symbols-rounded"
+                                                data-class="icon"
+                                                data-semantic="signup_toggle_confirm_password_icon"
+                                            >
+                                                {% if form.show_confirm_password %}
+                                                visibility
+                                                {% else %}
+                                                visibility_off
+                                                {% endif %}
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="field-group">
+                                <label
+                                    class="field-label"
+                                    data-class="text"
+                                    data-semantic="signup_birth_label"
+                                >
+                                    Date of birth
+                                </label>
+
+                                <div class="field-row three">
+                                    <input
+                                        class="text-input"
+                                        type="text"
+                                        value="{{ form.birth.day }}"
+                                        placeholder="Day"
+                                        data-class="input_field"
+                                        data-semantic="signup_birth_day_input"
+                                    >
+
+                                    <input
+                                        class="text-input"
+                                        type="text"
+                                        value="{{ form.birth.month }}"
+                                        placeholder="Month"
+                                        data-class="input_field"
+                                        data-semantic="signup_birth_month_input"
+                                    >
+
+                                    <input
+                                        class="text-input"
+                                        type="text"
+                                        value="{{ form.birth.year }}"
+                                        placeholder="Year"
+                                        data-class="input_field"
+                                        data-semantic="signup_birth_year_input"
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="field-group">
+                                <label
+                                    class="field-label"
+                                    data-class="text"
+                                    data-semantic="signup_gender_label"
+                                >
+                                    Gender
+                                </label>
+
+                                <div
+                                    class="gender-group"
+                                    data-class="section"
+                                    data-semantic="signup_gender_group"
+                                >
+                                    {% for option in form.gender_options %}
+                                    <button
+                                        class="gender-option"
+                                        data-class="button"
+                                        data-semantic="signup_gender_option"
+                                    >
+                                        <span
+                                            class="
+                                                selection-indicator-radio
+                                                {% if option.selected %}selected{% endif %}
+                                            "
+                                            data-class="selection_indicator"
+                                            data-semantic="signup_gender_indicator"
+                                        >
+                                            <span class="material-symbols-rounded" style="font-size:12px;">check</span>
+                                        </span>
+
+                                        <span
+                                            class="selection-text"
+                                            data-class="text"
+                                            data-semantic="signup_gender_text"
+                                        >
+                                            {{ option.label }}
+                                        </span>
+                                    </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <button
+                                class="selection-toggle"
+                                data-class="button"
+                                data-semantic="signup_terms_toggle"
+                            >
+                                <span
+                                    class="
+                                        selection-indicator-box
+                                        {% if form.agree_terms %}selected{% endif %}
+                                    "
+                                    data-class="selection_indicator"
+                                    data-semantic="signup_terms_indicator"
+                                >
+                                    <span class="material-symbols-rounded" style="font-size:14px;">check</span>
+                                </span>
+
+                                <span
+                                    class="selection-text"
+                                    data-class="text"
+                                    data-semantic="signup_terms_text"
+                                >
+                                    I agree to the Terms and Privacy Policy
+                                </span>
+                            </button>
+
+                        </div>
+
+                        <div style="margin-top: 18px;">
+                            <button
+                                class="primary-button"
+                                data-class="button"
+                                data-semantic="signup_submit"
+                            >
+                                {{ form.primary_cta }}
+                            </button>
+                        </div>
+
+                        <div class="divider-row">
+                            <div class="divider-line"></div>
+                            <div
+                                class="divider-label"
+                                data-class="text"
+                                data-semantic="signup_divider_text"
+                            >
+                                or
+                            </div>
+                            <div class="divider-line"></div>
+                        </div>
+
+                        <div
+                            class="social-stack"
+                            data-class="section"
+                            data-semantic="signup_social_buttons"
+                        >
+                            {% for item in form.social_buttons %}
+                            <button
+                                class="social-button"
+                                data-class="button"
+                                data-semantic="{{ item.semantic }}"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="{{ item.semantic }}_icon"
+                                >
+                                    {{ item.icon }}
+                                </span>
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="{{ item.semantic }}_label"
+                                >
+                                    {{ item.label }}
+                                </span>
+                            </button>
+                            {% endfor %}
+                        </div>
+
+                        <div
+                            class="form-footer"
+                            data-class="section"
+                            data-semantic="signup_footer"
+                        >
+                            <span
+                                class="form-footer-text"
+                                data-class="text"
+                                data-semantic="signup_footer_prompt"
+                            >
+                                {{ form.footer_prompt }}
+                            </span>
+
+                            <button
+                                class="text-link-button"
+                                data-class="button"
+                                data-semantic="signup_footer_action"
+                            >
+                                {{ form.footer_action }}
+                            </button>
+                        </div>
+                    </section>
+
+                    {# ==========================================
+                       FORGOT PASSWORD
+                       ========================================== #}
+
+                    {% else %}
+
+                    <section
+                        class="auth-section"
+                        data-class="section"
+                        data-semantic="forgot_password_form"
+                    >
+                        <div class="field-stack">
+
+                            <div class="field-group">
+                                <label
+                                    class="field-label"
+                                    data-class="text"
+                                    data-semantic="forgot_password_email_label"
+                                >
+                                    Email address
+                                </label>
+
+                                <input
+                                    class="text-input"
+                                    type="text"
+                                    value="{{ form.email }}"
+                                    placeholder="Enter your email address"
+                                    data-class="input_field"
+                                    data-semantic="forgot_password_email_input"
+                                >
+                            </div>
+
+                        </div>
+
+                        <div style="margin-top: 18px;">
+                            <button
+                                class="primary-button"
+                                data-class="button"
+                                data-semantic="forgot_password_submit"
+                            >
+                                {{ form.primary_cta }}
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 12px;">
+                            <button
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="forgot_password_back_to_login"
+                            >
+                                {{ form.secondary_cta }}
+                            </button>
+                        </div>
+
+                        <div
+                            class="auth-helper-text"
+                            data-class="text"
+                            data-semantic="forgot_password_helper_text"
+                        >
+                            {{ form.helper_text }}
+                        </div>
+                    </section>
+
+                    {% endif %}
+
+                </div>
+            </section>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

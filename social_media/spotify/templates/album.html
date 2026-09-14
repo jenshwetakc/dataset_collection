@@ -1,0 +1,2033 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Spotify Album
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Layout
+       ====================================================== */
+
+    .album-shell {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .album-main {
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+
+        padding-bottom:
+            calc(
+                var(--player-height)
+                + 40px
+            );
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .sidebar {
+
+        position:
+            fixed;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        bottom:
+            var(--player-height);
+
+        z-index:
+            20;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        width:
+            var(--sidebar-width);
+
+        padding:
+            20px 12px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+    }
+
+
+    .sidebar-logo-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .sidebar-logo-text {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-navigation {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            4px;
+    }
+
+
+    .sidebar-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-item.selected {
+
+        color:
+            var(--text-primary);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .sidebar-item-label {
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    .sidebar-divider {
+
+        height:
+            1px;
+
+        margin:
+            16px 12px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .sidebar-library-title {
+
+        padding:
+            0 12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .album-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            15;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            64px;
+
+        padding:
+            8px
+            var(--page-gap);
+
+        background:
+            var(--background);
+    }
+
+
+    .album-history {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .round-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ======================================================
+       Album Hero
+       ====================================================== */
+
+    .album-hero {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        gap:
+            24px;
+
+        min-height:
+            280px;
+
+        padding:
+            36px
+            var(--page-gap)
+            28px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .album-cover {
+
+        flex:
+            0 0 auto;
+
+        width:
+            clamp(
+                180px,
+                18vw,
+                250px
+            );
+
+        aspect-ratio:
+            1;
+
+        border-radius:
+            6px;
+
+        object-fit:
+            cover;
+    }
+
+
+    .album-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .album-type {
+
+        margin-bottom:
+            8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        text-transform:
+            uppercase;
+    }
+
+
+    .album-name {
+
+        margin:
+            0;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            clamp(
+                34px,
+                5vw,
+                72px
+            );
+
+        font-weight:
+            800;
+
+        line-height:
+            1.02;
+    }
+
+
+    .album-meta {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        margin-top:
+            14px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .album-artist {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        color:
+            var(--text-primary);
+
+        font-weight:
+            700;
+    }
+
+
+    .album-artist-avatar {
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        border-radius:
+            50%;
+
+        object-fit:
+            cover;
+    }
+
+
+    /* ======================================================
+       Album Actions
+       ====================================================== */
+
+    .album-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        min-height:
+            92px;
+
+        padding:
+            16px
+            var(--page-gap);
+    }
+
+
+    .album-play-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            56px;
+
+        height:
+            56px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--on-primary);
+
+        background:
+            var(--primary);
+    }
+
+
+    .album-play-button
+    .material-symbols-rounded {
+
+        font-size:
+            30px;
+    }
+
+
+    .album-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .album-action.active {
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Tracks
+       ====================================================== */
+
+    .album-tracks {
+
+        padding:
+            0
+            var(--page-gap)
+            48px;
+    }
+
+
+    .album-track-header {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            40px
+            minmax(
+                0,
+                1fr
+            )
+            90px;
+
+        align-items:
+            center;
+
+        min-height:
+            42px;
+
+        padding:
+            0 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .album-track-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            40px
+            minmax(
+                0,
+                1fr
+            )
+            90px;
+
+        align-items:
+            center;
+
+        min-height:
+            58px;
+
+        padding:
+            6px 10px;
+
+        border-radius:
+            8px;
+    }
+
+
+    .album-track-row:hover {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .album-track-number {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .album-track-info {
+
+        min-width:
+            0;
+    }
+
+
+    .album-track-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    .album-track-subtitle {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .explicit-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            16px;
+
+        height:
+            16px;
+
+        border-radius:
+            2px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    .album-track-end {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+    }
+
+
+    .album-track-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .album-track-button.active {
+
+        color:
+            var(--primary);
+    }
+
+
+    .album-track-duration {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Footer Metadata
+       ====================================================== */
+
+    .album-footer {
+
+        padding:
+            20px
+            var(--page-gap)
+            48px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Player
+       ====================================================== */
+
+    .playback-player {
+
+        position:
+            fixed;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            50;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                220px,
+                1fr
+            )
+            minmax(
+                320px,
+                1.5fr
+            )
+            minmax(
+                220px,
+                1fr
+            );
+
+        align-items:
+            center;
+
+        height:
+            var(--player-height);
+
+        padding:
+            10px 16px;
+
+        background:
+            var(--surface);
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .player-track {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-width:
+            0;
+    }
+
+
+    .player-image {
+
+        width:
+            56px;
+
+        height:
+            56px;
+
+        border-radius:
+            4px;
+
+        object-fit:
+            cover;
+    }
+
+
+    .player-track-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .player-track-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .player-track-artist {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .player-center {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    .player-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+    }
+
+
+    .player-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .main-play-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--background);
+
+        background:
+            var(--text-primary);
+    }
+
+
+    .player-progress-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        width:
+            min(
+                100%,
+                560px
+            );
+    }
+
+
+    .player-progress {
+
+        flex:
+            1;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .player-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    .player-time {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .player-right {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .volume-progress {
+
+        width:
+            90px;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .volume-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .sidebar-logo-text,
+        .sidebar-item-label,
+        .sidebar-library-title {
+
+            display:
+                none;
+        }
+
+
+        .sidebar {
+
+            align-items:
+                center;
+        }
+
+
+        .sidebar-logo,
+        .sidebar-item {
+
+            justify-content:
+                center;
+
+            width:
+                52px;
+
+            padding:
+                0;
+        }
+
+
+        .album-cover {
+
+            width:
+                190px;
+        }
+
+
+        .album-name {
+
+            font-size:
+                42px;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .sidebar {
+
+            display:
+                none;
+        }
+
+
+        .album-main {
+
+            margin-left:
+                0;
+
+            padding-bottom:
+                calc(
+                    var(--mobile-player-height)
+                    + var(--mobile-navigation-height)
+                    + 28px
+                );
+        }
+
+
+        .album-app-bar {
+
+            min-height:
+                56px;
+
+            padding:
+                8px 12px;
+        }
+
+
+        .album-history
+        .round-button:nth-child(2) {
+
+            display:
+                none;
+        }
+
+
+        .album-hero {
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            min-height:
+                auto;
+
+            padding:
+                20px 16px 24px;
+
+            text-align:
+                center;
+        }
+
+
+        .album-cover {
+
+            width:
+                min(
+                    58vw,
+                    220px
+                );
+        }
+
+
+        .album-info {
+
+            width:
+                100%;
+        }
+
+
+        .album-name {
+
+            font-size:
+                clamp(
+                    28px,
+                    9vw,
+                    38px
+                );
+        }
+
+
+        .album-meta {
+
+            justify-content:
+                center;
+
+            font-size:
+                12px;
+        }
+
+
+        .album-actions {
+
+            min-height:
+                72px;
+
+            padding:
+                8px 14px;
+        }
+
+
+        .album-play-button {
+
+            width:
+                52px;
+
+            height:
+                52px;
+        }
+
+
+        .album-tracks {
+
+            padding:
+                0 8px 36px;
+        }
+
+
+        .album-track-header {
+
+            display:
+                none;
+        }
+
+
+        .album-track-row {
+
+            grid-template-columns:
+                minmax(
+                    0,
+                    1fr
+                )
+                auto;
+
+            min-height:
+                62px;
+
+            padding:
+                7px 8px;
+        }
+
+
+        .album-track-number {
+
+            display:
+                none;
+        }
+
+
+        .album-track-duration {
+
+            display:
+                none;
+        }
+
+
+        .album-footer {
+
+            padding:
+                12px 16px 32px;
+        }
+
+
+        /* ----------------------------------------------
+           Mobile Player
+           ---------------------------------------------- */
+
+        .playback-player {
+
+            left:
+                8px;
+
+            right:
+                8px;
+
+            bottom:
+                var(--mobile-navigation-height);
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-player-height);
+
+            padding:
+                6px 8px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                var(--surface-variant);
+        }
+
+
+        .player-track {
+
+            flex:
+                1;
+        }
+
+
+        .player-image {
+
+            width:
+                48px;
+
+            height:
+                48px;
+        }
+
+
+        .player-center,
+        .player-right {
+
+            display:
+                none;
+        }
+
+
+        .mobile-player-action {
+
+            display:
+                flex !important;
+        }
+
+
+        /* ----------------------------------------------
+           Mobile Navigation
+           ---------------------------------------------- */
+
+        .mobile-navigation {
+
+            position:
+                fixed;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            z-index:
+                45;
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-navigation-height);
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex:
+                1;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                4px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-item.selected {
+
+            color:
+                var(--text-primary);
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="album-shell">
+
+
+    {# ====================================================
+       Sidebar
+       ==================================================== #}
+
+    {% set navigation = album.navigation %}
+
+    {% include "components/sidebar.html" %}
+
+
+    <main class="album-main">
+
+
+        {# =================================================
+           App Bar
+           ================================================= #}
+
+        <header
+            class="album-app-bar"
+            data-class="app_bar"
+            data-semantic="album_app_bar"
+        >
+
+            <div class="album-history">
+
+                <button
+                    class="round-button"
+                    data-class="button"
+                    data-semantic="navigate_back"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="navigate_back_icon"
+                    >
+                        chevron_left
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="round-button"
+                    data-class="button"
+                    data-semantic="navigate_forward"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="navigate_forward_icon"
+                    >
+                        chevron_right
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <button
+                class="round-button"
+                data-class="button"
+                data-semantic="album_options_top"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="album_options_top_icon"
+                >
+                    more_horiz
+                </span>
+
+            </button>
+
+        </header>
+
+
+        {# =================================================
+           Hero
+           ================================================= #}
+
+        <section
+            class="album-hero"
+            data-class="section"
+            data-semantic="album_header"
+        >
+
+            {% if album.album.cover %}
+
+            <img
+                class="album-cover"
+                src="{{ album.album.cover }}"
+                data-class="image"
+                data-semantic="album_cover"
+                alt=""
+            >
+
+            {% endif %}
+
+
+            <div class="album-info">
+
+                <div
+                    class="album-type"
+                    data-class="text"
+                    data-semantic="album_type"
+                >
+                    {{ album.album.type }}
+                </div>
+
+
+                <h1
+                    class="album-name"
+                    data-class="text"
+                    data-semantic="album_name"
+                >
+                    {{ album.album.name }}
+                </h1>
+
+
+                <div
+                    class="album-meta"
+                    data-class="text"
+                    data-semantic="album_metadata"
+                >
+
+
+                    <span class="album-artist">
+
+                        {% if album.album.artist_image %}
+
+                        <img
+                            class="album-artist-avatar"
+                            src="{{ album.album.artist_image }}"
+                            data-class="avatar"
+                            data-semantic="album_artist_avatar"
+                            alt=""
+                        >
+
+                        {% endif %}
+
+                        <span>
+                            {{ album.album.artist }}
+                        </span>
+
+                    </span>
+
+
+                    <span>•</span>
+
+
+                    <span>
+                        {{ album.album.year }}
+                    </span>
+
+
+                    <span>•</span>
+
+
+                    <span>
+                        {{ album.album.track_count }}
+                        songs
+                    </span>
+
+
+                    <span>•</span>
+
+
+                    <span>
+                        {{ album.album.duration }}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        {# =================================================
+           Actions
+           ================================================= #}
+
+        <div
+            class="album-actions"
+            data-class="toolbar"
+            data-semantic="album_actions"
+        >
+
+            <button
+                class="album-play-button"
+                data-class="button"
+                data-semantic="play_album"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="play_album_icon"
+                >
+                    play_arrow
+                </span>
+
+            </button>
+
+
+            <button
+                class="
+                    album-action
+                    {% if album.album.liked %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="like_album"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="like_album_icon"
+                >
+                    {% if album.album.liked %}
+                    favorite
+                    {% else %}
+                    favorite_border
+                    {% endif %}
+                </span>
+
+            </button>
+
+
+            <button
+                class="
+                    album-action
+                    {% if album.album.downloaded %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="download_album"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="download_album_icon"
+                >
+                    download_for_offline
+                </span>
+
+            </button>
+
+
+            <button
+                class="album-action"
+                data-class="button"
+                data-semantic="album_more"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="album_more_icon"
+                >
+                    more_horiz
+                </span>
+
+            </button>
+
+        </div>
+
+
+        {# =================================================
+           Track List
+           ================================================= #}
+
+        <section
+            class="album-tracks"
+            data-class="section"
+            data-semantic="album_tracks"
+        >
+
+            <div
+                class="album-track-header"
+                data-class="toolbar"
+                data-semantic="album_track_header"
+            >
+
+                <span
+                    data-class="text"
+                    data-semantic="album_track_number_header"
+                >
+                    #
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="album_track_title_header"
+                >
+                    Title
+                </span>
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="album_track_duration_header"
+                >
+                    schedule
+                </span>
+
+            </div>
+
+
+            {% for track in album.tracks %}
+
+            <article
+                class="album-track-row"
+                data-class="list_item"
+                data-semantic="album_track"
+            >
+
+                <div
+                    class="album-track-number"
+                    data-class="text"
+                    data-semantic="album_track_number"
+                >
+                    {{ track.number }}
+                </div>
+
+
+                <div class="album-track-info">
+
+                    <div
+                        class="album-track-title"
+                        data-class="text"
+                        data-semantic="album_track_title"
+                    >
+                        {{ track.title }}
+                    </div>
+
+
+                    <div
+                        class="album-track-subtitle"
+                        data-class="text"
+                        data-semantic="album_track_artist"
+                    >
+
+                        {% if track.explicit %}
+
+                        <span
+                            class="explicit-badge"
+                            data-class="badge"
+                            data-semantic="explicit_badge"
+                        >
+                            E
+                        </span>
+
+                        {% endif %}
+
+
+                        {% if track.downloaded %}
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="track_downloaded_icon"
+                        >
+                            download_for_offline
+                        </span>
+
+                        {% endif %}
+
+
+                        <span>
+                            {{ album.album.artist }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="album-track-end">
+
+
+                    <button
+                        class="
+                            album-track-button
+                            {% if track.liked %}
+                            active
+                            {% endif %}
+                        "
+                        data-class="button"
+                        data-semantic="like_album_track"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="like_album_track_icon"
+                        >
+                            {% if track.liked %}
+                            favorite
+                            {% else %}
+                            favorite_border
+                            {% endif %}
+                        </span>
+
+                    </button>
+
+
+                    <span
+                        class="album-track-duration"
+                        data-class="timestamp"
+                        data-semantic="album_track_duration"
+                    >
+                        {{ track.duration }}
+                    </span>
+
+
+                    <button
+                        class="album-track-button"
+                        data-class="button"
+                        data-semantic="album_track_more"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="album_track_more_icon"
+                        >
+                            more_vert
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+        </section>
+
+
+        {# =================================================
+           Footer
+           ================================================= #}
+
+        <footer
+            class="album-footer"
+            data-class="section"
+            data-semantic="album_footer"
+        >
+
+            <div
+                data-class="text"
+                data-semantic="album_release_info"
+            >
+                {{ album.album.year }}
+                •
+                {{ album.album.genre }}
+            </div>
+
+
+            <div
+                data-class="text"
+                data-semantic="album_copyright"
+            >
+                {{ album.copyright }}
+            </div>
+
+        </footer>
+
+    </main>
+
+
+    {# ====================================================
+       Player
+       ==================================================== #}
+
+    {% set player = album.player %}
+
+    {% include "components/player.html" %}
+
+
+    {# ====================================================
+       Mobile Navigation
+       ==================================================== #}
+
+    {% set navigation = album.navigation %}
+
+    {% include "components/mobile_navigation.html" %}
+
+
+</div>
+
+{% endblock %}

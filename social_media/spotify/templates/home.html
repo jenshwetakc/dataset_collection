@@ -1,0 +1,2661 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Spotify Home
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Spotify Home Layout
+       ====================================================== */
+
+    .spotify-shell {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Desktop Sidebar
+       ====================================================== */
+
+    .sidebar {
+
+        position:
+            fixed;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        bottom:
+            var(--player-height);
+
+        width:
+            var(--sidebar-width);
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        padding:
+            20px 12px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        z-index:
+            20;
+    }
+
+
+    .sidebar-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        height:
+            48px;
+
+        padding:
+            0 12px;
+
+        margin-bottom:
+            8px;
+    }
+
+
+    .sidebar-logo-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        flex-shrink:
+            0;
+    }
+
+
+    .sidebar-logo-text {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+
+        letter-spacing:
+            -0.4px;
+    }
+
+
+    .sidebar-navigation {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            4px;
+    }
+
+
+    .sidebar-item {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            6px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-item.selected {
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .sidebar-item-label {
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    .sidebar-divider {
+
+        height:
+            1px;
+
+        margin:
+            16px 12px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .sidebar-library-title {
+
+        padding:
+            4px 12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Main Content
+       ====================================================== */
+
+    .main-content {
+
+        min-height:
+            calc(
+                100vh
+                - var(--player-height)
+            );
+
+        margin-left:
+            var(--sidebar-width);
+
+        padding-bottom:
+            calc(
+                var(--player-height)
+                + 24px
+            );
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .home-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            15;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            16px;
+
+        min-height:
+            64px;
+
+        padding:
+            8px
+            var(--page-gap);
+
+        background:
+            var(--background);
+    }
+
+
+    .history-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .round-control {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--icon);
+    }
+
+
+    .app-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .profile-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        max-width:
+            180px;
+
+        min-height:
+            40px;
+
+        padding:
+            4px 10px 4px 4px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .profile-avatar {
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        object-fit:
+            cover;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .profile-name {
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Home Content
+       ====================================================== */
+
+    .home-content {
+
+        width:
+            100%;
+
+        max-width:
+            var(--content-max-width);
+
+        margin:
+            0 auto;
+
+        padding:
+            12px
+            var(--page-gap)
+            40px;
+    }
+
+
+    .page-heading {
+
+        margin-bottom:
+            20px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            clamp(
+                24px,
+                3vw,
+                32px
+            );
+
+        font-weight:
+            750;
+
+        line-height:
+            1.2;
+    }
+
+
+    /* ======================================================
+       Quick Access
+       ====================================================== */
+
+    .quick-access-section {
+
+        margin-bottom:
+            36px;
+    }
+
+
+    .quick-access-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+    }
+
+
+    .quick-access-card {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        height:
+            64px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+    }
+
+
+    .quick-access-image {
+
+        width:
+            64px;
+
+        height:
+            64px;
+
+        flex:
+            0 0 64px;
+
+        object-fit:
+            cover;
+
+        background:
+            var(--surface);
+    }
+
+
+    .quick-access-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        padding:
+            0 12px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    .quick-play-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        margin-right:
+            10px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Sections
+       ====================================================== */
+
+    .content-section {
+
+        margin-bottom:
+            38px;
+    }
+
+
+    .section-header {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        justify-content:
+            space-between;
+
+        gap:
+            16px;
+
+        min-height:
+            32px;
+
+        margin-bottom:
+            14px;
+    }
+
+
+    .section-title {
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            22px;
+
+        font-weight:
+            750;
+
+        line-height:
+            1.2;
+    }
+
+
+    .show-all-button {
+
+        flex:
+            0 0 auto;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        text-transform:
+            uppercase;
+
+        letter-spacing:
+            0.6px;
+    }
+
+
+    /* ======================================================
+       Media Card Grid
+       ====================================================== */
+
+    .media-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                6,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            18px;
+    }
+
+
+    .media-card {
+
+        position:
+            relative;
+
+        min-width:
+            0;
+
+        padding:
+            12px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .media-card-artwork-wrapper {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        margin-bottom:
+            12px;
+
+        aspect-ratio:
+            1 / 1;
+    }
+
+
+    .media-card-image {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .media-card-image.circular {
+
+        border-radius:
+            50%;
+    }
+
+
+    .card-play-button {
+
+        position:
+            absolute;
+
+        right:
+            8px;
+
+        bottom:
+            8px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .media-card-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        margin-bottom:
+            5px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+
+        line-height:
+            1.3;
+    }
+
+
+    .media-card-subtitle {
+
+        display:
+            -webkit-box;
+
+        -webkit-line-clamp:
+            2;
+
+        -webkit-box-orient:
+            vertical;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        line-height:
+            1.4;
+    }
+
+
+    /* ======================================================
+       Desktop Playback Player
+       ====================================================== */
+
+    .playback-player {
+
+        position:
+            fixed;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            50;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                220px,
+                1fr
+            )
+            minmax(
+                320px,
+                1.5fr
+            )
+            minmax(
+                220px,
+                1fr
+            );
+
+        align-items:
+            center;
+
+        height:
+            var(--player-height);
+
+        padding:
+            10px 16px;
+
+        background:
+            var(--surface);
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .player-track {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        gap:
+            12px;
+    }
+
+
+    .player-image {
+
+        width:
+            56px;
+
+        height:
+            56px;
+
+        flex:
+            0 0 56px;
+
+        border-radius:
+            4px;
+
+        object-fit:
+            cover;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .player-track-info {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .player-track-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        margin-bottom:
+            3px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .player-track-artist {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .player-center {
+
+        display:
+            flex;
+
+        min-width:
+            0;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    .player-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            14px;
+    }
+
+
+    .player-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .player-control.active {
+
+        color:
+            var(--primary);
+    }
+
+
+    .main-play-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+    }
+
+
+    .player-progress-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        width:
+            min(
+                100%,
+                560px
+            );
+    }
+
+
+    .player-time {
+
+        flex:
+            0 0 auto;
+
+        min-width:
+            32px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .player-progress {
+
+        position:
+            relative;
+
+        flex:
+            1;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .player-progress-value {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    .player-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+    }
+
+
+    .volume-progress {
+
+        position:
+            relative;
+
+        width:
+            90px;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .volume-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .sidebar-logo-text,
+        .sidebar-item-label,
+        .sidebar-library-title {
+
+            display:
+                none;
+        }
+
+
+        .sidebar {
+
+            align-items:
+                center;
+
+            padding-left:
+                8px;
+
+            padding-right:
+                8px;
+        }
+
+
+        .sidebar-logo,
+        .sidebar-item {
+
+            justify-content:
+                center;
+
+            width:
+                52px;
+
+            padding-left:
+                0;
+
+            padding-right:
+                0;
+        }
+
+
+        .media-grid {
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                14px;
+        }
+
+
+        .quick-access-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .playback-player {
+
+            grid-template-columns:
+                minmax(
+                    180px,
+                    1fr
+                )
+                minmax(
+                    300px,
+                    1.6fr
+                )
+                minmax(
+                    120px,
+                    0.7fr
+                );
+        }
+
+
+        .volume-progress {
+
+            display:
+                none;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .sidebar {
+
+            display:
+                none;
+        }
+
+
+        .main-content {
+
+            margin-left:
+                0;
+
+            padding-bottom:
+                calc(
+                    var(--mobile-player-height)
+                    + var(--mobile-navigation-height)
+                    + 24px
+                );
+        }
+
+
+        .home-app-bar {
+
+            min-height:
+                56px;
+
+            padding:
+                8px 16px;
+        }
+
+
+        .history-controls {
+
+            display:
+                none;
+        }
+
+
+        .profile-name {
+
+            display:
+                none;
+        }
+
+
+        .profile-button {
+
+            width:
+                40px;
+
+            padding:
+                4px;
+        }
+
+
+        .home-content {
+
+            padding:
+                12px 16px 24px;
+        }
+
+
+        .page-heading {
+
+            margin-bottom:
+                16px;
+
+            font-size:
+                24px;
+        }
+
+
+        .quick-access-section {
+
+            margin-bottom:
+                30px;
+        }
+
+
+        .quick-access-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                8px;
+        }
+
+
+        .quick-access-card {
+
+            height:
+                56px;
+        }
+
+
+        .quick-access-image {
+
+            width:
+                56px;
+
+            height:
+                56px;
+
+            flex-basis:
+                56px;
+        }
+
+
+        .quick-access-title {
+
+            padding:
+                0 8px;
+
+            font-size:
+                12px;
+        }
+
+
+        .quick-play-button {
+
+            display:
+                none;
+        }
+
+
+        .content-section {
+
+            margin-bottom:
+                30px;
+        }
+
+
+        .section-title {
+
+            font-size:
+                20px;
+        }
+
+
+        .media-grid {
+
+            display:
+                flex;
+
+            gap:
+                12px;
+
+            overflow-x:
+                auto;
+
+            scrollbar-width:
+                none;
+        }
+
+
+        .media-grid::-webkit-scrollbar {
+
+            display:
+                none;
+        }
+
+
+        .media-card {
+
+            flex:
+                0 0 146px;
+
+            width:
+                146px;
+
+            padding:
+                0;
+
+            background:
+                transparent;
+        }
+
+
+        .media-card-artwork-wrapper {
+
+            margin-bottom:
+                10px;
+        }
+
+
+        .card-play-button {
+
+            display:
+                none;
+        }
+
+
+        .playback-player {
+
+            left:
+                8px;
+
+            right:
+                8px;
+
+            bottom:
+                var(--mobile-navigation-height);
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-player-height);
+
+            padding:
+                6px 8px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                var(--surface-variant);
+        }
+
+
+        .player-track {
+
+            flex:
+                1;
+        }
+
+
+        .player-image {
+
+            width:
+                48px;
+
+            height:
+                48px;
+
+            flex-basis:
+                48px;
+        }
+
+
+        .player-center {
+
+            display:
+                none;
+        }
+
+
+        .player-right {
+
+            display:
+                none;
+        }
+
+
+        .mobile-player-action {
+
+            display:
+                flex !important;
+        }
+
+
+        .mobile-navigation {
+
+            position:
+                fixed;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            z-index:
+                45;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                space-around;
+
+            height:
+                var(--mobile-navigation-height);
+
+            padding:
+                6px 8px;
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-nav-item {
+
+            position:
+                relative;
+
+            display:
+                flex;
+
+            flex:
+                1;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                4px;
+
+            min-width:
+                0;
+
+            height:
+                60px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-item.selected {
+
+            color:
+                var(--text-primary);
+        }
+
+
+        .mobile-nav-label {
+
+            max-width:
+                100%;
+
+            overflow:
+                hidden;
+
+            white-space:
+                nowrap;
+
+            text-overflow:
+                ellipsis;
+
+            font-size:
+                10px;
+        }
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 340px
+    ) {
+
+        .home-content {
+
+            padding-left:
+                12px;
+
+            padding-right:
+                12px;
+        }
+
+
+        .quick-access-grid {
+
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .media-card {
+
+            flex-basis:
+                132px;
+
+            width:
+                132px;
+        }
+    }
+
+
+    /* ======================================================
+       Large Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 1800px
+    ) {
+
+        .media-grid {
+
+            grid-template-columns:
+                repeat(
+                    8,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="spotify-shell">
+
+
+    <!-- ===================================================
+         Desktop / Tablet Sidebar
+         =================================================== -->
+
+    <aside
+        class="sidebar"
+        data-class="navigation_bar"
+        data-semantic="primary_navigation"
+    >
+
+        <div class="sidebar-logo">
+
+            <div class="sidebar-logo-icon">
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="application_logo_icon"
+                >
+                    graphic_eq
+                </span>
+
+            </div>
+
+            <span
+                class="sidebar-logo-text"
+                data-class="text"
+                data-semantic="application_name"
+            >
+                Spotify
+            </span>
+
+        </div>
+
+
+        <nav class="sidebar-navigation">
+
+           {% for item in home.navigation["items"] %}
+
+            <div
+                class="
+                    sidebar-item
+
+                    {% if
+                        home.navigation.selected
+                        == item.semantic
+                    %}
+                    selected
+                    {% endif %}
+                "
+                data-class="navigation_item"
+                data-semantic="{{ item.semantic }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="{{ item.semantic }}_icon"
+                >
+                    {{ item.icon }}
+                </span>
+
+                <span
+                    class="sidebar-item-label"
+                    data-class="text"
+                    data-semantic="{{ item.semantic }}_label"
+                >
+                    {{ item.name }}
+                </span>
+
+                {% if
+                    home.navigation.selected
+                    == item.semantic
+                %}
+
+                <span
+                    class="visually-hidden"
+                    data-class="selection_indicator"
+                    data-semantic="{{ item.semantic }}_selected"
+                >
+                </span>
+
+                {% endif %}
+
+            </div>
+
+            {% endfor %}
+
+        </nav>
+
+
+        <div class="sidebar-divider"></div>
+
+
+        <div
+            class="sidebar-library-title"
+            data-class="text"
+            data-semantic="library_heading"
+        >
+            Your Library
+        </div>
+
+    </aside>
+
+
+    <!-- ===================================================
+         Main
+         =================================================== -->
+
+    <main class="main-content">
+
+
+        <!-- =================================================
+             App Bar
+             ================================================= -->
+
+        <header
+            class="home-app-bar"
+            data-class="app_bar"
+            data-semantic="home_app_bar"
+        >
+
+            <div class="history-controls">
+
+                <button
+                    class="round-control"
+                    data-class="button"
+                    data-semantic="navigate_back"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="back_icon"
+                    >
+                        chevron_left
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="round-control"
+                    data-class="button"
+                    data-semantic="navigate_forward"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="forward_icon"
+                    >
+                        chevron_right
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <div class="app-actions">
+
+                <button
+                    class="round-control"
+                    data-class="button"
+                    data-semantic="notifications"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="notifications_icon"
+                    >
+                        notifications
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="profile-button"
+                    data-class="button"
+                    data-semantic="profile"
+                >
+
+                    {% if home.profile.avatar %}
+
+                    <img
+                        class="profile-avatar"
+                        src="{{ home.profile.avatar }}"
+                        data-class="avatar"
+                        data-semantic="profile_avatar"
+                        alt=""
+                    >
+
+                    {% else %}
+
+                    <div
+                        class="profile-avatar"
+                        data-class="avatar"
+                        data-semantic="profile_avatar"
+                    ></div>
+
+                    {% endif %}
+
+
+                    <span
+                        class="profile-name"
+                        data-class="text"
+                        data-semantic="profile_name"
+                    >
+                        {{ home.profile.name }}
+                    </span>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             Home Content
+             ================================================= -->
+
+        <div class="home-content">
+
+
+            <h1
+                class="page-heading"
+                data-class="text"
+                data-semantic="home_greeting"
+            >
+                {{ home.greeting }}
+            </h1>
+
+
+            <!-- =============================================
+                 Quick Access
+                 ============================================= -->
+
+            <section
+                class="quick-access-section"
+                data-class="section"
+                data-semantic="quick_access"
+            >
+
+                <div class="quick-access-grid">
+
+                    {% for item in home.quick_access %}
+
+                    <article
+                        class="quick-access-card"
+                        data-class="card"
+                        data-semantic="quick_access_{{ item.type }}"
+                    >
+
+                        {% if item.image %}
+
+                        <img
+                            class="quick-access-image"
+                            src="{{ item.image }}"
+                            data-class="image"
+                            data-semantic="{{ item.type }}_artwork"
+                            alt=""
+                        >
+
+                        {% else %}
+
+                        <div
+                            class="quick-access-image"
+                            data-class="image"
+                            data-semantic="{{ item.type }}_artwork"
+                        ></div>
+
+                        {% endif %}
+
+
+                        <span
+                            class="quick-access-title"
+                            data-class="text"
+                            data-semantic="{{ item.type }}_title"
+                        >
+                            {{ item.title }}
+                        </span>
+
+
+                        <button
+                            class="quick-play-button"
+                            data-class="button"
+                            data-semantic="play_{{ item.type }}"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="play_icon"
+                                style="
+                                    font-variation-settings:
+                                        'FILL' 1,
+                                        'wght' 500,
+                                        'GRAD' 0,
+                                        'opsz' 24;
+                                "
+                            >
+                                play_arrow
+                            </span>
+
+                        </button>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 Content Sections
+                 ============================================= -->
+
+            {% for section in home.sections %}
+
+            <section
+                class="content-section"
+                data-class="section"
+                data-semantic="content_shelf"
+            >
+
+                <header class="section-header">
+
+                    <h2
+                        class="section-title"
+                        data-class="text"
+                        data-semantic="section_title"
+                    >
+                        {{ section.title }}
+                    </h2>
+
+
+                    {% if section.show_all %}
+
+                    <button
+                        class="show-all-button"
+                        data-class="button"
+                        data-semantic="show_all"
+                    >
+                        Show all
+                    </button>
+
+                    {% endif %}
+
+                </header>
+
+
+                <div class="media-grid">
+
+                    {% for item in section["items"] %}
+
+                    <article
+                        class="media-card"
+                        data-class="card"
+                        data-semantic="{{ item.type }}_card"
+                    >
+
+                        <div class="media-card-artwork-wrapper">
+
+                            {% if item.image %}
+
+                            <img
+                                class="
+                                    media-card-image
+                                    {% if item.circular %}
+                                    circular
+                                    {% endif %}
+                                "
+                                src="{{ item.image }}"
+                                data-class="
+                                    {% if item.circular %}
+                                    avatar
+                                    {% else %}
+                                    image
+                                    {% endif %}
+                                "
+                                data-semantic="{{ item.type }}_artwork"
+                                alt=""
+                            >
+
+                            {% else %}
+
+                            <div
+                                class="
+                                    media-card-image
+                                    {% if item.circular %}
+                                    circular
+                                    {% endif %}
+                                "
+                                data-class="image"
+                                data-semantic="{{ item.type }}_artwork"
+                            ></div>
+
+                            {% endif %}
+
+
+                            <button
+                                class="card-play-button"
+                                data-class="button"
+                                data-semantic="play_{{ item.type }}"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="play_icon"
+                                    style="
+                                        font-variation-settings:
+                                            'FILL' 1,
+                                            'wght' 500,
+                                            'GRAD' 0,
+                                            'opsz' 24;
+                                    "
+                                >
+                                    play_arrow
+                                </span>
+
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            class="media-card-title"
+                            data-class="text"
+                            data-semantic="{{ item.type }}_title"
+                        >
+                            {{ item.title }}
+                        </div>
+
+
+                        <div
+                            class="media-card-subtitle"
+                            data-class="text"
+                            data-semantic="{{ item.type }}_subtitle"
+                        >
+                            {{ item.subtitle }}
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+            {% endfor %}
+
+        </div>
+
+    </main>
+
+
+    <!-- ===================================================
+         Playback Player
+         =================================================== -->
+
+    <section
+        class="playback-player"
+        data-class="media_item"
+        data-semantic="playback_player"
+        data-occluder="true"
+    >
+
+        <!-- Track Information -->
+
+        <div class="player-track">
+
+            {% if home.player.track.image %}
+
+            <img
+                class="player-image"
+                src="{{ home.player.track.image }}"
+                data-class="image"
+                data-semantic="currently_playing_artwork"
+                alt=""
+            >
+
+            {% else %}
+
+            <div
+                class="player-image"
+                data-class="image"
+                data-semantic="currently_playing_artwork"
+            ></div>
+
+            {% endif %}
+
+
+            <div class="player-track-info">
+
+                <div
+                    class="player-track-title"
+                    data-class="text"
+                    data-semantic="currently_playing_title"
+                >
+                    {{ home.player.track.title }}
+                </div>
+
+                <div
+                    class="player-track-artist"
+                    data-class="text"
+                    data-semantic="currently_playing_artist"
+                >
+                    {{ home.player.track.artist }}
+                </div>
+
+            </div>
+
+
+            <button
+                class="player-control"
+                data-class="button"
+                data-semantic="like_current_track"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="favorite_icon"
+                >
+                    {% if home.player.track.liked %}
+                    favorite
+                    {% else %}
+                    favorite_border
+                    {% endif %}
+                </span>
+
+            </button>
+
+
+            <!-- Mobile Play Button -->
+
+            <button
+                class="
+                    player-control
+                    mobile-player-action
+                "
+                style="display:none;"
+                data-class="button"
+                data-semantic="mobile_playback_toggle"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="playback_toggle_icon"
+                >
+                    {% if home.player.playing %}
+                    pause
+                    {% else %}
+                    play_arrow
+                    {% endif %}
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <!-- Center Controls -->
+
+        <div class="player-center">
+
+            <div class="player-controls">
+
+                <button
+                    class="
+                        player-control
+
+                        {% if home.player.shuffle %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="shuffle"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="shuffle_icon"
+                    >
+                        shuffle
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="player-control"
+                    data-class="button"
+                    data-semantic="previous_track"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="previous_track_icon"
+                    >
+                        skip_previous
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="main-play-button"
+                    data-class="button"
+                    data-semantic="playback_toggle"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="playback_toggle_icon"
+                        style="
+                            font-variation-settings:
+                                'FILL' 1,
+                                'wght' 600,
+                                'GRAD' 0,
+                                'opsz' 24;
+                        "
+                    >
+                        {% if home.player.playing %}
+                        pause
+                        {% else %}
+                        play_arrow
+                        {% endif %}
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="player-control"
+                    data-class="button"
+                    data-semantic="next_track"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="next_track_icon"
+                    >
+                        skip_next
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="
+                        player-control
+
+                        {% if home.player.repeat %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="repeat"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="repeat_icon"
+                    >
+                        repeat
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <div class="player-progress-row">
+
+                <span
+                    class="player-time"
+                    data-class="timestamp"
+                    data-semantic="elapsed_time"
+                >
+                    1:24
+                </span>
+
+
+                <div
+                    class="player-progress"
+                    data-class="progress_bar"
+                    data-semantic="track_progress"
+                >
+
+                    <div
+                        class="player-progress-value"
+                        style="
+                            width:
+                                {{ home.player.progress * 100 }}%;
+                        "
+                    ></div>
+
+                </div>
+
+
+                <span
+                    class="player-time"
+                    data-class="timestamp"
+                    data-semantic="track_duration"
+                >
+                    {{ home.player.track.duration }}
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- Right Controls -->
+
+        <div class="player-right">
+
+            <button
+                class="player-control"
+                data-class="button"
+                data-semantic="queue"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="queue_icon"
+                >
+                    queue_music
+                </span>
+
+            </button>
+
+
+            <button
+                class="player-control"
+                data-class="button"
+                data-semantic="devices"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="devices_icon"
+                >
+                    devices
+                </span>
+
+            </button>
+
+
+            <button
+                class="player-control"
+                data-class="button"
+                data-semantic="volume"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="volume_icon"
+                >
+                    volume_up
+                </span>
+
+            </button>
+
+
+            <div
+                class="volume-progress"
+                data-class="progress_bar"
+                data-semantic="volume_level"
+            >
+
+                <div
+                    class="volume-progress-value"
+                    style="
+                        width:
+                            {{ home.player.volume * 100 }}%;
+                    "
+                ></div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         Mobile Bottom Navigation
+         =================================================== -->
+
+    <nav
+        class="mobile-navigation"
+        data-class="navigation_bar"
+        data-semantic="mobile_navigation"
+        data-occluder="true"
+    >
+
+        {% for item in home.navigation["items"] %}
+
+        <div
+            class="
+                mobile-nav-item
+
+                {% if
+                    home.navigation.selected
+                    == item.semantic
+                %}
+                selected
+                {% endif %}
+            "
+            data-class="navigation_item"
+            data-semantic="{{ item.semantic }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="{{ item.semantic }}_icon"
+            >
+                {{ item.icon }}
+            </span>
+
+
+            <span
+                class="mobile-nav-label"
+                data-class="text"
+                data-semantic="{{ item.semantic }}_label"
+            >
+                {{ item.name }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </nav>
+
+</div>
+
+{% endblock %}

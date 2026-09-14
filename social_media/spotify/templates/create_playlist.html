@@ -1,0 +1,2181 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Spotify {{ create_playlist.title }}
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .create-playlist-shell {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Background Page
+       ====================================================== */
+
+    .background-main {
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+
+        padding:
+            30px
+            var(--page-gap)
+            120px;
+    }
+
+
+    .background-header {
+
+        margin-bottom:
+            28px;
+    }
+
+
+    .background-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            30px;
+
+        font-weight:
+            780;
+    }
+
+
+    .background-subtitle {
+
+        margin-top:
+            6px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .background-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            16px;
+    }
+
+
+    .background-card {
+
+        min-width:
+            0;
+
+        padding:
+            12px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .background-card-image {
+
+        width:
+            100%;
+
+        aspect-ratio:
+            1;
+
+        object-fit:
+            cover;
+
+        border-radius:
+            8px;
+    }
+
+
+    .background-card-title {
+
+        margin-top:
+            10px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            650;
+    }
+
+
+    .background-card-subtitle {
+
+        margin-top:
+            4px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .sidebar {
+
+        position:
+            fixed;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            10;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        width:
+            var(--sidebar-width);
+
+        padding:
+            20px 12px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+    }
+
+
+    .sidebar-logo-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .sidebar-logo-text {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-navigation {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            4px;
+    }
+
+
+    .sidebar-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-item.selected {
+
+        color:
+            var(--text-primary);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .sidebar-item-label {
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Overlay
+       ====================================================== */
+
+    .dialog-overlay {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            100;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        padding:
+            24px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.58
+            );
+    }
+
+
+    /*
+       IMPORTANT:
+
+       The backdrop is NOT data-occluder=true.
+
+       The dialog itself is our occluder.
+
+       This avoids the backdrop incorrectly suppressing
+       annotations belonging to the dialog.
+    */
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .playlist-dialog {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            min(
+                720px,
+                100%
+            );
+
+        max-height:
+            min(
+                850px,
+                calc(
+                    100vh
+                    - 48px
+                )
+            );
+
+        overflow:
+            hidden;
+
+        border-radius:
+            18px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 24px 80px
+            rgba(
+                0,
+                0,
+                0,
+                0.38
+            );
+    }
+
+
+    /* ======================================================
+       Dialog Header
+       ====================================================== */
+
+    .dialog-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        flex:
+            0 0 auto;
+
+        min-height:
+            68px;
+
+        padding:
+            12px 18px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .dialog-title {
+
+        margin:
+            0;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            22px;
+
+        font-weight:
+            750;
+    }
+
+
+    .dialog-close {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Scrollable Dialog Content
+       ====================================================== */
+
+    .dialog-content {
+
+        flex:
+            1;
+
+        overflow-y:
+            auto;
+
+        padding:
+            20px;
+    }
+
+
+    /* ======================================================
+       Playlist Information
+       ====================================================== */
+
+    .playlist-information {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            170px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            20px;
+    }
+
+
+    /* ======================================================
+       Cover
+       ====================================================== */
+
+    .cover-wrapper {
+
+        position:
+            relative;
+
+        width:
+            170px;
+
+        height:
+            170px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .playlist-cover {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .cover-placeholder {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            8px;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .cover-placeholder
+    .material-symbols-rounded {
+
+        font-size:
+            54px;
+    }
+
+
+    .cover-placeholder-label {
+
+        font-size:
+            11px;
+    }
+
+
+    .cover-edit-button {
+
+        position:
+            absolute;
+
+        right:
+            8px;
+
+        bottom:
+            8px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--text-primary);
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ======================================================
+       Fields
+       ====================================================== */
+
+    .playlist-fields {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            14px;
+    }
+
+
+    .field-group {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            6px;
+    }
+
+
+    .field-label {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            600;
+    }
+
+
+    .text-input {
+
+        width:
+            100%;
+
+        min-height:
+            46px;
+
+        padding:
+            0 13px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+
+        outline:
+            none;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font:
+            inherit;
+
+        font-size:
+            14px;
+    }
+
+
+    .description-input {
+
+        width:
+            100%;
+
+        min-height:
+            90px;
+
+        resize:
+            none;
+
+        padding:
+            12px 13px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+
+        outline:
+            none;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font:
+            inherit;
+
+        font-size:
+            13px;
+    }
+
+
+    /* ======================================================
+       Playlist Options
+       ====================================================== */
+
+    .playlist-options {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            10px;
+
+        margin-top:
+            14px;
+    }
+
+
+    .option-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        min-height:
+            36px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            999px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .option-button.active {
+
+        color:
+            var(--primary);
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    /* ======================================================
+       Divider
+       ====================================================== */
+
+    .dialog-divider {
+
+        height:
+            1px;
+
+        margin:
+            22px 0;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    /* ======================================================
+       Search
+       ====================================================== */
+
+    .song-search-section {
+
+        margin-top:
+            4px;
+    }
+
+
+    .section-title {
+
+        margin:
+            0 0 12px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            17px;
+
+        font-weight:
+            700;
+    }
+
+
+    .song-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 14px;
+
+        border-radius:
+            999px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .song-search-icon {
+
+        flex:
+            0 0 auto;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .song-search-input {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font:
+            inherit;
+
+        font-size:
+            13px;
+    }
+
+
+    /* ======================================================
+       Suggested Songs
+       ====================================================== */
+
+    .suggested-section {
+
+        margin-top:
+            22px;
+    }
+
+
+    .suggested-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            2px;
+    }
+
+
+    .suggested-track {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            64px;
+
+        padding:
+            7px 8px;
+
+        border-radius:
+            8px;
+    }
+
+
+    .suggested-track:hover {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .suggested-artwork {
+
+        flex:
+            0 0 auto;
+
+        width:
+            48px;
+
+        height:
+            48px;
+
+        border-radius:
+            5px;
+
+        object-fit:
+            cover;
+    }
+
+
+    .suggested-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .suggested-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+    }
+
+
+    .suggested-artist {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .explicit-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            16px;
+
+        height:
+            16px;
+
+        border-radius:
+            2px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    .add-track-button {
+
+        flex:
+            0 0 auto;
+
+        min-width:
+            68px;
+
+        min-height:
+            34px;
+
+        padding:
+            0 14px;
+
+        border-radius:
+            999px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            650;
+    }
+
+
+    .add-track-button.added {
+
+        color:
+            var(--primary);
+
+        border-color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Dialog Footer
+       ====================================================== */
+
+    .dialog-footer {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            10px;
+
+        flex:
+            0 0 auto;
+
+        min-height:
+            72px;
+
+        padding:
+            12px 18px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .footer-button {
+
+        min-height:
+            40px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            999px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .footer-button.primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .sidebar-logo-text,
+        .sidebar-item-label {
+
+            display:
+                none;
+        }
+
+
+        .sidebar {
+
+            align-items:
+                center;
+        }
+
+
+        .sidebar-logo,
+        .sidebar-item {
+
+            justify-content:
+                center;
+
+            width:
+                52px;
+
+            padding:
+                0;
+        }
+
+
+        .background-grid {
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .playlist-dialog {
+
+            width:
+                min(
+                    680px,
+                    94vw
+                );
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .sidebar {
+
+            display:
+                none;
+        }
+
+
+        .background-main {
+
+            margin-left:
+                0;
+
+            padding:
+                20px 12px
+                calc(
+                    var(--mobile-navigation-height)
+                    + 30px
+                );
+        }
+
+
+        .background-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                12px;
+        }
+
+
+        .dialog-overlay {
+
+            align-items:
+                flex-end;
+
+            padding:
+                0;
+
+            background:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.62
+                );
+        }
+
+
+        .playlist-dialog {
+
+            width:
+                100%;
+
+            max-height:
+                calc(
+                    100vh
+                    - 20px
+                );
+
+            border-radius:
+                20px
+                20px
+                0
+                0;
+        }
+
+
+        .dialog-header {
+
+            min-height:
+                60px;
+
+            padding:
+                10px 14px;
+        }
+
+
+        .dialog-title {
+
+            font-size:
+                19px;
+        }
+
+
+        .dialog-content {
+
+            padding:
+                16px;
+        }
+
+
+        .playlist-information {
+
+            grid-template-columns:
+                110px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap:
+                14px;
+        }
+
+
+        .cover-wrapper {
+
+            width:
+                110px;
+
+            height:
+                110px;
+        }
+
+
+        .cover-placeholder
+        .material-symbols-rounded {
+
+            font-size:
+                36px;
+        }
+
+
+        .description-input {
+
+            min-height:
+                72px;
+        }
+
+
+        .playlist-options {
+
+            margin-top:
+                12px;
+        }
+
+
+        .suggested-track {
+
+            min-height:
+                60px;
+
+            padding:
+                6px 4px;
+        }
+
+
+        .suggested-artwork {
+
+            width:
+                44px;
+
+            height:
+                44px;
+        }
+
+
+        .add-track-button {
+
+            min-width:
+                58px;
+
+            padding:
+                0 10px;
+        }
+
+
+        .dialog-footer {
+
+            min-height:
+                66px;
+
+            padding:
+                10px 14px;
+        }
+
+
+        /* ----------------------------------------------
+           Bottom Navigation
+           ---------------------------------------------- */
+
+        .mobile-navigation {
+
+            position:
+                fixed;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            z-index:
+                20;
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-navigation-height);
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex:
+                1;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                4px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-item.selected {
+
+            color:
+                var(--text-primary);
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="create-playlist-shell">
+
+
+    {# ====================================================
+       Background
+       ==================================================== #}
+
+    {% set navigation = create_playlist.navigation %}
+
+    {% include "components/sidebar.html" %}
+
+
+    <main class="background-main">
+
+
+        <header
+            class="background-header"
+            data-class="app_bar"
+            data-semantic="library_background_app_bar"
+        >
+
+            <div
+                class="background-title"
+                data-class="text"
+                data-semantic="background_library_title"
+            >
+                Your Library
+            </div>
+
+
+            <div
+                class="background-subtitle"
+                data-class="text"
+                data-semantic="background_library_subtitle"
+            >
+                Playlists and saved music
+            </div>
+
+        </header>
+
+
+        <section
+            class="background-grid"
+            data-class="section"
+            data-semantic="background_library_items"
+        >
+
+            {% for item in create_playlist.background_items %}
+
+            <article
+                class="background-card"
+                data-class="card"
+                data-semantic="background_playlist_card"
+            >
+
+                {% if item.image %}
+
+                <img
+                    class="background-card-image"
+                    src="{{ item.image }}"
+                    data-class="image"
+                    data-semantic="background_playlist_cover"
+                    alt=""
+                >
+
+                {% endif %}
+
+
+                <div
+                    class="background-card-title"
+                    data-class="text"
+                    data-semantic="background_playlist_title"
+                >
+                    {{ item.title }}
+                </div>
+
+
+                <div
+                    class="background-card-subtitle"
+                    data-class="text"
+                    data-semantic="background_playlist_subtitle"
+                >
+                    {{ item.subtitle }}
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+        </section>
+
+    </main>
+
+
+    {% set navigation = create_playlist.navigation %}
+
+    {% include "components/mobile_navigation.html" %}
+
+
+    {# ====================================================
+       Overlay
+       ==================================================== #}
+
+    <div class="dialog-overlay">
+
+
+        {# =================================================
+           Dialog
+
+           CRITICAL:
+           This is an occluder.
+
+           Its own children will NOT be clipped because our
+           renderer excludes ancestor occluders.
+           ================================================= #}
+
+        <section
+            class="playlist-dialog"
+            data-class="dialog"
+            data-semantic="create_playlist_dialog"
+            data-occluder="true"
+        >
+
+
+            {# =============================================
+               Header
+               ============================================= #}
+
+            <header
+                class="dialog-header"
+                data-class="app_bar"
+                data-semantic="playlist_dialog_header"
+            >
+
+                <h1
+                    class="dialog-title"
+                    data-class="text"
+                    data-semantic="playlist_dialog_title"
+                >
+                    {{ create_playlist.title }}
+                </h1>
+
+
+                <button
+                    class="dialog-close"
+                    data-class="button"
+                    data-semantic="close_playlist_dialog"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_playlist_dialog_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            {# =============================================
+               Scrollable Content
+               ============================================= #}
+
+            <div class="dialog-content">
+
+
+                {# =========================================
+                   Playlist Information
+                   ========================================= #}
+
+                <section
+                    class="playlist-information"
+                    data-class="section"
+                    data-semantic="playlist_information"
+                >
+
+
+                    {# =====================================
+                       Artwork
+                       ===================================== #}
+
+                    <div class="cover-wrapper">
+
+
+                        {% if create_playlist.playlist.cover %}
+
+                        <img
+                            class="playlist-cover"
+                            src="{{ create_playlist.playlist.cover }}"
+                            data-class="image"
+                            data-semantic="playlist_cover"
+                            alt=""
+                        >
+
+                        {% else %}
+
+                        <div class="cover-placeholder">
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="playlist_cover_placeholder_icon"
+                            >
+                                music_note
+                            </span>
+
+
+                            <span
+                                class="cover-placeholder-label"
+                                data-class="text"
+                                data-semantic="playlist_cover_placeholder"
+                            >
+                                Add photo
+                            </span>
+
+                        </div>
+
+                        {% endif %}
+
+
+                        <button
+                            class="cover-edit-button"
+                            data-class="button"
+                            data-semantic="edit_playlist_cover"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="edit_playlist_cover_icon"
+                            >
+                                edit
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    {# =====================================
+                       Form
+                       ===================================== #}
+
+                    <div class="playlist-fields">
+
+
+                        <div class="field-group">
+
+                            <label
+                                class="field-label"
+                                data-class="text"
+                                data-semantic="playlist_name_label"
+                            >
+                                Name
+                            </label>
+
+
+                            <input
+                                class="text-input"
+                                type="text"
+                                value="{{ create_playlist.playlist.name }}"
+                                placeholder="Playlist name"
+                                data-class="input_field"
+                                data-semantic="playlist_name_input"
+                            >
+
+                        </div>
+
+
+                        <div class="field-group">
+
+                            <label
+                                class="field-label"
+                                data-class="text"
+                                data-semantic="playlist_description_label"
+                            >
+                                Description
+                            </label>
+
+
+                            <textarea
+                                class="description-input"
+                                placeholder="Add an optional description"
+                                data-class="input_field"
+                                data-semantic="playlist_description_input"
+                            >{{ create_playlist.playlist.description }}</textarea>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                {# =========================================
+                   Options
+                   ========================================= #}
+
+                <div
+                    class="playlist-options"
+                    data-class="toolbar"
+                    data-semantic="playlist_options"
+                >
+
+
+                    <button
+                        class="
+                            option-button
+
+                            {% if create_playlist.playlist.public %}
+                            active
+                            {% endif %}
+                        "
+                        data-class="button"
+                        data-semantic="playlist_visibility"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="playlist_visibility_icon"
+                        >
+
+                            {% if create_playlist.playlist.public %}
+                            public
+                            {% else %}
+                            lock
+                            {% endif %}
+
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                            data-semantic="playlist_visibility_label"
+                        >
+
+                            {% if create_playlist.playlist.public %}
+                            Public
+                            {% else %}
+                            Private
+                            {% endif %}
+
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="
+                            option-button
+
+                            {% if create_playlist.playlist.collaborative %}
+                            active
+                            {% endif %}
+                        "
+                        data-class="button"
+                        data-semantic="collaborative_playlist"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="collaborative_playlist_icon"
+                        >
+                            group_add
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                            data-semantic="collaborative_playlist_label"
+                        >
+                            Collaborative
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                <div class="dialog-divider"></div>
+
+
+                {# =========================================
+                   Search Songs
+                   ========================================= #}
+
+                <section
+                    class="song-search-section"
+                    data-class="section"
+                    data-semantic="add_songs_section"
+                >
+
+                    <h2
+                        class="section-title"
+                        data-class="text"
+                        data-semantic="add_songs_title"
+                    >
+                        Add songs
+                    </h2>
+
+
+                    <div
+                        class="song-search"
+                        data-class="search_bar"
+                        data-semantic="playlist_song_search"
+                    >
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                song-search-icon
+                            "
+                            data-class="icon"
+                            data-semantic="playlist_song_search_icon"
+                        >
+                            search
+                        </span>
+
+
+                        <input
+                            class="song-search-input"
+                            type="text"
+                            placeholder="{{ create_playlist.search_placeholder }}"
+                            data-class="input_field"
+                            data-semantic="playlist_song_search_input"
+                        >
+
+                    </div>
+
+                </section>
+
+
+                {# =========================================
+                   Suggested Songs
+                   ========================================= #}
+
+                <section
+                    class="suggested-section"
+                    data-class="section"
+                    data-semantic="suggested_songs"
+                >
+
+                    <h2
+                        class="section-title"
+                        data-class="text"
+                        data-semantic="suggested_songs_title"
+                    >
+                        Suggested songs
+                    </h2>
+
+
+                    <div class="suggested-list">
+
+                        {% for track in create_playlist.suggested_tracks %}
+
+                        <article
+                            class="suggested-track"
+                            data-class="list_item"
+                            data-semantic="suggested_track"
+                        >
+
+
+                            {% if track.image %}
+
+                            <img
+                                class="suggested-artwork"
+                                src="{{ track.image }}"
+                                data-class="image"
+                                data-semantic="suggested_track_artwork"
+                                alt=""
+                            >
+
+                            {% endif %}
+
+
+                            <div class="suggested-info">
+
+                                <div
+                                    class="suggested-title"
+                                    data-class="text"
+                                    data-semantic="suggested_track_title"
+                                >
+
+                                    {% if track.explicit %}
+
+                                    <span
+                                        class="explicit-badge"
+                                        data-class="badge"
+                                        data-semantic="explicit_badge"
+                                    >
+                                        E
+                                    </span>
+
+                                    {% endif %}
+
+                                    <span>
+                                        {{ track.title }}
+                                    </span>
+
+                                </div>
+
+
+                                <div
+                                    class="suggested-artist"
+                                    data-class="text"
+                                    data-semantic="suggested_track_artist"
+                                >
+                                    {{ track.artist }}
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                class="
+                                    add-track-button
+
+                                    {% if track.added %}
+                                    added
+                                    {% endif %}
+                                "
+                                data-class="button"
+                                data-semantic="add_suggested_track"
+                            >
+
+                                {% if track.added %}
+                                Added
+                                {% else %}
+                                Add
+                                {% endif %}
+
+                            </button>
+
+                        </article>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+            </div>
+
+
+            {# =============================================
+               Footer
+               ============================================= #}
+
+            <footer
+                class="dialog-footer"
+                data-class="toolbar"
+                data-semantic="playlist_dialog_actions"
+            >
+
+                <button
+                    class="footer-button"
+                    data-class="button"
+                    data-semantic="cancel_playlist_dialog"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="footer-button primary"
+                    data-class="button"
+                    data-semantic="save_playlist"
+                >
+
+                    {% if create_playlist.mode == "create" %}
+                    Create
+                    {% else %}
+                    Save
+                    {% endif %}
+
+                </button>
+
+            </footer>
+
+        </section>
+
+    </div>
+
+</div>
+
+{% endblock %}

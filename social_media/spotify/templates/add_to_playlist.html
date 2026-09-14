@@ -1,0 +1,1805 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Spotify Add to Playlist
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .add-playlist-shell {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Background
+       ====================================================== */
+
+    .background-page {
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+
+        padding:
+            40px
+            var(--page-gap)
+            120px;
+    }
+
+
+    .background-heading {
+
+        margin:
+            0 0 24px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            32px;
+
+        font-weight:
+            800;
+    }
+
+
+    .background-content {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                220px,
+                320px
+            )
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            32px;
+
+        align-items:
+            center;
+    }
+
+
+    .background-artwork {
+
+        width:
+            100%;
+
+        aspect-ratio:
+            1;
+
+        border-radius:
+            12px;
+
+        object-fit:
+            cover;
+    }
+
+
+    .background-track-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            32px;
+
+        font-weight:
+            750;
+    }
+
+
+    .background-track-artist {
+
+        margin-top:
+            8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            16px;
+    }
+
+
+    .background-actions {
+
+        display:
+            flex;
+
+        gap:
+            12px;
+
+        margin-top:
+            24px;
+    }
+
+
+    .background-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .sidebar {
+
+        position:
+            fixed;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            10;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        width:
+            var(--sidebar-width);
+
+        padding:
+            20px 12px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+    }
+
+
+    .sidebar-logo-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .sidebar-logo-text {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-navigation {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            4px;
+    }
+
+
+    .sidebar-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-item.selected {
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .sidebar-item-label {
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Overlay
+       ====================================================== */
+
+    .sheet-overlay {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            100;
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        justify-content:
+            center;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.56
+            );
+    }
+
+
+    /* ======================================================
+       Bottom Sheet
+       ====================================================== */
+
+    .playlist-sheet {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            min(
+                680px,
+                100%
+            );
+
+        max-height:
+            min(
+                780px,
+                82vh
+            );
+
+        overflow:
+            hidden;
+
+        border-radius:
+            22px
+            22px
+            0
+            0;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 -18px 60px
+            rgba(
+                0,
+                0,
+                0,
+                0.35
+            );
+    }
+
+
+    /* ======================================================
+       Handle
+       ====================================================== */
+
+    .sheet-handle-area {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        height:
+            24px;
+
+        flex:
+            0 0 auto;
+    }
+
+
+    .sheet-handle {
+
+        width:
+            42px;
+
+        height:
+            4px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .sheet-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            16px;
+
+        min-height:
+            58px;
+
+        padding:
+            6px 18px 12px;
+    }
+
+
+    .sheet-title {
+
+        margin:
+            0;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            21px;
+
+        font-weight:
+            750;
+    }
+
+
+    .sheet-close {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Current Track
+       ====================================================== */
+
+    .current-track {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        margin:
+            0 18px 16px;
+
+        padding:
+            10px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .current-track-image {
+
+        flex:
+            0 0 auto;
+
+        width:
+            52px;
+
+        height:
+            52px;
+
+        border-radius:
+            5px;
+
+        object-fit:
+            cover;
+    }
+
+
+    .current-track-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .current-track-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+    }
+
+
+    .current-track-artist {
+
+        margin-top:
+            4px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Search
+       ====================================================== */
+
+    .sheet-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            46px;
+
+        margin:
+            0 18px 14px;
+
+        padding:
+            0 14px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--background);
+
+        border:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sheet-search-icon {
+
+        flex:
+            0 0 auto;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .sheet-search-input {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font:
+            inherit;
+
+        font-size:
+            13px;
+    }
+
+
+    /* ======================================================
+       Create Playlist
+       ====================================================== */
+
+    .create-playlist-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            60px;
+
+        margin:
+            0 10px;
+
+        padding:
+            8px;
+
+        border-radius:
+            10px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .create-playlist-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            48px;
+
+        height:
+            48px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    .create-playlist-label {
+
+        flex:
+            1;
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+    }
+
+
+    /* ======================================================
+       Scroll Area
+       ====================================================== */
+
+    .sheet-content {
+
+        flex:
+            1;
+
+        overflow-y:
+            auto;
+
+        min-height:
+            0;
+
+        padding:
+            2px 10px 16px;
+    }
+
+
+    /* ======================================================
+       Playlist Row
+       ====================================================== */
+
+    .playlist-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            66px;
+
+        padding:
+            7px 8px;
+
+        border-radius:
+            9px;
+    }
+
+
+    .playlist-row:hover {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .playlist-row.selected {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .playlist-image {
+
+        flex:
+            0 0 auto;
+
+        width:
+            50px;
+
+        height:
+            50px;
+
+        object-fit:
+            cover;
+
+        border-radius:
+            5px;
+    }
+
+
+    .playlist-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .playlist-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+    }
+
+
+    .playlist-subtitle {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .pinned-icon {
+
+        color:
+            var(--primary);
+
+        font-size:
+            16px;
+    }
+
+
+    /* ======================================================
+       Selection Control
+       ====================================================== */
+
+    .playlist-selection {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .playlist-selection.selected {
+
+        background:
+            var(--primary);
+
+        border-color:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Footer
+       ====================================================== */
+
+    .sheet-footer {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+
+        flex:
+            0 0 auto;
+
+        min-height:
+            68px;
+
+        padding:
+            10px 18px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .selection-count {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .footer-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+    }
+
+
+    .footer-button {
+
+        min-height:
+            40px;
+
+        padding:
+            0 17px;
+
+        border-radius:
+            999px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .footer-button.primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .sidebar-logo-text,
+        .sidebar-item-label {
+
+            display:
+                none;
+        }
+
+
+        .sidebar {
+
+            align-items:
+                center;
+        }
+
+
+        .sidebar-logo,
+        .sidebar-item {
+
+            justify-content:
+                center;
+
+            width:
+                52px;
+
+            padding:
+                0;
+        }
+
+
+        .playlist-sheet {
+
+            width:
+                min(
+                    620px,
+                    88vw
+                );
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .sidebar {
+
+            display:
+                none;
+        }
+
+
+        .background-page {
+
+            margin-left:
+                0;
+
+            padding:
+                24px 16px
+                calc(
+                    var(--mobile-navigation-height)
+                    + 36px
+                );
+        }
+
+
+        .background-content {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            align-items:
+                stretch;
+        }
+
+
+        .background-artwork {
+
+            width:
+                min(
+                    76vw,
+                    320px
+                );
+
+            align-self:
+                center;
+        }
+
+
+        .background-track-title {
+
+            font-size:
+                26px;
+        }
+
+
+        .sheet-overlay {
+
+            align-items:
+                flex-end;
+        }
+
+
+        .playlist-sheet {
+
+            width:
+                100%;
+
+            max-height:
+                86vh;
+
+            border-radius:
+                24px
+                24px
+                0
+                0;
+        }
+
+
+        .sheet-header {
+
+            padding:
+                4px 14px 10px;
+        }
+
+
+        .sheet-title {
+
+            font-size:
+                19px;
+        }
+
+
+        .current-track {
+
+            margin:
+                0 14px 14px;
+        }
+
+
+        .sheet-search {
+
+            margin:
+                0 14px 12px;
+        }
+
+
+        .playlist-row {
+
+            min-height:
+                64px;
+        }
+
+
+        .playlist-image {
+
+            width:
+                48px;
+
+            height:
+                48px;
+        }
+
+
+        .sheet-footer {
+
+            padding:
+                9px 14px;
+        }
+
+
+        /* ----------------------------------------------
+           Bottom navigation behind overlay
+           ---------------------------------------------- */
+
+        .mobile-navigation {
+
+            position:
+                fixed;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            z-index:
+                20;
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-navigation-height);
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex:
+                1;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                4px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="add-playlist-shell">
+
+
+    {# ====================================================
+       Background
+       ==================================================== #}
+
+    {% set navigation = add_to_playlist.navigation %}
+
+    {% include "components/sidebar.html" %}
+
+
+    <main class="background-page">
+
+
+        <h1
+            class="background-heading"
+            data-class="text"
+            data-semantic="background_now_playing_heading"
+        >
+            Now Playing
+        </h1>
+
+
+        <section
+            class="background-content"
+            data-class="section"
+            data-semantic="background_track"
+        >
+
+            {% if add_to_playlist.track.image %}
+
+            <img
+                class="background-artwork"
+                src="{{ add_to_playlist.track.image }}"
+                data-class="image"
+                data-semantic="background_track_artwork"
+                alt=""
+            >
+
+            {% endif %}
+
+
+            <div>
+
+                <div
+                    class="background-track-title"
+                    data-class="text"
+                    data-semantic="background_track_title"
+                >
+                    {{ add_to_playlist.track.title }}
+                </div>
+
+
+                <div
+                    class="background-track-artist"
+                    data-class="text"
+                    data-semantic="background_track_artist"
+                >
+                    {{ add_to_playlist.track.artist }}
+                </div>
+
+
+                <div
+                    class="background-actions"
+                    data-class="toolbar"
+                    data-semantic="background_track_actions"
+                >
+
+                    <button
+                        class="background-button"
+                        data-class="button"
+                        data-semantic="background_like"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="background_like_icon"
+                        >
+                            favorite_border
+                        </span>
+                    </button>
+
+
+                    <button
+                        class="background-button"
+                        data-class="button"
+                        data-semantic="background_more"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="background_more_icon"
+                        >
+                            more_horiz
+                        </span>
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    {% set navigation = add_to_playlist.navigation %}
+
+    {% include "components/mobile_navigation.html" %}
+
+
+    {# ====================================================
+       Bottom Sheet Overlay
+       ==================================================== #}
+
+    <div class="sheet-overlay">
+
+
+        <section
+            class="playlist-sheet"
+            data-class="bottom_sheet"
+            data-semantic="add_to_playlist_sheet"
+            data-occluder="true"
+        >
+
+
+            {# =============================================
+               Handle
+               ============================================= #}
+
+            <div class="sheet-handle-area">
+
+                <div class="sheet-handle"></div>
+
+            </div>
+
+
+            {# =============================================
+               Header
+               ============================================= #}
+
+            <header
+                class="sheet-header"
+                data-class="app_bar"
+                data-semantic="add_to_playlist_header"
+            >
+
+                <h2
+                    class="sheet-title"
+                    data-class="text"
+                    data-semantic="add_to_playlist_title"
+                >
+                    {{ add_to_playlist.title }}
+                </h2>
+
+
+                <button
+                    class="sheet-close"
+                    data-class="button"
+                    data-semantic="close_add_to_playlist"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_add_to_playlist_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            {# =============================================
+               Current Track
+               ============================================= #}
+
+            <section
+                class="current-track"
+                data-class="media_item"
+                data-semantic="current_track_preview"
+            >
+
+                {% if add_to_playlist.track.image %}
+
+                <img
+                    class="current-track-image"
+                    src="{{ add_to_playlist.track.image }}"
+                    data-class="image"
+                    data-semantic="current_track_preview_artwork"
+                    alt=""
+                >
+
+                {% endif %}
+
+
+                <div class="current-track-info">
+
+                    <div
+                        class="current-track-title"
+                        data-class="text"
+                        data-semantic="current_track_preview_title"
+                    >
+                        {{ add_to_playlist.track.title }}
+                    </div>
+
+
+                    <div
+                        class="current-track-artist"
+                        data-class="text"
+                        data-semantic="current_track_preview_artist"
+                    >
+                        {{ add_to_playlist.track.artist }}
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            {# =============================================
+               Search
+               ============================================= #}
+
+            <div
+                class="sheet-search"
+                data-class="search_bar"
+                data-semantic="playlist_search"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        sheet-search-icon
+                    "
+                    data-class="icon"
+                    data-semantic="playlist_search_icon"
+                >
+                    search
+                </span>
+
+
+                <input
+                    class="sheet-search-input"
+                    type="text"
+                    placeholder="{{ add_to_playlist.search_placeholder }}"
+                    data-class="input_field"
+                    data-semantic="playlist_search_input"
+                >
+
+            </div>
+
+
+            {# =============================================
+               Scrollable Content
+               ============================================= #}
+
+            <div class="sheet-content">
+
+
+                {# =========================================
+                   Create New Playlist
+                   ========================================= #}
+
+                {% if add_to_playlist.show_create_playlist %}
+
+                <button
+                    class="create-playlist-row"
+                    data-class="list_item"
+                    data-semantic="create_new_playlist"
+                >
+
+                    <div class="create-playlist-icon">
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="create_new_playlist_icon"
+                        >
+                            add
+                        </span>
+
+                    </div>
+
+
+                    <span
+                        class="create-playlist-label"
+                        data-class="text"
+                        data-semantic="create_new_playlist_label"
+                    >
+                        New playlist
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="create_new_playlist_arrow"
+                    >
+                        chevron_right
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+
+                {# =========================================
+                   Playlist Rows
+                   ========================================= #}
+
+                {% for item in add_to_playlist.playlists %}
+
+                <article
+                    class="
+                        playlist-row
+
+                        {% if item.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="list_item"
+                    data-semantic="playlist_selection_item"
+                >
+
+
+                    {% if item.image %}
+
+                    <img
+                        class="playlist-image"
+                        src="{{ item.image }}"
+                        data-class="image"
+                        data-semantic="playlist_selection_artwork"
+                        alt=""
+                    >
+
+                    {% endif %}
+
+
+                    <div class="playlist-info">
+
+                        <div
+                            class="playlist-title"
+                            data-class="text"
+                            data-semantic="playlist_selection_title"
+                        >
+
+                            {% if item.pinned %}
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    pinned-icon
+                                "
+                                data-class="icon"
+                                data-semantic="playlist_pinned_icon"
+                            >
+                                push_pin
+                            </span>
+
+                            {% endif %}
+
+                            <span>
+                                {{ item.title }}
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="playlist-subtitle"
+                            data-class="text"
+                            data-semantic="playlist_selection_subtitle"
+                        >
+                            {{ item.subtitle }}
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="
+                            playlist-selection
+
+                            {% if item.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="button"
+                        data-semantic="toggle_playlist_selection"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="playlist_selection_icon"
+                        >
+                            {% if item.selected %}
+                            check
+                            {% else %}
+                            add
+                            {% endif %}
+                        </span>
+
+                    </button>
+
+                </article>
+
+                {% endfor %}
+
+            </div>
+
+
+            {# =============================================
+               Footer
+               ============================================= #}
+
+            <footer
+                class="sheet-footer"
+                data-class="toolbar"
+                data-semantic="add_to_playlist_actions"
+            >
+
+                <span
+                    class="selection-count"
+                    data-class="text"
+                    data-semantic="playlist_selection_count"
+                >
+                    {{ add_to_playlist.selected_count }}
+                    selected
+                </span>
+
+
+                <div class="footer-actions">
+
+                    <button
+                        class="footer-button"
+                        data-class="button"
+                        data-semantic="cancel_add_to_playlist"
+                    >
+                        Cancel
+                    </button>
+
+
+                    <button
+                        class="footer-button primary"
+                        data-class="button"
+                        data-semantic="confirm_add_to_playlist"
+                    >
+                        Done
+                    </button>
+
+                </div>
+
+            </footer>
+
+        </section>
+
+    </div>
+
+</div>
+
+{% endblock %}

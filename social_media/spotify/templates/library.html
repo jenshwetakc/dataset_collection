@@ -1,0 +1,1871 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Spotify Library
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Layout
+       ====================================================== */
+
+    .library-shell {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .library-main {
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+
+        padding-bottom:
+            calc(
+                var(--player-height)
+                + 32px
+            );
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .sidebar {
+
+        position:
+            fixed;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        bottom:
+            var(--player-height);
+
+        width:
+            var(--sidebar-width);
+
+        z-index:
+            20;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        padding:
+            20px 12px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+    }
+
+
+    .sidebar-logo-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--on-primary);
+
+        background:
+            var(--primary);
+    }
+
+
+    .sidebar-logo-text {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-navigation {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            4px;
+    }
+
+
+    .sidebar-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            48px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-item.selected {
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .sidebar-item-label {
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    .sidebar-divider {
+
+        height:
+            1px;
+
+        margin:
+            16px 12px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .sidebar-library-title {
+
+        padding:
+            0 12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .library-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            15;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            72px;
+
+        padding:
+            12px
+            var(--page-gap);
+
+        background:
+            var(--background);
+    }
+
+
+    .library-title-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+    }
+
+
+    .library-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            26px;
+
+        font-weight:
+            760;
+    }
+
+
+    .library-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .library-action-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+
+        background:
+            transparent;
+    }
+
+
+    /* ======================================================
+       Content
+       ====================================================== */
+
+    .library-content {
+
+        width:
+            100%;
+
+        max-width:
+            var(--content-max-width);
+
+        margin:
+            0 auto;
+
+        padding:
+            0
+            var(--page-gap)
+            48px;
+    }
+
+
+    /* ======================================================
+       Filters
+       ====================================================== */
+
+    .library-filters {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        overflow-x:
+            auto;
+
+        padding:
+            4px 0 20px;
+    }
+
+
+    .library-filter {
+
+        flex:
+            0 0 auto;
+
+        min-height:
+            36px;
+
+        padding:
+            0 16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .library-filter.selected {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        border-color:
+            transparent;
+    }
+
+
+    /* ======================================================
+       Controls
+       ====================================================== */
+
+    .library-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            48px;
+
+        margin-bottom:
+            8px;
+    }
+
+
+    .library-sort-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            36px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .library-view-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Library List
+       ====================================================== */
+
+    .library-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            2px;
+    }
+
+
+    .library-list-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        min-height:
+            72px;
+
+        padding:
+            8px;
+
+        border-radius:
+            8px;
+    }
+
+
+    .library-list-item:hover {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .library-artwork {
+
+        flex:
+            0 0 auto;
+
+        width:
+            56px;
+
+        height:
+            56px;
+
+        object-fit:
+            cover;
+
+        border-radius:
+            6px;
+    }
+
+
+    .library-artwork.artist {
+
+        border-radius:
+            50%;
+    }
+
+
+    .library-item-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .library-item-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        font-weight:
+            600;
+    }
+
+
+    .library-item-subtitle {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        margin-top:
+            4px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .library-pin {
+
+        font-size:
+            16px;
+
+        color:
+            var(--primary);
+    }
+
+
+    .library-download {
+
+        font-size:
+            17px;
+
+        color:
+            var(--primary);
+    }
+
+
+    .library-item-more {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        color:
+            var(--icon-secondary);
+
+        opacity:
+            0;
+    }
+
+
+    .library-list-item:hover
+    .library-item-more {
+
+        opacity:
+            1;
+    }
+
+
+    /* ======================================================
+       Grid Mode
+       ====================================================== */
+
+    .library-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                5,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            16px;
+    }
+
+
+    .library-grid-item {
+
+        min-width:
+            0;
+
+        padding:
+            12px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .library-grid-artwork {
+
+        width:
+            100%;
+
+        aspect-ratio:
+            1;
+
+        object-fit:
+            cover;
+
+        border-radius:
+            8px;
+    }
+
+
+    .library-grid-artwork.artist {
+
+        border-radius:
+            50%;
+    }
+
+
+    .library-grid-title {
+
+        margin-top:
+            10px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            650;
+    }
+
+
+    .library-grid-subtitle {
+
+        margin-top:
+            4px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    /* ======================================================
+       Playback Player
+       ====================================================== */
+
+    .playback-player {
+
+        position:
+            fixed;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            50;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                220px,
+                1fr
+            )
+            minmax(
+                320px,
+                1.5fr
+            )
+            minmax(
+                220px,
+                1fr
+            );
+
+        align-items:
+            center;
+
+        height:
+            var(--player-height);
+
+        padding:
+            10px 16px;
+
+        background:
+            var(--surface);
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .player-track {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-width:
+            0;
+    }
+
+
+    .player-image {
+
+        width:
+            56px;
+
+        height:
+            56px;
+
+        border-radius:
+            4px;
+
+        object-fit:
+            cover;
+    }
+
+
+    .player-track-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .player-track-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .player-track-artist {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .player-center {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    .player-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+    }
+
+
+    .player-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .main-play-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+    }
+
+
+    .player-progress-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        width:
+            min(
+                100%,
+                560px
+            );
+    }
+
+
+    .player-progress {
+
+        flex:
+            1;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .player-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    .player-time {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .player-right {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .volume-progress {
+
+        width:
+            90px;
+
+        height:
+            4px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .volume-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .sidebar-logo-text,
+        .sidebar-item-label,
+        .sidebar-library-title {
+
+            display:
+                none;
+        }
+
+
+        .sidebar {
+
+            align-items:
+                center;
+        }
+
+
+        .sidebar-logo,
+        .sidebar-item {
+
+            justify-content:
+                center;
+
+            width:
+                52px;
+
+            padding:
+                0;
+        }
+
+
+        .library-grid {
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .sidebar {
+
+            display:
+                none;
+        }
+
+
+        .library-main {
+
+            margin-left:
+                0;
+
+            padding-bottom:
+                calc(
+                    var(--mobile-player-height)
+                    + var(--mobile-navigation-height)
+                    + 24px
+                );
+        }
+
+
+        .library-app-bar {
+
+            min-height:
+                64px;
+
+            padding:
+                10px 16px;
+        }
+
+
+        .library-title {
+
+            font-size:
+                24px;
+        }
+
+
+        .library-content {
+
+            padding:
+                0 12px 32px;
+        }
+
+
+        .library-filters {
+
+            padding-bottom:
+                12px;
+        }
+
+
+        .library-list-item {
+
+            min-height:
+                68px;
+
+            padding:
+                6px 4px;
+        }
+
+
+        .library-artwork {
+
+            width:
+                54px;
+
+            height:
+                54px;
+        }
+
+
+        .library-item-more {
+
+            opacity:
+                1;
+        }
+
+
+        .library-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                12px;
+        }
+
+
+        /* ----------------------------------------------
+           Mobile Player
+           ---------------------------------------------- */
+
+        .playback-player {
+
+            left:
+                8px;
+
+            right:
+                8px;
+
+            bottom:
+                var(--mobile-navigation-height);
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-player-height);
+
+            padding:
+                6px 8px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                var(--surface-variant);
+        }
+
+
+        .player-track {
+
+            flex:
+                1;
+        }
+
+
+        .player-image {
+
+            width:
+                48px;
+
+            height:
+                48px;
+        }
+
+
+        .player-center,
+        .player-right {
+
+            display:
+                none;
+        }
+
+
+        .mobile-player-action {
+
+            display:
+                flex !important;
+        }
+
+
+        /* ----------------------------------------------
+           Mobile Bottom Navigation
+           ---------------------------------------------- */
+
+        .mobile-navigation {
+
+            position:
+                fixed;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            z-index:
+                45;
+
+            display:
+                flex;
+
+            height:
+                var(--mobile-navigation-height);
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex:
+                1;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                4px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-item.selected {
+
+            color:
+                var(--text-primary);
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+    }
+
+
+    /* ======================================================
+       Large Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 1800px
+    ) {
+
+        .library-grid {
+
+            grid-template-columns:
+                repeat(
+                    7,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="library-shell">
+
+
+    {# ====================================================
+       Desktop / Tablet Sidebar
+       ==================================================== #}
+
+    {% set navigation = library.navigation %}
+
+    {% include "components/sidebar.html" %}
+
+
+    <main class="library-main">
+
+
+        {# =================================================
+           App Bar
+           ================================================= #}
+
+        <header
+            class="library-app-bar"
+            data-class="app_bar"
+            data-semantic="library_app_bar"
+        >
+
+            <div class="library-title-row">
+
+                <h1
+                    class="library-title"
+                    data-class="text"
+                    data-semantic="library_title"
+                >
+                    {{ library.title }}
+                </h1>
+
+            </div>
+
+
+            <div class="library-actions">
+
+
+                <button
+                    class="library-action-button"
+                    data-class="button"
+                    data-semantic="library_search"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="library_search_icon"
+                    >
+                        search
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="library-action-button"
+                    data-class="button"
+                    data-semantic="create_playlist"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="create_playlist_icon"
+                    >
+                        add
+                    </span>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <div class="library-content">
+
+
+            {# =================================================
+               Filters
+               ================================================= #}
+
+            <section
+                class="library-filters"
+                data-class="section"
+                data-semantic="library_filters"
+            >
+
+                {% for filter in library.filters %}
+
+                <button
+                    class="
+                        library-filter
+
+                        {% if filter.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="library_filter_{{ filter.semantic }}"
+                >
+                    {{ filter.name }}
+                </button>
+
+                {% endfor %}
+
+            </section>
+
+
+            {# =================================================
+               Sort + View Controls
+               ================================================= #}
+
+            <div
+                class="library-controls"
+                data-class="toolbar"
+                data-semantic="library_controls"
+            >
+
+                <button
+                    class="library-sort-button"
+                    data-class="button"
+                    data-semantic="library_sort"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="library_sort_icon"
+                    >
+                        swap_vert
+                    </span>
+
+
+                    <span
+                        data-class="text"
+                        data-semantic="library_sort_label"
+                    >
+                        {{ library.sort }}
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="library-view-button"
+                    data-class="button"
+                    data-semantic="change_library_view"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="library_view_icon"
+                    >
+
+                        {% if library.view_mode == "grid" %}
+                        grid_view
+                        {% else %}
+                        format_list_bulleted
+                        {% endif %}
+
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            {# =================================================
+               LIST MODE
+               ================================================= #}
+
+            {% if library.view_mode == "list" %}
+
+            <section
+                class="library-list"
+                data-class="section"
+                data-semantic="library_items"
+            >
+
+                {% for item in library["items"] %}
+
+                <article
+                    class="library-list-item"
+                    data-class="list_item"
+                    data-semantic="library_{{ item.type }}_item"
+                >
+
+
+                    {# =========================================
+                       Artwork
+                       ========================================= #}
+
+                    {% if item.image %}
+
+                        {% if item.type == "artist" %}
+
+                        <img
+                            class="
+                                library-artwork
+                                artist
+                            "
+                            src="{{ item.image }}"
+                            data-class="avatar"
+                            data-semantic="library_artist_artwork"
+                            alt=""
+                        >
+
+                        {% else %}
+
+                        <img
+                            class="library-artwork"
+                            src="{{ item.image }}"
+                            data-class="image"
+                            data-semantic="library_{{ item.type }}_artwork"
+                            alt=""
+                        >
+
+                        {% endif %}
+
+                    {% endif %}
+
+
+                    {# =========================================
+                       Information
+                       ========================================= #}
+
+                    <div class="library-item-info">
+
+                        <div
+                            class="library-item-title"
+                            data-class="text"
+                            data-semantic="library_item_title"
+                        >
+                            {{ item.title }}
+                        </div>
+
+
+                        <div
+                            class="library-item-subtitle"
+                            data-class="text"
+                            data-semantic="library_item_subtitle"
+                        >
+
+
+                            {% if item.pinned %}
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    library-pin
+                                "
+                                data-class="icon"
+                                data-semantic="pinned_icon"
+                            >
+                                push_pin
+                            </span>
+
+                            {% endif %}
+
+
+                            {% if item.downloaded %}
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    library-download
+                                "
+                                data-class="icon"
+                                data-semantic="downloaded_icon"
+                            >
+                                download_for_offline
+                            </span>
+
+                            {% endif %}
+
+
+                            <span>
+                                {{ item.subtitle }}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    {# =========================================
+                       More
+                       ========================================= #}
+
+                    <button
+                        class="library-item-more"
+                        data-class="button"
+                        data-semantic="library_item_more"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="library_item_more_icon"
+                        >
+                            more_vert
+                        </span>
+
+                    </button>
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+
+            {# =================================================
+               GRID MODE
+               ================================================= #}
+
+            {% else %}
+
+            <section
+                class="library-grid"
+                data-class="section"
+                data-semantic="library_items"
+            >
+
+                {% for item in library["items"] %}
+
+                <article
+                    class="library-grid-item"
+                    data-class="card"
+                    data-semantic="library_{{ item.type }}_card"
+                >
+
+
+                    {% if item.image %}
+
+                        {% if item.type == "artist" %}
+
+                        <img
+                            class="
+                                library-grid-artwork
+                                artist
+                            "
+                            src="{{ item.image }}"
+                            data-class="avatar"
+                            data-semantic="library_artist_artwork"
+                            alt=""
+                        >
+
+                        {% else %}
+
+                        <img
+                            class="library-grid-artwork"
+                            src="{{ item.image }}"
+                            data-class="image"
+                            data-semantic="library_{{ item.type }}_artwork"
+                            alt=""
+                        >
+
+                        {% endif %}
+
+                    {% endif %}
+
+
+                    <div
+                        class="library-grid-title"
+                        data-class="text"
+                        data-semantic="library_item_title"
+                    >
+                        {{ item.title }}
+                    </div>
+
+
+                    <div
+                        class="library-grid-subtitle"
+                        data-class="text"
+                        data-semantic="library_item_subtitle"
+                    >
+                        {{ item.subtitle }}
+                    </div>
+
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+            {% endif %}
+
+        </div>
+
+    </main>
+
+
+    {# ====================================================
+       Player
+       ==================================================== #}
+
+    {% set player = library.player %}
+
+    {% include "components/player.html" %}
+
+
+    {# ====================================================
+       Mobile Navigation
+       ==================================================== #}
+
+    {% set navigation = library.navigation %}
+
+    {% include "components/mobile_navigation.html" %}
+
+
+</div>
+
+{% endblock %}
