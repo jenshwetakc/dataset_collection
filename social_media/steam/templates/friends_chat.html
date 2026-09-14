@@ -1,0 +1,1908 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Steam Friends & Chat
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .friends-chat-page {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            300px
+            minmax(0, 1fr)
+            260px;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Left Sidebar
+       ====================================================== */
+
+    .friends-sidebar {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        height:
+            100vh;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid var(--border-subtle);
+    }
+
+
+    .friends-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        min-height:
+            58px;
+
+        padding:
+            0 14px;
+
+        border-bottom:
+            1px solid var(--border-subtle);
+    }
+
+
+    .friends-header-title {
+
+        font-size:
+            15px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .friends-header-spacer {
+
+        flex:
+            1;
+    }
+
+
+    .friends-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            38px;
+
+        margin:
+            11px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid var(--border);
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .friends-search-icon {
+
+        margin-right:
+            6px;
+
+        color:
+            var(--icon-secondary);
+
+        font-size:
+            19px;
+    }
+
+
+    .friends-search input {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .friends-summary {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        padding:
+            0 12px 8px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .friend-list {
+
+        flex:
+            1;
+
+        overflow-y:
+            auto;
+
+        padding:
+            4px 6px 12px;
+    }
+
+
+    .friend-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            42px
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        min-height:
+            56px;
+
+        padding:
+            6px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .friend-row.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .friend-avatar-wrap {
+
+        position:
+            relative;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        flex:
+            0 0 auto;
+    }
+
+
+    .friend-avatar {
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .friend-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .friend-status-dot {
+
+        position:
+            absolute;
+
+        right:
+            -2px;
+
+        bottom:
+            -2px;
+
+        width:
+            11px;
+
+        height:
+            11px;
+
+        border:
+            2px solid var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-disabled);
+    }
+
+
+    .friend-status-dot.online {
+
+        background:
+            var(--success);
+    }
+
+
+    .friend-status-dot.away {
+
+        background:
+            var(--warning);
+    }
+
+
+    .friend-status-dot.busy {
+
+        background:
+            var(--error);
+    }
+
+
+    .friend-copy {
+
+        min-width:
+            0;
+    }
+
+
+    .friend-name {
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .friend-row.selected
+    .friend-name {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .friend-activity {
+
+        margin-top:
+            3px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .friend-row.selected
+    .friend-activity {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .friend-side {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+    }
+
+
+    .unread-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            20px;
+
+        height:
+            20px;
+
+        padding:
+            0 5px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--badge-background);
+
+        color:
+            var(--badge-text);
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+    }
+
+
+    .favorite-small {
+
+        font-size:
+            16px;
+
+        color:
+            var(--warning);
+    }
+
+
+    /* ======================================================
+       Chat Main
+       ====================================================== */
+
+    .chat-main {
+
+        min-width:
+            0;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .chat-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            58px;
+
+        padding:
+            0 16px;
+
+        border-bottom:
+            1px solid var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .chat-header-avatar {
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .chat-header-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .chat-header-copy {
+
+        min-width:
+            0;
+    }
+
+
+    .chat-header-name {
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .chat-header-status {
+
+        margin-top:
+            2px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--success);
+    }
+
+
+    .chat-header-spacer {
+
+        flex:
+            1;
+    }
+
+
+    .chat-messages {
+
+        flex:
+            1;
+
+        overflow-y:
+            auto;
+
+        padding:
+            18px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            9px;
+    }
+
+
+    .message-row {
+
+        display:
+            flex;
+
+        width:
+            100%;
+    }
+
+
+    .message-row.outgoing {
+
+        justify-content:
+            flex-end;
+    }
+
+
+    .message-bubble {
+
+        max-width:
+            min(
+                68%,
+                560px
+            );
+
+        padding:
+            10px 12px;
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            11px;
+
+        line-height:
+            1.45;
+    }
+
+
+    .message-row.outgoing
+    .message-bubble {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .message-time {
+
+        margin-top:
+            5px;
+
+        font-size:
+            8px;
+
+        text-align:
+            right;
+
+        color:
+            var(--text-disabled);
+    }
+
+
+    .message-row.outgoing
+    .message-time {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Composer
+       ====================================================== */
+
+    .chat-composer {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        gap:
+            8px;
+
+        padding:
+            12px;
+
+        border-top:
+            1px solid var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .composer-input {
+
+        flex:
+            1;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            42px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid var(--border);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--background);
+    }
+
+
+    .composer-input input {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .send-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Right Info Sidebar
+       ====================================================== */
+
+    .chat-info {
+
+        height:
+            100vh;
+
+        overflow-y:
+            auto;
+
+        padding:
+            18px;
+
+        border-left:
+            1px solid var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .profile-card {
+
+        text-align:
+            center;
+
+        padding-bottom:
+            18px;
+
+        border-bottom:
+            1px solid var(--border-subtle);
+    }
+
+
+    .profile-avatar {
+
+        width:
+            84px;
+
+        height:
+            84px;
+
+        margin:
+            0 auto;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .profile-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .profile-name {
+
+        margin-top:
+            10px;
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .profile-status {
+
+        margin-top:
+            4px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--success);
+    }
+
+
+    .profile-actions {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(3, 1fr);
+
+        gap:
+            6px;
+
+        margin-top:
+            12px;
+    }
+
+
+    .profile-action {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            4px;
+
+        min-height:
+            48px;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            8px;
+    }
+
+
+    .profile-action
+    .material-symbols-rounded {
+
+        font-size:
+            18px;
+    }
+
+
+    .shared-section {
+
+        margin-top:
+            18px;
+    }
+
+
+    .shared-title {
+
+        margin-bottom:
+            10px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .shared-game-list {
+
+        display:
+            grid;
+
+        gap:
+            8px;
+    }
+
+
+    .shared-game {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            44px
+            minmax(0, 1fr);
+
+        gap:
+            8px;
+
+        align-items:
+            center;
+
+        padding:
+            7px;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .shared-cover {
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            4px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .shared-cover img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .shared-copy {
+
+        min-width:
+            0;
+    }
+
+
+    .shared-name {
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .shared-meta {
+
+        margin-top:
+            3px;
+
+        font-size:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Mobile Header
+       ====================================================== */
+
+    .mobile-chat-list-header {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .friends-chat-page {
+
+            grid-template-columns:
+                240px
+                minmax(0, 1fr);
+        }
+
+
+        .chat-info {
+
+            display:
+                none;
+        }
+
+
+        .friend-row {
+
+            grid-template-columns:
+                36px
+                minmax(0, 1fr);
+        }
+
+
+        .friend-avatar-wrap,
+        .friend-avatar {
+
+            width:
+                36px;
+
+            height:
+                36px;
+        }
+
+
+        .friend-side {
+
+            display:
+                none;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .friends-chat-page {
+
+            display:
+                block;
+        }
+
+
+        .friends-sidebar,
+        .chat-info {
+
+            display:
+                none;
+        }
+
+
+        .chat-main {
+
+            height:
+                calc(
+                    100vh -
+                    var(--status-bar-height)
+                );
+        }
+
+
+        .chat-header {
+
+            min-height:
+                54px;
+
+            padding:
+                0 10px;
+        }
+
+
+        .mobile-chat-list-header {
+
+            display:
+                inline-flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            width:
+                36px;
+
+            height:
+                36px;
+
+            border-radius:
+                var(--medium-radius);
+
+            color:
+                var(--icon);
+        }
+
+
+        .chat-messages {
+
+            padding:
+                13px 10px;
+        }
+
+
+        .message-bubble {
+
+            max-width:
+                82%;
+
+            font-size:
+                10px;
+        }
+
+
+        .chat-composer {
+
+            padding:
+                9px;
+        }
+
+
+        .composer-input {
+
+            min-height:
+                40px;
+        }
+
+
+        .send-button {
+
+            width:
+                40px;
+
+            height:
+                40px;
+        }
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .chat-header-status {
+
+            display:
+                none;
+        }
+
+
+        .message-bubble {
+
+            max-width:
+                88%;
+        }
+    }
+
+
+    /* ======================================================
+       Large Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 1920px
+    ) {
+
+        .friends-chat-page {
+
+            grid-template-columns:
+                340px
+                minmax(0, 1fr)
+                300px;
+        }
+
+
+        .message-bubble {
+
+            max-width:
+                min(
+                    58%,
+                    700px
+                );
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="friends-chat-page">
+
+
+    <!-- =====================================================
+         Friends Sidebar
+         ===================================================== -->
+
+    <aside
+        class="friends-sidebar"
+        data-class="navigation_bar"
+        data-semantic="friends_sidebar"
+    >
+
+        <div
+            class="friends-header"
+            data-class="app_bar"
+            data-semantic="friends_header"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="friends_icon"
+            >
+                groups
+            </span>
+
+            <div class="friends-header-title">
+                {{ chat.title }}
+            </div>
+
+            <div class="friends-header-spacer"></div>
+
+
+            <button
+                class="icon-button icon-button-small"
+                data-class="button"
+                data-semantic="add_friend_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="add_friend_icon"
+                >
+                    person_add
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div
+            class="friends-search"
+            data-class="search_bar"
+            data-semantic="friends_search"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    friends-search-icon
+                "
+                data-class="icon"
+                data-semantic="friends_search_icon"
+            >
+                search
+            </span>
+
+            <input
+                type="text"
+                placeholder="{{ chat.search_placeholder }}"
+                data-class="input_field"
+                data-semantic="friends_search_input"
+            >
+
+        </div>
+
+
+        <div class="friends-summary">
+
+            <span>
+                {{ chat.online_count }}
+                online
+            </span>
+
+            <span>
+                {{ chat.total_count }}
+                friends
+            </span>
+
+        </div>
+
+
+        <div class="friend-list">
+
+            {% for friend in chat.friends %}
+
+            <div
+                class="
+                    friend-row
+                    {% if friend.name == chat.selected_friend.name %}
+                        selected
+                    {% endif %}
+                "
+                data-class="list_item"
+                data-semantic="friend_{{ loop.index }}"
+            >
+
+
+                <div class="friend-avatar-wrap">
+
+                    <div
+                        class="friend-avatar"
+                        data-class="avatar"
+                        data-semantic="friend_avatar_{{ loop.index }}"
+                    >
+
+                        {% if friend.avatar %}
+
+                        <img
+                            src="{{ friend.avatar }}"
+                            alt=""
+                        >
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <span
+                        class="
+                            friend-status-dot
+                            {{ friend.state | lower }}
+                        "
+                        data-class="selection_indicator"
+                        data-semantic="friend_status_{{ loop.index }}"
+                    ></span>
+
+                </div>
+
+
+                <div class="friend-copy">
+
+                    <div
+                        class="
+                            friend-name
+                            truncate
+                        "
+                    >
+                        {{ friend.name }}
+                    </div>
+
+                    <div
+                        class="
+                            friend-activity
+                            truncate
+                        "
+                    >
+
+                        {% if friend.in_game %}
+                            {{ friend.activity }}:
+                            {{ friend.game }}
+                        {% else %}
+                            {{ friend.state }}
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="friend-side">
+
+                    {% if friend.favorite %}
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            favorite-small
+                        "
+                        data-class="icon"
+                        data-semantic="friend_favorite_{{ loop.index }}"
+                    >
+                        star
+                    </span>
+
+                    {% endif %}
+
+
+                    {% if friend.unread > 0 %}
+
+                    <span
+                        class="unread-badge"
+                        data-class="badge"
+                        data-semantic="friend_unread_{{ loop.index }}"
+                    >
+                        {{ friend.unread }}
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </aside>
+
+
+    <!-- =====================================================
+         Chat Area
+         ===================================================== -->
+
+    <main class="chat-main">
+
+
+        <!-- =================================================
+             Chat Header
+             ================================================= -->
+
+        <header
+            class="chat-header"
+            data-class="app_bar"
+            data-semantic="chat_header"
+        >
+
+            <button
+                class="mobile-chat-list-header"
+                data-class="button"
+                data-semantic="mobile_friend_list_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="mobile_friend_list_icon"
+                >
+                    menu
+                </span>
+
+            </button>
+
+
+            <div
+                class="chat-header-avatar"
+                data-class="avatar"
+                data-semantic="selected_friend_avatar"
+            >
+
+                {% if chat.selected_friend.avatar %}
+
+                <img
+                    src="{{ chat.selected_friend.avatar }}"
+                    alt=""
+                >
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="chat-header-copy">
+
+                <div
+                    class="
+                        chat-header-name
+                        truncate
+                    "
+                >
+                    {{ chat.selected_friend.name }}
+                </div>
+
+                <div class="chat-header-status">
+
+                    {% if chat.selected_friend.in_game %}
+                        {{ chat.selected_friend.activity }}
+                    {% else %}
+                        {{ chat.selected_friend.state }}
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <div class="chat-header-spacer"></div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="voice_call_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="voice_call_icon"
+                >
+                    call
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="chat_more_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="chat_more_icon"
+                >
+                    more_horiz
+                </span>
+
+            </button>
+
+        </header>
+
+
+        <!-- =================================================
+             Messages
+             ================================================= -->
+
+        <section
+            class="chat-messages"
+            data-class="section"
+            data-semantic="chat_message_section"
+        >
+
+            {% for message in chat.messages %}
+
+            <div
+                class="
+                    message-row
+                    {% if not message.incoming %}
+                        outgoing
+                    {% endif %}
+                "
+            >
+
+                <div
+                    class="message-bubble"
+                    data-class="message_bubble"
+                    data-semantic="chat_message_{{ loop.index }}"
+                >
+
+                    <div>
+                        {{ message.text }}
+                    </div>
+
+                    <div
+                        class="message-time"
+                        data-class="timestamp"
+                        data-semantic="message_timestamp_{{ loop.index }}"
+                    >
+                        {{ message.timestamp }}
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </section>
+
+
+        <!-- =================================================
+             Composer
+             ================================================= -->
+
+        <div
+            class="chat-composer"
+            data-class="toolbar"
+            data-semantic="chat_composer"
+            data-occluder="true"
+        >
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="attachment_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="attachment_icon"
+                >
+                    add_circle
+                </span>
+
+            </button>
+
+
+            <div
+                class="composer-input"
+                data-class="input_field"
+                data-semantic="message_input"
+            >
+
+                <input
+                    type="text"
+                    placeholder="Send a message"
+                >
+
+            </div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="emoji_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="emoji_icon"
+                >
+                    sentiment_satisfied
+                </span>
+
+            </button>
+
+
+            <button
+                class="send-button"
+                data-class="button"
+                data-semantic="send_message_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="send_message_icon"
+                >
+                    send
+                </span>
+
+            </button>
+
+        </div>
+
+    </main>
+
+
+    <!-- =====================================================
+         Friend Info
+         ===================================================== -->
+
+    <aside
+        class="chat-info"
+        data-class="section"
+        data-semantic="friend_information_panel"
+    >
+
+        <div
+            class="profile-card"
+            data-class="card"
+            data-semantic="friend_profile_card"
+        >
+
+
+            <div
+                class="profile-avatar"
+                data-class="avatar"
+                data-semantic="profile_avatar"
+            >
+
+                {% if chat.selected_friend.avatar %}
+
+                <img
+                    src="{{ chat.selected_friend.avatar }}"
+                    alt=""
+                >
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="profile-name">
+                {{ chat.selected_friend.name }}
+            </div>
+
+            <div class="profile-status">
+                {{ chat.selected_friend.state }}
+            </div>
+
+
+            <div class="profile-actions">
+
+
+                <button
+                    class="profile-action"
+                    data-class="button"
+                    data-semantic="profile_message_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="profile_message_icon"
+                    >
+                        chat
+                    </span>
+
+                    Message
+
+                </button>
+
+
+                <button
+                    class="profile-action"
+                    data-class="button"
+                    data-semantic="profile_call_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="profile_call_icon"
+                    >
+                        call
+                    </span>
+
+                    Call
+
+                </button>
+
+
+                <button
+                    class="profile-action"
+                    data-class="button"
+                    data-semantic="profile_more_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="profile_more_icon"
+                    >
+                        more_horiz
+                    </span>
+
+                    More
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <section
+            class="shared-section"
+            data-class="section"
+            data-semantic="shared_games_section"
+        >
+
+            <div class="shared-title">
+                Games You Both Play
+            </div>
+
+
+            <div class="shared-game-list">
+
+                {% for game in chat.shared_games %}
+
+                <div
+                    class="shared-game"
+                    data-class="list_item"
+                    data-semantic="shared_game_{{ loop.index }}"
+                >
+
+                    <div
+                        class="shared-cover"
+                        data-class="image"
+                        data-semantic="shared_game_cover_{{ loop.index }}"
+                    >
+
+                        {% if game.cover %}
+
+                        <img
+                            src="{{ game.cover }}"
+                            alt=""
+                        >
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="shared-copy">
+
+                        <div
+                            class="
+                                shared-name
+                                truncate
+                            "
+                        >
+                            {{ game.title }}
+                        </div>
+
+                        <div class="shared-meta">
+                            {{ game.playtime }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+    </aside>
+
+</div>
+
+{% endblock %}

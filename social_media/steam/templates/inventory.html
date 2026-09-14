@@ -1,0 +1,2067 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Steam Inventory
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .inventory-page {
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .inventory-header {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            100;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            62px;
+
+        padding:
+            0 22px;
+
+        border-bottom:
+            1px solid var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .inventory-title-group {
+
+        min-width:
+            0;
+    }
+
+
+    .inventory-title {
+
+        font-size:
+            18px;
+
+        font-weight:
+            900;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .inventory-subtitle {
+
+        margin-top:
+            2px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .inventory-header-spacer {
+
+        flex:
+            1;
+    }
+
+
+    /* ======================================================
+       Main Layout
+       ====================================================== */
+
+    .inventory-main {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            220px
+            minmax(0, 1fr)
+            320px;
+
+        min-height:
+            calc(
+                100vh -
+                62px
+            );
+    }
+
+
+    /* ======================================================
+       Inventory Sidebar
+       ====================================================== */
+
+    .inventory-sidebar {
+
+        padding:
+            14px 10px;
+
+        border-right:
+            1px solid var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .sidebar-heading {
+
+        padding:
+            0 8px 10px;
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .inventory-nav-list {
+
+        display:
+            grid;
+
+        gap:
+            5px;
+    }
+
+
+    .inventory-nav-item {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            40px
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            50px;
+
+        padding:
+            5px 7px;
+
+        border-radius:
+            var(--medium-radius);
+    }
+
+
+    .inventory-nav-item.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .inventory-nav-image {
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .inventory-nav-image img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .inventory-nav-copy {
+
+        min-width:
+            0;
+    }
+
+
+    .inventory-nav-name {
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .inventory-nav-item.selected
+    .inventory-nav-name {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .inventory-nav-count {
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .inventory-nav-item.selected
+    .inventory-nav-count {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Content
+       ====================================================== */
+
+    .inventory-content {
+
+        min-width:
+            0;
+
+        padding:
+            18px;
+    }
+
+
+    .inventory-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        margin-bottom:
+            14px;
+    }
+
+
+    .inventory-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex:
+            1;
+
+        min-width:
+            160px;
+
+        height:
+            38px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid var(--border);
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .inventory-search-icon {
+
+        margin-right:
+            6px;
+
+        font-size:
+            19px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .inventory-search input {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .filter-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        height:
+            38px;
+
+        padding:
+            0 10px;
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Tabs
+       ====================================================== */
+
+    .inventory-tabs {
+
+        display:
+            flex;
+
+        gap:
+            5px;
+
+        overflow:
+            hidden;
+
+        margin-bottom:
+            16px;
+    }
+
+
+    .inventory-tab {
+
+        height:
+            30px;
+
+        padding:
+            0 10px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            var(--small-radius);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .inventory-tab.selected {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Grid
+       ====================================================== */
+
+    .inventory-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                5,
+                minmax(0, 1fr)
+            );
+
+        gap:
+            10px;
+    }
+
+
+    .inventory-item {
+
+        position:
+            relative;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .inventory-item.selected {
+
+        border:
+            2px solid var(--primary);
+    }
+
+
+    .item-image {
+
+        position:
+            relative;
+
+        aspect-ratio:
+            1 / 1;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .item-image img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .item-quantity {
+
+        position:
+            absolute;
+
+        right:
+            5px;
+
+        bottom:
+            5px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            20px;
+
+        height:
+            20px;
+
+        padding:
+            0 5px;
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            8px;
+
+        font-weight:
+            800;
+    }
+
+
+    .favorite-indicator {
+
+        position:
+            absolute;
+
+        left:
+            5px;
+
+        top:
+            5px;
+
+        font-size:
+            17px;
+
+        color:
+            var(--warning);
+    }
+
+
+    .item-body {
+
+        padding:
+            8px;
+    }
+
+
+    .item-name {
+
+        min-height:
+            26px;
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+
+        line-height:
+            1.3;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .item-rarity {
+
+        margin-top:
+            4px;
+
+        font-size:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Detail Panel
+       ====================================================== */
+
+    .item-detail-panel {
+
+        height:
+            calc(
+                100vh -
+                62px
+            );
+
+        overflow-y:
+            auto;
+
+        padding:
+            18px;
+
+        border-left:
+            1px solid var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .detail-preview {
+
+        aspect-ratio:
+            16 / 10;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .detail-preview img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .detail-title {
+
+        margin-top:
+            14px;
+
+        font-size:
+            16px;
+
+        font-weight:
+            900;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .detail-game {
+
+        margin-top:
+            4px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .detail-badges {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            5px;
+
+        margin-top:
+            12px;
+    }
+
+
+    .detail-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        min-height:
+            24px;
+
+        padding:
+            0 7px;
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            8px;
+
+        font-weight:
+            700;
+    }
+
+
+    .detail-description {
+
+        margin-top:
+            14px;
+
+        font-size:
+            10px;
+
+        line-height:
+            1.55;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .detail-info {
+
+        display:
+            grid;
+
+        gap:
+            8px;
+
+        margin-top:
+            16px;
+
+        padding:
+            12px;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .detail-info-row {
+
+        display:
+            flex;
+
+        justify-content:
+            space-between;
+
+        gap:
+            8px;
+
+        font-size:
+            9px;
+    }
+
+
+    .detail-info-label {
+
+        color:
+            var(--text-disabled);
+    }
+
+
+    .detail-info-value {
+
+        color:
+            var(--text-primary);
+
+        font-weight:
+            700;
+
+        text-align:
+            right;
+    }
+
+
+    .market-price {
+
+        margin-top:
+            14px;
+
+        padding:
+            12px;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .market-price-label {
+
+        font-size:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .market-price-value {
+
+        margin-top:
+            3px;
+
+        font-size:
+            18px;
+
+        font-weight:
+            900;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .detail-actions {
+
+        display:
+            grid;
+
+        gap:
+            7px;
+
+        margin-top:
+            14px;
+    }
+
+
+    .detail-primary-button,
+    .detail-secondary-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+
+        width:
+            100%;
+
+        min-height:
+            40px;
+
+        border-radius:
+            var(--button-radius);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .detail-primary-button {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .detail-secondary-button {
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Mobile Selected Item
+       ====================================================== */
+
+    .mobile-item-detail {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .inventory-main {
+
+            grid-template-columns:
+                180px
+                minmax(0, 1fr);
+        }
+
+
+        .item-detail-panel {
+
+            display:
+                none;
+        }
+
+
+        .inventory-grid {
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(0, 1fr)
+                );
+        }
+
+
+        .inventory-nav-item {
+
+            grid-template-columns:
+                34px
+                minmax(0, 1fr);
+        }
+
+
+        .inventory-nav-image {
+
+            width:
+                34px;
+
+            height:
+                34px;
+        }
+
+
+        .inventory-nav-count {
+
+            display:
+                none;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .inventory-header {
+
+            min-height:
+                54px;
+
+            padding:
+                0 12px;
+        }
+
+
+        .inventory-subtitle {
+
+            display:
+                none;
+        }
+
+
+        .inventory-main {
+
+            display:
+                block;
+        }
+
+
+        .inventory-sidebar,
+        .item-detail-panel {
+
+            display:
+                none;
+        }
+
+
+        .inventory-content {
+
+            padding:
+                12px var(--page-padding);
+        }
+
+
+        .inventory-toolbar {
+
+            flex-wrap:
+                wrap;
+        }
+
+
+        .inventory-search {
+
+            flex-basis:
+                100%;
+        }
+
+
+        .inventory-tabs {
+
+            overflow-x:
+                hidden;
+        }
+
+
+        .inventory-tab:nth-child(n + 4) {
+
+            display:
+                none;
+        }
+
+
+        .inventory-grid {
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(0, 1fr)
+                );
+
+            gap:
+                8px;
+        }
+
+
+        .mobile-item-detail {
+
+            display:
+                block;
+
+            margin-top:
+                18px;
+
+            padding:
+                14px;
+
+            border:
+                1px solid var(--border-subtle);
+
+            border-radius:
+                var(--card-radius);
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-detail-layout {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                100px
+                minmax(0, 1fr);
+
+            gap:
+                12px;
+        }
+
+
+        .mobile-detail-image {
+
+            width:
+                100px;
+
+            height:
+                100px;
+
+            overflow:
+                hidden;
+
+            border-radius:
+                var(--medium-radius);
+
+            background:
+                var(--surface-variant);
+        }
+
+
+        .mobile-detail-image img {
+
+            width:
+                100%;
+
+            height:
+                100%;
+
+            object-fit:
+                cover;
+        }
+
+
+        .mobile-detail-title {
+
+            font-size:
+                13px;
+
+            font-weight:
+                900;
+
+            color:
+                var(--text-primary);
+        }
+
+
+        .mobile-detail-type {
+
+            margin-top:
+                5px;
+
+            font-size:
+                9px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-detail-actions {
+
+            display:
+                flex;
+
+            gap:
+                7px;
+
+            margin-top:
+                12px;
+        }
+
+
+        .mobile-detail-actions
+        .detail-primary-button {
+
+            flex:
+                1;
+        }
+
+
+        .mobile-detail-actions
+        .detail-secondary-button {
+
+            width:
+                42px;
+
+            flex:
+                0 0 42px;
+        }
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .inventory-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+        }
+
+
+        .mobile-detail-layout {
+
+            grid-template-columns:
+                82px
+                minmax(0, 1fr);
+        }
+
+
+        .mobile-detail-image {
+
+            width:
+                82px;
+
+            height:
+                82px;
+        }
+    }
+
+
+    /* ======================================================
+       Desktop Wide
+       ====================================================== */
+
+    @media (
+        min-width: 1920px
+    ) {
+
+        .inventory-main {
+
+            grid-template-columns:
+                250px
+                minmax(0, 1fr)
+                360px;
+        }
+
+
+        .inventory-grid {
+
+            grid-template-columns:
+                repeat(
+                    6,
+                    minmax(0, 1fr)
+                );
+        }
+    }
+
+
+    @media (
+        min-width: 2560px
+    ) {
+
+        .inventory-grid {
+
+            grid-template-columns:
+                repeat(
+                    8,
+                    minmax(0, 1fr)
+                );
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="inventory-page">
+
+
+    <!-- =====================================================
+         Header
+         ===================================================== -->
+
+    <header
+        class="inventory-header"
+        data-class="app_bar"
+        data-semantic="inventory_header"
+    >
+
+        <span
+            class="material-symbols-rounded"
+            data-class="icon"
+            data-semantic="inventory_header_icon"
+        >
+            inventory_2
+        </span>
+
+
+        <div class="inventory-title-group">
+
+            <div class="inventory-title">
+                {{ inventory.title }}
+            </div>
+
+            <div class="inventory-subtitle">
+                {{ inventory.subtitle }}
+                ·
+                {{ inventory.total_items }} items
+            </div>
+
+        </div>
+
+
+        <div class="inventory-header-spacer"></div>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="inventory_trade_offers_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="trade_offers_icon"
+            >
+                swap_horiz
+            </span>
+        </button>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="inventory_settings_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="inventory_settings_icon"
+            >
+                settings
+            </span>
+        </button>
+
+    </header>
+
+
+    <!-- =====================================================
+         Main
+         ===================================================== -->
+
+    <div class="inventory-main">
+
+
+        <!-- =================================================
+             Inventory Navigation
+             ================================================= -->
+
+        <aside
+            class="inventory-sidebar"
+            data-class="navigation_bar"
+            data-semantic="inventory_navigation"
+        >
+
+            <div class="sidebar-heading">
+                INVENTORIES
+            </div>
+
+
+            <div class="inventory-nav-list">
+
+                {% for group in inventory.inventories %}
+
+                <button
+                    class="
+                        inventory-nav-item
+                        {% if group.name == inventory.selected_inventory.name %}
+                            selected
+                        {% endif %}
+                    "
+                    data-class="navigation_item"
+                    data-semantic="inventory_group_{{ loop.index }}"
+                >
+
+                    <div class="inventory-nav-image">
+
+                        {% if group.icon %}
+
+                        <img
+                            src="{{ group.icon }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="inventory_group_image_{{ loop.index }}"
+                        >
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="inventory-nav-copy">
+
+                        <div
+                            class="
+                                inventory-nav-name
+                                truncate
+                            "
+                        >
+                            {{ group.name }}
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="inventory-nav-count"
+                        data-class="badge"
+                        data-semantic="inventory_group_count_{{ loop.index }}"
+                    >
+                        {{ group.count }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+        </aside>
+
+
+        <!-- =================================================
+             Content
+             ================================================= -->
+
+        <main class="inventory-content">
+
+
+            <div
+                class="inventory-toolbar"
+                data-class="toolbar"
+                data-semantic="inventory_toolbar"
+            >
+
+                <div
+                    class="inventory-search"
+                    data-class="search_bar"
+                    data-semantic="inventory_search"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            inventory-search-icon
+                        "
+                        data-class="icon"
+                        data-semantic="inventory_search_icon"
+                    >
+                        search
+                    </span>
+
+                    <input
+                        type="text"
+                        placeholder="{{ inventory.search_placeholder }}"
+                        data-class="input_field"
+                        data-semantic="inventory_search_input"
+                    >
+
+                </div>
+
+
+                <button
+                    class="filter-button"
+                    data-class="button"
+                    data-semantic="inventory_filter_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="inventory_filter_icon"
+                    >
+                        filter_list
+                    </span>
+
+                    Filter
+
+                </button>
+
+
+                <button
+                    class="filter-button"
+                    data-class="button"
+                    data-semantic="inventory_sort_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="inventory_sort_icon"
+                    >
+                        sort
+                    </span>
+
+                    Sort
+
+                </button>
+
+            </div>
+
+
+            <!-- =============================================
+                 Tabs
+                 ============================================= -->
+
+            <div class="inventory-tabs">
+
+                {% for category in inventory.categories %}
+
+                <button
+                    class="
+                        inventory-tab
+                        {% if category == inventory.selected_category %}
+                            selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="inventory_category_{{ loop.index }}"
+                >
+                    {{ category }}
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- =============================================
+                 Item Grid
+                 ============================================= -->
+
+            <section
+                class="inventory-grid"
+                data-class="section"
+                data-semantic="inventory_item_grid"
+            >
+
+                {% for item in inventory.selected_inventory["items"] %}
+
+                <article
+                    class="
+                        inventory-item
+                        {% if item.name == inventory.selected_item.name %}
+                            selected
+                        {% endif %}
+                    "
+                    data-class="card"
+                    data-semantic="inventory_item_{{ loop.index }}"
+                >
+
+
+                    <div class="item-image">
+
+                        {% if item.image %}
+
+                        <img
+                            src="{{ item.image }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="inventory_item_image_{{ loop.index }}"
+                        >
+
+                        {% endif %}
+
+
+                        {% if item.quantity > 1 %}
+
+                        <span
+                            class="item-quantity"
+                            data-class="badge"
+                            data-semantic="item_quantity_{{ loop.index }}"
+                        >
+                            ×{{ item.quantity }}
+                        </span>
+
+                        {% endif %}
+
+
+                        {% if item.favorite %}
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                favorite-indicator
+                            "
+                            data-class="icon"
+                            data-semantic="favorite_item_{{ loop.index }}"
+                        >
+                            star
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="item-body">
+
+                        <div
+                            class="
+                                item-name
+                                line-clamp-2
+                            "
+                        >
+                            {{ item.name }}
+                        </div>
+
+                        <div class="item-rarity">
+                            {{ item.rarity }}
+                            ·
+                            {{ item.item_type }}
+                        </div>
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+
+            <!-- =============================================
+                 Mobile Detail
+                 ============================================= -->
+
+            <section
+                class="mobile-item-detail"
+                data-class="card"
+                data-semantic="mobile_selected_item_detail"
+            >
+
+                <div class="mobile-detail-layout">
+
+
+                    <div
+                        class="mobile-detail-image"
+                        data-class="image"
+                        data-semantic="mobile_selected_item_image"
+                    >
+
+                        {% if inventory.selected_item.image %}
+
+                        <img
+                            src="{{ inventory.selected_item.image }}"
+                            alt=""
+                        >
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div>
+
+                        <div class="mobile-detail-title">
+                            {{ inventory.selected_item.name }}
+                        </div>
+
+                        <div class="mobile-detail-type">
+                            {{ inventory.selected_item.rarity }}
+                            ·
+                            {{ inventory.selected_item.item_type }}
+                        </div>
+
+                        <div class="detail-badges">
+
+                            {% if inventory.selected_item.tradable %}
+
+                            <span
+                                class="detail-badge"
+                                data-class="badge"
+                                data-semantic="mobile_tradable_badge"
+                            >
+                                Tradable
+                            </span>
+
+                            {% endif %}
+
+                            {% if inventory.selected_item.marketable %}
+
+                            <span
+                                class="detail-badge"
+                                data-class="badge"
+                                data-semantic="mobile_marketable_badge"
+                            >
+                                Marketable
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="mobile-detail-actions">
+
+                    {% if inventory.selected_item.marketable %}
+
+                    <button
+                        class="detail-primary-button"
+                        data-class="button"
+                        data-semantic="mobile_sell_item_button"
+                    >
+                        Sell
+                    </button>
+
+                    {% endif %}
+
+
+                    <button
+                        class="detail-secondary-button"
+                        data-class="button"
+                        data-semantic="mobile_item_more_button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="mobile_item_more_icon"
+                        >
+                            more_horiz
+                        </span>
+                    </button>
+
+                </div>
+
+            </section>
+
+        </main>
+
+
+        <!-- =================================================
+             Detail Sidebar
+             ================================================= -->
+
+        <aside
+            class="item-detail-panel"
+            data-class="section"
+            data-semantic="selected_item_detail_panel"
+        >
+
+            <div
+                class="detail-preview"
+                data-class="media_item"
+                data-semantic="selected_item_preview"
+            >
+
+                {% if inventory.selected_item.preview %}
+
+                <img
+                    src="{{ inventory.selected_item.preview }}"
+                    alt=""
+                    data-class="image"
+                    data-semantic="selected_item_preview_image"
+                >
+
+                {% elif inventory.selected_item.image %}
+
+                <img
+                    src="{{ inventory.selected_item.image }}"
+                    alt=""
+                    data-class="image"
+                    data-semantic="selected_item_preview_image"
+                >
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="detail-title">
+                {{ inventory.selected_item.name }}
+            </div>
+
+
+            <div class="detail-game">
+                {{ inventory.selected_item.game }}
+            </div>
+
+
+            <div class="detail-badges">
+
+
+                <span
+                    class="detail-badge"
+                    data-class="badge"
+                    data-semantic="item_rarity_badge"
+                >
+                    {{ inventory.selected_item.rarity }}
+                </span>
+
+
+                <span
+                    class="detail-badge"
+                    data-class="badge"
+                    data-semantic="item_type_badge"
+                >
+                    {{ inventory.selected_item.item_type }}
+                </span>
+
+
+                {% if inventory.selected_item.tradable %}
+
+                <span
+                    class="detail-badge"
+                    data-class="badge"
+                    data-semantic="tradable_badge"
+                >
+                    Tradable
+                </span>
+
+                {% endif %}
+
+
+                {% if inventory.selected_item.marketable %}
+
+                <span
+                    class="detail-badge"
+                    data-class="badge"
+                    data-semantic="marketable_badge"
+                >
+                    Marketable
+                </span>
+
+                {% endif %}
+
+            </div>
+
+
+            <p class="detail-description">
+                {{ inventory.selected_item.description }}
+            </p>
+
+
+            <div class="detail-info">
+
+                <div class="detail-info-row">
+
+                    <span class="detail-info-label">
+                        Quantity
+                    </span>
+
+                    <span class="detail-info-value">
+                        {{ inventory.selected_item.quantity }}
+                    </span>
+
+                </div>
+
+
+                <div class="detail-info-row">
+
+                    <span class="detail-info-label">
+                        Acquired
+                    </span>
+
+                    <span class="detail-info-value">
+                        {{ inventory.selected_item.date_acquired }}
+                    </span>
+
+                </div>
+
+
+                <div class="detail-info-row">
+
+                    <span class="detail-info-label">
+                        Tradable
+                    </span>
+
+                    <span class="detail-info-value">
+
+                        {% if inventory.selected_item.tradable %}
+                            Yes
+                        {% else %}
+                            No
+                        {% endif %}
+
+                    </span>
+
+                </div>
+
+
+                <div class="detail-info-row">
+
+                    <span class="detail-info-label">
+                        Marketable
+                    </span>
+
+                    <span class="detail-info-value">
+
+                        {% if inventory.selected_item.marketable %}
+                            Yes
+                        {% else %}
+                            No
+                        {% endif %}
+
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            {% if inventory.selected_item.market_price %}
+
+            <div class="market-price">
+
+                <div class="market-price-label">
+                    Starting market price
+                </div>
+
+                <div class="market-price-value">
+                    {{ inventory.selected_item.market_price }}
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+            <div class="detail-actions">
+
+
+                {% if inventory.selected_item.marketable %}
+
+                <button
+                    class="detail-primary-button"
+                    data-class="button"
+                    data-semantic="sell_item_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="sell_item_icon"
+                    >
+                        sell
+                    </span>
+
+                    Sell on Community Market
+
+                </button>
+
+                {% endif %}
+
+
+                {% if inventory.selected_item.tradable %}
+
+                <button
+                    class="detail-secondary-button"
+                    data-class="button"
+                    data-semantic="trade_item_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="trade_item_icon"
+                    >
+                        swap_horiz
+                    </span>
+
+                    Trade Item
+
+                </button>
+
+                {% endif %}
+
+
+                <button
+                    class="detail-secondary-button"
+                    data-class="button"
+                    data-semantic="item_more_actions_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="item_more_actions_icon"
+                    >
+                        more_horiz
+                    </span>
+
+                    More Actions
+
+                </button>
+
+            </div>
+
+        </aside>
+
+    </div>
+
+</div>
+
+{% endblock %}
