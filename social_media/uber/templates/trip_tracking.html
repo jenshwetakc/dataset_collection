@@ -1,0 +1,2205 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Uber Trip Tracking
+{% endblock %}
+
+
+{% block head %}
+<style>
+
+    /* =====================================================
+       Root
+       ===================================================== */
+
+    .tracking-page {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    .tracking-layout {
+
+        position:
+            relative;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            var(--side-panel-width)
+            minmax(
+                0,
+                1fr
+            );
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+    }
+
+
+    /* =====================================================
+       Tracking Panel
+       ===================================================== */
+
+    .tracking-panel {
+
+        position:
+            relative;
+
+        z-index:
+            40;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        min-width:
+            0;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        overflow:
+            hidden;
+    }
+
+
+    .tracking-scroll {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        padding:
+            0
+            var(--page-padding)
+            28px;
+
+        overflow-y:
+            auto;
+    }
+
+
+    /* =====================================================
+       App Bar
+       ===================================================== */
+
+    .tracking-app-bar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            var(--top-bar-height);
+
+        padding:
+            0
+            var(--page-padding);
+    }
+
+
+    .tracking-back-button,
+    .tracking-more-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    .tracking-title {
+
+        flex:
+            1;
+
+        padding:
+            0 12px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            720;
+    }
+
+
+    /* =====================================================
+       Status / ETA
+       ===================================================== */
+
+    .trip-status-card {
+
+        padding:
+            18px;
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            var(--shadow-small);
+    }
+
+
+    .trip-status-top {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        justify-content:
+            space-between;
+
+        gap:
+            16px;
+    }
+
+
+    .trip-status-copy {
+
+        min-width:
+            0;
+    }
+
+
+    .trip-status-label {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            760;
+
+        line-height:
+            1.2;
+    }
+
+
+    .trip-arrival-label {
+
+        margin-top:
+            5px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .eta-badge {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        min-width:
+            58px;
+
+        min-height:
+            42px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            760;
+    }
+
+
+    /* =====================================================
+       Progress
+       ===================================================== */
+
+    .trip-progress-track {
+
+        width:
+            100%;
+
+        height:
+            6px;
+
+        margin-top:
+            18px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .trip-progress-value {
+
+        height:
+            100%;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* =====================================================
+       Driver Card
+       ===================================================== */
+
+    .driver-section {
+
+        margin-top:
+            18px;
+    }
+
+
+    .driver-card {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            62px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            14px;
+
+        padding:
+            16px;
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            var(--shadow-small);
+    }
+
+
+    .driver-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            62px;
+
+        height:
+            62px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .driver-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .driver-avatar-fallback {
+
+        color:
+            var(--icon);
+
+        font-size:
+            30px;
+    }
+
+
+    .driver-info {
+
+        min-width:
+            0;
+    }
+
+
+    .driver-name-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .driver-name {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            17px;
+
+        font-weight:
+            740;
+    }
+
+
+    .driver-rating {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .driver-rating .material-symbols-rounded {
+
+        color:
+            var(--warning);
+
+        font-size:
+            15px;
+
+        font-variation-settings:
+            "FILL" 1,
+            "wght" 400,
+            "GRAD" 0,
+            "opsz" 16;
+    }
+
+
+    .driver-trips {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .vehicle-line {
+
+        margin-top:
+            9px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+    }
+
+
+    .plate-line {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    /* =====================================================
+       Vehicle Preview
+       ===================================================== */
+
+    .vehicle-preview {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            90px;
+
+        margin-top:
+            14px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .vehicle-preview img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .vehicle-preview-fallback {
+
+        color:
+            var(--icon);
+
+        font-size:
+            34px;
+    }
+
+
+    /* =====================================================
+       Contact Actions
+       ===================================================== */
+
+    .contact-actions {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                1fr
+            );
+
+        gap:
+            10px;
+
+        margin-top:
+            14px;
+    }
+
+
+    .contact-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            48px;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* =====================================================
+       Pickup
+       ===================================================== */
+
+    .location-section {
+
+        margin-top:
+            20px;
+    }
+
+
+    .location-title {
+
+        margin-bottom:
+            10px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            17px;
+
+        font-weight:
+            720;
+    }
+
+
+    .location-card {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        gap:
+            12px;
+
+        padding:
+            14px;
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            var(--shadow-small);
+    }
+
+
+    .location-card-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--primary);
+    }
+
+
+    .location-copy {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .location-name {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    .location-address {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        line-height:
+            1.35;
+    }
+
+
+    /* =====================================================
+       Safety
+       ===================================================== */
+
+    .safety-section {
+
+        margin-top:
+            20px;
+    }
+
+
+    .safety-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            9px;
+    }
+
+
+    .safety-action {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            0;
+
+        min-height:
+            76px;
+
+        padding:
+            10px 6px;
+
+        gap:
+            7px;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .safety-action-icon {
+
+        color:
+            var(--icon);
+
+        font-size:
+            23px;
+    }
+
+
+    .safety-action-label {
+
+        max-width:
+            100%;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            650;
+    }
+
+
+    /* =====================================================
+       Map
+       ===================================================== */
+
+    .tracking-map {
+
+        position:
+            relative;
+
+        min-width:
+            0;
+
+        min-height:
+            100vh;
+
+        overflow:
+            hidden;
+
+        background:
+            color-mix(
+                in srgb,
+                var(--surface-variant)
+                78%,
+                var(--background)
+            );
+    }
+
+
+    .map-block {
+
+        position:
+            absolute;
+
+        border-radius:
+            10px;
+
+        background:
+            color-mix(
+                in srgb,
+                var(--surface)
+                72%,
+                var(--surface-variant)
+            );
+
+        border:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .map-block-1 {
+        left: 8%;
+        top: 8%;
+        width: 22%;
+        height: 18%;
+    }
+
+
+    .map-block-2 {
+        right: 8%;
+        top: 15%;
+        width: 24%;
+        height: 16%;
+    }
+
+
+    .map-block-3 {
+        left: 14%;
+        bottom: 12%;
+        width: 26%;
+        height: 22%;
+    }
+
+
+    .map-block-4 {
+        right: 12%;
+        bottom: 17%;
+        width: 28%;
+        height: 20%;
+    }
+
+
+    .map-block-5 {
+        left: 43%;
+        top: 39%;
+        width: 18%;
+        height: 14%;
+    }
+
+
+    /* =====================================================
+       Roads
+       ===================================================== */
+
+    .map-road {
+
+        position:
+            absolute;
+
+        height:
+            8px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--background);
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        transform-origin:
+            left center;
+    }
+
+
+    .map-road-1 {
+        top: 18%;
+        left: -5%;
+        width: 120%;
+        transform: rotate(-9deg);
+    }
+
+
+    .map-road-2 {
+        top: 34%;
+        left: -8%;
+        width: 130%;
+        transform: rotate(12deg);
+    }
+
+
+    .map-road-3 {
+        top: 52%;
+        left: -12%;
+        width: 135%;
+        transform: rotate(-20deg);
+    }
+
+
+    .map-road-4 {
+        top: 72%;
+        left: -8%;
+        width: 125%;
+        transform: rotate(8deg);
+    }
+
+
+    .map-road-5 {
+        top: -10%;
+        left: 23%;
+        width: 120%;
+        transform: rotate(89deg);
+    }
+
+
+    .map-road-6 {
+        top: -12%;
+        left: 62%;
+        width: 130%;
+        transform: rotate(94deg);
+    }
+
+
+    /* =====================================================
+       Route
+       ===================================================== */
+
+    .route-svg {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        z-index:
+            5;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        pointer-events:
+            none;
+    }
+
+
+    .route-shadow {
+
+        fill:
+            none;
+
+        stroke:
+            var(--surface);
+
+        stroke-width:
+            3;
+
+        stroke-linecap:
+            round;
+
+        stroke-linejoin:
+            round;
+    }
+
+
+    .route-main {
+
+        fill:
+            none;
+
+        stroke:
+            var(--primary);
+
+        stroke-width:
+            1.5;
+
+        stroke-linecap:
+            round;
+
+        stroke-linejoin:
+            round;
+    }
+
+
+    /* =====================================================
+       Driver Marker
+       ===================================================== */
+
+    .driver-map-marker {
+
+        position:
+            absolute;
+
+        z-index:
+            12;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        box-shadow:
+            var(--shadow-medium);
+    }
+
+
+    .driver-map-marker .material-symbols-rounded {
+
+        font-size:
+            23px;
+    }
+
+
+    /* =====================================================
+       Pickup Marker
+       ===================================================== */
+
+    .pickup-map-marker {
+
+        position:
+            absolute;
+
+        z-index:
+            12;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--primary);
+
+        box-shadow:
+            var(--shadow-medium);
+    }
+
+
+    /* =====================================================
+       Other Vehicle Markers
+       ===================================================== */
+
+    .nearby-car-marker {
+
+        position:
+            absolute;
+
+        z-index:
+            8;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--icon-secondary);
+
+        box-shadow:
+            var(--shadow-small);
+    }
+
+
+    .nearby-car-marker .material-symbols-rounded {
+
+        font-size:
+            17px;
+    }
+
+
+    /* =====================================================
+       Map Controls
+       ===================================================== */
+
+    .tracking-map-controls {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        right:
+            20px;
+
+        bottom:
+            24px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            10px;
+    }
+
+
+    /* =====================================================
+       Floating ETA
+       ===================================================== */
+
+    .floating-eta {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        top:
+            20px;
+
+        left:
+            50%;
+
+        transform:
+            translateX(
+                -50%
+            );
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            46px;
+
+        padding:
+            0 16px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        box-shadow:
+            var(--shadow-medium);
+    }
+
+
+    .floating-eta strong {
+
+        font-size:
+            15px;
+    }
+
+
+    .floating-eta span {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    /* =====================================================
+       Mobile
+       ===================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .tracking-page {
+
+            min-height:
+                calc(
+                    100vh
+                    -
+                    var(--status-bar-height)
+                );
+        }
+
+
+        .tracking-layout {
+
+            display:
+                block;
+
+            min-height:
+                calc(
+                    100vh
+                    -
+                    var(--status-bar-height)
+                );
+        }
+
+
+        .tracking-map {
+
+            position:
+                absolute;
+
+            inset:
+                0;
+
+            min-height:
+                100%;
+        }
+
+
+        .tracking-panel {
+
+            position:
+                absolute;
+
+            z-index:
+                50;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            min-height:
+                0;
+
+            max-height:
+                52vh;
+
+            border-right:
+                none;
+
+            border-radius:
+                var(--sheet-radius)
+                var(--sheet-radius)
+                0
+                0;
+
+            box-shadow:
+                var(--shadow-large);
+        }
+
+
+        .tracking-panel::before {
+
+            content:
+                "";
+
+            display:
+                block;
+
+            width:
+                42px;
+
+            height:
+                4px;
+
+            margin:
+                10px auto 0;
+
+            border-radius:
+                999px;
+
+            background:
+                var(--border);
+        }
+
+
+        .tracking-app-bar {
+
+            min-height:
+                54px;
+
+            padding:
+                0 16px;
+        }
+
+
+        .tracking-scroll {
+
+            padding:
+                0 16px 22px;
+        }
+
+
+        .trip-status-card {
+
+            padding:
+                15px;
+        }
+
+
+        .trip-status-label {
+
+            font-size:
+                18px;
+        }
+
+
+        .driver-section {
+
+            margin-top:
+                14px;
+        }
+
+
+        .driver-card {
+
+            padding:
+                13px;
+        }
+
+
+        .location-section,
+        .safety-section {
+
+            margin-top:
+                16px;
+        }
+
+
+        .tracking-map-controls {
+
+            right:
+                14px;
+
+            bottom:
+                calc(
+                    52vh
+                    +
+                    14px
+                );
+        }
+
+
+        .floating-eta {
+
+            top:
+                14px;
+        }
+
+    }
+
+
+    /* =====================================================
+       Tablet
+       ===================================================== */
+
+    @media (
+        min-width: 768px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .tracking-layout {
+
+            grid-template-columns:
+                360px
+                minmax(
+                    0,
+                    1fr
+                );
+        }
+
+
+        .tracking-panel,
+        .tracking-map {
+
+            min-height:
+                calc(
+                    100vh
+                    -
+                    var(--status-bar-height)
+                );
+        }
+
+    }
+
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="tracking-page">
+
+    <div class="tracking-layout">
+
+
+        <!-- =================================================
+             Trip Panel
+             ================================================= -->
+
+        <aside
+            class="tracking-panel"
+            data-class="bottom_sheet"
+            data-semantic="trip_tracking_panel"
+            data-occluder="true"
+        >
+
+
+            <!-- =============================================
+                 App Bar
+                 ============================================= -->
+
+            <header
+                class="tracking-app-bar"
+                data-class="app_bar"
+                data-semantic="trip_tracking_app_bar"
+            >
+
+                <button
+                    class="tracking-back-button"
+                    data-class="button"
+                    data-semantic="back_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="back_icon"
+                    >
+                        arrow_back
+                    </span>
+
+                </button>
+
+
+                <div
+                    class="tracking-title truncate"
+                    data-class="text"
+                    data-semantic="trip_title"
+                >
+                    Your ride
+                </div>
+
+
+                <button
+                    class="tracking-more-button"
+                    data-class="button"
+                    data-semantic="trip_more_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="trip_more_icon"
+                    >
+                        more_horiz
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <div class="tracking-scroll">
+
+
+                <!-- =========================================
+                     Trip Status
+                     ========================================= -->
+
+                <section
+                    class="trip-status-card"
+                    data-class="card"
+                    data-semantic="trip_status_card"
+                >
+
+                    <div class="trip-status-top">
+
+                        <div class="trip-status-copy">
+
+                            <div
+                                class="trip-status-label"
+                                data-class="text"
+                                data-semantic="trip_status"
+                            >
+                                {{ trip_tracking.status }}
+                            </div>
+
+
+                            <div
+                                class="trip-arrival-label"
+                                data-class="text"
+                                data-semantic="arrival_text"
+                            >
+                                {{ trip_tracking.arrival_text }}
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="eta-badge"
+                            data-class="badge"
+                            data-semantic="eta_badge"
+                        >
+                            {{ trip_tracking.eta_text }}
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="trip-progress-track"
+                        data-class="progress_bar"
+                        data-semantic="driver_progress"
+                    >
+
+                        <div
+                            class="trip-progress-value"
+                            style="
+                                width:
+                                    {{ trip_tracking.trip_progress.value }}%;
+                            "
+                        ></div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================================
+                     Driver
+                     ========================================= -->
+
+                <section class="driver-section">
+
+                    <div
+                        class="driver-card"
+                        data-class="card"
+                        data-semantic="driver_card"
+                    >
+
+                        <div class="driver-avatar">
+
+                            {% if trip_tracking.driver.image %}
+
+                            <img
+                                src="{{ trip_tracking.driver.image }}"
+                                alt="{{ trip_tracking.driver.name }}"
+                                data-class="avatar"
+                                data-semantic="driver_avatar"
+                            >
+
+                            {% else %}
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    driver-avatar-fallback
+                                "
+                                data-class="icon"
+                                data-semantic="driver_avatar_fallback"
+                            >
+                                person
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="driver-info">
+
+                            <div class="driver-name-row">
+
+                                <div
+                                    class="driver-name truncate"
+                                    data-class="text"
+                                    data-semantic="driver_name"
+                                >
+                                    {{ trip_tracking.driver.name }}
+                                </div>
+
+
+                                <div
+                                    class="driver-rating"
+                                    data-class="text"
+                                    data-semantic="driver_rating"
+                                >
+                                    <span class="material-symbols-rounded">
+                                        star
+                                    </span>
+
+                                    {{ trip_tracking.driver.rating }}
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                class="driver-trips"
+                                data-class="text"
+                                data-semantic="driver_trip_count"
+                            >
+                                {{ trip_tracking.driver.trips }} trips
+                            </div>
+
+
+                            <div
+                                class="vehicle-line truncate"
+                                data-class="text"
+                                data-semantic="vehicle_model"
+                            >
+                                {{ trip_tracking.vehicle.color }}
+                                {{ trip_tracking.vehicle.model }}
+                            </div>
+
+
+                            <div
+                                class="plate-line"
+                                data-class="text"
+                                data-semantic="vehicle_plate"
+                            >
+                                {{ trip_tracking.vehicle.plate }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- =====================================
+                         Vehicle Preview
+                         ===================================== -->
+
+                    <div
+                        class="vehicle-preview"
+                        data-class="image"
+                        data-semantic="vehicle_preview"
+                    >
+
+                        {% if trip_tracking.vehicle.image %}
+
+                        <img
+                            src="{{ trip_tracking.vehicle.image }}"
+                            alt="{{ trip_tracking.vehicle.model }}"
+                        >
+
+                        {% else %}
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                vehicle-preview-fallback
+                            "
+                        >
+                            directions_car
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- =====================================
+                         Contact
+                         ===================================== -->
+
+                    <div class="contact-actions">
+
+                        {% for action in trip_tracking.contact_actions %}
+
+                        <button
+                            class="contact-button"
+                            data-class="button"
+                            data-semantic="driver_contact_{{ action.label | lower }}"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="driver_contact_icon_{{ loop.index }}"
+                            >
+                                {{ action.icon }}
+                            </span>
+
+                            <span
+                                data-class="text"
+                                data-semantic="driver_contact_label_{{ loop.index }}"
+                            >
+                                {{ action.label }}
+                            </span>
+
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================================
+                     Pickup
+                     ========================================= -->
+
+                <section class="location-section">
+
+                    <h2
+                        class="location-title"
+                        data-class="text"
+                        data-semantic="pickup_section_title"
+                    >
+                        Pickup
+                    </h2>
+
+
+                    <div
+                        class="location-card"
+                        data-class="list_item"
+                        data-semantic="pickup_location"
+                    >
+
+                        <div
+                            class="location-card-icon"
+                            data-class="icon"
+                            data-semantic="pickup_location_icon"
+                        >
+                            <span class="material-symbols-rounded">
+                                location_on
+                            </span>
+                        </div>
+
+
+                        <div class="location-copy">
+
+                            <div
+                                class="location-name"
+                                data-class="text"
+                                data-semantic="pickup_name"
+                            >
+                                {{ trip_tracking.pickup.name }}
+                            </div>
+
+
+                            <div
+                                class="location-address"
+                                data-class="text"
+                                data-semantic="pickup_address"
+                            >
+                                {{ trip_tracking.pickup.address }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================================
+                     Safety
+                     ========================================= -->
+
+                <section
+                    class="safety-section"
+                    data-class="section"
+                    data-semantic="safety_actions_section"
+                >
+
+                    <h2
+                        class="location-title"
+                        data-class="text"
+                        data-semantic="safety_title"
+                    >
+                        Trip tools
+                    </h2>
+
+
+                    <div class="safety-grid">
+
+                        {% for action in trip_tracking.safety_actions %}
+
+                        <button
+                            class="safety-action"
+                            data-class="button"
+                            data-semantic="safety_action_{{ loop.index }}"
+                        >
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    safety-action-icon
+                                "
+                                data-class="icon"
+                                data-semantic="safety_action_icon_{{ loop.index }}"
+                            >
+                                {{ action.icon }}
+                            </span>
+
+
+                            <span
+                                class="
+                                    safety-action-label
+                                    truncate
+                                "
+                                data-class="text"
+                                data-semantic="safety_action_label_{{ loop.index }}"
+                            >
+                                {{ action.label }}
+                            </span>
+
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </aside>
+
+
+        <!-- =================================================
+             Map
+             ================================================= -->
+
+        <main class="tracking-map">
+
+
+            <!-- =============================================
+                 Map Buildings
+                 ============================================= -->
+
+            <div class="map-block map-block-1"></div>
+            <div class="map-block map-block-2"></div>
+            <div class="map-block map-block-3"></div>
+            <div class="map-block map-block-4"></div>
+            <div class="map-block map-block-5"></div>
+
+
+            <!-- =============================================
+                 Roads
+                 ============================================= -->
+
+            <div class="map-road map-road-1"></div>
+            <div class="map-road map-road-2"></div>
+            <div class="map-road map-road-3"></div>
+            <div class="map-road map-road-4"></div>
+            <div class="map-road map-road-5"></div>
+            <div class="map-road map-road-6"></div>
+
+
+            <!-- =============================================
+                 Route
+                 ============================================= -->
+
+            <svg
+                class="route-svg"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+            >
+
+                <polyline
+                    class="route-shadow"
+                    points="{{ trip_tracking.map.route_points_string }}"
+                ></polyline>
+
+
+                <polyline
+                    class="route-main"
+                    points="{{ trip_tracking.map.route_points_string }}"
+                ></polyline>
+
+            </svg>
+
+
+            <!-- =============================================
+                 Nearby Cars
+                 ============================================= -->
+
+            {% for car in trip_tracking.map.nearby_cars %}
+
+            <div
+                class="nearby-car-marker"
+                style="
+                    left:
+                        {{ car.x }}%;
+
+                    top:
+                        {{ car.y }}%;
+                "
+                data-class="icon"
+                data-semantic="nearby_car_{{ loop.index }}"
+            >
+
+                <span class="material-symbols-rounded">
+                    directions_car
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+
+            <!-- =============================================
+                 Driver
+                 ============================================= -->
+
+            <div
+                class="driver-map-marker"
+                style="
+                    left:
+                        {{ trip_tracking.map.driver.x }}%;
+
+                    top:
+                        {{ trip_tracking.map.driver.y }}%;
+                "
+                data-class="icon"
+                data-semantic="driver_map_marker"
+            >
+
+                <span class="material-symbols-rounded">
+                    directions_car
+                </span>
+
+            </div>
+
+
+            <!-- =============================================
+                 Pickup
+                 ============================================= -->
+
+            <div
+                class="pickup-map-marker"
+                style="
+                    left:
+                        {{ trip_tracking.map.pickup.x }}%;
+
+                    top:
+                        {{ trip_tracking.map.pickup.y }}%;
+                "
+                data-class="icon"
+                data-semantic="pickup_map_marker"
+            >
+
+                <span class="material-symbols-rounded">
+                    location_on
+                </span>
+
+            </div>
+
+
+            <!-- =============================================
+                 Floating ETA
+                 ============================================= -->
+
+            <div
+                class="floating-eta"
+                data-class="badge"
+                data-semantic="floating_eta"
+            >
+
+                <strong>
+                    {{ trip_tracking.eta_text }}
+                </strong>
+
+                <span>
+                    to pickup
+                </span>
+
+            </div>
+
+
+            <!-- =============================================
+                 Map Controls
+                 ============================================= -->
+
+            <div class="tracking-map-controls">
+
+                <button
+                    class="uber-map-control"
+                    data-class="button"
+                    data-semantic="recenter_map"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="recenter_icon"
+                    >
+                        my_location
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="uber-map-control"
+                    data-class="button"
+                    data-semantic="map_layers"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="map_layers_icon"
+                    >
+                        layers
+                    </span>
+
+                </button>
+
+            </div>
+
+        </main>
+
+    </div>
+
+</div>
+
+{% endblock %}
