@@ -1,0 +1,2647 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+Slack Profile
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .profile-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Top Bar
+       ====================================================== */
+
+    .profile-topbar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            140;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(260px, 640px)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        height:
+            var(--slack-topbar-height);
+
+        padding:
+            0 16px;
+
+        background:
+            var(--surface);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .topbar-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .topbar-actions:last-child {
+
+        justify-content:
+            flex-end;
+    }
+
+
+    .topbar-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon);
+    }
+
+
+    .profile-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        height:
+            34px;
+
+        padding:
+            0 11px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .profile-search-icon {
+
+        margin-right:
+            7px;
+
+        font-size:
+            18px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .profile-search-text {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            13px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Main Layout
+       ====================================================== */
+
+    .profile-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            300px
+            minmax(0, 1fr);
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                - var(--slack-topbar-height)
+            );
+    }
+
+
+    /* ======================================================
+       People Sidebar
+       ====================================================== */
+
+    .people-sidebar {
+
+        position:
+            sticky;
+
+        top:
+            var(--slack-topbar-height);
+
+        align-self:
+            start;
+
+        height:
+            calc(
+                100vh
+                - var(--slack-topbar-height)
+            );
+
+        overflow:
+            hidden;
+
+        padding:
+            12px 10px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .people-sidebar-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            46px;
+
+        padding:
+            0 8px 8px;
+    }
+
+
+    .people-sidebar-title {
+
+        flex:
+            1;
+
+        font-size:
+            16px;
+
+        font-weight:
+            800;
+    }
+
+
+    .people-count {
+
+        min-width:
+            24px;
+
+        height:
+            22px;
+
+        padding:
+            0 7px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+
+        line-height:
+            22px;
+
+        text-align:
+            center;
+    }
+
+
+    .people-filter {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            36px;
+
+        margin:
+            0 6px 10px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .people-filter span {
+
+        margin-right:
+            6px;
+
+        font-size:
+            17px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .people-filter-text {
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .people-list {
+
+        display:
+            grid;
+
+        gap:
+            3px;
+    }
+
+
+    .person-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        min-height:
+            54px;
+
+        padding:
+            6px 8px;
+
+        border-radius:
+            var(--medium-radius);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .person-row.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .person-row-avatar {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .person-row-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .person-online {
+
+        position:
+            absolute;
+
+        right:
+            -1px;
+
+        bottom:
+            -1px;
+
+        width:
+            9px;
+
+        height:
+            9px;
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--success);
+    }
+
+
+    .person-row-info {
+
+        min-width:
+            0;
+    }
+
+
+    .person-row-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .person-row-title {
+
+        margin-top:
+            2px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .person-row-more {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Main Profile Content
+       ====================================================== */
+
+    .profile-content {
+
+        min-width:
+            0;
+
+        padding:
+            24px 28px 120px;
+    }
+
+
+    .profile-content-inner {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(0, 680px)
+            minmax(260px, 340px);
+
+        gap:
+            28px;
+
+        align-items:
+            start;
+
+        max-width:
+            1100px;
+
+        margin:
+            0 auto;
+    }
+
+
+    /* ======================================================
+       Main Profile Card
+       ====================================================== */
+
+    .profile-card {
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .profile-hero {
+
+        padding:
+            26px 24px 20px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .profile-avatar-large {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            96px;
+
+        height:
+            96px;
+
+        overflow:
+            hidden;
+
+        border:
+            3px solid
+            var(--background);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        font-size:
+            28px;
+
+        font-weight:
+            800;
+    }
+
+
+    .profile-avatar-large img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .profile-online-large {
+
+        position:
+            absolute;
+
+        right:
+            2px;
+
+        bottom:
+            2px;
+
+        width:
+            16px;
+
+        height:
+            16px;
+
+        border:
+            3px solid
+            var(--background);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--success);
+    }
+
+
+    .profile-heading {
+
+        margin-top:
+            15px;
+    }
+
+
+    .profile-name-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            8px;
+    }
+
+
+    .profile-name {
+
+        font-size:
+            24px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .pronoun-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        height:
+            24px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    .profile-title {
+
+        margin-top:
+            5px;
+
+        font-size:
+            14px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .profile-status {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        margin-top:
+            10px;
+
+        padding:
+            6px 9px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--background);
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Profile Actions
+       ====================================================== */
+
+    .profile-actions {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            8px;
+
+        padding:
+            16px 24px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .profile-action {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        height:
+            36px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .profile-action.primary {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .profile-action .material-symbols-rounded {
+
+        font-size:
+            17px;
+    }
+
+
+    /* ======================================================
+       Profile Details
+       ====================================================== */
+
+    .profile-details {
+
+        padding:
+            8px 24px 20px;
+    }
+
+
+    .profile-section {
+
+        padding:
+            16px 0;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .profile-section:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .profile-section-title {
+
+        margin-bottom:
+            10px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-secondary);
+
+        text-transform:
+            uppercase;
+
+        letter-spacing:
+            0.04em;
+    }
+
+
+    .detail-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            28px
+            130px
+            minmax(0, 1fr);
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            34px;
+
+        font-size:
+            12px;
+    }
+
+
+    .detail-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .detail-icon .material-symbols-rounded {
+
+        font-size:
+            17px;
+    }
+
+
+    .detail-label {
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .detail-value {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-weight:
+            600;
+    }
+
+
+    .profile-bio {
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Shared Channels
+       ====================================================== */
+
+    .shared-channels {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            6px;
+    }
+
+
+    .shared-channel {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+
+        height:
+            28px;
+
+        padding:
+            0 8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .shared-channel .material-symbols-rounded {
+
+        font-size:
+            14px;
+    }
+
+
+    /* ======================================================
+       Side Cards
+       ====================================================== */
+
+    .profile-side {
+
+        display:
+            grid;
+
+        gap:
+            14px;
+    }
+
+
+    .side-card {
+
+        padding:
+            16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .side-card-title {
+
+        margin-bottom:
+            12px;
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .status-card {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        gap:
+            10px;
+    }
+
+
+    .status-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            20px;
+    }
+
+
+    .status-info {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .status-main {
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+    }
+
+
+    .status-sub {
+
+        margin-top:
+            3px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Switch Controls
+       ====================================================== */
+
+    .control-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            auto;
+
+        gap:
+            12px;
+
+        align-items:
+            center;
+
+        padding:
+            10px 0;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .control-row:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .control-title {
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .control-description {
+
+        margin-top:
+            2px;
+
+        font-size:
+            10px;
+
+        line-height:
+            1.35;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .switch-control {
+
+        position:
+            relative;
+
+        width:
+            38px;
+
+        height:
+            22px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--border);
+    }
+
+
+    .switch-control.enabled {
+
+        background:
+            var(--primary);
+    }
+
+
+    .switch-knob {
+
+        position:
+            absolute;
+
+        top:
+            3px;
+
+        left:
+            3px;
+
+        width:
+            16px;
+
+        height:
+            16px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--background);
+    }
+
+
+    .switch-control.enabled
+    .switch-knob {
+
+        left:
+            19px;
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-profile-nav {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .profile-topbar {
+
+            top:
+                var(--status-bar-height);
+
+            grid-template-columns:
+                minmax(220px, 1fr)
+                auto;
+        }
+
+
+        .topbar-left {
+
+            display:
+                none;
+        }
+
+
+        .profile-layout {
+
+            grid-template-columns:
+                250px
+                minmax(0, 1fr);
+        }
+
+
+        .people-sidebar {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + var(--slack-topbar-height)
+                );
+
+            height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - var(--slack-topbar-height)
+                );
+        }
+
+
+        .profile-content {
+
+            padding:
+                20px 18px 100px;
+        }
+
+
+        .profile-content-inner {
+
+            display:
+                block;
+
+            max-width:
+                720px;
+        }
+
+
+        .profile-side {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            margin-top:
+                18px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .profile-topbar {
+
+            top:
+                var(--status-bar-height);
+
+            grid-template-columns:
+                1fr
+                auto;
+
+            height:
+                52px;
+
+            padding:
+                0 10px;
+        }
+
+
+        .topbar-left {
+
+            display:
+                none;
+        }
+
+
+        .profile-layout {
+
+            display:
+                block;
+
+            min-height:
+                0;
+        }
+
+
+        .people-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .profile-content {
+
+            padding:
+                12px 10px
+                calc(
+                    var(--mobile-nav-height)
+                    + 20px
+                );
+        }
+
+
+        .profile-content-inner {
+
+            display:
+                block;
+
+            max-width:
+                none;
+        }
+
+
+        .profile-card {
+
+            border-radius:
+                12px;
+        }
+
+
+        .profile-hero {
+
+            padding:
+                20px 16px 16px;
+        }
+
+
+        .profile-avatar-large {
+
+            width:
+                78px;
+
+            height:
+                78px;
+
+            border-radius:
+                17px;
+        }
+
+
+        .profile-name {
+
+            font-size:
+                21px;
+        }
+
+
+        .profile-actions {
+
+            padding:
+                12px 14px;
+        }
+
+
+        .profile-action {
+
+            flex:
+                1;
+
+            min-width:
+                100px;
+        }
+
+
+        .profile-details {
+
+            padding:
+                6px 14px 16px;
+        }
+
+
+        .detail-row {
+
+            grid-template-columns:
+                26px
+                minmax(
+                    90px,
+                    110px
+                )
+                minmax(0, 1fr);
+        }
+
+
+        .profile-side {
+
+            margin-top:
+                14px;
+        }
+
+
+        .mobile-profile-nav {
+
+            position:
+                fixed;
+
+            z-index:
+                150;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            left:
+                0;
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    1fr
+                );
+
+            height:
+                var(--mobile-nav-height);
+
+            background:
+                var(--surface);
+
+            border-top:
+                1px solid
+                var(--border-subtle);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                3px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-item.selected {
+
+            color:
+                var(--primary);
+        }
+
+
+        .mobile-nav-icon {
+
+            font-size:
+                20px;
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="profile-page">
+
+
+    <!-- =====================================================
+         Top Bar
+         ===================================================== -->
+
+    <header
+        class="profile-topbar"
+        data-class="app_bar"
+        data-semantic="profile_top_bar"
+        data-occluder="true"
+    >
+
+        <div class="topbar-actions topbar-left">
+
+            <button
+                class="topbar-button"
+                data-class="button"
+                data-semantic="back_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="back_icon"
+                >
+                    arrow_back
+                </span>
+            </button>
+
+        </div>
+
+
+        <div
+            class="profile-search"
+            data-class="search_bar"
+            data-semantic="profile_search"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    profile-search-icon
+                "
+                data-class="icon"
+                data-semantic="search_icon"
+            >
+                search
+            </span>
+
+
+            <span class="profile-search-text">
+
+                {{ profile_page.search_placeholder }}
+
+            </span>
+
+        </div>
+
+
+        <div class="topbar-actions">
+
+            <button
+                class="topbar-button"
+                data-class="button"
+                data-semantic="help_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="help_icon"
+                >
+                    help
+                </span>
+            </button>
+
+
+            <button
+                class="topbar-button"
+                data-class="button"
+                data-semantic="more_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="more_icon"
+                >
+                    more_vert
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         Layout
+         ===================================================== -->
+
+    <div class="profile-layout">
+
+
+        <!-- =================================================
+             People Sidebar
+             ================================================= -->
+
+        <aside
+            class="people-sidebar"
+            data-class="navigation_bar"
+            data-semantic="people_sidebar"
+        >
+
+            <div class="people-sidebar-header">
+
+                <div class="people-sidebar-title">
+
+                    People
+
+                </div>
+
+
+                <span
+                    class="people-count"
+                    data-class="badge"
+                    data-semantic="people_count"
+                >
+
+                    {{ profile_page.people|length }}
+
+                </span>
+
+            </div>
+
+
+            <div
+                class="people-filter"
+                data-class="search_bar"
+                data-semantic="people_filter"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="people_filter_icon"
+                >
+                    search
+                </span>
+
+
+                <div class="people-filter-text">
+
+                    Search members
+
+                </div>
+
+            </div>
+
+
+            <div class="people-list">
+
+                {% for person in profile_page.people %}
+
+                <div
+                    class="
+                        person-row
+                        {% if
+                            person.id
+                            == profile_page.selected_person.id
+                        %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="list_item"
+                    data-semantic="person_{{ person.id }}"
+                >
+
+
+                    <div
+                        class="person-row-avatar"
+                        data-class="avatar"
+                        data-semantic="person_avatar"
+                    >
+
+                        {% if person.avatar %}
+
+                        <img
+                            src="{{ person.avatar }}"
+                            alt=""
+                        >
+
+                        {% else %}
+
+                        {{ person.name[0] }}
+
+                        {% endif %}
+
+
+                        {% if person.online %}
+
+                        <span
+                            class="person-online"
+                            data-class="selection_indicator"
+                            data-semantic="person_online"
+                        >
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="person-row-info">
+
+                        <div class="person-row-name">
+
+                            {{ person.name }}
+
+                        </div>
+
+
+                        <div class="person-row-title">
+
+                            {{ person.title }}
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="person-row-more"
+                        data-class="button"
+                        data-semantic="person_more"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="person_more_icon"
+                        >
+                            more_vert
+                        </span>
+
+                    </button>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </aside>
+
+
+        <!-- =================================================
+             Profile Content
+             ================================================= -->
+
+        <main
+            class="profile-content"
+            data-class="section"
+            data-semantic="profile_content"
+        >
+
+            <div class="profile-content-inner">
+
+
+                <!-- =============================================
+                     Main Card
+                     ============================================= -->
+
+                <article
+                    class="profile-card"
+                    data-class="card"
+                    data-semantic="member_profile_card"
+                >
+
+
+                    <!-- Hero -->
+
+                    <section
+                        class="profile-hero"
+                        data-class="section"
+                        data-semantic="profile_hero"
+                    >
+
+
+                        <div
+                            class="profile-avatar-large"
+                            data-class="avatar"
+                            data-semantic="profile_avatar"
+                        >
+
+                            {% if profile_page.selected_person.avatar %}
+
+                            <img
+                                src="{{ profile_page.selected_person.avatar }}"
+                                alt=""
+                            >
+
+                            {% else %}
+
+                            {{ profile_page.selected_person.name[0] }}
+
+                            {% endif %}
+
+
+                            {% if profile_page.selected_person.online %}
+
+                            <span
+                                class="profile-online-large"
+                                data-class="selection_indicator"
+                                data-semantic="profile_online"
+                            >
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="profile-heading">
+
+
+                            <div class="profile-name-row">
+
+                                <h1 class="profile-name">
+
+                                    {{ profile_page.selected_person.name }}
+
+                                </h1>
+
+
+                                {% if profile_page.selected_person.pronouns %}
+
+                                <span
+                                    class="pronoun-badge"
+                                    data-class="badge"
+                                    data-semantic="pronouns"
+                                >
+
+                                    {{ profile_page.selected_person.pronouns }}
+
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="profile-title">
+
+                                {{ profile_page.selected_person.title }}
+                                ·
+                                {{ profile_page.selected_person.department }}
+
+                            </div>
+
+
+                            <div
+                                class="profile-status"
+                                data-class="badge"
+                                data-semantic="member_status"
+                            >
+
+                                <span>
+
+                                    {{ profile_page.selected_person.status_emoji }}
+
+                                </span>
+
+                                {{ profile_page.selected_person.status }}
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- Actions -->
+
+                    <div
+                        class="profile-actions"
+                        data-class="toolbar"
+                        data-semantic="profile_actions"
+                    >
+
+
+                        <button
+                            class="
+                                profile-action
+                                primary
+                            "
+                            data-class="button"
+                            data-semantic="message_member"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="message_member_icon"
+                            >
+                                chat
+                            </span>
+
+                            Message
+
+                        </button>
+
+
+                        <button
+                            class="profile-action"
+                            data-class="button"
+                            data-semantic="start_huddle"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="start_huddle_icon"
+                            >
+                                headphones
+                            </span>
+
+                            Huddle
+
+                        </button>
+
+
+                        <button
+                            class="profile-action"
+                            data-class="button"
+                            data-semantic="call_member"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="call_member_icon"
+                            >
+                                call
+                            </span>
+
+                            Call
+
+                        </button>
+
+
+                        <button
+                            class="profile-action"
+                            data-class="button"
+                            data-semantic="profile_more_actions"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="profile_more_actions_icon"
+                            >
+                                more_horiz
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- Details -->
+
+                    <div class="profile-details">
+
+
+                        <!-- About -->
+
+                        <section
+                            class="profile-section"
+                            data-class="section"
+                            data-semantic="profile_about"
+                        >
+
+                            <div class="profile-section-title">
+
+                                About
+
+                            </div>
+
+
+                            <p class="profile-bio">
+
+                                {{ profile_page.selected_person.bio }}
+
+                            </p>
+
+                        </section>
+
+
+                        <!-- Contact -->
+
+                        <section
+                            class="profile-section"
+                            data-class="section"
+                            data-semantic="profile_contact"
+                        >
+
+                            <div class="profile-section-title">
+
+                                Contact information
+
+                            </div>
+
+
+                            {% set contact_rows = [
+                                (
+                                    "mail",
+                                    "Email",
+                                    profile_page.selected_person.email
+                                ),
+                                (
+                                    "call",
+                                    "Phone",
+                                    profile_page.selected_person.phone
+                                ),
+                                (
+                                    "location_on",
+                                    "Location",
+                                    profile_page.selected_person.location
+                                ),
+                                (
+                                    "schedule",
+                                    "Local time",
+                                    profile_page.selected_person.local_time
+                                    ~ " · "
+                                    ~ profile_page.selected_person.timezone
+                                )
+                            ] %}
+
+
+                            {% for icon, label, value in contact_rows %}
+
+                            <div
+                                class="detail-row"
+                                data-class="list_item"
+                                data-semantic="contact_{{ label|lower|replace(' ', '_') }}"
+                            >
+
+                                <div
+                                    class="detail-icon"
+                                    data-class="icon"
+                                    data-semantic="contact_icon"
+                                >
+                                    <span class="material-symbols-rounded">
+                                        {{ icon }}
+                                    </span>
+                                </div>
+
+
+                                <div class="detail-label">
+
+                                    {{ label }}
+
+                                </div>
+
+
+                                <div class="detail-value">
+
+                                    {{ value }}
+
+                                </div>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </section>
+
+
+                        <!-- Organization -->
+
+                        <section
+                            class="profile-section"
+                            data-class="section"
+                            data-semantic="organization_details"
+                        >
+
+                            <div class="profile-section-title">
+
+                                Organization
+
+                            </div>
+
+
+                            {% set organization_rows = [
+                                (
+                                    "badge",
+                                    "Role",
+                                    profile_page.selected_person.title
+                                ),
+                                (
+                                    "groups",
+                                    "Department",
+                                    profile_page.selected_person.department
+                                ),
+                                (
+                                    "supervisor_account",
+                                    "Manager",
+                                    profile_page.selected_person.manager
+                                ),
+                                (
+                                    "calendar_month",
+                                    "Started",
+                                    profile_page.selected_person.start_date
+                                )
+                            ] %}
+
+
+                            {% for icon, label, value in organization_rows %}
+
+                            <div
+                                class="detail-row"
+                                data-class="list_item"
+                                data-semantic="organization_{{ label|lower }}"
+                            >
+
+                                <div
+                                    class="detail-icon"
+                                    data-class="icon"
+                                    data-semantic="organization_icon"
+                                >
+                                    <span class="material-symbols-rounded">
+                                        {{ icon }}
+                                    </span>
+                                </div>
+
+
+                                <div class="detail-label">
+
+                                    {{ label }}
+
+                                </div>
+
+
+                                <div class="detail-value">
+
+                                    {{ value }}
+
+                                </div>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </section>
+
+
+                        <!-- Shared Channels -->
+
+                        <section
+                            class="profile-section"
+                            data-class="section"
+                            data-semantic="shared_channels"
+                        >
+
+                            <div class="profile-section-title">
+
+                                Shared channels
+
+                            </div>
+
+
+                            <div class="shared-channels">
+
+                                {% for channel in profile_page.shared_channels %}
+
+                                <button
+                                    class="shared-channel"
+                                    data-class="button"
+                                    data-semantic="shared_channel_{{ loop.index }}"
+                                >
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="shared_channel_icon"
+                                    >
+                                        tag
+                                    </span>
+
+                                    {{ channel }}
+
+                                </button>
+
+                                {% endfor %}
+
+                            </div>
+
+                        </section>
+
+                    </div>
+
+                </article>
+
+
+                <!-- =============================================
+                     Side Cards
+                     ============================================= -->
+
+                <aside class="profile-side">
+
+
+                    <!-- Status -->
+
+                    <section
+                        class="side-card"
+                        data-class="card"
+                        data-semantic="status_card"
+                    >
+
+                        <div class="side-card-title">
+
+                            Status
+
+                        </div>
+
+
+                        <div class="status-card">
+
+                            <div
+                                class="status-icon"
+                                data-class="icon"
+                                data-semantic="status_icon"
+                            >
+
+                                {{ profile_page.selected_person.status_emoji }}
+
+                            </div>
+
+
+                            <div class="status-info">
+
+                                <div class="status-main">
+
+                                    {{ profile_page.selected_person.status }}
+
+                                </div>
+
+
+                                <div class="status-sub">
+
+                                    Local time:
+                                    {{ profile_page.selected_person.local_time }}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- Controls -->
+
+                    <section
+                        class="side-card"
+                        data-class="card"
+                        data-semantic="member_controls"
+                    >
+
+                        <div class="side-card-title">
+
+                            Preferences
+
+                        </div>
+
+
+                        {% for control in profile_page.controls %}
+
+                        <div
+                            class="control-row"
+                            data-class="list_item"
+                            data-semantic="profile_control_{{ loop.index }}"
+                        >
+
+                            <div>
+
+                                <div class="control-title">
+
+                                    {{ control.label }}
+
+                                </div>
+
+
+                                <div class="control-description">
+
+                                    {{ control.description }}
+
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                class="
+                                    switch-control
+                                    {% if control.enabled %}
+                                    enabled
+                                    {% endif %}
+                                "
+                                data-class="switch"
+                                data-semantic="profile_switch_{{ loop.index }}"
+                            >
+
+                                <span
+                                    class="switch-knob"
+                                    data-class="selection_indicator"
+                                    data-semantic="switch_thumb"
+                                >
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </section>
+
+
+                    <!-- Workspace -->
+
+                    <section
+                        class="side-card"
+                        data-class="card"
+                        data-semantic="workspace_card"
+                    >
+
+                        <div class="side-card-title">
+
+                            Workspace
+
+                        </div>
+
+
+                        <div class="status-card">
+
+                            <div
+                                class="status-icon"
+                                data-class="avatar"
+                                data-semantic="workspace_avatar"
+                            >
+
+                                {% if profile_page.workspace.image %}
+
+                                <img
+                                    src="{{ profile_page.workspace.image }}"
+                                    alt=""
+                                >
+
+                                {% else %}
+
+                                {{ profile_page.workspace.name[0] }}
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="status-info">
+
+                                <div class="status-main">
+
+                                    {{ profile_page.workspace.name }}
+
+                                </div>
+
+
+                                <div class="status-sub">
+
+                                    Member profile
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+                </aside>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Mobile Navigation
+         ===================================================== -->
+
+    <nav
+        class="mobile-profile-nav"
+        data-class="navigation_bar"
+        data-semantic="mobile_bottom_navigation"
+        data-occluder="true"
+    >
+
+        {% set mobile_items = [
+            ("home", "Home"),
+            ("chat", "DMs"),
+            ("notifications", "Activity"),
+            ("person", "You")
+        ] %}
+
+
+        {% for icon, label in mobile_items %}
+
+        <button
+            class="
+                mobile-nav-item
+                {% if label == "You" %}
+                selected
+                {% endif %}
+            "
+            data-class="navigation_item"
+            data-semantic="mobile_{{ label|lower }}"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    mobile-nav-icon
+                "
+                data-class="icon"
+                data-semantic="mobile_{{ label|lower }}_icon"
+            >
+                {{ icon }}
+            </span>
+
+
+            <span class="mobile-nav-label">
+
+                {{ label }}
+
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+
+</div>
+
+
+{% endblock %}

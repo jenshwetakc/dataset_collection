@@ -1,0 +1,2558 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+Slack Activity
+
+{% endblock %}
+
+
+{% block head %}
+
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .activity-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Top Bar
+       ====================================================== */
+
+    .activity-topbar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            120;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(240px, 620px)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        height:
+            var(--slack-topbar-height);
+
+        padding:
+            0 16px;
+
+        background:
+            var(--surface);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .topbar-side {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .topbar-side:last-child {
+
+        justify-content:
+            flex-end;
+    }
+
+
+    .topbar-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon);
+    }
+
+
+    .activity-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        height:
+            34px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .activity-search span:first-child {
+
+        margin-right:
+            7px;
+
+        font-size:
+            18px;
+    }
+
+
+    .search-text {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            13px;
+    }
+
+
+    /* ======================================================
+       Page Grid
+       ====================================================== */
+
+    .activity-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            var(--channel-sidebar-width)
+            minmax(0, 1fr);
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                - var(--slack-topbar-height)
+            );
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .activity-sidebar {
+
+        position:
+            sticky;
+
+        top:
+            var(--slack-topbar-height);
+
+        align-self:
+            start;
+
+        height:
+            calc(
+                100vh
+                - var(--slack-topbar-height)
+            );
+
+        padding:
+            12px 10px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .workspace-heading {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        height:
+            46px;
+
+        padding:
+            0 7px 8px;
+    }
+
+
+    .workspace-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        flex:
+            0 0 auto;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+    }
+
+
+    .workspace-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .workspace-name {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            15px;
+
+        font-weight:
+            800;
+    }
+
+
+    .sidebar-navigation {
+
+        display:
+            grid;
+
+        gap:
+            2px;
+    }
+
+
+    .sidebar-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        height:
+            34px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-item.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .sidebar-item-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            25px;
+
+        flex:
+            0 0 25px;
+
+        font-size:
+            18px;
+    }
+
+
+    .sidebar-item-text {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            14px;
+    }
+
+
+    .sidebar-count {
+
+        min-width:
+            21px;
+
+        height:
+            20px;
+
+        padding:
+            0 6px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--badge-background);
+
+        color:
+            var(--badge-text);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+
+        line-height:
+            20px;
+
+        text-align:
+            center;
+    }
+
+
+    .sidebar-section {
+
+        margin-top:
+            14px;
+    }
+
+
+    .sidebar-section-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        height:
+            30px;
+
+        padding:
+            0 8px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Main Activity
+       ====================================================== */
+
+    .activity-main {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+    }
+
+
+    .activity-header {
+
+        position:
+            sticky;
+
+        top:
+            var(--slack-topbar-height);
+
+        z-index:
+            90;
+
+        padding:
+            16px 24px 12px;
+
+        background:
+            var(--background);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .activity-header-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+    }
+
+
+    .activity-heading {
+
+        flex:
+            1;
+
+        font-size:
+            22px;
+
+        font-weight:
+            800;
+    }
+
+
+    .mark-read-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            34px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--small-radius);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .mark-read-button .material-symbols-rounded {
+
+        font-size:
+            17px;
+    }
+
+
+    /* ======================================================
+       Filters
+       ====================================================== */
+
+    .activity-filters {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        margin-top:
+            14px;
+
+        overflow-x:
+            auto;
+
+        scrollbar-width:
+            none;
+    }
+
+
+    .activity-filters::-webkit-scrollbar {
+
+        display:
+            none;
+    }
+
+
+    .filter-button {
+
+        flex:
+            0 0 auto;
+
+        height:
+            32px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .filter-button.selected {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Feed
+       ====================================================== */
+
+    .activity-feed {
+
+        width:
+            min(
+                900px,
+                100%
+            );
+
+        padding:
+            12px 24px 120px;
+    }
+
+
+    .activity-group {
+
+        margin-bottom:
+            22px;
+    }
+
+
+    .activity-group-title {
+
+        padding:
+            10px 2px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-secondary);
+
+        text-transform:
+            uppercase;
+
+        letter-spacing:
+            0.04em;
+    }
+
+
+    .activity-card {
+
+        position:
+            relative;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            42px
+            minmax(0, 1fr);
+
+        gap:
+            11px;
+
+        margin-bottom:
+            7px;
+
+        padding:
+            13px 14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .activity-card.unread {
+
+        border-left:
+            4px solid
+            var(--primary);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .activity-avatar {
+
+        position:
+            relative;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .activity-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .activity-avatar-fallback {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        font-size:
+            15px;
+
+        font-weight:
+            800;
+    }
+
+
+    .activity-content {
+
+        min-width:
+            0;
+    }
+
+
+    .activity-meta {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        gap:
+            6px;
+    }
+
+
+    .activity-name {
+
+        overflow:
+            hidden;
+
+        max-width:
+            240px;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .activity-type-label {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .activity-time {
+
+        flex:
+            0 0 auto;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .activity-message {
+
+        margin-top:
+            6px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.45;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .activity-context {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        margin-top:
+            8px;
+    }
+
+
+    .context-chip {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+
+        height:
+            25px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--background);
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .context-chip .material-symbols-rounded {
+
+        font-size:
+            14px;
+    }
+
+
+    .reaction-chip {
+
+        font-size:
+            15px;
+    }
+
+
+    .activity-actions {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            6px;
+
+        margin-top:
+            10px;
+    }
+
+
+    .activity-action-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            4px;
+
+        height:
+            29px;
+
+        padding:
+            0 9px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--background);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .activity-action-button.primary {
+
+        border-color:
+            var(--primary);
+
+        color:
+            var(--primary);
+    }
+
+
+    .activity-action-button .material-symbols-rounded {
+
+        font-size:
+            16px;
+    }
+
+
+    .unread-indicator {
+
+        position:
+            absolute;
+
+        top:
+            11px;
+
+        right:
+            10px;
+
+        width:
+            7px;
+
+        height:
+            7px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Empty Side Information
+       ====================================================== */
+
+    .activity-main-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            280px;
+
+        align-items:
+            start;
+
+        gap:
+            28px;
+    }
+
+
+    .activity-summary {
+
+        position:
+            sticky;
+
+        top:
+            calc(
+                var(--slack-topbar-height)
+                + 120px
+            );
+
+        margin:
+            18px 24px 0 0;
+
+        padding:
+            18px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .summary-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        margin-bottom:
+            12px;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .summary-title {
+
+        font-size:
+            15px;
+
+        font-weight:
+            800;
+    }
+
+
+    .summary-value {
+
+        margin-top:
+            7px;
+
+        font-size:
+            28px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--primary);
+    }
+
+
+    .summary-description {
+
+        margin-top:
+            4px;
+
+        font-size:
+            12px;
+
+        line-height:
+            1.4;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Mobile Nav
+       ====================================================== */
+
+    .mobile-bottom-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .activity-topbar {
+
+            top:
+                var(--status-bar-height);
+
+            grid-template-columns:
+                minmax(220px, 1fr)
+                auto;
+        }
+
+
+        .topbar-left {
+
+            display:
+                none;
+        }
+
+
+        .activity-sidebar {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + var(--slack-topbar-height)
+                );
+
+            height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - var(--slack-topbar-height)
+                );
+        }
+
+
+        .activity-header {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + var(--slack-topbar-height)
+                );
+        }
+
+
+        .activity-main-layout {
+
+            display:
+                block;
+        }
+
+
+        .activity-summary {
+
+            display:
+                none;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .activity-topbar {
+
+            top:
+                var(--status-bar-height);
+
+            grid-template-columns:
+                1fr
+                auto;
+
+            gap:
+                8px;
+
+            height:
+                52px;
+
+            padding:
+                0 12px;
+        }
+
+
+        .topbar-left {
+
+            display:
+                none;
+        }
+
+
+        .activity-layout {
+
+            display:
+                block;
+
+            min-height:
+                0;
+        }
+
+
+        .activity-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .activity-header {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + 52px
+                );
+
+            padding:
+                13px 14px 10px;
+        }
+
+
+        .activity-heading {
+
+            font-size:
+                20px;
+        }
+
+
+        .mark-read-button {
+
+            width:
+                34px;
+
+            padding:
+                0;
+        }
+
+
+        .mark-read-text {
+
+            display:
+                none;
+        }
+
+
+        .activity-main-layout {
+
+            display:
+                block;
+        }
+
+
+        .activity-feed {
+
+            width:
+                100%;
+
+            padding:
+                8px 10px
+                calc(
+                    var(--mobile-nav-height)
+                    + 22px
+                );
+        }
+
+
+        .activity-summary {
+
+            display:
+                none;
+        }
+
+
+        .activity-group {
+
+            margin-bottom:
+                14px;
+        }
+
+
+        .activity-group-title {
+
+            padding:
+                9px 4px;
+        }
+
+
+        .activity-card {
+
+            grid-template-columns:
+                36px
+                minmax(0, 1fr);
+
+            gap:
+                9px;
+
+            padding:
+                11px 10px;
+
+            border-radius:
+                10px;
+        }
+
+
+        .activity-avatar {
+
+            width:
+                35px;
+
+            height:
+                35px;
+
+            border-radius:
+                7px;
+        }
+
+
+        .activity-name {
+
+            max-width:
+                130px;
+
+            font-size:
+                12.5px;
+        }
+
+
+        .activity-type-label {
+
+            font-size:
+                11px;
+        }
+
+
+        .activity-message {
+
+            font-size:
+                12.5px;
+        }
+
+
+        .activity-action-button {
+
+            height:
+                28px;
+        }
+
+
+        .mobile-bottom-navigation {
+
+            position:
+                fixed;
+
+            z-index:
+                140;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            left:
+                0;
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    1fr
+                );
+
+            height:
+                var(--mobile-nav-height);
+
+            background:
+                var(--surface);
+
+            border-top:
+                1px solid
+                var(--border-subtle);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                3px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-item.selected {
+
+            color:
+                var(--primary);
+        }
+
+
+        .mobile-nav-icon {
+
+            font-size:
+                21px;
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .activity-card {
+
+            padding-right:
+                8px;
+
+            padding-left:
+                8px;
+        }
+
+
+        .activity-time {
+
+            font-size:
+                10px;
+        }
+
+
+        .context-chip {
+
+            padding:
+                0 6px;
+        }
+
+    }
+
+</style>
+
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="activity-page">
+
+
+    <!-- =====================================================
+         Top Bar
+         ===================================================== -->
+
+    <header
+        class="activity-topbar"
+        data-class="app_bar"
+        data-semantic="activity_top_bar"
+        data-occluder="true"
+    >
+
+
+        <div class="topbar-side topbar-left">
+
+            <button
+                class="topbar-button"
+                data-class="button"
+                data-semantic="history_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="history_icon"
+                >
+                    history
+                </span>
+            </button>
+
+        </div>
+
+
+        <div
+            class="activity-search"
+            data-class="search_bar"
+            data-semantic="activity_search"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="search_icon"
+            >
+                search
+            </span>
+
+            <span class="search-text">
+
+                {{ activity.search_placeholder }}
+
+            </span>
+
+        </div>
+
+
+        <div class="topbar-side">
+
+            <button
+                class="topbar-button"
+                data-class="button"
+                data-semantic="help_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="help_icon"
+                >
+                    help
+                </span>
+            </button>
+
+
+            <button
+                class="topbar-button"
+                data-class="button"
+                data-semantic="profile_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="profile_icon"
+                >
+                    account_circle
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         Page Layout
+         ===================================================== -->
+
+    <div class="activity-layout">
+
+
+        <!-- =================================================
+             Sidebar
+             ================================================= -->
+
+        <aside
+            class="activity-sidebar"
+            data-class="navigation_bar"
+            data-semantic="activity_sidebar"
+        >
+
+
+            <div class="workspace-heading">
+
+                <div
+                    class="workspace-avatar"
+                    data-class="avatar"
+                    data-semantic="workspace_avatar"
+                >
+
+                    {% if activity.workspace.image %}
+
+                    <img
+                        src="{{ activity.workspace.image }}"
+                        alt=""
+                    >
+
+                    {% else %}
+
+                    {{ activity.workspace.name[0] }}
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="workspace-name">
+
+                    {{ activity.workspace.name }}
+
+                </div>
+
+            </div>
+
+
+            <!-- Primary Navigation -->
+
+            <nav class="sidebar-navigation">
+
+
+                <div
+                    class="sidebar-item"
+                    data-class="navigation_item"
+                    data-semantic="home_navigation"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-item-icon
+                        "
+                        data-class="icon"
+                        data-semantic="home_icon"
+                    >
+                        home
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        Home
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="
+                        sidebar-item
+                        selected
+                    "
+                    data-class="navigation_item"
+                    data-semantic="activity_navigation"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-item-icon
+                        "
+                        data-class="icon"
+                        data-semantic="activity_icon"
+                    >
+                        notifications
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        Activity
+                    </span>
+
+
+                    {% if activity.unread_count %}
+
+                    <span
+                        class="sidebar-count"
+                        data-class="badge"
+                        data-semantic="activity_unread_count"
+                    >
+                        {{ activity.unread_count }}
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div
+                    class="sidebar-item"
+                    data-class="navigation_item"
+                    data-semantic="later_navigation"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-item-icon
+                        "
+                        data-class="icon"
+                        data-semantic="later_icon"
+                    >
+                        bookmark
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        Later
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="sidebar-item"
+                    data-class="navigation_item"
+                    data-semantic="more_navigation"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-item-icon
+                        "
+                        data-class="icon"
+                        data-semantic="more_icon"
+                    >
+                        more_horiz
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        More
+                    </span>
+
+                </div>
+
+            </nav>
+
+
+            <!-- Channels -->
+
+            <section
+                class="sidebar-section"
+                data-class="section"
+                data-semantic="channels_section"
+            >
+
+                <div class="sidebar-section-title">
+
+                    <span>
+                        Channels
+                    </span>
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="channels_expand_icon"
+                    >
+                        expand_more
+                    </span>
+
+                </div>
+
+
+                {% for channel in activity.channels %}
+
+                <div
+                    class="sidebar-item"
+                    data-class="list_item"
+                    data-semantic="channel_{{ loop.index }}"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-item-icon
+                        "
+                        data-class="icon"
+                        data-semantic="channel_icon"
+                    >
+                        tag
+                    </span>
+
+
+                    <span class="sidebar-item-text">
+
+                        {{ channel.name }}
+
+                    </span>
+
+
+                    {% if channel.unread %}
+
+                    <span
+                        class="sidebar-count"
+                        data-class="badge"
+                        data-semantic="channel_unread"
+                    >
+
+                        {{ channel.unread }}
+
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+                {% endfor %}
+
+            </section>
+
+
+            <!-- DMs -->
+
+            <section
+                class="sidebar-section"
+                data-class="section"
+                data-semantic="direct_messages_section"
+            >
+
+                <div class="sidebar-section-title">
+
+                    <span>
+                        Direct messages
+                    </span>
+
+                </div>
+
+
+                {% for person in activity.direct_messages %}
+
+                <div
+                    class="sidebar-item"
+                    data-class="list_item"
+                    data-semantic="direct_message_{{ loop.index }}"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-item-icon
+                        "
+                        data-class="icon"
+                        data-semantic="direct_message_icon"
+                    >
+                        person
+                    </span>
+
+
+                    <span class="sidebar-item-text">
+
+                        {{ person.name }}
+
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </section>
+
+        </aside>
+
+
+        <!-- =================================================
+             Activity Main
+             ================================================= -->
+
+        <main
+            class="activity-main"
+            data-class="section"
+            data-semantic="activity_content"
+        >
+
+
+            <!-- Header -->
+
+            <header
+                class="activity-header"
+                data-class="app_bar"
+                data-semantic="activity_header"
+                data-occluder="true"
+            >
+
+                <div class="activity-header-row">
+
+                    <h1 class="activity-heading">
+
+                        Activity
+
+                    </h1>
+
+
+                    <button
+                        class="mark-read-button"
+                        data-class="button"
+                        data-semantic="mark_all_read_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="mark_read_icon"
+                        >
+                            done_all
+                        </span>
+
+
+                        <span class="mark-read-text">
+
+                            Mark all read
+
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                <!-- Filters -->
+
+                <div
+                    class="activity-filters"
+                    data-class="toolbar"
+                    data-semantic="activity_filters"
+                >
+
+                    {% for filter in activity.filters %}
+
+                    <button
+                        class="
+                            filter-button
+                            {% if filter.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="tab"
+                        data-semantic="activity_filter_{{ filter.label|lower }}"
+                    >
+
+                        {{ filter.label }}
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+            </header>
+
+
+            <!-- Main Grid -->
+
+            <div class="activity-main-layout">
+
+
+                <!-- Activity Feed -->
+
+                <section
+                    class="activity-feed"
+                    data-class="section"
+                    data-semantic="activity_feed"
+                >
+
+
+                    {% for group in activity.activity_groups %}
+
+                    <section
+                        class="activity-group"
+                        data-class="section"
+                        data-semantic="activity_group_{{ loop.index }}"
+                    >
+
+                        <div class="activity-group-title">
+
+                            {{ group.title }}
+
+                        </div>
+
+
+                        {% for item in group["items"] %}
+
+                        <article
+                            class="
+                                activity-card
+                                {% if item.unread %}
+                                unread
+                                {% endif %}
+                            "
+                            data-class="card"
+                            data-semantic="activity_item_{{ item.id }}"
+                        >
+
+
+                            <!-- Avatar -->
+
+                            <div
+                                class="activity-avatar"
+                                data-class="avatar"
+                                data-semantic="activity_avatar"
+                            >
+
+                                {% if item.person.avatar %}
+
+                                <img
+                                    src="{{ item.person.avatar }}"
+                                    alt=""
+                                >
+
+                                {% else %}
+
+                                <span class="activity-avatar-fallback">
+                                    {{ item.person.name[0] }}
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- Content -->
+
+                            <div class="activity-content">
+
+
+                                <div class="activity-meta">
+
+
+                                    <span class="activity-name">
+
+                                        {{ item.person.name }}
+
+                                    </span>
+
+
+                                    <span class="activity-type-label">
+
+                                        {% if item.type == "mention" %}
+
+                                        mentioned you
+
+                                        {% elif item.type == "reaction" %}
+
+                                        reacted to your message
+
+                                        {% elif item.type == "thread_reply" %}
+
+                                        replied to a thread
+
+                                        {% elif item.type == "channel_invite" %}
+
+                                        invited you to a channel
+
+                                        {% else %}
+
+                                        sent you a message
+
+                                        {% endif %}
+
+                                    </span>
+
+
+                                    <span
+                                        class="activity-time"
+                                        data-class="timestamp"
+                                        data-semantic="activity_timestamp"
+                                    >
+
+                                        {{ item.time }}
+
+                                    </span>
+
+                                </div>
+
+
+                                <!-- Message -->
+
+                                <div class="activity-message">
+
+                                    {% if item.type == "reaction" %}
+
+                                    <strong>
+                                        {{ item.reaction }}
+                                    </strong>
+
+                                    {% endif %}
+
+                                    {{ item.message }}
+
+                                </div>
+
+
+                                <!-- Context -->
+
+                                <div class="activity-context">
+
+
+                                    {% if item.channel %}
+
+                                    <span
+                                        class="context-chip"
+                                        data-class="badge"
+                                        data-semantic="activity_channel"
+                                    >
+
+                                        <span
+                                            class="material-symbols-rounded"
+                                            data-class="icon"
+                                            data-semantic="channel_context_icon"
+                                        >
+                                            tag
+                                        </span>
+
+                                        {{ item.channel }}
+
+                                    </span>
+
+                                    {% endif %}
+
+
+                                    {% if item.reaction %}
+
+                                    <span
+                                        class="
+                                            context-chip
+                                            reaction-chip
+                                        "
+                                        data-class="badge"
+                                        data-semantic="activity_reaction"
+                                    >
+
+                                        {{ item.reaction }}
+
+                                    </span>
+
+                                    {% endif %}
+
+
+                                    {% if item.reply_count %}
+
+                                    <span
+                                        class="context-chip"
+                                        data-class="badge"
+                                        data-semantic="thread_reply_count"
+                                    >
+
+                                        <span
+                                            class="material-symbols-rounded"
+                                            data-class="icon"
+                                            data-semantic="thread_context_icon"
+                                        >
+                                            forum
+                                        </span>
+
+                                        {{ item.reply_count }}
+                                        replies
+
+                                    </span>
+
+                                    {% endif %}
+
+                                </div>
+
+
+                                <!-- Actions -->
+
+                                <div class="activity-actions">
+
+
+                                    {% if item.type == "mention" %}
+
+                                    <button
+                                        class="
+                                            activity-action-button
+                                            primary
+                                        "
+                                        data-class="button"
+                                        data-semantic="reply_to_mention"
+                                    >
+
+                                        <span
+                                            class="material-symbols-rounded"
+                                            data-class="icon"
+                                            data-semantic="reply_icon"
+                                        >
+                                            reply
+                                        </span>
+
+                                        Reply
+
+                                    </button>
+
+
+                                    <button
+                                        class="activity-action-button"
+                                        data-class="button"
+                                        data-semantic="view_message"
+                                    >
+
+                                        View message
+
+                                    </button>
+
+
+                                    {% elif item.type == "thread_reply" %}
+
+                                    <button
+                                        class="
+                                            activity-action-button
+                                            primary
+                                        "
+                                        data-class="button"
+                                        data-semantic="open_thread"
+                                    >
+
+                                        <span
+                                            class="material-symbols-rounded"
+                                            data-class="icon"
+                                            data-semantic="open_thread_icon"
+                                        >
+                                            forum
+                                        </span>
+
+                                        Open thread
+
+                                    </button>
+
+
+                                    {% elif item.type == "channel_invite" %}
+
+                                    <button
+                                        class="
+                                            activity-action-button
+                                            primary
+                                        "
+                                        data-class="button"
+                                        data-semantic="join_channel"
+                                    >
+
+                                        Join
+
+                                    </button>
+
+
+                                    <button
+                                        class="activity-action-button"
+                                        data-class="button"
+                                        data-semantic="dismiss_invite"
+                                    >
+
+                                        Dismiss
+
+                                    </button>
+
+
+                                    {% elif item.type == "direct_message" %}
+
+                                    <button
+                                        class="
+                                            activity-action-button
+                                            primary
+                                        "
+                                        data-class="button"
+                                        data-semantic="reply_to_dm"
+                                    >
+
+                                        Reply
+
+                                    </button>
+
+
+                                    {% else %}
+
+                                    <button
+                                        class="activity-action-button"
+                                        data-class="button"
+                                        data-semantic="view_reaction_message"
+                                    >
+
+                                        View message
+
+                                    </button>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
+
+                            {% if item.unread %}
+
+                            <span
+                                class="unread-indicator"
+                                data-class="selection_indicator"
+                                data-semantic="activity_unread_indicator"
+                            >
+                            </span>
+
+                            {% endif %}
+
+
+                        </article>
+
+                        {% endfor %}
+
+                    </section>
+
+                    {% endfor %}
+
+                </section>
+
+
+                <!-- Summary -->
+
+                <aside
+                    class="activity-summary"
+                    data-class="card"
+                    data-semantic="activity_summary"
+                >
+
+                    <div
+                        class="summary-icon"
+                        data-class="icon"
+                        data-semantic="activity_summary_icon"
+                    >
+
+                        <span class="material-symbols-rounded">
+                            notifications
+                        </span>
+
+                    </div>
+
+
+                    <div class="summary-title">
+
+                        Unread activity
+
+                    </div>
+
+
+                    <div
+                        class="summary-value"
+                        data-class="badge"
+                        data-semantic="summary_unread_count"
+                    >
+
+                        {{ activity.unread_count }}
+
+                    </div>
+
+
+                    <div class="summary-description">
+
+                        Mentions, replies and reactions
+                        that still need your attention.
+
+                    </div>
+
+                </aside>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Mobile Navigation
+         ===================================================== -->
+
+    <nav
+        class="mobile-bottom-navigation"
+        data-class="navigation_bar"
+        data-semantic="mobile_bottom_navigation"
+        data-occluder="true"
+    >
+
+
+        {% set mobile_items = [
+            ("home", "Home"),
+            ("chat", "DMs"),
+            ("notifications", "Activity"),
+            ("search", "Search")
+        ] %}
+
+
+        {% for icon, label in mobile_items %}
+
+        <button
+            class="
+                mobile-nav-item
+                {% if label == "Activity" %}
+                selected
+                {% endif %}
+            "
+            data-class="navigation_item"
+            data-semantic="mobile_{{ label|lower }}"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    mobile-nav-icon
+                "
+                data-class="icon"
+                data-semantic="mobile_{{ label|lower }}_icon"
+            >
+
+                {{ icon }}
+
+            </span>
+
+
+            <span class="mobile-nav-label">
+
+                {{ label }}
+
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+
+</div>
+
+
+{% endblock %}

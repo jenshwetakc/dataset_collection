@@ -1,0 +1,2843 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+Slack Workflow Builder
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .workflow-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .workflow-topbar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            180;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        height:
+            56px;
+
+        padding:
+            0 12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .workflow-back {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .workflow-heading {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .workflow-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+    }
+
+
+    .workflow-subtitle {
+
+        margin-top:
+            2px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .workflow-status {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        height:
+            25px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            8px;
+
+        font-weight:
+            800;
+    }
+
+
+    .workflow-status.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .workflow-collaborators {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+    }
+
+
+    .workflow-collaborator {
+
+        width:
+            27px;
+
+        height:
+            27px;
+
+        margin-left:
+            -6px;
+
+        overflow:
+            hidden;
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .workflow-collaborator:first-child {
+
+        margin-left:
+            0;
+    }
+
+
+    .workflow-collaborator img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .workflow-header-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            34px;
+
+        height:
+            34px;
+
+        padding:
+            0 9px;
+
+        border:
+            1px solid
+            transparent;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .workflow-header-button.primary {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Layout
+       ====================================================== */
+
+    .workflow-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            210px
+            minmax(0, 1fr)
+            330px;
+
+        min-height:
+            calc(
+                100vh
+                - 56px
+            );
+    }
+
+
+    /* ======================================================
+       Left Sidebar
+       ====================================================== */
+
+    .workflow-sidebar {
+
+        position:
+            sticky;
+
+        top:
+            56px;
+
+        align-self:
+            start;
+
+        height:
+            calc(
+                100vh
+                - 56px
+            );
+
+        padding:
+            10px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .sidebar-heading {
+
+        padding:
+            8px;
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .sidebar-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        height:
+            34px;
+
+        padding:
+            0 8px;
+
+        margin-bottom:
+            9px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .sidebar-search
+    .material-symbols-rounded {
+
+        font-size:
+            16px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .sidebar-search-text {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .library-section-title {
+
+        margin:
+            11px 7px 5px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            8px;
+
+        font-weight:
+            800;
+
+        text-transform:
+            uppercase;
+    }
+
+
+    .library-item {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            30px
+            minmax(0, 1fr);
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        min-height:
+            42px;
+
+        padding:
+            5px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .library-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    .library-icon
+    .material-symbols-rounded {
+
+        font-size:
+            17px;
+    }
+
+
+    .library-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Builder Canvas
+       ====================================================== */
+
+    .workflow-canvas {
+
+        position:
+            relative;
+
+        min-width:
+            0;
+
+        min-height:
+            calc(
+                100vh
+                - 56px
+            );
+
+        padding:
+            24px 24px 120px;
+
+        background:
+            var(--surface-variant);
+
+        background-image:
+            radial-gradient(
+                var(--border-subtle)
+                1px,
+                transparent 1px
+            );
+
+        background-size:
+            20px
+            20px;
+    }
+
+
+    .canvas-toolbar {
+
+        position:
+            sticky;
+
+        top:
+            68px;
+
+        z-index:
+            120;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            fit-content;
+
+        gap:
+            4px;
+
+        margin:
+            0 auto 20px;
+
+        padding:
+            5px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 5px 18px
+            rgba(
+                0,
+                0,
+                0,
+                0.10
+            );
+    }
+
+
+    .canvas-tool {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            31px;
+
+        height:
+            31px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .canvas-tool
+    .material-symbols-rounded {
+
+        font-size:
+            17px;
+    }
+
+
+    /* ======================================================
+       Workflow Flow
+       ====================================================== */
+
+    .flow-container {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        width:
+            min(
+                540px,
+                100%
+            );
+
+        margin:
+            0 auto;
+    }
+
+
+    /* ======================================================
+       Flow Node
+       ====================================================== */
+
+    .flow-node {
+
+        position:
+            relative;
+
+        width:
+            min(
+                430px,
+                100%
+            );
+
+        padding:
+            13px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            13px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 3px 12px
+            rgba(
+                0,
+                0,
+                0,
+                0.06
+            );
+    }
+
+
+    .flow-node.selected {
+
+        border-color:
+            var(--primary);
+
+        box-shadow:
+            0 0 0 2px
+            var(--primary-container);
+    }
+
+
+    .flow-node.error {
+
+        border-color:
+            var(--error);
+    }
+
+
+    .flow-node-header {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(0, 1fr)
+            auto;
+
+        gap:
+            9px;
+
+        align-items:
+            center;
+    }
+
+
+    .flow-node-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            9px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .flow-node-icon
+    .material-symbols-rounded {
+
+        font-size:
+            20px;
+    }
+
+
+    .flow-node-info {
+
+        min-width:
+            0;
+    }
+
+
+    .flow-node-type {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            8px;
+
+        font-weight:
+            800;
+
+        text-transform:
+            uppercase;
+    }
+
+
+    .flow-node-title {
+
+        margin-top:
+            2px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .flow-node-description {
+
+        margin-top:
+            5px;
+
+        font-size:
+            9px;
+
+        line-height:
+            1.4;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .node-more {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .node-status-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            5px;
+
+        margin-top:
+            9px;
+    }
+
+
+    .node-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+
+        height:
+            23px;
+
+        padding:
+            0 7px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            8px;
+
+        font-weight:
+            700;
+    }
+
+
+    .node-badge.error {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    .node-reaction {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            25px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+    }
+
+
+    .node-reaction img {
+
+        width:
+            18px;
+
+        height:
+            18px;
+
+        object-fit:
+            contain;
+    }
+
+
+    /* ======================================================
+       Connector
+       ====================================================== */
+
+    .flow-connector {
+
+        position:
+            relative;
+
+        width:
+            2px;
+
+        height:
+            42px;
+
+        background:
+            var(--border);
+    }
+
+
+    .flow-connector::after {
+
+        content:
+            "";
+
+        position:
+            absolute;
+
+        bottom:
+            -1px;
+
+        left:
+            50%;
+
+        width:
+            8px;
+
+        height:
+            8px;
+
+        transform:
+            translateX(-50%);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--border);
+    }
+
+
+    .add-step-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        margin:
+            8px 0;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 3px 9px
+            rgba(
+                0,
+                0,
+                0,
+                0.08
+            );
+    }
+
+
+    /* ======================================================
+       Right Panel
+       ====================================================== */
+
+    .workflow-panel {
+
+        position:
+            sticky;
+
+        top:
+            56px;
+
+        align-self:
+            start;
+
+        height:
+            calc(
+                100vh
+                - 56px
+            );
+
+        border-left:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .workflow-panel-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            52px;
+
+        padding:
+            0 12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .workflow-panel-title {
+
+        flex:
+            1;
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .panel-close {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .workflow-panel-body {
+
+        padding:
+            12px 12px 100px;
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       Configure Panel
+       ====================================================== */
+
+    .config-step-header {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(0, 1fr);
+
+        gap:
+            8px;
+
+        padding-bottom:
+            12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .config-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            9px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .config-title {
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .config-subtitle {
+
+        margin-top:
+            3px;
+
+        font-size:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .config-section {
+
+        margin-top:
+            15px;
+    }
+
+
+    .config-label {
+
+        margin-bottom:
+            6px;
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+    }
+
+
+    .config-input {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            38px;
+
+        padding:
+            0 9px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--background);
+
+        font-size:
+            9px;
+    }
+
+
+    .config-select {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        height:
+            38px;
+
+        padding:
+            0 9px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .config-select-value {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            9px;
+    }
+
+
+    .config-description {
+
+        margin-top:
+            5px;
+
+        font-size:
+            8px;
+
+        line-height:
+            1.4;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .config-switch-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        margin-top:
+            14px;
+
+        padding-top:
+            12px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .workflow-switch {
+
+        position:
+            relative;
+
+        width:
+            40px;
+
+        height:
+            23px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--border);
+    }
+
+
+    .workflow-switch.enabled {
+
+        background:
+            var(--primary);
+    }
+
+
+    .workflow-switch-thumb {
+
+        position:
+            absolute;
+
+        top:
+            3px;
+
+        left:
+            3px;
+
+        width:
+            17px;
+
+        height:
+            17px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+    }
+
+
+    .workflow-switch.enabled
+    .workflow-switch-thumb {
+
+        left:
+            20px;
+    }
+
+
+    /* ======================================================
+       Steps Panel
+       ====================================================== */
+
+    .panel-step-list {
+
+        display:
+            grid;
+
+        gap:
+            6px;
+    }
+
+
+    .panel-step-item {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            31px
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        min-height:
+            47px;
+
+        padding:
+            6px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .panel-step-item.selected {
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .panel-step-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            31px;
+
+        height:
+            31px;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .panel-step-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    .panel-step-number {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            21px;
+
+        height:
+            21px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            8px;
+    }
+
+
+    /* ======================================================
+       Bottom Run Bar
+       ====================================================== */
+
+    .workflow-runbar {
+
+        position:
+            fixed;
+
+        z-index:
+            170;
+
+        right:
+            350px;
+
+        bottom:
+            14px;
+
+        left:
+            230px;
+
+        display:
+            flex;
+
+        justify-content:
+            center;
+
+        pointer-events:
+            none;
+    }
+
+
+    .runbar-inner {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        padding:
+            7px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 8px 24px
+            rgba(
+                0,
+                0,
+                0,
+                0.15
+            );
+
+        pointer-events:
+            auto;
+    }
+
+
+    .runbar-info {
+
+        padding:
+            0 8px;
+
+        font-size:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .runbar-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            4px;
+
+        height:
+            34px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--small-radius);
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+    }
+
+
+    .runbar-button.primary {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .workflow-topbar {
+
+            top:
+                var(--status-bar-height);
+        }
+
+
+        .workflow-layout {
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                280px;
+        }
+
+
+        .workflow-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .workflow-panel {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + 56px
+                );
+
+            height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - 56px
+                );
+        }
+
+
+        .canvas-toolbar {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + 68px
+                );
+        }
+
+
+        .workflow-runbar {
+
+            left:
+                14px;
+
+            right:
+                294px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .workflow-topbar {
+
+            top:
+                var(--status-bar-height);
+
+            height:
+                52px;
+
+            padding:
+                0 8px;
+        }
+
+
+        .workflow-collaborators {
+
+            display:
+                none;
+        }
+
+
+        .workflow-status {
+
+            display:
+                none;
+        }
+
+
+        .workflow-header-button.publish {
+
+            display:
+                none;
+        }
+
+
+        .workflow-layout {
+
+            display:
+                block;
+
+            min-height:
+                0;
+        }
+
+
+        .workflow-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .workflow-panel {
+
+            display:
+                none;
+        }
+
+
+        .workflow-canvas {
+
+            min-height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - 52px
+                );
+
+            padding:
+                14px 9px 100px;
+        }
+
+
+        .canvas-toolbar {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + 60px
+                );
+
+            margin-bottom:
+                15px;
+        }
+
+
+        .flow-node {
+
+            width:
+                100%;
+
+            padding:
+                11px;
+        }
+
+
+        .workflow-runbar {
+
+            right:
+                8px;
+
+            bottom:
+                8px;
+
+            left:
+                8px;
+        }
+
+
+        .runbar-inner {
+
+            width:
+                100%;
+
+            justify-content:
+                space-between;
+        }
+
+
+        .runbar-info {
+
+            display:
+                none;
+        }
+
+
+        .runbar-button {
+
+            flex:
+                1;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="workflow-page">
+
+
+    <!-- =====================================================
+         Header
+         ===================================================== -->
+
+    <header
+        class="workflow-topbar"
+        data-class="app_bar"
+        data-semantic="workflow_header"
+        data-occluder="true"
+    >
+
+        <button
+            class="workflow-back"
+            data-class="button"
+            data-semantic="workflow_back"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="workflow_back_icon"
+            >
+                arrow_back
+            </span>
+
+        </button>
+
+
+        <div class="workflow-heading">
+
+            <div class="workflow-title">
+
+                {{ workflow.workflow_name }}
+
+            </div>
+
+
+            <div class="workflow-subtitle">
+
+                #{{ workflow.channel }}
+                ·
+                {{ workflow.last_run }}
+
+            </div>
+
+        </div>
+
+
+        <span
+            class="
+                workflow-status
+                {% if workflow.status == "Active" %}
+                active
+                {% endif %}
+            "
+            data-class="badge"
+            data-semantic="workflow_status"
+        >
+
+            {{ workflow.status }}
+
+        </span>
+
+
+        <div class="workflow-collaborators">
+
+            {% for person in workflow.collaborators %}
+
+            <div
+                class="workflow-collaborator"
+                data-class="avatar"
+                data-semantic="workflow_collaborator"
+            >
+
+                {% if person.avatar %}
+
+                <img
+                    src="{{ person.avatar }}"
+                    alt=""
+                >
+
+                {% endif %}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+
+        <button
+            class="workflow-header-button"
+            data-class="button"
+            data-semantic="workflow_more"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="workflow_more_icon"
+            >
+                more_vert
+            </span>
+
+        </button>
+
+
+        <button
+            class="
+                workflow-header-button
+                primary
+                publish
+            "
+            data-class="button"
+            data-semantic="publish_workflow"
+        >
+
+            Publish
+
+        </button>
+
+    </header>
+
+
+    <!-- =====================================================
+         Main Layout
+         ===================================================== -->
+
+    <div class="workflow-layout">
+
+
+        <!-- =================================================
+             Step Library
+             ================================================= -->
+
+        <aside
+            class="workflow-sidebar"
+            data-class="navigation_bar"
+            data-semantic="workflow_step_library"
+        >
+
+            <div class="sidebar-heading">
+
+                Add a step
+
+            </div>
+
+
+            <div
+                class="sidebar-search"
+                data-class="search_bar"
+                data-semantic="workflow_step_search"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="workflow_step_search_icon"
+                >
+                    search
+                </span>
+
+
+                <span class="sidebar-search-text">
+
+                    {{ workflow.search_placeholder }}
+
+                </span>
+
+            </div>
+
+
+            <div class="library-section-title">
+
+                Actions
+
+            </div>
+
+
+            {% for step in workflow.steps %}
+
+            <div
+                class="library-item"
+                data-class="navigation_item"
+                data-semantic="workflow_library_{{ step.id }}"
+            >
+
+                <div
+                    class="library-icon"
+                    data-class="icon"
+                    data-semantic="workflow_library_icon"
+                >
+
+                    <span class="material-symbols-rounded">
+                        {{ step.icon }}
+                    </span>
+
+                </div>
+
+
+                <div class="library-name">
+
+                    {{ step.title }}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </aside>
+
+
+        <!-- =================================================
+             Builder
+             ================================================= -->
+
+        <main
+            class="workflow-canvas"
+            data-class="section"
+            data-semantic="workflow_canvas"
+        >
+
+
+            <!-- Canvas toolbar -->
+
+            <div
+                class="canvas-toolbar"
+                data-class="toolbar"
+                data-semantic="workflow_canvas_toolbar"
+                data-occluder="true"
+            >
+
+                {% for icon in [
+                    "undo",
+                    "redo",
+                    "zoom_in",
+                    "zoom_out",
+                    "center_focus_strong"
+                ] %}
+
+                <button
+                    class="canvas-tool"
+                    data-class="button"
+                    data-semantic="workflow_canvas_tool_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="workflow_canvas_tool_icon"
+                    >
+                        {{ icon }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- Workflow Flow -->
+
+            <section
+                class="flow-container"
+                data-class="section"
+                data-semantic="workflow_flow"
+            >
+
+
+                <!-- Trigger -->
+
+                <article
+                    class="flow-node"
+                    data-class="card"
+                    data-semantic="workflow_trigger"
+                >
+
+                    <div class="flow-node-header">
+
+                        <div
+                            class="flow-node-icon"
+                            data-class="icon"
+                            data-semantic="workflow_trigger_icon"
+                        >
+
+                            <span class="material-symbols-rounded">
+                                {{ workflow.trigger.icon }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="flow-node-info">
+
+                            <div class="flow-node-type">
+
+                                Trigger
+
+                            </div>
+
+
+                            <div class="flow-node-title">
+
+                                {{ workflow.trigger.title }}
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            class="node-more"
+                            data-class="button"
+                            data-semantic="workflow_trigger_more"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="workflow_trigger_more_icon"
+                            >
+                                more_vert
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="flow-node-description">
+
+                        {{ workflow.trigger.description }}
+
+                    </div>
+
+
+                    <div class="node-status-row">
+
+                        <span
+                            class="node-badge"
+                            data-class="badge"
+                            data-semantic="trigger_channel"
+                        >
+
+                            #{{ workflow.channel }}
+
+                        </span>
+
+                    </div>
+
+                </article>
+
+
+                <div
+                    class="flow-connector"
+                    data-semantic="trigger_connector"
+                >
+                </div>
+
+
+                <!-- Actions -->
+
+                {% for step in workflow.steps %}
+
+                <article
+                    class="
+                        flow-node
+                        {% if
+                            step.id
+                            == workflow.selected_step.id
+                        %}
+                        selected
+                        {% endif %}
+                        {% if step.has_error %}
+                        error
+                        {% endif %}
+                    "
+                    data-class="card"
+                    data-semantic="workflow_step_{{ step.id }}"
+                >
+
+                    <div class="flow-node-header">
+
+                        <div
+                            class="flow-node-icon"
+                            data-class="icon"
+                            data-semantic="workflow_step_icon"
+                        >
+
+                            <span class="material-symbols-rounded">
+                                {{ step.icon }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="flow-node-info">
+
+                            <div class="flow-node-type">
+
+                                Step {{ loop.index }}
+
+                            </div>
+
+
+                            <div class="flow-node-title">
+
+                                {{ step.title }}
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            class="node-more"
+                            data-class="button"
+                            data-semantic="workflow_step_more"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="workflow_step_more_icon"
+                            >
+                                more_vert
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="flow-node-description">
+
+                        {{ step.description }}
+
+                    </div>
+
+
+                    <div class="node-status-row">
+
+                        {% if step.has_error %}
+
+                        <span
+                            class="
+                                node-badge
+                                error
+                            "
+                            data-class="badge"
+                            data-semantic="workflow_step_error"
+                        >
+
+                            Needs attention
+
+                        </span>
+
+                        {% else %}
+
+                        <span
+                            class="node-badge"
+                            data-class="badge"
+                            data-semantic="workflow_step_ready"
+                        >
+
+                            Ready
+
+                        </span>
+
+                        {% endif %}
+
+
+                        {% if step.reaction %}
+
+                        <span
+                            class="node-reaction"
+                            data-class="button"
+                            data-semantic="workflow_step_reaction"
+                        >
+
+                            <img
+                                src="{{ step.reaction.image }}"
+                                alt=""
+                                data-class="emoji"
+                                data-semantic="workflow_step_emoji"
+                                data-emoji-source="{{ step.reaction.source }}"
+                                data-emoji-name="{{ step.reaction.name }}"
+                            >
+
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </article>
+
+
+                {% if not loop.last %}
+
+                <div
+                    class="flow-connector"
+                    data-semantic="workflow_connector_{{ loop.index }}"
+                >
+                </div>
+
+                {% endif %}
+
+                {% endfor %}
+
+
+                <!-- Add Step -->
+
+                <button
+                    class="add-step-button"
+                    data-class="button"
+                    data-semantic="add_workflow_step"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="add_workflow_step_icon"
+                    >
+                        add
+                    </span>
+
+                </button>
+
+            </section>
+
+        </main>
+
+
+        <!-- =================================================
+             Side Panel
+             ================================================= -->
+
+        <aside
+            class="workflow-panel"
+            data-class="section"
+            data-semantic="workflow_side_panel"
+        >
+
+            <header
+                class="workflow-panel-header"
+                data-class="app_bar"
+                data-semantic="workflow_panel_header"
+            >
+
+                <div class="workflow-panel-title">
+
+                    {% if workflow.side_panel == "configure" %}
+
+                    Configure step
+
+                    {% else %}
+
+                    Workflow steps
+
+                    {% endif %}
+
+                </div>
+
+
+                <button
+                    class="panel-close"
+                    data-class="button"
+                    data-semantic="close_workflow_panel"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_workflow_panel_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <div class="workflow-panel-body">
+
+
+                {% if workflow.side_panel == "configure" %}
+
+
+                <!-- =============================================
+                     Configure Panel
+                     ============================================= -->
+
+                <div class="config-step-header">
+
+                    <div
+                        class="config-icon"
+                        data-class="icon"
+                        data-semantic="selected_step_icon"
+                    >
+
+                        <span class="material-symbols-rounded">
+
+                            {{ workflow.selected_step.icon }}
+
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <div class="config-title">
+
+                            {{ workflow.selected_step.title }}
+
+                        </div>
+
+
+                        <div class="config-subtitle">
+
+                            Step {{ workflow.selected_step.id }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <section
+                    class="config-section"
+                    data-class="section"
+                    data-semantic="step_configuration"
+                >
+
+                    <div class="config-label">
+
+                        Channel
+
+                    </div>
+
+
+                    <button
+                        class="config-select"
+                        data-class="button"
+                        data-semantic="workflow_channel_select"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="workflow_channel_icon"
+                        >
+                            tag
+                        </span>
+
+
+                        <span class="config-select-value">
+
+                            {{ workflow.channel }}
+
+                        </span>
+
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="workflow_channel_expand"
+                        >
+                            expand_more
+                        </span>
+
+                    </button>
+
+
+                    <div class="config-description">
+
+                        Choose where this workflow
+                        action should run.
+
+                    </div>
+
+                </section>
+
+
+                <section
+                    class="config-section"
+                    data-class="section"
+                    data-semantic="step_message_configuration"
+                >
+
+                    <div class="config-label">
+
+                        Message
+
+                    </div>
+
+
+                    <div
+                        class="config-input"
+                        data-class="input_field"
+                        data-semantic="workflow_message_field"
+                    >
+
+                        Send an automated update
+                        when this step runs.
+
+                    </div>
+
+                </section>
+
+
+                <div
+                    class="config-switch-row"
+                    data-class="list_item"
+                    data-semantic="workflow_step_enabled_setting"
+                >
+
+                    <div>
+
+                        <div class="config-label">
+
+                            Enable this step
+
+                        </div>
+
+
+                        <div class="config-description">
+
+                            Disabled steps will
+                            be skipped during runs.
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="
+                            workflow-switch
+                            {% if workflow.selected_step.enabled %}
+                            enabled
+                            {% endif %}
+                        "
+                        data-class="switch"
+                        data-semantic="workflow_step_switch"
+                    >
+
+                        <span
+                            class="workflow-switch-thumb"
+                            data-class="selection_indicator"
+                            data-semantic="workflow_step_switch_thumb"
+                        >
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                {% else %}
+
+
+                <!-- =============================================
+                     Steps Panel
+                     ============================================= -->
+
+                <section
+                    class="panel-step-list"
+                    data-class="section"
+                    data-semantic="workflow_steps_list"
+                >
+
+
+                    <div
+                        class="panel-step-item"
+                        data-class="list_item"
+                        data-semantic="workflow_trigger_list_item"
+                    >
+
+                        <div
+                            class="panel-step-icon"
+                            data-class="icon"
+                            data-semantic="workflow_trigger_list_icon"
+                        >
+
+                            <span class="material-symbols-rounded">
+
+                                {{ workflow.trigger.icon }}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="panel-step-name">
+
+                            {{ workflow.trigger.title }}
+
+                        </div>
+
+
+                        <span
+                            class="panel-step-number"
+                            data-class="badge"
+                            data-semantic="workflow_trigger_number"
+                        >
+
+                            T
+
+                        </span>
+
+                    </div>
+
+
+                    {% for step in workflow.steps %}
+
+                    <div
+                        class="
+                            panel-step-item
+                            {% if
+                                step.id
+                                == workflow.selected_step.id
+                            %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="list_item"
+                        data-semantic="workflow_step_list_{{ step.id }}"
+                    >
+
+                        <div
+                            class="panel-step-icon"
+                            data-class="icon"
+                            data-semantic="workflow_step_list_icon"
+                        >
+
+                            <span class="material-symbols-rounded">
+
+                                {{ step.icon }}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="panel-step-name">
+
+                            {{ step.title }}
+
+                        </div>
+
+
+                        <span
+                            class="panel-step-number"
+                            data-class="badge"
+                            data-semantic="workflow_step_number"
+                        >
+
+                            {{ step.id }}
+
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </section>
+
+                {% endif %}
+
+            </div>
+
+        </aside>
+
+    </div>
+
+
+    <!-- =====================================================
+         Run Bar
+         ===================================================== -->
+
+    <div
+        class="workflow-runbar"
+        data-occluder="true"
+    >
+
+        <div
+            class="runbar-inner"
+            data-class="toolbar"
+            data-semantic="workflow_run_controls"
+        >
+
+            <div class="runbar-info">
+
+                {{ workflow.run_count }}
+                runs ·
+                Last run {{ workflow.last_run }}
+
+            </div>
+
+
+            <button
+                class="runbar-button"
+                data-class="button"
+                data-semantic="test_workflow"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="test_workflow_icon"
+                >
+                    science
+                </span>
+
+                Test
+
+            </button>
+
+
+            <button
+                class="
+                    runbar-button
+                    primary
+                "
+                data-class="button"
+                data-semantic="run_workflow"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="run_workflow_icon"
+                >
+                    play_arrow
+                </span>
+
+                Run
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+{% endblock %}

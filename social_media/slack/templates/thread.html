@@ -1,0 +1,2706 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+Slack Thread
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .thread-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Top Bar
+       ====================================================== */
+
+    .thread-topbar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            150;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(260px, 620px)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        height:
+            var(--slack-topbar-height);
+
+        padding:
+            0 16px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .topbar-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .topbar-actions:last-child {
+
+        justify-content:
+            flex-end;
+    }
+
+
+    .topbar-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon);
+    }
+
+
+    .thread-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            34px;
+
+        padding:
+            0 11px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .thread-search-icon {
+
+        margin-right:
+            7px;
+
+        font-size:
+            18px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .thread-search-text {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            13px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Main Grid
+       ====================================================== */
+
+    .thread-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            var(--channel-sidebar-width)
+            minmax(420px, 1fr)
+            minmax(
+                320px,
+                var(--details-panel-width)
+            );
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                - var(--slack-topbar-height)
+            );
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .thread-sidebar {
+
+        position:
+            sticky;
+
+        top:
+            var(--slack-topbar-height);
+
+        align-self:
+            start;
+
+        height:
+            calc(
+                100vh
+                - var(--slack-topbar-height)
+            );
+
+        overflow:
+            hidden;
+
+        padding:
+            12px 10px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .workspace-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        height:
+            46px;
+
+        padding:
+            0 7px 8px;
+    }
+
+
+    .workspace-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        flex:
+            0 0 auto;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+
+        font-weight:
+            800;
+    }
+
+
+    .workspace-logo img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .workspace-name {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            15px;
+
+        font-weight:
+            800;
+    }
+
+
+    .sidebar-section {
+
+        margin-top:
+            12px;
+    }
+
+
+    .sidebar-title {
+
+        padding:
+            7px 8px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        height:
+            34px;
+
+        gap:
+            5px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .sidebar-row.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .sidebar-row-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            24px;
+
+        flex:
+            0 0 24px;
+
+        font-size:
+            17px;
+    }
+
+
+    .sidebar-row-text {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            13px;
+    }
+
+
+    .sidebar-badge {
+
+        min-width:
+            20px;
+
+        height:
+            20px;
+
+        padding:
+            0 6px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--badge-background);
+
+        color:
+            var(--badge-text);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+
+        line-height:
+            20px;
+
+        text-align:
+            center;
+    }
+
+
+    /* ======================================================
+       Conversation
+       ====================================================== */
+
+    .thread-conversation {
+
+        min-width:
+            0;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .channel-header {
+
+        position:
+            sticky;
+
+        top:
+            var(--slack-topbar-height);
+
+        z-index:
+            100;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            62px;
+
+        padding:
+            8px 18px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .channel-header-info {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .channel-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        font-size:
+            17px;
+
+        font-weight:
+            800;
+    }
+
+
+    .channel-description {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .channel-header-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        margin-left:
+            10px;
+    }
+
+
+    .channel-header-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            34px;
+
+        height:
+            34px;
+
+        padding:
+            0 8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    /* ======================================================
+       Messages
+       ====================================================== */
+
+    .conversation-messages {
+
+        padding:
+            12px 0 80px;
+    }
+
+
+    .conversation-message {
+
+        position:
+            relative;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            40px
+            minmax(0, 1fr);
+
+        gap:
+            10px;
+
+        padding:
+            9px 20px;
+    }
+
+
+    .conversation-message.selected {
+
+        background:
+            var(--primary-container);
+
+        border-left:
+            3px solid
+            var(--primary);
+    }
+
+
+    .message-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .message-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .message-content {
+
+        min-width:
+            0;
+    }
+
+
+    .message-meta {
+
+        display:
+            flex;
+
+        align-items:
+            baseline;
+
+        gap:
+            6px;
+    }
+
+
+    .message-author {
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .message-time {
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .message-text {
+
+        margin-top:
+            4px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.45;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .message-image {
+
+        width:
+            min(
+                320px,
+                100%
+            );
+
+        max-height:
+            220px;
+
+        margin-top:
+            8px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+    }
+
+
+    .message-image img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        max-height:
+            220px;
+
+        object-fit:
+            cover;
+    }
+
+
+    /* ======================================================
+       Reactions
+       ====================================================== */
+
+    .reaction-row {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            5px;
+
+        margin-top:
+            7px;
+    }
+
+
+    .reaction-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+
+        height:
+            26px;
+
+        padding:
+            0 7px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        font-size:
+            11px;
+    }
+
+
+    .thread-link {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        margin-top:
+            7px;
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--primary);
+    }
+
+
+    .thread-link .material-symbols-rounded {
+
+        font-size:
+            15px;
+    }
+
+
+    /* ======================================================
+       Thread Panel
+       ====================================================== */
+
+    .thread-panel {
+
+        position:
+            sticky;
+
+        top:
+            var(--slack-topbar-height);
+
+        align-self:
+            start;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        height:
+            calc(
+                100vh
+                - var(--slack-topbar-height)
+            );
+
+        background:
+            var(--surface);
+    }
+
+
+    .thread-panel-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            58px;
+
+        padding:
+            8px 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .thread-panel-heading {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .thread-panel-title {
+
+        font-size:
+            16px;
+
+        font-weight:
+            800;
+    }
+
+
+    .thread-panel-subtitle {
+
+        margin-top:
+            2px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .thread-close-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    /* ======================================================
+       Thread Scroll Content
+       ====================================================== */
+
+    .thread-content {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    .thread-parent {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(0, 1fr);
+
+        gap:
+            9px;
+
+        padding:
+            14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .thread-divider {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            10px 14px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .thread-divider::before,
+    .thread-divider::after {
+
+        content:
+            "";
+
+        height:
+            1px;
+
+        flex:
+            1;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .thread-replies {
+
+        padding:
+            0 0 120px;
+    }
+
+
+    .thread-reply {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            34px
+            minmax(0, 1fr);
+
+        gap:
+            9px;
+
+        padding:
+            9px 14px;
+    }
+
+
+    .thread-reply-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            33px;
+
+        height:
+            33px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .thread-reply-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .thread-reply-body {
+
+        min-width:
+            0;
+    }
+
+
+    .thread-reply-meta {
+
+        display:
+            flex;
+
+        align-items:
+            baseline;
+
+        gap:
+            5px;
+    }
+
+
+    .thread-reply-author {
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+    }
+
+
+    .thread-reply-time {
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .thread-reply-text {
+
+        margin-top:
+            3px;
+
+        font-size:
+            12px;
+
+        line-height:
+            1.42;
+    }
+
+
+    .edited {
+
+        margin-left:
+            4px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Reply Composer
+       ====================================================== */
+
+    .thread-composer-wrapper {
+
+        position:
+            absolute;
+
+        right:
+            10px;
+
+        bottom:
+            10px;
+
+        left:
+            10px;
+
+        z-index:
+            110;
+    }
+
+
+    .thread-composer {
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+
+        box-shadow:
+            0 4px 18px
+            rgba(0, 0, 0, 0.08);
+    }
+
+
+    .thread-input {
+
+        width:
+            100%;
+
+        min-height:
+            46px;
+
+        padding:
+            12px;
+
+        border:
+            none;
+
+        resize:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+    }
+
+
+    .thread-composer-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            36px;
+
+        padding:
+            4px 5px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .thread-composer-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            28px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .thread-composer-button .material-symbols-rounded {
+
+        font-size:
+            18px;
+    }
+
+
+    .thread-composer-spacer {
+
+        flex:
+            1;
+    }
+
+
+    .thread-send-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            28px;
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Member Strip
+       ====================================================== */
+
+    .thread-members {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            0;
+
+        margin-top:
+            8px;
+    }
+
+
+    .member-mini-avatar {
+
+        width:
+            25px;
+
+        height:
+            25px;
+
+        margin-left:
+            -5px;
+
+        overflow:
+            hidden;
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .member-mini-avatar:first-child {
+
+        margin-left:
+            0;
+    }
+
+
+    .member-mini-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    /* ======================================================
+       Mobile Bottom Bar
+       ====================================================== */
+
+    .mobile-thread-nav {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .thread-topbar {
+
+            top:
+                var(--status-bar-height);
+
+            grid-template-columns:
+                minmax(220px, 1fr)
+                auto;
+        }
+
+
+        .topbar-left {
+
+            display:
+                none;
+        }
+
+
+        .thread-layout {
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                minmax(
+                    300px,
+                    42%
+                );
+        }
+
+
+        .thread-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .channel-header {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + var(--slack-topbar-height)
+                );
+        }
+
+
+        .thread-panel {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + var(--slack-topbar-height)
+                );
+
+            height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - var(--slack-topbar-height)
+                );
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .thread-topbar {
+
+            top:
+                var(--status-bar-height);
+
+            grid-template-columns:
+                1fr
+                auto;
+
+            height:
+                52px;
+
+            padding:
+                0 10px;
+        }
+
+
+        .topbar-left {
+
+            display:
+                none;
+        }
+
+
+        .topbar-help {
+
+            display:
+                none;
+        }
+
+
+        .thread-layout {
+
+            display:
+                block;
+
+            min-height:
+                0;
+        }
+
+
+        .thread-sidebar,
+        .thread-conversation {
+
+            display:
+                none;
+        }
+
+
+        .thread-panel {
+
+            position:
+                relative;
+
+            top:
+                auto;
+
+            height:
+                auto;
+
+            min-height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - 52px
+                );
+        }
+
+
+        .thread-panel-header {
+
+            position:
+                sticky;
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + 52px
+                );
+
+            z-index:
+                100;
+
+            background:
+                var(--surface);
+        }
+
+
+        .thread-content {
+
+            overflow:
+                visible;
+        }
+
+
+        .thread-replies {
+
+            padding-bottom:
+                170px;
+        }
+
+
+        .thread-parent {
+
+            padding:
+                13px 12px;
+        }
+
+
+        .thread-reply {
+
+            padding:
+                8px 12px;
+        }
+
+
+        .thread-composer-wrapper {
+
+            position:
+                fixed;
+
+            right:
+                10px;
+
+            bottom:
+                calc(
+                    var(--mobile-nav-height)
+                    + 8px
+                );
+
+            left:
+                10px;
+        }
+
+
+        .mobile-thread-nav {
+
+            position:
+                fixed;
+
+            z-index:
+                150;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            left:
+                0;
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    1fr
+                );
+
+            height:
+                var(--mobile-nav-height);
+
+            border-top:
+                1px solid
+                var(--border-subtle);
+
+            background:
+                var(--surface);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                3px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-item.selected {
+
+            color:
+                var(--primary);
+        }
+
+
+        .mobile-nav-icon {
+
+            font-size:
+                20px;
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="thread-page">
+
+
+    <!-- =====================================================
+         Top Bar
+         ===================================================== -->
+
+    <header
+        class="thread-topbar"
+        data-class="app_bar"
+        data-semantic="thread_top_bar"
+        data-occluder="true"
+    >
+
+        <div class="topbar-actions topbar-left">
+
+            <button
+                class="topbar-button"
+                data-class="button"
+                data-semantic="history_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="history_icon"
+                >
+                    history
+                </span>
+            </button>
+
+        </div>
+
+
+        <div
+            class="thread-search"
+            data-class="search_bar"
+            data-semantic="thread_search"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    thread-search-icon
+                "
+                data-class="icon"
+                data-semantic="search_icon"
+            >
+                search
+            </span>
+
+
+            <span class="thread-search-text">
+
+                {{ thread_page.search_placeholder }}
+
+            </span>
+
+        </div>
+
+
+        <div class="topbar-actions">
+
+            <button
+                class="
+                    topbar-button
+                    topbar-help
+                "
+                data-class="button"
+                data-semantic="help_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="help_icon"
+                >
+                    help
+                </span>
+            </button>
+
+
+            <button
+                class="topbar-button"
+                data-class="button"
+                data-semantic="profile_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="profile_icon"
+                >
+                    account_circle
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         Main Layout
+         ===================================================== -->
+
+    <div class="thread-layout">
+
+
+        <!-- =================================================
+             Sidebar
+             ================================================= -->
+
+        <aside
+            class="thread-sidebar"
+            data-class="navigation_bar"
+            data-semantic="thread_sidebar"
+        >
+
+            <div class="workspace-header">
+
+                <div
+                    class="workspace-logo"
+                    data-class="avatar"
+                    data-semantic="workspace_logo"
+                >
+
+                    {% if thread_page.workspace.image %}
+
+                    <img
+                        src="{{ thread_page.workspace.image }}"
+                        alt=""
+                    >
+
+                    {% else %}
+
+                    {{ thread_page.workspace.name[0] }}
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="workspace-name">
+
+                    {{ thread_page.workspace.name }}
+
+                </div>
+
+            </div>
+
+
+            <div class="sidebar-section">
+
+                {% set navigation = [
+                    ("home", "Home"),
+                    ("forum", "Threads"),
+                    ("notifications", "Activity"),
+                    ("bookmark", "Later")
+                ] %}
+
+
+                {% for icon, label in navigation %}
+
+                <div
+                    class="
+                        sidebar-row
+                        {% if label == "Threads" %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="navigation_item"
+                    data-semantic="navigation_{{ label|lower }}"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-row-icon
+                        "
+                        data-class="icon"
+                        data-semantic="{{ label|lower }}_icon"
+                    >
+                        {{ icon }}
+                    </span>
+
+
+                    <span class="sidebar-row-text">
+
+                        {{ label }}
+
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <section
+                class="sidebar-section"
+                data-class="section"
+                data-semantic="channels_section"
+            >
+
+                <div class="sidebar-title">
+
+                    Channels
+
+                </div>
+
+
+                {% for channel in thread_page.channels %}
+
+                <div
+                    class="
+                        sidebar-row
+                        {% if channel.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="list_item"
+                    data-semantic="channel_{{ loop.index }}"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-row-icon
+                        "
+                        data-class="icon"
+                        data-semantic="channel_icon"
+                    >
+
+                        {% if channel.private %}
+                        lock
+                        {% else %}
+                        tag
+                        {% endif %}
+
+                    </span>
+
+
+                    <span class="sidebar-row-text">
+
+                        {{ channel.name }}
+
+                    </span>
+
+
+                    {% if channel.unread %}
+
+                    <span
+                        class="sidebar-badge"
+                        data-class="badge"
+                        data-semantic="channel_unread_badge"
+                    >
+
+                        {{ channel.unread }}
+
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+                {% endfor %}
+
+            </section>
+
+        </aside>
+
+
+        <!-- =================================================
+             Conversation
+             ================================================= -->
+
+        <main
+            class="thread-conversation"
+            data-class="section"
+            data-semantic="thread_conversation"
+        >
+
+
+            <!-- Channel Header -->
+
+            <header
+                class="channel-header"
+                data-class="app_bar"
+                data-semantic="channel_header"
+                data-occluder="true"
+            >
+
+                <div class="channel-header-info">
+
+                    <div class="channel-title">
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="channel_icon"
+                        >
+                            tag
+                        </span>
+
+                        {{ thread_page.channel.name }}
+
+                    </div>
+
+
+                    <div class="channel-description">
+
+                        {{ thread_page.channel.description }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="channel-header-actions">
+
+                    <button
+                        class="channel-header-button"
+                        data-class="button"
+                        data-semantic="channel_members_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="members_icon"
+                        >
+                            group
+                        </span>
+
+                        {{ thread_page.channel.member_count }}
+
+                    </button>
+
+
+                    <button
+                        class="channel-header-button"
+                        data-class="button"
+                        data-semantic="channel_info_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="channel_info_icon"
+                        >
+                            info
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <!-- Messages -->
+
+            <section
+                class="conversation-messages"
+                data-class="section"
+                data-semantic="conversation_messages"
+            >
+
+                {% for message in thread_page.messages %}
+
+                <article
+                    class="
+                        conversation-message
+                        {% if
+                            message.id
+                            == thread_page.selected_message_id
+                        %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="message_bubble"
+                    data-semantic="message_{{ message.id }}"
+                >
+
+
+                    <div
+                        class="message-avatar"
+                        data-class="avatar"
+                        data-semantic="message_avatar"
+                    >
+
+                        {% if message.author.avatar %}
+
+                        <img
+                            src="{{ message.author.avatar }}"
+                            alt=""
+                        >
+
+                        {% else %}
+
+                        {{ message.author.name[0] }}
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="message-content">
+
+                        <div class="message-meta">
+
+                            <span class="message-author">
+                                {{ message.author.name }}
+                            </span>
+
+
+                            <span
+                                class="message-time"
+                                data-class="timestamp"
+                                data-semantic="message_timestamp"
+                            >
+                                {{ message.time }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="message-text">
+
+                            {{ message.text }}
+
+                        </div>
+
+
+                        {% if message.attachment %}
+
+                        <div
+                            class="message-image"
+                            data-class="media_item"
+                            data-semantic="message_attachment"
+                        >
+
+                            <img
+                                src="{{ message.attachment }}"
+                                alt=""
+                                data-class="image"
+                                data-semantic="message_attachment_image"
+                            >
+
+                        </div>
+
+                        {% endif %}
+
+
+                        {% if message.reactions %}
+
+                        <div class="reaction-row">
+
+                            {% for reaction in message.reactions %}
+
+                            <button
+                                class="reaction-button"
+                                data-class="button"
+                                data-semantic="message_reaction"
+                            >
+                                {{ reaction.emoji }}
+
+                                {{ reaction.count }}
+                            </button>
+
+                            {% endfor %}
+
+                        </div>
+
+                        {% endif %}
+
+
+                        {% if message.reply_count %}
+
+                        <button
+                            class="thread-link"
+                            data-class="button"
+                            data-semantic="open_thread_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="thread_icon"
+                            >
+                                forum
+                            </span>
+
+                            {{ message.reply_count }}
+                            replies
+
+                        </button>
+
+                        {% endif %}
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+        </main>
+
+
+        <!-- =================================================
+             Thread Panel
+             ================================================= -->
+
+        <aside
+            class="thread-panel"
+            data-class="section"
+            data-semantic="thread_panel"
+        >
+
+
+            <!-- Panel Header -->
+
+            <header
+                class="thread-panel-header"
+                data-class="app_bar"
+                data-semantic="thread_panel_header"
+                data-occluder="true"
+            >
+
+                <div class="thread-panel-heading">
+
+                    <div class="thread-panel-title">
+
+                        Thread
+
+                    </div>
+
+
+                    <div class="thread-panel-subtitle">
+
+                        #{{ thread_page.channel.name }}
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    class="thread-close-button"
+                    data-class="button"
+                    data-semantic="close_thread_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_thread_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <div class="thread-content">
+
+
+                <!-- Parent Message -->
+
+                <article
+                    class="thread-parent"
+                    data-class="message_bubble"
+                    data-semantic="thread_parent_message"
+                >
+
+
+                    <div
+                        class="message-avatar"
+                        data-class="avatar"
+                        data-semantic="thread_parent_avatar"
+                    >
+
+                        {% if thread_page.thread.parent.author.avatar %}
+
+                        <img
+                            src="{{ thread_page.thread.parent.author.avatar }}"
+                            alt=""
+                        >
+
+                        {% else %}
+
+                        {{ thread_page.thread.parent.author.name[0] }}
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="message-content">
+
+
+                        <div class="message-meta">
+
+                            <span class="message-author">
+
+                                {{ thread_page.thread.parent.author.name }}
+
+                            </span>
+
+
+                            <span
+                                class="message-time"
+                                data-class="timestamp"
+                                data-semantic="thread_parent_timestamp"
+                            >
+
+                                {{ thread_page.thread.parent.time }}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="message-text">
+
+                            {{ thread_page.thread.parent.text }}
+
+                        </div>
+
+
+                        {% if thread_page.thread.parent.reactions %}
+
+                        <div class="reaction-row">
+
+                            {% for reaction in thread_page.thread.parent.reactions %}
+
+                            <button
+                                class="reaction-button"
+                                data-class="button"
+                                data-semantic="thread_parent_reaction"
+                            >
+
+                                {{ reaction.emoji }}
+
+                                {{ reaction.count }}
+
+                            </button>
+
+                            {% endfor %}
+
+                        </div>
+
+                        {% endif %}
+
+
+                        <div
+                            class="thread-members"
+                            data-semantic="thread_participants"
+                        >
+
+                            {% for member in thread_page.members[:5] %}
+
+                            <div
+                                class="member-mini-avatar"
+                                data-class="avatar"
+                                data-semantic="thread_participant"
+                            >
+
+                                {% if member.avatar %}
+
+                                <img
+                                    src="{{ member.avatar }}"
+                                    alt=""
+                                >
+
+                                {% else %}
+
+                                {{ member.name[0] }}
+
+                                {% endif %}
+
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+                <div class="thread-divider">
+
+                    {{ thread_page.thread.reply_count }}
+                    replies
+
+                </div>
+
+
+                <!-- Replies -->
+
+                <section
+                    class="thread-replies"
+                    data-class="section"
+                    data-semantic="thread_replies"
+                >
+
+                    {% for reply in thread_page.thread.replies %}
+
+                    <article
+                        class="thread-reply"
+                        data-class="message_bubble"
+                        data-semantic="thread_reply_{{ reply.id }}"
+                    >
+
+
+                        <div
+                            class="thread-reply-avatar"
+                            data-class="avatar"
+                            data-semantic="thread_reply_avatar"
+                        >
+
+                            {% if reply.author.avatar %}
+
+                            <img
+                                src="{{ reply.author.avatar }}"
+                                alt=""
+                            >
+
+                            {% else %}
+
+                            {{ reply.author.name[0] }}
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="thread-reply-body">
+
+
+                            <div class="thread-reply-meta">
+
+                                <span class="thread-reply-author">
+
+                                    {{ reply.author.name }}
+
+                                </span>
+
+
+                                <span
+                                    class="thread-reply-time"
+                                    data-class="timestamp"
+                                    data-semantic="thread_reply_timestamp"
+                                >
+
+                                    {{ reply.time }}
+
+                                </span>
+
+                            </div>
+
+
+                            <div class="thread-reply-text">
+
+                                {{ reply.text }}
+
+                                {% if reply.edited %}
+
+                                <span class="edited">
+                                    edited
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            {% if reply.reactions %}
+
+                            <div class="reaction-row">
+
+                                {% for reaction in reply.reactions %}
+
+                                <button
+                                    class="reaction-button"
+                                    data-class="button"
+                                    data-semantic="thread_reply_reaction"
+                                >
+
+                                    {{ reaction.emoji }}
+
+                                    {{ reaction.count }}
+
+                                </button>
+
+                                {% endfor %}
+
+                            </div>
+
+                            {% endif %}
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </section>
+
+            </div>
+
+
+            <!-- =================================================
+                 Reply Composer
+                 ================================================= -->
+
+            <div
+                class="thread-composer-wrapper"
+                data-occluder="true"
+            >
+
+                <div
+                    class="thread-composer"
+                    data-class="toolbar"
+                    data-semantic="thread_reply_composer"
+                >
+
+                    <textarea
+                        class="thread-input"
+                        placeholder="{{ thread_page.thread_placeholder }}"
+                        data-class="input_field"
+                        data-semantic="thread_reply_input"
+                    ></textarea>
+
+
+                    <div class="thread-composer-toolbar">
+
+                        {% set tools = [
+                            ("add", "add_attachment"),
+                            ("alternate_email", "mention"),
+                            ("sentiment_satisfied", "emoji")
+                        ] %}
+
+
+                        {% for icon, semantic in tools %}
+
+                        <button
+                            class="thread-composer-button"
+                            data-class="button"
+                            data-semantic="{{ semantic }}_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="{{ semantic }}_icon"
+                            >
+                                {{ icon }}
+                            </span>
+
+                        </button>
+
+                        {% endfor %}
+
+
+                        <div class="thread-composer-spacer">
+                        </div>
+
+
+                        <button
+                            class="thread-send-button"
+                            data-class="button"
+                            data-semantic="send_thread_reply"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="send_thread_reply_icon"
+                            >
+                                send
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+    </div>
+
+
+    <!-- =====================================================
+         Mobile Navigation
+         ===================================================== -->
+
+    <nav
+        class="mobile-thread-nav"
+        data-class="navigation_bar"
+        data-semantic="mobile_bottom_navigation"
+        data-occluder="true"
+    >
+
+        {% set mobile_items = [
+            ("home", "Home"),
+            ("chat", "DMs"),
+            ("notifications", "Activity"),
+            ("forum", "Threads")
+        ] %}
+
+
+        {% for icon, label in mobile_items %}
+
+        <button
+            class="
+                mobile-nav-item
+                {% if label == "Threads" %}
+                selected
+                {% endif %}
+            "
+            data-class="navigation_item"
+            data-semantic="mobile_{{ label|lower }}"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    mobile-nav-icon
+                "
+                data-class="icon"
+                data-semantic="mobile_{{ label|lower }}_icon"
+            >
+                {{ icon }}
+            </span>
+
+
+            <span class="mobile-nav-label">
+
+                {{ label }}
+
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+
+</div>
+
+
+{% endblock %}

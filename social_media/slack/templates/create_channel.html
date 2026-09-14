@@ -1,0 +1,2468 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+Create Slack Channel
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .create-channel-page {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Background Workspace
+       ====================================================== */
+
+    .background-shell {
+
+        min-height:
+            100vh;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            250px
+            minmax(0, 1fr);
+
+        filter:
+            saturate(0.8);
+    }
+
+
+    .background-sidebar {
+
+        min-height:
+            100vh;
+
+        padding:
+            18px 12px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .background-workspace {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        margin-bottom:
+            18px;
+
+        padding:
+            0 7px;
+    }
+
+
+    .background-workspace-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        font-weight:
+            800;
+    }
+
+
+    .background-workspace-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .background-workspace-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+    }
+
+
+    .background-sidebar-title {
+
+        padding:
+            8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .background-channel {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            34px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .background-channel .material-symbols-rounded {
+
+        font-size:
+            16px;
+    }
+
+
+    .background-content {
+
+        min-width:
+            0;
+    }
+
+
+    .background-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            58px;
+
+        padding:
+            0 18px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .background-header-title {
+
+        flex:
+            1;
+
+        font-size:
+            15px;
+
+        font-weight:
+            800;
+    }
+
+
+    .background-header-actions {
+
+        display:
+            flex;
+
+        gap:
+            6px;
+    }
+
+
+    .background-header-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .background-placeholder {
+
+        display:
+            grid;
+
+        gap:
+            12px;
+
+        padding:
+            24px;
+    }
+
+
+    .background-message {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(0, 1fr);
+
+        gap:
+            9px;
+
+        width:
+            min(
+                620px,
+                100%
+            );
+    }
+
+
+    .background-message-avatar {
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .background-lines {
+
+        display:
+            grid;
+
+        gap:
+            6px;
+
+        padding-top:
+            3px;
+    }
+
+
+    .background-line {
+
+        width:
+            75%;
+
+        height:
+            8px;
+
+        border-radius:
+            4px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .background-line.short {
+
+        width:
+            42%;
+    }
+
+
+    /* ======================================================
+       Overlay
+       ====================================================== */
+
+    .dialog-overlay {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            300;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        padding:
+            24px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.54
+            );
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .create-channel-dialog {
+
+        width:
+            min(
+                620px,
+                100%
+            );
+
+        max-height:
+            calc(
+                100vh
+                - 48px
+            );
+
+        overflow:
+            hidden;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            18px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 24px 80px
+            rgba(
+                0,
+                0,
+                0,
+                0.30
+            );
+    }
+
+
+    /* ======================================================
+       Dialog Header
+       ====================================================== */
+
+    .dialog-header {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        gap:
+            12px;
+
+        padding:
+            20px 22px 15px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .dialog-heading {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .dialog-title {
+
+        font-size:
+            21px;
+
+        font-weight:
+            800;
+    }
+
+
+    .dialog-subtitle {
+
+        margin-top:
+            4px;
+
+        font-size:
+            11px;
+
+        line-height:
+            1.4;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .dialog-close {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Step Indicator
+       ====================================================== */
+
+    .step-bar {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            1fr;
+
+        gap:
+            6px;
+
+        padding:
+            12px 22px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .step-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        min-height:
+            34px;
+
+        padding:
+            0 9px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .step-item.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .step-number {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+    }
+
+
+    /* ======================================================
+       Body
+       ====================================================== */
+
+    .dialog-body {
+
+        min-height:
+            0;
+
+        overflow-y:
+            auto;
+
+        padding:
+            18px 22px;
+    }
+
+
+    /* ======================================================
+       Fields
+       ====================================================== */
+
+    .field-group {
+
+        margin-bottom:
+            18px;
+    }
+
+
+    .field-label {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        margin-bottom:
+            7px;
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .required-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        height:
+            19px;
+
+        padding:
+            0 6px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            8px;
+
+        font-weight:
+            700;
+    }
+
+
+    .text-field-shell {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        min-height:
+            42px;
+
+        padding:
+            0 11px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .text-field-shell.multiline {
+
+        align-items:
+            flex-start;
+
+        min-height:
+            88px;
+
+        padding-top:
+            10px;
+    }
+
+
+    .field-prefix {
+
+        flex:
+            0 0 auto;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+    }
+
+
+    .dialog-input {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+    }
+
+
+    textarea.dialog-input {
+
+        min-height:
+            66px;
+
+        resize:
+            none;
+    }
+
+
+    .field-hint {
+
+        margin-top:
+            5px;
+
+        font-size:
+            9px;
+
+        line-height:
+            1.35;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Setting Row
+       ====================================================== */
+
+    .modal-setting-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            auto;
+
+        gap:
+            14px;
+
+        align-items:
+            center;
+
+        min-height:
+            62px;
+
+        padding:
+            10px 0;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .modal-setting-row:first-child {
+
+        border-top:
+            none;
+    }
+
+
+    .setting-title {
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .setting-description {
+
+        margin-top:
+            3px;
+
+        max-width:
+            440px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+
+        line-height:
+            1.4;
+    }
+
+
+    /* ======================================================
+       Switch
+       ====================================================== */
+
+    .modal-switch {
+
+        position:
+            relative;
+
+        width:
+            42px;
+
+        height:
+            24px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--border);
+    }
+
+
+    .modal-switch.enabled {
+
+        background:
+            var(--primary);
+    }
+
+
+    .modal-switch-thumb {
+
+        position:
+            absolute;
+
+        top:
+            3px;
+
+        left:
+            3px;
+
+        width:
+            18px;
+
+        height:
+            18px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--background);
+    }
+
+
+    .modal-switch.enabled
+    .modal-switch-thumb {
+
+        left:
+            21px;
+    }
+
+
+    /* ======================================================
+       Select Control
+       ====================================================== */
+
+    .modal-select {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            145px;
+
+        height:
+            36px;
+
+        padding:
+            0 9px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .modal-select-value {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    .modal-select
+    .material-symbols-rounded {
+
+        margin-left:
+            5px;
+
+        font-size:
+            16px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Members Search
+       ====================================================== */
+
+    .member-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        min-height:
+            40px;
+
+        padding:
+            0 10px;
+
+        margin-bottom:
+            10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .member-search
+    .material-symbols-rounded {
+
+        font-size:
+            17px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Selected Members
+       ====================================================== */
+
+    .selected-member-list {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            6px;
+
+        margin-bottom:
+            12px;
+    }
+
+
+    .member-chip {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        height:
+            31px;
+
+        max-width:
+            180px;
+
+        padding:
+            0 7px 0 4px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .member-chip-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            23px;
+
+        height:
+            23px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        font-size:
+            8px;
+
+        font-weight:
+            800;
+    }
+
+
+    .member-chip-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .member-chip-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    .member-chip-remove {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            18px;
+
+        height:
+            18px;
+    }
+
+
+    .member-chip-remove
+    .material-symbols-rounded {
+
+        font-size:
+            13px;
+    }
+
+
+    /* ======================================================
+       Member List
+       ====================================================== */
+
+    .member-results {
+
+        display:
+            grid;
+
+        gap:
+            2px;
+
+        max-height:
+            260px;
+
+        overflow-y:
+            auto;
+    }
+
+
+    .member-result {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            50px;
+
+        padding:
+            5px 7px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .member-result.selected {
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .member-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .member-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .member-info {
+
+        min-width:
+            0;
+    }
+
+
+    .member-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .member-role {
+
+        margin-top:
+            2px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .member-selection {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            22px;
+
+        height:
+            22px;
+
+        border:
+            2px solid
+            var(--border);
+
+        border-radius:
+            50%;
+    }
+
+
+    .member-selection.selected {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .member-selection
+    .material-symbols-rounded {
+
+        font-size:
+            13px;
+    }
+
+
+    /* ======================================================
+       Footer
+       ====================================================== */
+
+    .dialog-footer {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            13px 22px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .footer-info {
+
+        flex:
+            1;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .dialog-action {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            82px;
+
+        height:
+            36px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .dialog-action.primary {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .background-shell {
+
+            display:
+                block;
+        }
+
+
+        .background-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .dialog-overlay {
+
+            align-items:
+                flex-end;
+
+            padding:
+                0;
+        }
+
+
+        .create-channel-dialog {
+
+            width:
+                100%;
+
+            max-height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - 22px
+                );
+
+            border-right:
+                none;
+
+            border-bottom:
+                none;
+
+            border-left:
+                none;
+
+            border-radius:
+                18px
+                18px
+                0
+                0;
+        }
+
+
+        .dialog-header {
+
+            padding:
+                16px 15px 12px;
+        }
+
+
+        .dialog-title {
+
+            font-size:
+                19px;
+        }
+
+
+        .step-bar {
+
+            padding:
+                9px 14px;
+        }
+
+
+        .dialog-body {
+
+            padding:
+                15px;
+        }
+
+
+        .modal-setting-row {
+
+            gap:
+                9px;
+        }
+
+
+        .modal-select {
+
+            min-width:
+                115px;
+
+            max-width:
+                130px;
+        }
+
+
+        .dialog-footer {
+
+            padding:
+                11px 14px;
+        }
+
+
+        .footer-info {
+
+            display:
+                none;
+        }
+
+
+        .dialog-action {
+
+            flex:
+                1;
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .step-item {
+
+            padding:
+                0 6px;
+
+            font-size:
+                9px;
+        }
+
+
+        .member-chip {
+
+            max-width:
+                140px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="create-channel-page">
+
+
+    <!-- =====================================================
+         Dimmed Background Workspace
+         ===================================================== -->
+
+    <div class="background-shell">
+
+
+        <aside
+            class="background-sidebar"
+            data-semantic="background_workspace_sidebar"
+        >
+
+            <div class="background-workspace">
+
+                <div class="background-workspace-avatar">
+
+                    {% if create_channel.workspace.image %}
+
+                    <img
+                        src="{{ create_channel.workspace.image }}"
+                        alt=""
+                    >
+
+                    {% else %}
+
+                    {{ create_channel.workspace.name[0] }}
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="background-workspace-name">
+
+                    {{ create_channel.workspace.name }}
+
+                </div>
+
+            </div>
+
+
+            <div class="background-sidebar-title">
+
+                Channels
+
+            </div>
+
+
+            {% for channel in create_channel.background_channels %}
+
+            <div class="background-channel">
+
+                <span class="material-symbols-rounded">
+                    tag
+                </span>
+
+                {{ channel }}
+
+            </div>
+
+            {% endfor %}
+
+        </aside>
+
+
+        <section class="background-content">
+
+            <header class="background-header">
+
+                <div class="background-header-title">
+
+                    # general
+
+                </div>
+
+
+                <div class="background-header-actions">
+
+                    <button class="background-header-button">
+
+                        <span class="material-symbols-rounded">
+                            search
+                        </span>
+
+                    </button>
+
+
+                    <button class="background-header-button">
+
+                        <span class="material-symbols-rounded">
+                            more_vert
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <div class="background-placeholder">
+
+                {% for index in range(7) %}
+
+                <div class="background-message">
+
+                    <div class="background-message-avatar">
+                    </div>
+
+
+                    <div class="background-lines">
+
+                        <div class="background-line short">
+                        </div>
+
+                        <div class="background-line">
+                        </div>
+
+                        <div class="background-line">
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         Modal Overlay
+         ===================================================== -->
+
+    <div
+        class="dialog-overlay"
+        data-occluder="true"
+        data-semantic="create_channel_overlay"
+    >
+
+
+        <section
+            class="create-channel-dialog"
+            data-class="dialog"
+            data-semantic="create_channel_dialog"
+        >
+
+
+            <!-- =================================================
+                 Header
+                 ================================================= -->
+
+            <header
+                class="dialog-header"
+                data-class="app_bar"
+                data-semantic="create_channel_dialog_header"
+            >
+
+                <div class="dialog-heading">
+
+                    <h1 class="dialog-title">
+
+                        Create a channel
+
+                    </h1>
+
+
+                    <p class="dialog-subtitle">
+
+                        Channels organize conversations,
+                        files, and people around a topic.
+
+                    </p>
+
+                </div>
+
+
+                <button
+                    class="dialog-close"
+                    data-class="button"
+                    data-semantic="close_dialog"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_dialog_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <!-- =================================================
+                 Steps
+                 ================================================= -->
+
+            <div
+                class="step-bar"
+                data-class="toolbar"
+                data-semantic="channel_creation_steps"
+            >
+
+                <div
+                    class="
+                        step-item
+                        {% if
+                            create_channel.modal_step
+                            == "details"
+                        %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="details_step"
+                >
+
+                    <span
+                        class="step-number"
+                        data-class="badge"
+                        data-semantic="details_step_number"
+                    >
+                        1
+                    </span>
+
+                    Channel details
+
+                </div>
+
+
+                <div
+                    class="
+                        step-item
+                        {% if
+                            create_channel.modal_step
+                            == "members"
+                        %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="members_step"
+                >
+
+                    <span
+                        class="step-number"
+                        data-class="badge"
+                        data-semantic="members_step_number"
+                    >
+                        2
+                    </span>
+
+                    Add members
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 Body
+                 ================================================= -->
+
+            <div class="dialog-body">
+
+
+                {% if
+                    create_channel.modal_step
+                    == "details"
+                %}
+
+
+                <!-- =============================================
+                     Details Step
+                     ============================================= -->
+
+                <div class="field-group">
+
+                    <label class="field-label">
+
+                        Channel name
+
+                        <span
+                            class="required-badge"
+                            data-class="badge"
+                            data-semantic="required_field"
+                        >
+                            Required
+                        </span>
+
+                    </label>
+
+
+                    <div
+                        class="text-field-shell"
+                        data-class="input_field"
+                        data-semantic="channel_name_field"
+                    >
+
+                        <span class="field-prefix">
+                            #
+                        </span>
+
+
+                        <input
+                            class="dialog-input"
+                            type="text"
+                            value="{{ create_channel.channel_name }}"
+                        >
+
+                    </div>
+
+
+                    <div class="field-hint">
+
+                        Use a clear, specific name
+                        that teammates can recognize.
+
+                    </div>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label class="field-label">
+
+                        Description
+
+                    </label>
+
+
+                    <div
+                        class="
+                            text-field-shell
+                            multiline
+                        "
+                        data-class="input_field"
+                        data-semantic="channel_description_field"
+                    >
+
+                        <textarea
+                            class="dialog-input"
+                        >{{ create_channel.channel_purpose }}</textarea>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Privacy -->
+
+                <div
+                    class="modal-setting-row"
+                    data-class="list_item"
+                    data-semantic="private_channel_setting"
+                >
+
+                    <div>
+
+                        <div class="setting-title">
+
+                            Make private
+
+                        </div>
+
+
+                        <div class="setting-description">
+
+                            Only invited members will
+                            be able to find and join
+                            this channel.
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="
+                            modal-switch
+                            {% if create_channel.private_channel %}
+                            enabled
+                            {% endif %}
+                        "
+                        data-class="switch"
+                        data-semantic="private_channel_switch"
+                    >
+
+                        <span
+                            class="modal-switch-thumb"
+                            data-class="selection_indicator"
+                            data-semantic="private_switch_thumb"
+                        >
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                <!-- External -->
+
+                <div
+                    class="modal-setting-row"
+                    data-class="list_item"
+                    data-semantic="external_member_setting"
+                >
+
+                    <div>
+
+                        <div class="setting-title">
+
+                            Allow external people
+
+                        </div>
+
+
+                        <div class="setting-description">
+
+                            Let approved people outside
+                            the workspace participate.
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="
+                            modal-switch
+                            {% if create_channel.allow_external %}
+                            enabled
+                            {% endif %}
+                        "
+                        data-class="switch"
+                        data-semantic="external_member_switch"
+                    >
+
+                        <span
+                            class="modal-switch-thumb"
+                            data-class="selection_indicator"
+                            data-semantic="external_switch_thumb"
+                        >
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                <!-- Posting permission -->
+
+                <div
+                    class="modal-setting-row"
+                    data-class="list_item"
+                    data-semantic="posting_permission_setting"
+                >
+
+                    <div>
+
+                        <div class="setting-title">
+
+                            Who can post
+
+                        </div>
+
+
+                        <div class="setting-description">
+
+                            Choose who is allowed to
+                            send messages in this channel.
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="modal-select"
+                        data-class="button"
+                        data-semantic="posting_permission_select"
+                    >
+
+                        <span class="modal-select-value">
+
+                            {{ create_channel.posting_permission }}
+
+                        </span>
+
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="posting_permission_expand"
+                        >
+                            expand_more
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                {% else %}
+
+
+                <!-- =============================================
+                     Members Step
+                     ============================================= -->
+
+                <div
+                    class="member-search"
+                    data-class="search_bar"
+                    data-semantic="member_search"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="member_search_icon"
+                    >
+                        search
+                    </span>
+
+
+                    <input
+                        class="dialog-input"
+                        type="text"
+                        placeholder="{{ create_channel.search_placeholder }}"
+                    >
+
+                </div>
+
+
+                <!-- Selected Member Chips -->
+
+                <div
+                    class="selected-member-list"
+                    data-semantic="selected_member_chips"
+                >
+
+                    {% for person in create_channel.selected_people %}
+
+                    <div
+                        class="member-chip"
+                        data-class="button"
+                        data-semantic="selected_member_{{ person.id }}"
+                    >
+
+                        <div
+                            class="member-chip-avatar"
+                            data-class="avatar"
+                            data-semantic="selected_member_avatar"
+                        >
+
+                            {% if person.avatar %}
+
+                            <img
+                                src="{{ person.avatar }}"
+                                alt=""
+                            >
+
+                            {% else %}
+
+                            {{ person.name[0] }}
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <span class="member-chip-name">
+
+                            {{ person.name }}
+
+                        </span>
+
+
+                        <span
+                            class="member-chip-remove"
+                            data-class="icon"
+                            data-semantic="remove_selected_member"
+                        >
+
+                            <span class="material-symbols-rounded">
+                                close
+                            </span>
+
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- Member Results -->
+
+                <section
+                    class="member-results"
+                    data-class="section"
+                    data-semantic="member_results"
+                >
+
+                    {% for person in create_channel.people %}
+
+                    <div
+                        class="
+                            member-result
+                            {% if person.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="list_item"
+                        data-semantic="member_result_{{ person.id }}"
+                    >
+
+                        <div
+                            class="member-avatar"
+                            data-class="avatar"
+                            data-semantic="member_avatar"
+                        >
+
+                            {% if person.avatar %}
+
+                            <img
+                                src="{{ person.avatar }}"
+                                alt=""
+                            >
+
+                            {% else %}
+
+                            {{ person.name[0] }}
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="member-info">
+
+                            <div class="member-name">
+
+                                {{ person.name }}
+
+                            </div>
+
+
+                            <div class="member-role">
+
+                                {{ person.role }}
+
+                            </div>
+
+                        </div>
+
+
+                        <span
+                            class="
+                                member-selection
+                                {% if person.selected %}
+                                selected
+                                {% endif %}
+                            "
+                            data-class="selection_indicator"
+                            data-semantic="member_selection"
+                        >
+
+                            {% if person.selected %}
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="member_selected_icon"
+                            >
+                                check
+                            </span>
+
+                            {% endif %}
+
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </section>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- =================================================
+                 Footer
+                 ================================================= -->
+
+            <footer
+                class="dialog-footer"
+                data-class="toolbar"
+                data-semantic="create_channel_actions"
+            >
+
+                <div class="footer-info">
+
+                    {% if
+                        create_channel.modal_step
+                        == "members"
+                    %}
+
+                    {{ create_channel.selected_people|length }}
+                    people selected
+
+                    {% else %}
+
+                    You can invite more people after
+                    creating the channel.
+
+                    {% endif %}
+
+                </div>
+
+
+                <button
+                    class="dialog-action"
+                    data-class="button"
+                    data-semantic="cancel_create_channel"
+                >
+
+                    Cancel
+
+                </button>
+
+
+                {% if
+                    create_channel.modal_step
+                    == "details"
+                %}
+
+                <button
+                    class="
+                        dialog-action
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="continue_create_channel"
+                >
+
+                    Next
+
+                </button>
+
+
+                {% else %}
+
+                <button
+                    class="
+                        dialog-action
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="create_channel"
+                >
+
+                    Create
+
+                </button>
+
+                {% endif %}
+
+            </footer>
+
+        </section>
+
+    </div>
+
+</div>
+
+
+{% endblock %}

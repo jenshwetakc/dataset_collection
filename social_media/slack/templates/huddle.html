@@ -1,0 +1,2664 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+Slack Huddle
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .huddle-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .huddle-header {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            160;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            56px;
+
+        padding:
+            8px 14px;
+
+        background:
+            var(--surface);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .huddle-header-info {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .huddle-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        font-size:
+            15px;
+
+        font-weight:
+            800;
+    }
+
+
+    .huddle-title-icon {
+
+        font-size:
+            19px;
+    }
+
+
+    .huddle-subtitle {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .huddle-header-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    .header-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Main Layout
+       ====================================================== */
+
+    .huddle-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            340px;
+
+        min-height:
+            calc(
+                100vh
+                - 56px
+            );
+    }
+
+
+    /* ======================================================
+       Stage
+       ====================================================== */
+
+    .huddle-stage {
+
+        position:
+            relative;
+
+        min-width:
+            0;
+
+        min-height:
+            calc(
+                100vh
+                - 56px
+            );
+
+        padding:
+            16px 16px 110px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .stage-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        margin-bottom:
+            12px;
+    }
+
+
+    .stage-topic {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .huddle-duration {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        height:
+            27px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Participant Grid
+       ====================================================== */
+
+    .participant-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+    }
+
+
+    .participant-tile {
+
+        position:
+            relative;
+
+        aspect-ratio:
+            16 / 10;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        border:
+            2px solid
+            transparent;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .participant-tile.speaking {
+
+        border-color:
+            var(--success);
+    }
+
+
+    .participant-video {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+    }
+
+
+    .participant-video.camera-on {
+
+        background:
+            var(--surface);
+    }
+
+
+    .participant-video.camera-off {
+
+        background:
+            var(--background);
+    }
+
+
+    .participant-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            clamp(
+                52px,
+                8vw,
+                96px
+            );
+
+        height:
+            clamp(
+                52px,
+                8vw,
+                96px
+            );
+
+        overflow:
+            hidden;
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            24px;
+
+        font-weight:
+            800;
+    }
+
+
+    .participant-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .participant-info {
+
+        position:
+            absolute;
+
+        right:
+            8px;
+
+        bottom:
+            8px;
+
+        left:
+            8px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        min-width:
+            0;
+    }
+
+
+    .participant-name {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .participant-status {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            25px;
+
+        height:
+            25px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .participant-status .material-symbols-rounded {
+
+        font-size:
+            15px;
+    }
+
+
+    .participant-status.muted {
+
+        color:
+            var(--error);
+    }
+
+
+    /* ======================================================
+       Speaking Indicator
+       ====================================================== */
+
+    .speaking-indicator {
+
+        position:
+            absolute;
+
+        top:
+            8px;
+
+        left:
+            8px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        height:
+            24px;
+
+        padding:
+            0 7px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--success);
+
+        color:
+            var(--on-success);
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+    }
+
+
+    /* ======================================================
+       Reaction Emoji
+       ====================================================== */
+
+    .reaction-bubble {
+
+        position:
+            absolute;
+
+        top:
+            8px;
+
+        right:
+            8px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        padding:
+            6px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+    }
+
+
+    .reaction-emoji {
+
+        display:
+            block;
+
+        width:
+            26px;
+
+        height:
+            26px;
+
+        object-fit:
+            contain;
+    }
+
+
+    /* ======================================================
+       Raised Hand Emoji
+       ====================================================== */
+
+    .raised-hand {
+
+        position:
+            absolute;
+
+        top:
+            50px;
+
+        right:
+            8px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        padding:
+            5px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--warning);
+    }
+
+
+    .raised-hand-emoji {
+
+        display:
+            block;
+
+        width:
+            22px;
+
+        height:
+            22px;
+
+        object-fit:
+            contain;
+    }
+
+
+    /* ======================================================
+       Call Controls
+       ====================================================== */
+
+    .call-controls-wrapper {
+
+        position:
+            fixed;
+
+        z-index:
+            170;
+
+        right:
+            360px;
+
+        bottom:
+            18px;
+
+        left:
+            18px;
+
+        display:
+            flex;
+
+        justify-content:
+            center;
+
+        pointer-events:
+            none;
+    }
+
+
+    .call-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            8px 10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 8px 24px
+            rgba(0, 0, 0, 0.14);
+
+        pointer-events:
+            auto;
+    }
+
+
+    .call-control {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            3px;
+
+        min-width:
+            54px;
+
+        height:
+            54px;
+
+        padding:
+            4px 7px;
+
+        border-radius:
+            10px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .call-control.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .call-control.danger {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    .call-control-icon {
+
+        font-size:
+            22px;
+    }
+
+
+    .call-control-label {
+
+        font-size:
+            8px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Side Panel
+       ====================================================== */
+
+    .huddle-side-panel {
+
+        position:
+            sticky;
+
+        top:
+            56px;
+
+        align-self:
+            start;
+
+        height:
+            calc(
+                100vh
+                - 56px
+            );
+
+        background:
+            var(--surface);
+
+        border-left:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .side-panel-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            54px;
+
+        padding:
+            0 12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .side-panel-title {
+
+        flex:
+            1;
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+    }
+
+
+    .side-panel-close {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    /* ======================================================
+       Side Tabs
+       ====================================================== */
+
+    .side-tabs {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            1fr;
+
+        padding:
+            8px;
+
+        gap:
+            5px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .side-tab {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        height:
+            32px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .side-tab.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .side-tab-count {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            19px;
+
+        height:
+            18px;
+
+        padding:
+            0 5px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            9px;
+    }
+
+
+    /* ======================================================
+       Participant Side Panel
+       ====================================================== */
+
+    .side-participant-list {
+
+        padding:
+            8px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .side-participant {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            36px
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            52px;
+
+        padding:
+            6px;
+
+        border-radius:
+            var(--medium-radius);
+    }
+
+
+    .side-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+    }
+
+
+    .side-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .side-person-info {
+
+        min-width:
+            0;
+    }
+
+
+    .side-person-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .side-person-status {
+
+        margin-top:
+            2px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .side-status-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .side-status-icon.muted {
+
+        color:
+            var(--error);
+    }
+
+
+    /* ======================================================
+       Chat
+       ====================================================== */
+
+    .huddle-chat {
+
+        position:
+            relative;
+
+        min-height:
+            100%;
+
+        padding:
+            8px 10px 80px;
+    }
+
+
+    .chat-message {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            30px
+            minmax(0, 1fr);
+
+        gap:
+            7px;
+
+        padding:
+            7px 3px;
+    }
+
+
+    .chat-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .chat-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .chat-content {
+
+        min-width:
+            0;
+    }
+
+
+    .chat-meta {
+
+        display:
+            flex;
+
+        align-items:
+            baseline;
+
+        gap:
+            5px;
+    }
+
+
+    .chat-name {
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .chat-time {
+
+        font-size:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .chat-text {
+
+        margin-top:
+            2px;
+
+        font-size:
+            10px;
+
+        line-height:
+            1.4;
+    }
+
+
+    .chat-composer {
+
+        position:
+            absolute;
+
+        right:
+            10px;
+
+        bottom:
+            10px;
+
+        left:
+            10px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        height:
+            40px;
+
+        padding:
+            0 7px 0 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .chat-input {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            10px;
+    }
+
+
+    .chat-send {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            29px;
+
+        height:
+            29px;
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .huddle-header {
+
+            top:
+                var(--status-bar-height);
+        }
+
+
+        .huddle-layout {
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                280px;
+        }
+
+
+        .participant-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .huddle-side-panel {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + 56px
+                );
+
+            height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - 56px
+                );
+        }
+
+
+        .call-controls-wrapper {
+
+            right:
+                300px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .huddle-header {
+
+            top:
+                var(--status-bar-height);
+
+            min-height:
+                52px;
+
+            padding:
+                6px 10px;
+        }
+
+
+        .huddle-header-actions
+        .secondary-action {
+
+            display:
+                none;
+        }
+
+
+        .huddle-layout {
+
+            display:
+                block;
+
+            min-height:
+                auto;
+        }
+
+
+        .huddle-stage {
+
+            min-height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - 52px
+                );
+
+            padding:
+                10px 10px 105px;
+        }
+
+
+        .participant-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                7px;
+        }
+
+
+        .participant-tile {
+
+            aspect-ratio:
+                4 / 5;
+
+            border-radius:
+                10px;
+        }
+
+
+        .participant-avatar {
+
+            width:
+                62px;
+
+            height:
+                62px;
+
+            border-radius:
+                16px;
+        }
+
+
+        .participant-info {
+
+            right:
+                6px;
+
+            bottom:
+                6px;
+
+            left:
+                6px;
+        }
+
+
+        .participant-name {
+
+            font-size:
+                9px;
+        }
+
+
+        .participant-status {
+
+            width:
+                22px;
+
+            height:
+                22px;
+        }
+
+
+        .speaking-indicator {
+
+            top:
+                6px;
+
+            left:
+                6px;
+
+            height:
+                21px;
+
+            padding:
+                0 6px;
+
+            font-size:
+                8px;
+        }
+
+
+        .reaction-bubble {
+
+            top:
+                6px;
+
+            right:
+                6px;
+
+            width:
+                34px;
+
+            height:
+                34px;
+
+            padding:
+                5px;
+        }
+
+
+        .reaction-emoji {
+
+            width:
+                24px;
+
+            height:
+                24px;
+        }
+
+
+        .raised-hand {
+
+            top:
+                44px;
+
+            right:
+                6px;
+
+            width:
+                30px;
+
+            height:
+                30px;
+
+            padding:
+                4px;
+        }
+
+
+        .raised-hand-emoji {
+
+            width:
+                20px;
+
+            height:
+                20px;
+        }
+
+
+        .huddle-side-panel {
+
+            display:
+                none;
+        }
+
+
+        .call-controls-wrapper {
+
+            right:
+                8px;
+
+            bottom:
+                8px;
+
+            left:
+                8px;
+        }
+
+
+        .call-controls {
+
+            width:
+                100%;
+
+            justify-content:
+                space-around;
+
+            gap:
+                2px;
+
+            padding:
+                7px 5px;
+        }
+
+
+        .call-control {
+
+            min-width:
+                45px;
+
+            height:
+                50px;
+
+            padding:
+                3px;
+        }
+
+
+        .call-control-icon {
+
+            font-size:
+                20px;
+        }
+
+
+        .call-control-label {
+
+            font-size:
+                7px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .participant-grid {
+
+            grid-template-columns:
+                1fr
+                1fr;
+        }
+
+
+        .call-control {
+
+            min-width:
+                40px;
+        }
+
+
+        .call-control-label {
+
+            display:
+                none;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="huddle-page">
+
+
+    <!-- =====================================================
+         Header
+         ===================================================== -->
+
+    <header
+        class="huddle-header"
+        data-class="app_bar"
+        data-semantic="huddle_header"
+        data-occluder="true"
+    >
+
+        <div class="huddle-header-info">
+
+            <div class="huddle-title">
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        huddle-title-icon
+                    "
+                    data-class="icon"
+                    data-semantic="huddle_icon"
+                >
+                    headphones
+                </span>
+
+                Huddle
+
+            </div>
+
+
+            <div class="huddle-subtitle">
+
+                #{{ huddle.channel.name }}
+                ·
+                {{ huddle.topic }}
+
+            </div>
+
+        </div>
+
+
+        <div class="huddle-header-actions">
+
+            <button
+                class="
+                    header-button
+                    secondary-action
+                "
+                data-class="button"
+                data-semantic="huddle_layout_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="layout_icon"
+                >
+                    grid_view
+                </span>
+
+            </button>
+
+
+            <button
+                class="
+                    header-button
+                    secondary-action
+                "
+                data-class="button"
+                data-semantic="huddle_more_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="huddle_more_icon"
+                >
+                    more_vert
+                </span>
+
+            </button>
+
+
+            <button
+                class="header-button"
+                data-class="button"
+                data-semantic="minimize_huddle"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="minimize_huddle_icon"
+                >
+                    minimize
+                </span>
+
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         Main Layout
+         ===================================================== -->
+
+    <div class="huddle-layout">
+
+
+        <!-- =================================================
+             Stage
+             ================================================= -->
+
+        <main
+            class="huddle-stage"
+            data-class="section"
+            data-semantic="huddle_stage"
+        >
+
+
+            <div class="stage-header">
+
+                <div class="stage-topic">
+
+                    {{ huddle.topic }}
+
+                </div>
+
+
+                <span
+                    class="huddle-duration"
+                    data-class="badge"
+                    data-semantic="huddle_duration"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="duration_icon"
+                    >
+                        schedule
+                    </span>
+
+                    {{ huddle.duration }}
+
+                </span>
+
+            </div>
+
+
+            <!-- =============================================
+                 Participant Grid
+                 ============================================= -->
+
+            <section
+                class="participant-grid"
+                data-class="section"
+                data-semantic="participant_grid"
+            >
+
+                {% for person in huddle.participants %}
+
+                <article
+                    class="
+                        participant-tile
+                        {% if person.speaking %}
+                        speaking
+                        {% endif %}
+                    "
+                    data-class="media_item"
+                    data-semantic="participant_{{ person.id }}"
+                >
+
+
+                    <!-- Video / Avatar area -->
+
+                    <div
+                        class="
+                            participant-video
+                            {% if person.camera_on %}
+                            camera-on
+                            {% else %}
+                            camera-off
+                            {% endif %}
+                        "
+                        data-class="video"
+                        data-semantic="participant_video"
+                    >
+
+
+                        <div
+                            class="participant-avatar"
+                            data-class="avatar"
+                            data-semantic="participant_avatar"
+                        >
+
+                            {% if person.avatar %}
+
+                            <img
+                                src="{{ person.avatar }}"
+                                alt=""
+                            >
+
+                            {% else %}
+
+                            {{ person.name[0] }}
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Speaking -->
+
+                    {% if person.speaking %}
+
+                    <div
+                        class="speaking-indicator"
+                        data-class="badge"
+                        data-semantic="active_speaker"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="speaking_icon"
+                        >
+                            graphic_eq
+                        </span>
+
+                        Speaking
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <!-- Reaction Emoji -->
+
+                    {% if person.reaction %}
+
+                    <div
+                        class="reaction-bubble"
+                        data-class="badge"
+                        data-semantic="participant_reaction_container"
+                    >
+
+                        <img
+                            class="reaction-emoji"
+                            src="{{ person.reaction.image }}"
+                            alt=""
+                            data-class="emoji"
+                            data-semantic="participant_reaction"
+                            data-emoji-source="{{ person.reaction.source }}"
+                            data-emoji-name="{{ person.reaction.name }}"
+                        >
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <!-- Raised Hand Emoji -->
+
+                    {% if
+                        person.hand_raised
+                        and person.raised_hand_emoji
+                    %}
+
+                    <div
+                        class="raised-hand"
+                        data-class="badge"
+                        data-semantic="raised_hand_container"
+                    >
+
+                        <img
+                            class="raised-hand-emoji"
+                            src="{{ person.raised_hand_emoji.image }}"
+                            alt=""
+                            data-class="emoji"
+                            data-semantic="raised_hand_emoji"
+                            data-emoji-source="{{ person.raised_hand_emoji.source }}"
+                            data-emoji-name="{{ person.raised_hand_emoji.name }}"
+                        >
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <!-- Participant Info -->
+
+                    <div class="participant-info">
+
+                        <span class="participant-name">
+
+                            {{ person.name }}
+
+                        </span>
+
+
+                        <span
+                            class="
+                                participant-status
+                                {% if person.muted %}
+                                muted
+                                {% endif %}
+                            "
+                            data-class="badge"
+                            data-semantic="participant_audio_status"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="audio_status_icon"
+                            >
+
+                                {% if person.muted %}
+                                mic_off
+                                {% else %}
+                                mic
+                                {% endif %}
+
+                            </span>
+
+                        </span>
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+        </main>
+
+
+        <!-- =================================================
+             Side Panel
+             ================================================= -->
+
+        <aside
+            class="huddle-side-panel"
+            data-class="section"
+            data-semantic="huddle_side_panel"
+        >
+
+            <header
+                class="side-panel-header"
+                data-class="app_bar"
+                data-semantic="huddle_side_panel_header"
+            >
+
+                <div class="side-panel-title">
+
+                    Huddle details
+
+                </div>
+
+
+                <button
+                    class="side-panel-close"
+                    data-class="button"
+                    data-semantic="close_side_panel"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_side_panel_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <!-- Tabs -->
+
+            <div
+                class="side-tabs"
+                data-class="toolbar"
+                data-semantic="huddle_side_tabs"
+            >
+
+                <button
+                    class="
+                        side-tab
+                        {% if huddle.controls.side_panel == 'participants'
+                        %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="participants_tab"
+                >
+
+                    Participants
+
+                    <span
+                        class="side-tab-count"
+                        data-class="badge"
+                        data-semantic="participant_count"
+                    >
+
+                        {{ huddle.participants|length }}
+
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="
+                        side-tab
+                        {% if huddle.controls.side_panel == 'chat'
+                        %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="chat_tab"
+                >
+
+                    Chat
+
+                    <span
+                        class="side-tab-count"
+                        data-class="badge"
+                        data-semantic="chat_count"
+                    >
+
+                        {{ huddle.chat_messages|length }}
+
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <!-- =============================================
+                 Participants Panel
+                 ============================================= -->
+
+            {% if
+                huddle.controls.side_panel
+                == "participants"
+            %}
+
+            <section
+                class="side-participant-list"
+                data-class="section"
+                data-semantic="huddle_participant_list"
+            >
+
+                {% for person in huddle.participants %}
+
+                <div
+                    class="side-participant"
+                    data-class="list_item"
+                    data-semantic="side_participant_{{ person.id }}"
+                >
+
+                    <div
+                        class="side-avatar"
+                        data-class="avatar"
+                        data-semantic="side_participant_avatar"
+                    >
+
+                        {% if person.avatar %}
+
+                        <img
+                            src="{{ person.avatar }}"
+                            alt=""
+                        >
+
+                        {% else %}
+
+                        {{ person.name[0] }}
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="side-person-info">
+
+                        <div class="side-person-name">
+
+                            {{ person.name }}
+
+                        </div>
+
+
+                        <div class="side-person-status">
+
+                            {% if person.speaking %}
+                            Speaking
+
+                            {% elif person.hand_raised %}
+                            Hand raised
+
+                            {% elif person.muted %}
+                            Muted
+
+                            {% else %}
+                            Listening
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="
+                            side-status-icon
+                            {% if person.muted %}
+                            muted
+                            {% endif %}
+                        "
+                        data-class="badge"
+                        data-semantic="side_audio_status"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="side_audio_icon"
+                        >
+
+                            {% if person.muted %}
+                            mic_off
+                            {% else %}
+                            mic
+                            {% endif %}
+
+                        </span>
+
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </section>
+
+
+            {% else %}
+
+
+            <!-- =============================================
+                 Chat Panel
+                 ============================================= -->
+
+            <section
+                class="huddle-chat"
+                data-class="section"
+                data-semantic="huddle_chat"
+            >
+
+                {% for message in huddle.chat_messages %}
+
+                <article
+                    class="chat-message"
+                    data-class="message_bubble"
+                    data-semantic="huddle_chat_message_{{ loop.index }}"
+                >
+
+                    <div
+                        class="chat-avatar"
+                        data-class="avatar"
+                        data-semantic="chat_avatar"
+                    >
+
+                        {% if message.author.avatar %}
+
+                        <img
+                            src="{{ message.author.avatar }}"
+                            alt=""
+                        >
+
+                        {% else %}
+
+                        {{ message.author.name[0] }}
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="chat-content">
+
+                        <div class="chat-meta">
+
+                            <span class="chat-name">
+
+                                {{ message.author.name }}
+
+                            </span>
+
+
+                            <span
+                                class="chat-time"
+                                data-class="timestamp"
+                                data-semantic="chat_timestamp"
+                            >
+
+                                {{ message.time }}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="chat-text">
+
+                            {{ message.text }}
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+
+                <div
+                    class="chat-composer"
+                    data-class="toolbar"
+                    data-semantic="huddle_chat_composer"
+                    data-occluder="true"
+                >
+
+                    <input
+                        class="chat-input"
+                        type="text"
+                        placeholder="Message everyone"
+                        data-class="input_field"
+                        data-semantic="huddle_chat_input"
+                    >
+
+
+                    <button
+                        class="chat-send"
+                        data-class="button"
+                        data-semantic="send_chat_message"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="send_chat_icon"
+                        >
+                            send
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </section>
+
+            {% endif %}
+
+        </aside>
+
+    </div>
+
+
+    <!-- =====================================================
+         Call Controls
+         ===================================================== -->
+
+    <div
+        class="call-controls-wrapper"
+        data-occluder="true"
+    >
+
+        <div
+            class="call-controls"
+            data-class="toolbar"
+            data-semantic="huddle_call_controls"
+        >
+
+            <!-- Microphone -->
+
+            <button
+                class="
+                    call-control
+                    {% if not huddle.controls.microphone_on %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="microphone_control"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        call-control-icon
+                    "
+                    data-class="icon"
+                    data-semantic="microphone_icon"
+                >
+
+                    {% if huddle.controls.microphone_on %}
+                    mic
+                    {% else %}
+                    mic_off
+                    {% endif %}
+
+                </span>
+
+
+                <span class="call-control-label">
+
+                    Mic
+
+                </span>
+
+            </button>
+
+
+            <!-- Camera -->
+
+            <button
+                class="
+                    call-control
+                    {% if not huddle.controls.camera_on %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="camera_control"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        call-control-icon
+                    "
+                    data-class="icon"
+                    data-semantic="camera_icon"
+                >
+
+                    {% if huddle.controls.camera_on %}
+                    videocam
+                    {% else %}
+                    videocam_off
+                    {% endif %}
+
+                </span>
+
+
+                <span class="call-control-label">
+
+                    Video
+
+                </span>
+
+            </button>
+
+
+            <!-- Share -->
+
+            <button
+                class="
+                    call-control
+                    {% if huddle.controls.screen_sharing %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="screen_share_control"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        call-control-icon
+                    "
+                    data-class="icon"
+                    data-semantic="screen_share_icon"
+                >
+                    present_to_all
+                </span>
+
+
+                <span class="call-control-label">
+
+                    Share
+
+                </span>
+
+            </button>
+
+
+            <!-- Reactions -->
+
+            <button
+                class="call-control"
+                data-class="button"
+                data-semantic="reaction_control"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        call-control-icon
+                    "
+                    data-class="icon"
+                    data-semantic="reaction_icon"
+                >
+                    add_reaction
+                </span>
+
+
+                <span class="call-control-label">
+
+                    React
+
+                </span>
+
+            </button>
+
+
+            <!-- Participants -->
+
+            <button
+                class="call-control"
+                data-class="button"
+                data-semantic="participants_control"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        call-control-icon
+                    "
+                    data-class="icon"
+                    data-semantic="participants_icon"
+                >
+                    group
+                </span>
+
+
+                <span class="call-control-label">
+
+                    People
+
+                </span>
+
+            </button>
+
+
+            <!-- Leave -->
+
+            <button
+                class="
+                    call-control
+                    danger
+                "
+                data-class="button"
+                data-semantic="leave_huddle"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        call-control-icon
+                    "
+                    data-class="icon"
+                    data-semantic="leave_huddle_icon"
+                >
+                    call_end
+                </span>
+
+
+                <span class="call-control-label">
+
+                    Leave
+
+                </span>
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+{% endblock %}

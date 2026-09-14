@@ -1,0 +1,2577 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+Slack Search
+
+{% endblock %}
+
+
+{% block head %}
+
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .search-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Top Bar
+       ====================================================== */
+
+    .search-topbar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            130;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(300px, 760px)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        height:
+            var(--slack-topbar-height);
+
+        padding:
+            0 16px;
+
+        background:
+            var(--surface);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .topbar-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .topbar-actions:last-child {
+
+        justify-content:
+            flex-end;
+    }
+
+
+    .topbar-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Main Search Field
+       ====================================================== */
+
+    .main-search-bar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        height:
+            36px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .search-icon {
+
+        margin-right:
+            8px;
+
+        flex:
+            0 0 auto;
+
+        font-size:
+            19px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .search-query {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .search-clear {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Layout
+       ====================================================== */
+
+    .search-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            220px
+            minmax(0, 1fr);
+
+        min-height:
+            calc(
+                100vh
+                - var(--slack-topbar-height)
+            );
+    }
+
+
+    /* ======================================================
+       Search Sidebar
+       ====================================================== */
+
+    .search-sidebar {
+
+        position:
+            sticky;
+
+        top:
+            var(--slack-topbar-height);
+
+        align-self:
+            start;
+
+        height:
+            calc(
+                100vh
+                - var(--slack-topbar-height)
+            );
+
+        padding:
+            16px 10px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .workspace-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        height:
+            44px;
+
+        padding:
+            0 8px 10px;
+    }
+
+
+    .workspace-image {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        flex:
+            0 0 auto;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .workspace-image img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .workspace-name {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+    }
+
+
+    .search-sidebar-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            36px;
+
+        gap:
+            7px;
+
+        padding:
+            0 9px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .search-sidebar-row.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .search-sidebar-icon {
+
+        font-size:
+            18px;
+    }
+
+
+    .search-sidebar-label {
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Main Search Content
+       ====================================================== */
+
+    .search-content {
+
+        min-width:
+            0;
+
+        width:
+            100%;
+    }
+
+
+    .search-header {
+
+        position:
+            sticky;
+
+        top:
+            var(--slack-topbar-height);
+
+        z-index:
+            100;
+
+        padding:
+            18px 24px 12px;
+
+        background:
+            var(--background);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .search-title-row {
+
+        display:
+            flex;
+
+        align-items:
+            baseline;
+
+        gap:
+            10px;
+
+        min-width:
+            0;
+    }
+
+
+    .search-title {
+
+        overflow:
+            hidden;
+
+        min-width:
+            0;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            22px;
+
+        font-weight:
+            800;
+    }
+
+
+    .result-count {
+
+        flex:
+            0 0 auto;
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Tabs
+       ====================================================== */
+
+    .search-tabs {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        margin-top:
+            16px;
+
+        overflow-x:
+            auto;
+
+        scrollbar-width:
+            none;
+    }
+
+
+    .search-tabs::-webkit-scrollbar {
+
+        display:
+            none;
+    }
+
+
+    .search-tab {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        height:
+            34px;
+
+        padding:
+            0 11px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .search-tab.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .tab-count {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            20px;
+
+        height:
+            19px;
+
+        padding:
+            0 5px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Filters
+       ====================================================== */
+
+    .filter-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        margin-top:
+            12px;
+
+        overflow-x:
+            auto;
+
+        scrollbar-width:
+            none;
+    }
+
+
+    .filter-toolbar::-webkit-scrollbar {
+
+        display:
+            none;
+    }
+
+
+    .filter-chip {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        height:
+            30px;
+
+        padding:
+            0 10px;
+
+        flex:
+            0 0 auto;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .filter-chip .material-symbols-rounded {
+
+        font-size:
+            15px;
+    }
+
+
+    /* ======================================================
+       Results Layout
+       ====================================================== */
+
+    .search-results-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            310px;
+
+        align-items:
+            start;
+
+        gap:
+            28px;
+
+        padding:
+            18px 24px 140px;
+    }
+
+
+    .message-results {
+
+        min-width:
+            0;
+    }
+
+
+    /* ======================================================
+       Message Result
+       ====================================================== */
+
+    .message-result {
+
+        position:
+            relative;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            40px
+            minmax(0, 1fr);
+
+        gap:
+            11px;
+
+        padding:
+            14px 12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .result-avatar {
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .result-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .result-avatar-fallback {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+    }
+
+
+    .message-result-body {
+
+        min-width:
+            0;
+    }
+
+
+    .message-result-meta {
+
+        display:
+            flex;
+
+        align-items:
+            baseline;
+
+        min-width:
+            0;
+
+        gap:
+            6px;
+    }
+
+
+    .message-result-author {
+
+        overflow:
+            hidden;
+
+        max-width:
+            220px;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .message-result-channel {
+
+        overflow:
+            hidden;
+
+        flex:
+            1;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .message-result-time {
+
+        flex:
+            0 0 auto;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .message-result-text {
+
+        margin-top:
+            5px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.45;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .search-highlight {
+
+        padding:
+            1px 2px;
+
+        border-radius:
+            3px;
+
+        background:
+            var(--warning);
+
+        color:
+            var(--on-warning);
+
+        font-weight:
+            800;
+    }
+
+
+    .result-actions {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        margin-top:
+            8px;
+    }
+
+
+    .result-action {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        height:
+            27px;
+
+        padding:
+            0 8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .result-action .material-symbols-rounded {
+
+        font-size:
+            15px;
+    }
+
+
+    /* ======================================================
+       Side Results
+       ====================================================== */
+
+    .side-results {
+
+        display:
+            grid;
+
+        gap:
+            14px;
+    }
+
+
+    .side-result-card {
+
+        padding:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .side-result-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        margin-bottom:
+            10px;
+    }
+
+
+    .side-result-title {
+
+        flex:
+            1;
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+    }
+
+
+    .view-all-button {
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       People
+       ====================================================== */
+
+    .person-result {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-width:
+            0;
+
+        min-height:
+            46px;
+
+        padding:
+            5px 0;
+    }
+
+
+    .person-avatar {
+
+        position:
+            relative;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        flex:
+            0 0 auto;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .person-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .online-dot {
+
+        position:
+            absolute;
+
+        right:
+            -1px;
+
+        bottom:
+            -1px;
+
+        width:
+            8px;
+
+        height:
+            8px;
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--success);
+    }
+
+
+    .person-info {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .person-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+    }
+
+
+    .person-title {
+
+        margin-top:
+            2px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Channel Results
+       ====================================================== */
+
+    .channel-result {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        gap:
+            7px;
+
+        padding:
+            7px 0;
+    }
+
+
+    .channel-result-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            26px;
+
+        height:
+            26px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            16px;
+    }
+
+
+    .channel-result-info {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .channel-result-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+    }
+
+
+    .channel-result-members {
+
+        margin-top:
+            2px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       File Results
+       ====================================================== */
+
+    .file-result {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-width:
+            0;
+
+        padding:
+            7px 0;
+    }
+
+
+    .file-result-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    .file-result-info {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .file-result-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .file-result-meta {
+
+        margin-top:
+            2px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-bottom-navigation {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .search-topbar {
+
+            top:
+                var(--status-bar-height);
+
+            grid-template-columns:
+                minmax(220px, 1fr)
+                auto;
+        }
+
+
+        .topbar-left {
+
+            display:
+                none;
+        }
+
+
+        .search-layout {
+
+            grid-template-columns:
+                190px
+                minmax(0, 1fr);
+        }
+
+
+        .search-sidebar {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + var(--slack-topbar-height)
+                );
+        }
+
+
+        .search-header {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + var(--slack-topbar-height)
+                );
+        }
+
+
+        .search-results-layout {
+
+            display:
+                block;
+        }
+
+
+        .side-results {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            margin-top:
+                22px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .search-topbar {
+
+            top:
+                var(--status-bar-height);
+
+            grid-template-columns:
+                1fr
+                auto;
+
+            height:
+                52px;
+
+            gap:
+                8px;
+
+            padding:
+                0 10px;
+        }
+
+
+        .topbar-left {
+
+            display:
+                none;
+        }
+
+
+        .topbar-actions .help-button {
+
+            display:
+                none;
+        }
+
+
+        .search-layout {
+
+            display:
+                block;
+
+            min-height:
+                0;
+        }
+
+
+        .search-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .search-header {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + 52px
+                );
+
+            padding:
+                14px 12px 10px;
+        }
+
+
+        .search-title {
+
+            font-size:
+                19px;
+        }
+
+
+        .search-tabs {
+
+            margin-top:
+                12px;
+        }
+
+
+        .search-results-layout {
+
+            display:
+                block;
+
+            padding:
+                8px 10px
+                calc(
+                    var(--mobile-nav-height)
+                    + 20px
+                );
+        }
+
+
+        .message-result {
+
+            grid-template-columns:
+                35px
+                minmax(0, 1fr);
+
+            gap:
+                9px;
+
+            padding:
+                12px 5px;
+        }
+
+
+        .result-avatar {
+
+            width:
+                34px;
+
+            height:
+                34px;
+        }
+
+
+        .message-result-author {
+
+            max-width:
+                125px;
+
+            font-size:
+                12px;
+        }
+
+
+        .message-result-text {
+
+            font-size:
+                12.5px;
+        }
+
+
+        .side-results {
+
+            margin-top:
+                18px;
+        }
+
+
+        .mobile-bottom-navigation {
+
+            position:
+                fixed;
+
+            z-index:
+                150;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            left:
+                0;
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    1fr
+                );
+
+            height:
+                var(--mobile-nav-height);
+
+            background:
+                var(--surface);
+
+            border-top:
+                1px solid
+                var(--border-subtle);
+        }
+
+
+        .mobile-nav-item {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                3px;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-nav-item.selected {
+
+            color:
+                var(--primary);
+        }
+
+
+        .mobile-nav-icon {
+
+            font-size:
+                21px;
+        }
+
+
+        .mobile-nav-label {
+
+            font-size:
+                10px;
+        }
+
+    }
+
+</style>
+
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="search-page">
+
+
+    <!-- =====================================================
+         Top Search Bar
+         ===================================================== -->
+
+    <header
+        class="search-topbar"
+        data-class="app_bar"
+        data-semantic="search_top_bar"
+        data-occluder="true"
+    >
+
+
+        <div class="topbar-actions topbar-left">
+
+            <button
+                class="topbar-button"
+                data-class="button"
+                data-semantic="back_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="back_icon"
+                >
+                    arrow_back
+                </span>
+            </button>
+
+        </div>
+
+
+        <div
+            class="main-search-bar"
+            data-class="search_bar"
+            data-semantic="main_search"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    search-icon
+                "
+                data-class="icon"
+                data-semantic="search_icon"
+            >
+                search
+            </span>
+
+
+            <span class="search-query">
+
+                {{ search.query }}
+
+            </span>
+
+
+            <button
+                class="search-clear"
+                data-class="button"
+                data-semantic="clear_search"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="clear_search_icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+
+        <div class="topbar-actions">
+
+
+            <button
+                class="
+                    topbar-button
+                    help-button
+                "
+                data-class="button"
+                data-semantic="search_help"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_help_icon"
+                >
+                    help
+                </span>
+            </button>
+
+
+            <button
+                class="topbar-button"
+                data-class="button"
+                data-semantic="search_more"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_more_icon"
+                >
+                    more_vert
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         Layout
+         ===================================================== -->
+
+    <div class="search-layout">
+
+
+        <!-- =================================================
+             Sidebar
+             ================================================= -->
+
+        <aside
+            class="search-sidebar"
+            data-class="navigation_bar"
+            data-semantic="search_sidebar"
+        >
+
+
+            <div class="workspace-row">
+
+                <div
+                    class="workspace-image"
+                    data-class="avatar"
+                    data-semantic="workspace_avatar"
+                >
+
+                    {% if search.workspace.image %}
+
+                    <img
+                        src="{{ search.workspace.image }}"
+                        alt=""
+                    >
+
+                    {% else %}
+
+                    {{ search.workspace.name[0] }}
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="workspace-name">
+
+                    {{ search.workspace.name }}
+
+                </div>
+
+            </div>
+
+
+            {% set sidebar_items = [
+                ("search", "Search", true),
+                ("chat", "Messages", false),
+                ("description", "Files", false),
+                ("group", "People", false),
+                ("tag", "Channels", false)
+            ] %}
+
+
+            {% for icon, label, selected in sidebar_items %}
+
+            <div
+                class="
+                    search-sidebar-row
+                    {% if selected %}
+                    selected
+                    {% endif %}
+                "
+                data-class="navigation_item"
+                data-semantic="search_sidebar_{{ label|lower }}"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        search-sidebar-icon
+                    "
+                    data-class="icon"
+                    data-semantic="search_sidebar_{{ label|lower }}_icon"
+                >
+                    {{ icon }}
+                </span>
+
+
+                <span class="search-sidebar-label">
+
+                    {{ label }}
+
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        </aside>
+
+
+        <!-- =================================================
+             Content
+             ================================================= -->
+
+        <main
+            class="search-content"
+            data-class="section"
+            data-semantic="search_content"
+        >
+
+
+            <!-- Header -->
+
+            <header
+                class="search-header"
+                data-class="app_bar"
+                data-semantic="search_results_header"
+                data-occluder="true"
+            >
+
+
+                <div class="search-title-row">
+
+                    <h1 class="search-title">
+
+                        Search results for
+                        “{{ search.query }}”
+
+                    </h1>
+
+
+                    <span class="result-count">
+
+                        {{ search.total_results }}
+                        results
+
+                    </span>
+
+                </div>
+
+
+                <!-- Tabs -->
+
+                <div
+                    class="search-tabs"
+                    data-class="toolbar"
+                    data-semantic="search_result_tabs"
+                >
+
+                    {% for tab in search.tabs %}
+
+                    <button
+                        class="
+                            search-tab
+                            {% if tab.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="tab"
+                        data-semantic="search_tab_{{ tab.label|lower }}"
+                    >
+
+                        <span>
+                            {{ tab.label }}
+                        </span>
+
+
+                        <span
+                            class="tab-count"
+                            data-class="badge"
+                            data-semantic="search_tab_count"
+                        >
+                            {{ tab.count }}
+                        </span>
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- Filters -->
+
+                <div
+                    class="filter-toolbar"
+                    data-class="toolbar"
+                    data-semantic="search_filters"
+                >
+
+                    {% for filter in search.filters %}
+
+                    <button
+                        class="filter-chip"
+                        data-class="button"
+                        data-semantic="search_filter_{{ filter|lower }}"
+                    >
+
+                        {{ filter }}
+
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="filter_expand_icon"
+                        >
+                            expand_more
+                        </span>
+
+                    </button>
+
+                    {% endfor %}
+
+
+                    <button
+                        class="filter-chip"
+                        data-class="button"
+                        data-semantic="add_filter"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="add_filter_icon"
+                        >
+                            add
+                        </span>
+
+                        Add filter
+
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <!-- =================================================
+                 Result Grid
+                 ================================================= -->
+
+            <div class="search-results-layout">
+
+
+                <!-- =============================================
+                     Message Results
+                     ============================================= -->
+
+                <section
+                    class="message-results"
+                    data-class="section"
+                    data-semantic="message_search_results"
+                >
+
+
+                    {% for message in search.messages %}
+
+                    <article
+                        class="message-result"
+                        data-class="list_item"
+                        data-semantic="search_message_{{ message.id }}"
+                    >
+
+
+                        <div
+                            class="result-avatar"
+                            data-class="avatar"
+                            data-semantic="search_message_avatar"
+                        >
+
+                            {% if message.author.avatar %}
+
+                            <img
+                                src="{{ message.author.avatar }}"
+                                alt=""
+                            >
+
+                            {% else %}
+
+                            <span class="result-avatar-fallback">
+                                {{ message.author.name[0] }}
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="message-result-body">
+
+
+                            <div class="message-result-meta">
+
+
+                                <span class="message-result-author">
+
+                                    {{ message.author.name }}
+
+                                </span>
+
+
+                                <span class="message-result-channel">
+
+                                    in
+                                    #{{ message.channel }}
+
+                                </span>
+
+
+                                <span
+                                    class="message-result-time"
+                                    data-class="timestamp"
+                                    data-semantic="search_message_timestamp"
+                                >
+
+                                    {{ message.time }}
+
+                                </span>
+
+                            </div>
+
+
+                            <div class="message-result-text">
+
+                                {{ message.before_text }}
+
+                                <mark class="search-highlight">
+                                    {{ message.highlight }}
+                                </mark>
+
+                                {{ message.after_text }}
+
+                            </div>
+
+
+                            <div class="result-actions">
+
+
+                                <button
+                                    class="result-action"
+                                    data-class="button"
+                                    data-semantic="view_search_result"
+                                >
+
+                                    View message
+
+                                </button>
+
+
+                                {% if message.reply_count %}
+
+                                <button
+                                    class="result-action"
+                                    data-class="button"
+                                    data-semantic="search_thread_result"
+                                >
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="thread_icon"
+                                    >
+                                        forum
+                                    </span>
+
+                                    {{ message.reply_count }}
+                                    replies
+
+                                </button>
+
+                                {% endif %}
+
+
+                                {% if message.reaction_count %}
+
+                                <span
+                                    class="result-action"
+                                    data-class="badge"
+                                    data-semantic="search_reaction_count"
+                                >
+
+                                    👍
+
+                                    {{ message.reaction_count }}
+
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </section>
+
+
+                <!-- =============================================
+                     Right Results
+                     ============================================= -->
+
+                <aside class="side-results">
+
+
+                    <!-- People -->
+
+                    <section
+                        class="side-result-card"
+                        data-class="card"
+                        data-semantic="people_results"
+                    >
+
+
+                        <div class="side-result-header">
+
+                            <h2 class="side-result-title">
+                                People
+                            </h2>
+
+                            <button
+                                class="view-all-button"
+                                data-class="button"
+                                data-semantic="view_all_people"
+                            >
+                                View all
+                            </button>
+
+                        </div>
+
+
+                        {% for person in search.people[:4] %}
+
+                        <div
+                            class="person-result"
+                            data-class="list_item"
+                            data-semantic="person_result_{{ loop.index }}"
+                        >
+
+
+                            <div
+                                class="person-avatar"
+                                data-class="avatar"
+                                data-semantic="person_result_avatar"
+                            >
+
+                                {% if person.avatar %}
+
+                                <img
+                                    src="{{ person.avatar }}"
+                                    alt=""
+                                >
+
+                                {% else %}
+
+                                {{ person.name[0] }}
+
+                                {% endif %}
+
+
+                                {% if person.online %}
+
+                                <span
+                                    class="online-dot"
+                                    data-class="selection_indicator"
+                                    data-semantic="online_indicator"
+                                >
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="person-info">
+
+                                <div class="person-name">
+                                    {{ person.name }}
+                                </div>
+
+                                <div class="person-title">
+                                    {{ person.title }}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </section>
+
+
+                    <!-- Channels -->
+
+                    <section
+                        class="side-result-card"
+                        data-class="card"
+                        data-semantic="channel_results"
+                    >
+
+
+                        <div class="side-result-header">
+
+                            <h2 class="side-result-title">
+                                Channels
+                            </h2>
+
+                            <button
+                                class="view-all-button"
+                                data-class="button"
+                                data-semantic="view_all_channels"
+                            >
+                                View all
+                            </button>
+
+                        </div>
+
+
+                        {% for channel in search.channels[:4] %}
+
+                        <div
+                            class="channel-result"
+                            data-class="list_item"
+                            data-semantic="channel_result_{{ loop.index }}"
+                        >
+
+
+                            <div
+                                class="channel-result-icon"
+                                data-class="icon"
+                                data-semantic="channel_result_icon"
+                            >
+
+                                <span class="material-symbols-rounded">
+
+                                    {% if channel.private %}
+                                    lock
+                                    {% else %}
+                                    tag
+                                    {% endif %}
+
+                                </span>
+
+                            </div>
+
+
+                            <div class="channel-result-info">
+
+                                <div class="channel-result-name">
+
+                                    {{ channel.name }}
+
+                                </div>
+
+
+                                <div class="channel-result-members">
+
+                                    {{ channel.member_count }}
+                                    members
+
+                                </div>
+
+                            </div>
+
+
+                            {% if not channel.joined %}
+
+                            <button
+                                class="view-all-button"
+                                data-class="button"
+                                data-semantic="join_search_channel"
+                            >
+                                Join
+                            </button>
+
+                            {% endif %}
+
+                        </div>
+
+                        {% endfor %}
+
+                    </section>
+
+
+                    <!-- Files -->
+
+                    <section
+                        class="side-result-card"
+                        data-class="card"
+                        data-semantic="file_results"
+                    >
+
+
+                        <div class="side-result-header">
+
+                            <h2 class="side-result-title">
+                                Files
+                            </h2>
+
+                            <button
+                                class="view-all-button"
+                                data-class="button"
+                                data-semantic="view_all_files"
+                            >
+                                View all
+                            </button>
+
+                        </div>
+
+
+                        {% for file in search.files[:4] %}
+
+                        <div
+                            class="file-result"
+                            data-class="list_item"
+                            data-semantic="file_result_{{ loop.index }}"
+                        >
+
+
+                            <div
+                                class="file-result-icon"
+                                data-class="icon"
+                                data-semantic="file_result_icon"
+                            >
+
+                                <span class="material-symbols-rounded">
+
+                                    {% if file.extension == "png" %}
+                                    image
+
+                                    {% elif file.extension == "pdf" %}
+                                    picture_as_pdf
+
+                                    {% else %}
+                                    description
+                                    {% endif %}
+
+                                </span>
+
+                            </div>
+
+
+                            <div class="file-result-info">
+
+                                <div class="file-result-name">
+
+                                    {{ file.name }}
+
+                                </div>
+
+
+                                <div class="file-result-meta">
+
+                                    {{ file.size }}
+                                    ·
+                                    {{ file.author.name }}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </section>
+
+                </aside>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Mobile Navigation
+         ===================================================== -->
+
+    <nav
+        class="mobile-bottom-navigation"
+        data-class="navigation_bar"
+        data-semantic="mobile_bottom_navigation"
+        data-occluder="true"
+    >
+
+
+        {% set mobile_items = [
+            ("home", "Home"),
+            ("chat", "DMs"),
+            ("notifications", "Activity"),
+            ("search", "Search")
+        ] %}
+
+
+        {% for icon, label in mobile_items %}
+
+        <button
+            class="
+                mobile-nav-item
+                {% if label == "Search" %}
+                selected
+                {% endif %}
+            "
+            data-class="navigation_item"
+            data-semantic="mobile_{{ label|lower }}"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    mobile-nav-icon
+                "
+                data-class="icon"
+                data-semantic="mobile_{{ label|lower }}_icon"
+            >
+                {{ icon }}
+            </span>
+
+
+            <span class="mobile-nav-label">
+
+                {{ label }}
+
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+
+</div>
+
+
+{% endblock %}

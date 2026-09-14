@@ -1,0 +1,1710 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+Slack Emoji Picker
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .emoji-page {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Dimmed Slack Background
+       ====================================================== */
+
+    .emoji-background {
+
+        min-height:
+            100vh;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            250px
+            minmax(0, 1fr);
+
+        background:
+            var(--background);
+    }
+
+
+    .emoji-background-sidebar {
+
+        padding:
+            18px 12px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .background-workspace {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        margin-bottom:
+            18px;
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+    }
+
+
+    .background-nav-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        min-height:
+            34px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .background-nav-row.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .background-nav-row
+    .material-symbols-rounded {
+
+        font-size:
+            17px;
+    }
+
+
+    .emoji-background-main {
+
+        min-width:
+            0;
+    }
+
+
+    .background-channel-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            58px;
+
+        padding:
+            0 18px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .background-channel-title {
+
+        flex:
+            1;
+
+        font-size:
+            15px;
+
+        font-weight:
+            800;
+    }
+
+
+    .background-content {
+
+        padding:
+            22px;
+    }
+
+
+    .fake-message {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(0, 1fr);
+
+        gap:
+            10px;
+
+        margin-bottom:
+            18px;
+    }
+
+
+    .fake-avatar {
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .fake-message-body {
+
+        display:
+            grid;
+
+        gap:
+            6px;
+    }
+
+
+    .fake-line {
+
+        width:
+            70%;
+
+        height:
+            8px;
+
+        border-radius:
+            4px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .fake-line.short {
+
+        width:
+            35%;
+    }
+
+
+    .fake-reactions {
+
+        display:
+            flex;
+
+        gap:
+            5px;
+
+        margin-top:
+            2px;
+    }
+
+
+    .fake-reaction {
+
+        width:
+            46px;
+
+        height:
+            26px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ======================================================
+       Overlay
+       ====================================================== */
+
+    .emoji-overlay {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            300;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        padding:
+            24px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.42
+            );
+    }
+
+
+    /* ======================================================
+       Picker
+       ====================================================== */
+
+    .emoji-picker {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            min(
+                520px,
+                100%
+            );
+
+        max-height:
+            calc(
+                100vh
+                - 48px
+            );
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 24px 80px
+            rgba(
+                0,
+                0,
+                0,
+                0.28
+            );
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .emoji-picker-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            54px;
+
+        padding:
+            10px 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .emoji-picker-title {
+
+        flex:
+            1;
+
+        font-size:
+            16px;
+
+        font-weight:
+            800;
+    }
+
+
+    .picker-close {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Search
+       ====================================================== */
+
+    .emoji-search-wrapper {
+
+        padding:
+            10px 14px 8px;
+    }
+
+
+    .emoji-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        height:
+            38px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .emoji-search
+    .material-symbols-rounded {
+
+        font-size:
+            17px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .emoji-search-input {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Quick Reactions
+       ====================================================== */
+
+    .quick-reaction-section {
+
+        padding:
+            4px 14px 10px;
+    }
+
+
+    .quick-reaction-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        margin-bottom:
+            7px;
+    }
+
+
+    .quick-reaction-title {
+
+        flex:
+            1;
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .quick-reactions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    .quick-reaction-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            9px;
+
+        background:
+            var(--background);
+    }
+
+
+    .quick-reaction-image {
+
+        width:
+            26px;
+
+        height:
+            26px;
+
+        object-fit:
+            contain;
+    }
+
+
+    /* ======================================================
+       Category Tabs
+       ====================================================== */
+
+    .emoji-category-tabs {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+
+        padding:
+            7px 10px;
+
+        overflow-x:
+            auto;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        scrollbar-width:
+            none;
+    }
+
+
+    .emoji-category-tabs::-webkit-scrollbar {
+
+        display:
+            none;
+    }
+
+
+    .emoji-category-tab {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        flex:
+            0 0 34px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .emoji-category-tab.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .emoji-category-tab
+    .material-symbols-rounded {
+
+        font-size:
+            18px;
+    }
+
+
+    .emoji-category-tab.selected::after {
+
+        content:
+            "";
+
+        position:
+            absolute;
+
+        right:
+            7px;
+
+        bottom:
+            2px;
+
+        left:
+            7px;
+
+        height:
+            2px;
+
+        border-radius:
+            1px;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Picker Body
+       ====================================================== */
+
+    .emoji-picker-body {
+
+        min-height:
+            0;
+
+        overflow-y:
+            auto;
+
+        padding:
+            10px 12px 16px;
+    }
+
+
+    .emoji-section {
+
+        margin-bottom:
+            15px;
+    }
+
+
+    .emoji-section-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        margin-bottom:
+            7px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    /* ======================================================
+       Emoji Grid
+       ====================================================== */
+
+    .emoji-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                10,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            3px;
+    }
+
+
+    .emoji-cell {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        aspect-ratio:
+            1;
+
+        min-width:
+            0;
+
+        border-radius:
+            8px;
+
+        background:
+            transparent;
+    }
+
+
+    .emoji-cell:hover {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .emoji-cell.selected {
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .emoji-image {
+
+        display:
+            block;
+
+        width:
+            26px;
+
+        height:
+            26px;
+
+        object-fit:
+            contain;
+    }
+
+
+    .emoji-cell.selected::after {
+
+        content:
+            "";
+
+        position:
+            absolute;
+
+        right:
+            2px;
+
+        bottom:
+            2px;
+
+        width:
+            7px;
+
+        height:
+            7px;
+
+        border:
+            1px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Footer
+       ====================================================== */
+
+    .emoji-picker-footer {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            46px;
+
+        padding:
+            7px 12px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .footer-status {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .skin-tone-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            31px;
+
+        height:
+            31px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--background);
+    }
+
+
+    .skin-tone-preview {
+
+        width:
+            18px;
+
+        height:
+            18px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--warning);
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .emoji-picker {
+
+            width:
+                min(
+                    500px,
+                    82vw
+                );
+        }
+
+
+        .emoji-grid {
+
+            grid-template-columns:
+                repeat(
+                    9,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .emoji-background {
+
+            display:
+                block;
+        }
+
+
+        .emoji-background-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .emoji-overlay {
+
+            align-items:
+                flex-end;
+
+            padding:
+                0;
+        }
+
+
+        .emoji-picker {
+
+            width:
+                100%;
+
+            max-height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - 18px
+                );
+
+            border-right:
+                none;
+
+            border-bottom:
+                none;
+
+            border-left:
+                none;
+
+            border-radius:
+                18px
+                18px
+                0
+                0;
+        }
+
+
+        .emoji-picker-header {
+
+            min-height:
+                50px;
+
+            padding:
+                9px 12px;
+        }
+
+
+        .emoji-search-wrapper {
+
+            padding:
+                8px 10px 6px;
+        }
+
+
+        .quick-reaction-section {
+
+            padding:
+                3px 10px 8px;
+        }
+
+
+        .quick-reaction-button {
+
+            width:
+                35px;
+
+            height:
+                35px;
+        }
+
+
+        .quick-reaction-image {
+
+            width:
+                24px;
+
+            height:
+                24px;
+        }
+
+
+        .emoji-category-tabs {
+
+            padding:
+                6px 8px;
+        }
+
+
+        .emoji-category-tab {
+
+            width:
+                32px;
+
+            height:
+                32px;
+
+            flex-basis:
+                32px;
+        }
+
+
+        .emoji-picker-body {
+
+            padding:
+                9px 8px 14px;
+        }
+
+
+        .emoji-grid {
+
+            grid-template-columns:
+                repeat(
+                    8,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                2px;
+        }
+
+
+        .emoji-image {
+
+            width:
+                25px;
+
+            height:
+                25px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .emoji-grid {
+
+            grid-template-columns:
+                repeat(
+                    7,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .emoji-image {
+
+            width:
+                23px;
+
+            height:
+                23px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="emoji-page">
+
+
+    <!-- =====================================================
+         Background Slack Workspace
+         ===================================================== -->
+
+    <div class="emoji-background">
+
+
+        <aside class="emoji-background-sidebar">
+
+            <div class="background-workspace">
+
+                <span class="material-symbols-rounded">
+                    workspaces
+                </span>
+
+                Workspace
+
+            </div>
+
+
+            {% set nav_items = [
+                ("home", "Home"),
+                ("chat", "DMs"),
+                ("notifications", "Activity"),
+                ("bookmark", "Later")
+            ] %}
+
+
+            {% for icon, label in nav_items %}
+
+            <div
+                class="
+                    background-nav-row
+                    {% if label == "Home" %}
+                    selected
+                    {% endif %}
+                "
+            >
+
+                <span class="material-symbols-rounded">
+                    {{ icon }}
+                </span>
+
+                {{ label }}
+
+            </div>
+
+            {% endfor %}
+
+
+            {% for channel in [
+                "general",
+                "engineering",
+                "design",
+                "research",
+                "random"
+            ] %}
+
+            <div class="background-nav-row">
+
+                <span class="material-symbols-rounded">
+                    tag
+                </span>
+
+                {{ channel }}
+
+            </div>
+
+            {% endfor %}
+
+        </aside>
+
+
+        <main class="emoji-background-main">
+
+            <header class="background-channel-header">
+
+                <div class="background-channel-title">
+
+                    # general
+
+                </div>
+
+            </header>
+
+
+            <div class="background-content">
+
+                {% for index in range(6) %}
+
+                <div class="fake-message">
+
+                    <div class="fake-avatar">
+                    </div>
+
+
+                    <div class="fake-message-body">
+
+                        <div class="
+                            fake-line
+                            short
+                        ">
+                        </div>
+
+                        <div class="fake-line">
+                        </div>
+
+                        <div class="fake-line">
+                        </div>
+
+
+                        {% if index == 2 %}
+
+                        <div class="fake-reactions">
+
+                            <div class="fake-reaction">
+                            </div>
+
+                            <div class="fake-reaction">
+                            </div>
+
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Overlay
+         ===================================================== -->
+
+    <div
+        class="emoji-overlay"
+        data-occluder="true"
+        data-semantic="emoji_picker_overlay"
+    >
+
+
+        <!-- =================================================
+             Picker
+             ================================================= -->
+
+        <section
+            class="emoji-picker"
+            data-class="dialog"
+            data-semantic="emoji_picker"
+        >
+
+
+            <!-- Header -->
+
+            <header
+                class="emoji-picker-header"
+                data-class="app_bar"
+                data-semantic="emoji_picker_header"
+            >
+
+                <h1 class="emoji-picker-title">
+
+                    {{ emoji_picker.title }}
+
+                </h1>
+
+
+                <button
+                    class="picker-close"
+                    data-class="button"
+                    data-semantic="close_emoji_picker"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_emoji_picker_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <!-- =================================================
+                 Search
+                 ================================================= -->
+
+            <div class="emoji-search-wrapper">
+
+                <div
+                    class="emoji-search"
+                    data-class="search_bar"
+                    data-semantic="emoji_search"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="emoji_search_icon"
+                    >
+                        search
+                    </span>
+
+
+                    <input
+                        class="emoji-search-input"
+                        type="text"
+                        placeholder="{{ emoji_picker.search_placeholder }}"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 Quick Reactions
+                 ================================================= -->
+
+            <section
+                class="quick-reaction-section"
+                data-class="section"
+                data-semantic="quick_reactions"
+            >
+
+                <div class="quick-reaction-header">
+
+                    <div class="quick-reaction-title">
+
+                        Quick reactions
+
+                    </div>
+
+                </div>
+
+
+                <div class="quick-reactions">
+
+                    {% for emoji in emoji_picker.quick_reactions %}
+
+                    <button
+                        class="quick-reaction-button"
+                        data-class="button"
+                        data-semantic="quick_reaction_{{ loop.index }}"
+                    >
+
+                        <img
+                            class="quick-reaction-image"
+                            src="{{ emoji.image }}"
+                            alt=""
+                            data-class="emoji"
+                            data-semantic="quick_reaction_emoji"
+                            data-emoji-source="{{ emoji.source }}"
+                            data-emoji-name="{{ emoji.name }}"
+                        >
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 Categories
+                 ================================================= -->
+
+            <nav
+                class="emoji-category-tabs"
+                data-class="toolbar"
+                data-semantic="emoji_categories"
+            >
+
+                {% for category in emoji_picker.categories %}
+
+                <button
+                    class="
+                        emoji-category-tab
+                        {% if
+                            category.id
+                            == emoji_picker.selected_category
+                        %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="emoji_category_{{ category.id }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="emoji_category_icon"
+                    >
+                        {{ category.icon }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </nav>
+
+
+            <!-- =================================================
+                 Body
+                 ================================================= -->
+
+            <div class="emoji-picker-body">
+
+
+                <!-- =============================================
+                     Recent
+                     ============================================= -->
+
+                {% if emoji_picker.show_recent %}
+
+                <section
+                    class="emoji-section"
+                    data-class="section"
+                    data-semantic="recent_emoji_section"
+                >
+
+                    <div class="emoji-section-title">
+
+                        Recently used
+
+                    </div>
+
+
+                    <div class="emoji-grid">
+
+                        {% for emoji in emoji_picker.recent_emojis %}
+
+                        <button
+                            class="emoji-cell"
+                            data-class="button"
+                            data-semantic="recent_emoji_button_{{ loop.index }}"
+                        >
+
+                            <img
+                                class="emoji-image"
+                                src="{{ emoji.image }}"
+                                alt=""
+                                data-class="emoji"
+                                data-semantic="recent_emoji"
+                                data-emoji-source="{{ emoji.source }}"
+                                data-emoji-name="{{ emoji.name }}"
+                            >
+
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+                {% endif %}
+
+
+                <!-- =============================================
+                     Main Emoji Grid
+                     ============================================= -->
+
+                <section
+                    class="emoji-section"
+                    data-class="section"
+                    data-semantic="emoji_grid_section"
+                >
+
+                    <div class="emoji-section-title">
+
+                        {{ emoji_picker.selected_category|replace("_", " ")|title }}
+
+                    </div>
+
+
+                    <div class="emoji-grid">
+
+                        {% for emoji in emoji_picker.emojis %}
+
+                        <button
+                            class="
+                                emoji-cell
+                                {% if
+                                    emoji_picker.selected_emoji
+                                    and
+                                    emoji.id
+                                    == emoji_picker.selected_emoji.id
+                                %}
+                                selected
+                                {% endif %}
+                            "
+                            data-class="button"
+                            data-semantic="emoji_button_{{ emoji.id }}"
+                        >
+
+                            <img
+                                class="emoji-image"
+                                src="{{ emoji.image }}"
+                                alt=""
+                                data-class="emoji"
+                                data-semantic="emoji_item"
+                                data-emoji-source="{{ emoji.source }}"
+                                data-emoji-name="{{ emoji.name }}"
+                            >
+
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+            </div>
+
+
+            <!-- =================================================
+                 Footer
+                 ================================================= -->
+
+            <footer
+                class="emoji-picker-footer"
+                data-class="toolbar"
+                data-semantic="emoji_picker_footer"
+            >
+
+                <div class="footer-status">
+
+                    {% if emoji_picker.selected_emoji %}
+
+                    {{ emoji_picker.selected_emoji.name }}
+
+                    {% else %}
+
+                    Select an emoji to react
+
+                    {% endif %}
+
+                </div>
+
+
+                {% if emoji_picker.show_skin_tone %}
+
+                <button
+                    class="skin-tone-button"
+                    data-class="button"
+                    data-semantic="skin_tone_selector"
+                >
+
+                    <span
+                        class="skin-tone-preview"
+                        data-class="selection_indicator"
+                        data-semantic="skin_tone_indicator"
+                    >
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </footer>
+
+        </section>
+
+    </div>
+
+</div>
+
+
+{% endblock %}

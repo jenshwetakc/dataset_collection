@@ -1,0 +1,2336 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+Slack Canvas
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .canvas-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .canvas-topbar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            150;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        height:
+            56px;
+
+        padding:
+            0 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .canvas-back {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .canvas-header-info {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .canvas-header-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+    }
+
+
+    .canvas-header-subtitle {
+
+        margin-top:
+            2px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .canvas-collaborators {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        margin-right:
+            4px;
+    }
+
+
+    .collaborator-avatar {
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        margin-left:
+            -6px;
+
+        overflow:
+            hidden;
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .collaborator-avatar:first-child {
+
+        margin-left:
+            0;
+    }
+
+
+    .collaborator-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .canvas-header-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            34px;
+
+        height:
+            34px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon);
+    }
+
+
+    .comment-count {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            18px;
+
+        height:
+            18px;
+
+        margin-left:
+            4px;
+
+        padding:
+            0 5px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--badge-background);
+
+        color:
+            var(--badge-text);
+
+        font-size:
+            8px;
+    }
+
+
+    /* ======================================================
+       Main Layout
+       ====================================================== */
+
+    .canvas-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            330px;
+
+        min-height:
+            calc(
+                100vh
+                - 56px
+            );
+    }
+
+
+    /* ======================================================
+       Editor
+       ====================================================== */
+
+    .canvas-editor {
+
+        min-width:
+            0;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    /* ======================================================
+       Editor Toolbar
+       ====================================================== */
+
+    .canvas-toolbar {
+
+        position:
+            sticky;
+
+        top:
+            56px;
+
+        z-index:
+            110;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        min-height:
+            46px;
+
+        padding:
+            6px 18px;
+
+        overflow-x:
+            auto;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        scrollbar-width:
+            none;
+    }
+
+
+    .canvas-toolbar::-webkit-scrollbar {
+
+        display:
+            none;
+    }
+
+
+    .toolbar-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .toolbar-button
+    .material-symbols-rounded {
+
+        font-size:
+            18px;
+    }
+
+
+    .toolbar-divider {
+
+        width:
+            1px;
+
+        height:
+            22px;
+
+        margin:
+            0 4px;
+
+        flex:
+            0 0 auto;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    /* ======================================================
+       Document
+       ====================================================== */
+
+    .canvas-document {
+
+        width:
+            min(
+                780px,
+                calc(
+                    100%
+                    - 32px
+                )
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            34px 0 140px;
+    }
+
+
+    .document-title {
+
+        font-size:
+            clamp(
+                26px,
+                4vw,
+                38px
+            );
+
+        font-weight:
+            850;
+
+        line-height:
+            1.15;
+    }
+
+
+    .document-subtitle {
+
+        margin-top:
+            9px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.45;
+    }
+
+
+    .document-meta {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        margin-top:
+            14px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .document-section {
+
+        margin-top:
+            32px;
+    }
+
+
+    .section-heading {
+
+        margin-bottom:
+            12px;
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+    }
+
+
+    .document-paragraph {
+
+        margin-bottom:
+            14px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.65;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Callout
+       ====================================================== */
+
+    .canvas-callout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            34px
+            minmax(0, 1fr);
+
+        gap:
+            10px;
+
+        margin:
+            20px 0;
+
+        padding:
+            13px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .callout-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--primary);
+    }
+
+
+    .callout-title {
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .callout-text {
+
+        margin-top:
+            3px;
+
+        font-size:
+            10px;
+
+        line-height:
+            1.45;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Checklist
+       ====================================================== */
+
+    .checklist {
+
+        display:
+            grid;
+
+        gap:
+            6px;
+
+        margin-top:
+            10px;
+    }
+
+
+    .checklist-item {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            24px
+            minmax(0, 1fr);
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        min-height:
+            36px;
+
+        padding:
+            4px 0;
+    }
+
+
+    .task-checkbox {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        border:
+            2px solid
+            var(--border);
+
+        border-radius:
+            5px;
+    }
+
+
+    .task-checkbox.completed {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .task-checkbox
+    .material-symbols-rounded {
+
+        font-size:
+            13px;
+    }
+
+
+    .task-text {
+
+        font-size:
+            12px;
+
+        line-height:
+            1.4;
+    }
+
+
+    .task-text.completed {
+
+        text-decoration:
+            line-through;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Attachment
+       ====================================================== */
+
+    .canvas-attachment {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            120px
+            minmax(0, 1fr);
+
+        gap:
+            12px;
+
+        margin-top:
+            22px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .attachment-preview {
+
+        min-height:
+            100px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .attachment-preview img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .attachment-info {
+
+        min-width:
+            0;
+
+        padding:
+            14px 14px 14px 0;
+    }
+
+
+    .attachment-title {
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+    }
+
+
+    .attachment-description {
+
+        margin-top:
+            4px;
+
+        font-size:
+            10px;
+
+        line-height:
+            1.45;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .attachment-actions {
+
+        display:
+            flex;
+
+        gap:
+            6px;
+
+        margin-top:
+            10px;
+    }
+
+
+    .attachment-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        height:
+            29px;
+
+        padding:
+            0 8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--small-radius);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Side Panel
+       ====================================================== */
+
+    .canvas-side-panel {
+
+        position:
+            sticky;
+
+        top:
+            56px;
+
+        align-self:
+            start;
+
+        height:
+            calc(
+                100vh
+                - 56px
+            );
+
+        background:
+            var(--surface);
+    }
+
+
+    .panel-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            52px;
+
+        padding:
+            0 12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .panel-title {
+
+        flex:
+            1;
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .panel-close {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            var(--small-radius);
+    }
+
+
+    .panel-tabs {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            1fr;
+
+        gap:
+            4px;
+
+        padding:
+            8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .panel-tab {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            4px;
+
+        height:
+            31px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    .panel-tab.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Comments
+       ====================================================== */
+
+    .comment-list {
+
+        padding:
+            7px 9px 100px;
+    }
+
+
+    .comment-card {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            32px
+            minmax(0, 1fr);
+
+        gap:
+            8px;
+
+        padding:
+            10px 5px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .comment-avatar {
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .comment-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .comment-body {
+
+        min-width:
+            0;
+    }
+
+
+    .comment-meta {
+
+        display:
+            flex;
+
+        align-items:
+            baseline;
+
+        gap:
+            5px;
+    }
+
+
+    .comment-author {
+
+        overflow:
+            hidden;
+
+        max-width:
+            145px;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .comment-time {
+
+        font-size:
+            8px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .comment-text {
+
+        margin-top:
+            4px;
+
+        font-size:
+            10px;
+
+        line-height:
+            1.4;
+    }
+
+
+    .comment-reaction {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        margin-top:
+            6px;
+
+        width:
+            30px;
+
+        height:
+            27px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+    }
+
+
+    .comment-emoji {
+
+        width:
+            19px;
+
+        height:
+            19px;
+
+        object-fit:
+            contain;
+    }
+
+
+    /* ======================================================
+       Comment Composer
+       ====================================================== */
+
+    .comment-composer {
+
+        position:
+            absolute;
+
+        right:
+            9px;
+
+        bottom:
+            9px;
+
+        left:
+            9px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            40px;
+
+        padding:
+            5px 6px 5px 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .comment-input {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            10px;
+    }
+
+
+    .comment-send {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            29px;
+
+        height:
+            29px;
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Details
+       ====================================================== */
+
+    .details-list {
+
+        padding:
+            10px 12px;
+    }
+
+
+    .detail-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            28px
+            minmax(0, 1fr);
+
+        gap:
+            8px;
+
+        min-height:
+            48px;
+
+        padding:
+            7px 0;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .detail-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .detail-title {
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .detail-value {
+
+        margin-top:
+            2px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .canvas-topbar {
+
+            top:
+                var(--status-bar-height);
+        }
+
+
+        .canvas-layout {
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                280px;
+        }
+
+
+        .canvas-toolbar {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + 56px
+                );
+        }
+
+
+        .canvas-side-panel {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + 56px
+                );
+
+            height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                    - 56px
+                );
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .canvas-topbar {
+
+            top:
+                var(--status-bar-height);
+
+            height:
+                52px;
+
+            padding:
+                0 9px;
+        }
+
+
+        .canvas-header-subtitle {
+
+            display:
+                none;
+        }
+
+
+        .canvas-collaborators {
+
+            display:
+                none;
+        }
+
+
+        .canvas-layout {
+
+            display:
+                block;
+
+            min-height:
+                0;
+        }
+
+
+        .canvas-editor {
+
+            border-right:
+                none;
+        }
+
+
+        .canvas-toolbar {
+
+            top:
+                calc(
+                    var(--status-bar-height)
+                    + 52px
+                );
+
+            min-height:
+                43px;
+
+            padding:
+                5px 9px;
+        }
+
+
+        .canvas-document {
+
+            width:
+                calc(
+                    100%
+                    - 24px
+                );
+
+            padding:
+                24px 0 100px;
+        }
+
+
+        .document-title {
+
+            font-size:
+                27px;
+        }
+
+
+        .canvas-attachment {
+
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .attachment-preview {
+
+            height:
+                150px;
+        }
+
+
+        .attachment-info {
+
+            padding:
+                0 12px 12px;
+        }
+
+
+        .canvas-side-panel {
+
+            display:
+                none;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="canvas-page">
+
+
+    <!-- =====================================================
+         Header
+         ===================================================== -->
+
+    <header
+        class="canvas-topbar"
+        data-class="app_bar"
+        data-semantic="canvas_header"
+        data-occluder="true"
+    >
+
+        <button
+            class="canvas-back"
+            data-class="button"
+            data-semantic="canvas_back"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="canvas_back_icon"
+            >
+                arrow_back
+            </span>
+
+        </button>
+
+
+        <div class="canvas-header-info">
+
+            <div class="canvas-header-title">
+
+                {{ canvas.title }}
+
+            </div>
+
+
+            <div class="canvas-header-subtitle">
+
+                {{ canvas.updated_text }}
+
+            </div>
+
+        </div>
+
+
+        <div class="canvas-collaborators">
+
+            {% for person in canvas.collaborators[:4] %}
+
+            <div
+                class="collaborator-avatar"
+                data-class="avatar"
+                data-semantic="canvas_collaborator"
+            >
+
+                {% if person.avatar %}
+
+                <img
+                    src="{{ person.avatar }}"
+                    alt=""
+                >
+
+                {% else %}
+
+                {{ person.name[0] }}
+
+                {% endif %}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+
+        <button
+            class="canvas-header-button"
+            data-class="button"
+            data-semantic="canvas_comments"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="canvas_comments_icon"
+            >
+                comment
+            </span>
+
+
+            <span
+                class="comment-count"
+                data-class="badge"
+                data-semantic="canvas_comment_count"
+            >
+
+                {{ canvas.comment_count }}
+
+            </span>
+
+        </button>
+
+
+        <button
+            class="canvas-header-button"
+            data-class="button"
+            data-semantic="canvas_more"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="canvas_more_icon"
+            >
+                more_vert
+            </span>
+
+        </button>
+
+    </header>
+
+
+    <!-- =====================================================
+         Layout
+         ===================================================== -->
+
+    <div class="canvas-layout">
+
+
+        <!-- =================================================
+             Editor
+             ================================================= -->
+
+        <main
+            class="canvas-editor"
+            data-class="section"
+            data-semantic="canvas_editor"
+        >
+
+
+            <!-- Toolbar -->
+
+            <div
+                class="canvas-toolbar"
+                data-class="toolbar"
+                data-semantic="canvas_editor_toolbar"
+                data-occluder="true"
+            >
+
+                {% for icon in canvas.toolbar_items %}
+
+                <button
+                    class="toolbar-button"
+                    data-class="button"
+                    data-semantic="canvas_toolbar_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="canvas_toolbar_icon"
+                    >
+                        {{ icon }}
+                    </span>
+
+                </button>
+
+                {% if loop.index == 3 %}
+
+                <span class="toolbar-divider">
+                </span>
+
+                {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- Document -->
+
+            <article
+                class="canvas-document"
+                data-class="section"
+                data-semantic="canvas_document"
+            >
+
+                <h1 class="document-title">
+
+                    {{ canvas.title }}
+
+                </h1>
+
+
+                <p class="document-subtitle">
+
+                    {{ canvas.subtitle }}
+
+                </p>
+
+
+                <div class="document-meta">
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="canvas_history_icon"
+                    >
+                        history
+                    </span>
+
+                    {{ canvas.updated_text }}
+
+                </div>
+
+
+                <!-- Overview -->
+
+                <section
+                    class="document-section"
+                    data-class="section"
+                    data-semantic="canvas_overview"
+                >
+
+                    <h2 class="section-heading">
+
+                        {{ canvas.section_title }}
+
+                    </h2>
+
+
+                    {% for paragraph in canvas.paragraphs[:2] %}
+
+                    <p class="document-paragraph">
+
+                        {{ paragraph }}
+
+                    </p>
+
+                    {% endfor %}
+
+                </section>
+
+
+                <!-- Callout -->
+
+                <section
+                    class="canvas-callout"
+                    data-class="card"
+                    data-semantic="canvas_callout"
+                >
+
+                    <div
+                        class="callout-icon"
+                        data-class="icon"
+                        data-semantic="canvas_callout_icon"
+                    >
+
+                        <span class="material-symbols-rounded">
+                            lightbulb
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <div class="callout-title">
+
+                            Important
+
+                        </div>
+
+
+                        <div class="callout-text">
+
+                            Review the implementation across
+                            mobile, tablet, and desktop before
+                            finalizing the next dataset batch.
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- Tasks -->
+
+                <section
+                    class="document-section"
+                    data-class="section"
+                    data-semantic="canvas_tasks"
+                >
+
+                    <h2 class="section-heading">
+
+                        Checklist
+
+                    </h2>
+
+
+                    <div class="checklist">
+
+                        {% for task in canvas.tasks %}
+
+                        <div
+                            class="checklist-item"
+                            data-class="list_item"
+                            data-semantic="canvas_task_{{ task.id }}"
+                        >
+
+                            <span
+                                class="
+                                    task-checkbox
+                                    {% if task.completed %}
+                                    completed
+                                    {% endif %}
+                                "
+                                data-class="selection_indicator"
+                                data-semantic="canvas_task_checkbox"
+                            >
+
+                                {% if task.completed %}
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="canvas_task_check_icon"
+                                >
+                                    check
+                                </span>
+
+                                {% endif %}
+
+                            </span>
+
+
+                            <span
+                                class="
+                                    task-text
+                                    {% if task.completed %}
+                                    completed
+                                    {% endif %}
+                                "
+                            >
+
+                                {{ task.text }}
+
+                            </span>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+
+                <!-- Additional text -->
+
+                <section
+                    class="document-section"
+                    data-class="section"
+                    data-semantic="canvas_notes"
+                >
+
+                    <h2 class="section-heading">
+
+                        Notes
+
+                    </h2>
+
+
+                    {% for paragraph in canvas.paragraphs[2:] %}
+
+                    <p class="document-paragraph">
+
+                        {{ paragraph }}
+
+                    </p>
+
+                    {% endfor %}
+
+                </section>
+
+
+                <!-- Attachment -->
+
+                {% if canvas.attachment %}
+
+                <article
+                    class="canvas-attachment"
+                    data-class="media_item"
+                    data-semantic="canvas_attachment"
+                >
+
+                    <div
+                        class="attachment-preview"
+                        data-class="image"
+                        data-semantic="canvas_attachment_preview"
+                    >
+
+                        <img
+                            src="{{ canvas.attachment }}"
+                            alt=""
+                        >
+
+                    </div>
+
+
+                    <div class="attachment-info">
+
+                        <div class="attachment-title">
+
+                            Project reference
+
+                        </div>
+
+
+                        <div class="attachment-description">
+
+                            Shared image or file attached
+                            to this canvas for review.
+
+                        </div>
+
+
+                        <div class="attachment-actions">
+
+                            <button
+                                class="attachment-button"
+                                data-class="button"
+                                data-semantic="open_attachment"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="open_attachment_icon"
+                                >
+                                    open_in_new
+                                </span>
+
+                                Open
+
+                            </button>
+
+
+                            <button
+                                class="attachment-button"
+                                data-class="button"
+                                data-semantic="download_attachment"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="download_attachment_icon"
+                                >
+                                    download
+                                </span>
+
+                                Download
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+                {% endif %}
+
+            </article>
+
+        </main>
+
+
+        <!-- =================================================
+             Side Panel
+             ================================================= -->
+
+        <aside
+            class="canvas-side-panel"
+            data-class="section"
+            data-semantic="canvas_side_panel"
+        >
+
+            <header
+                class="panel-header"
+                data-class="app_bar"
+                data-semantic="canvas_panel_header"
+            >
+
+                <div class="panel-title">
+
+                    Canvas
+
+                </div>
+
+
+                <button
+                    class="panel-close"
+                    data-class="button"
+                    data-semantic="close_canvas_panel"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_canvas_panel_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <!-- Tabs -->
+
+            <div
+                class="panel-tabs"
+                data-class="toolbar"
+                data-semantic="canvas_panel_tabs"
+            >
+
+                <button
+                    class="
+                        panel-tab
+                        {% if canvas.panel_mode == "comments" %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="canvas_comments_tab"
+                >
+
+                    Comments
+
+                    <span
+                        class="comment-count"
+                        data-class="badge"
+                        data-semantic="comments_tab_count"
+                    >
+
+                        {{ canvas.comment_count }}
+
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="
+                        panel-tab
+                        {% if canvas.panel_mode == "details" %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="canvas_details_tab"
+                >
+
+                    Details
+
+                </button>
+
+            </div>
+
+
+            {% if canvas.panel_mode == "comments" %}
+
+
+            <!-- =============================================
+                 Comments
+                 ============================================= -->
+
+            <section
+                class="comment-list"
+                data-class="section"
+                data-semantic="canvas_comments"
+            >
+
+                {% for comment in canvas.comments %}
+
+                <article
+                    class="comment-card"
+                    data-class="message_bubble"
+                    data-semantic="canvas_comment_{{ comment.id }}"
+                >
+
+                    <div
+                        class="comment-avatar"
+                        data-class="avatar"
+                        data-semantic="comment_avatar"
+                    >
+
+                        {% if comment.author.avatar %}
+
+                        <img
+                            src="{{ comment.author.avatar }}"
+                            alt=""
+                        >
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="comment-body">
+
+                        <div class="comment-meta">
+
+                            <span class="comment-author">
+
+                                {{ comment.author.name }}
+
+                            </span>
+
+
+                            <span
+                                class="comment-time"
+                                data-class="timestamp"
+                                data-semantic="comment_timestamp"
+                            >
+
+                                {{ comment.time }}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="comment-text">
+
+                            {{ comment.text }}
+
+                        </div>
+
+
+                        {% if comment.reaction %}
+
+                        <button
+                            class="comment-reaction"
+                            data-class="button"
+                            data-semantic="comment_reaction"
+                        >
+
+                            <img
+                                class="comment-emoji"
+                                src="{{ comment.reaction.image }}"
+                                alt=""
+                                data-class="emoji"
+                                data-semantic="comment_reaction_emoji"
+                                data-emoji-source="{{ comment.reaction.source }}"
+                                data-emoji-name="{{ comment.reaction.name }}"
+                            >
+
+                        </button>
+
+                        {% endif %}
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+
+                <div
+                    class="comment-composer"
+                    data-class="toolbar"
+                    data-semantic="canvas_comment_composer"
+                    data-occluder="true"
+                >
+
+                    <input
+                        class="comment-input"
+                        type="text"
+                        placeholder="Add a comment"
+                        data-class="input_field"
+                        data-semantic="canvas_comment_input"
+                    >
+
+
+                    <button
+                        class="comment-send"
+                        data-class="button"
+                        data-semantic="send_canvas_comment"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="send_canvas_comment_icon"
+                        >
+                            send
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            {% else %}
+
+
+            <!-- =============================================
+                 Details
+                 ============================================= -->
+
+            <section
+                class="details-list"
+                data-class="section"
+                data-semantic="canvas_details"
+            >
+
+                {% set details = [
+                    (
+                        "group",
+                        "Collaborators",
+                        canvas.collaborators|length ~ " people"
+                    ),
+                    (
+                        "comment",
+                        "Comments",
+                        canvas.comment_count ~ " comments"
+                    ),
+                    (
+                        "schedule",
+                        "Last updated",
+                        canvas.updated_text
+                    ),
+                    (
+                        "lock",
+                        "Access",
+                        "Workspace members"
+                    )
+                ] %}
+
+
+                {% for icon, title, value in details %}
+
+                <div
+                    class="detail-row"
+                    data-class="list_item"
+                    data-semantic="canvas_detail_{{ loop.index }}"
+                >
+
+                    <div
+                        class="detail-icon"
+                        data-class="icon"
+                        data-semantic="canvas_detail_icon"
+                    >
+
+                        <span class="material-symbols-rounded">
+                            {{ icon }}
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <div class="detail-title">
+
+                            {{ title }}
+
+                        </div>
+
+
+                        <div class="detail-value">
+
+                            {{ value }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </section>
+
+            {% endif %}
+
+        </aside>
+
+    </div>
+
+</div>
+
+
+{% endblock %}
