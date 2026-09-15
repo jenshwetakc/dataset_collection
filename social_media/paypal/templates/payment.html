@@ -1,0 +1,1799 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+PayPal Payment
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .payment-page {
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Shell
+       ====================================================== */
+
+    .payment-shell {
+
+        display:
+            block;
+    }
+
+
+    .desktop-sidebar {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .payment-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            120;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            44px
+            minmax(0, 1fr)
+            44px;
+
+        align-items:
+            center;
+
+        min-height:
+            64px;
+
+        padding:
+            8px var(--page-gap);
+
+        background:
+            var(--background);
+
+        border-bottom:
+            1px solid var(--border-subtle);
+    }
+
+
+    .app-bar-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .payment-app-title {
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            17px;
+
+        font-weight:
+            750;
+
+        text-align:
+            center;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Main Content
+       ====================================================== */
+
+    .payment-content {
+
+        width:
+            min(
+                100%,
+                1080px
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            24px var(--page-gap);
+
+        padding-bottom:
+            120px;
+    }
+
+
+    .payment-layout {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            24px;
+    }
+
+
+    /* ======================================================
+       Recipient
+       ====================================================== */
+
+    .recipient-card {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .recipient-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            50px;
+
+        height:
+            50px;
+
+        flex:
+            0 0 auto;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            19px;
+
+        font-weight:
+            750;
+    }
+
+
+    .recipient-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .recipient-copy {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .recipient-label {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .recipient-name {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        font-weight:
+            750;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    .recipient-email {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Amount Panel
+       ====================================================== */
+
+    .amount-panel {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        padding:
+            28px 18px;
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .amount-label {
+
+        margin-bottom:
+            14px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .amount-entry {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        max-width:
+            100%;
+
+        min-width:
+            0;
+    }
+
+
+    .amount-symbol {
+
+        margin-right:
+            5px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            clamp(
+                34px,
+                8vw,
+                56px
+            );
+
+        font-weight:
+            750;
+    }
+
+
+    .amount-input {
+
+        width:
+            min(
+                68vw,
+                360px
+            );
+
+        min-width:
+            0;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            clamp(
+                38px,
+                10vw,
+                64px
+            );
+
+        font-weight:
+            800;
+
+        letter-spacing:
+            -1.5px;
+
+        text-align:
+            center;
+    }
+
+
+    .currency-selector {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        margin-top:
+            14px;
+
+        padding:
+            8px 13px;
+
+        border-radius:
+            var(--chip-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Note
+       ====================================================== */
+
+    .note-field {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            54px;
+
+        padding:
+            0 14px;
+
+        border:
+            1px solid var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .note-field input {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .note-field input::placeholder {
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Payment Method
+       ====================================================== */
+
+    .section-heading {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            16px;
+
+        margin-bottom:
+            12px;
+    }
+
+
+    .section-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            750;
+    }
+
+
+    .section-action {
+
+        color:
+            var(--primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .payment-method-card {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            74px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .method-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            46px;
+
+        height:
+            46px;
+
+        border-radius:
+            13px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    .method-copy {
+
+        min-width:
+            0;
+    }
+
+
+    .method-name {
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            750;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    .method-subtitle {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Summary
+       ====================================================== */
+
+    .summary-card {
+
+        padding:
+            18px;
+
+        border:
+            1px solid var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .summary-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            20px;
+
+        min-height:
+            34px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .summary-row.total {
+
+        margin-top:
+            8px;
+
+        padding-top:
+            12px;
+
+        border-top:
+            1px solid var(--border-subtle);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            750;
+    }
+
+
+    /* ======================================================
+       Sticky Mobile Actions
+       ====================================================== */
+
+    .payment-actions {
+
+        position:
+            fixed;
+
+        z-index:
+            140;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        display:
+            flex;
+
+        gap:
+            10px;
+
+        padding:
+            12px var(--page-gap)
+            16px;
+
+        border-top:
+            1px solid var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .secondary-button,
+    .primary-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            50px;
+
+        border-radius:
+            var(--button-radius);
+
+        font-size:
+            14px;
+
+        font-weight:
+            750;
+    }
+
+
+    .secondary-button {
+
+        width:
+            105px;
+
+        border:
+            1px solid var(--border);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .primary-button {
+
+        flex:
+            1;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Bottom Sheet
+       ====================================================== */
+
+    .sheet-scrim {
+
+        position:
+            fixed;
+
+        z-index:
+            400;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.38
+            );
+    }
+
+
+    .payment-sheet {
+
+        position:
+            fixed;
+
+        z-index:
+            410;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        max-height:
+            min(
+                72vh,
+                620px
+            );
+
+        overflow-y:
+            auto;
+
+        padding:
+            10px
+            var(--page-gap)
+            30px;
+
+        border-radius:
+            24px
+            24px
+            0
+            0;
+
+        background:
+            var(--surface);
+    }
+
+
+    .sheet-handle {
+
+        width:
+            42px;
+
+        height:
+            4px;
+
+        margin:
+            2px auto
+            20px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border);
+    }
+
+
+    .sheet-title {
+
+        margin-bottom:
+            14px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+    }
+
+
+    .sheet-method {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            70px;
+
+        padding:
+            10px 4px;
+
+        border-bottom:
+            1px solid var(--border-subtle);
+    }
+
+
+    .selection-circle {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            22px;
+
+        height:
+            22px;
+
+        border:
+            2px solid var(--border);
+
+        border-radius:
+            50%;
+    }
+
+
+    .selection-circle.selected {
+
+        border:
+            6px solid var(--primary);
+    }
+
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 1024px
+    ) {
+
+        .payment-shell {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                244px
+                minmax(0, 1fr);
+
+            min-height:
+                100vh;
+        }
+
+
+        .desktop-sidebar {
+
+            position:
+                sticky;
+
+            top:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            height:
+                100vh;
+
+            padding:
+                28px 18px;
+
+            border-right:
+                1px solid var(--border-subtle);
+
+            background:
+                var(--surface);
+        }
+
+
+        .paypal-wordmark {
+
+            margin:
+                0 10px
+                30px;
+
+            color:
+                var(--primary);
+
+            font-size:
+                25px;
+
+            font-weight:
+                800;
+        }
+
+
+        .sidebar-item {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            gap:
+                13px;
+
+            min-height:
+                48px;
+
+            padding:
+                0 14px;
+
+            border-radius:
+                12px;
+
+            color:
+                var(--text-secondary);
+
+            font-size:
+                14px;
+
+            font-weight:
+                650;
+        }
+
+
+        .sidebar-item.active {
+
+            background:
+                var(--primary-container);
+
+            color:
+                var(--on-primary-container);
+        }
+
+
+        .payment-app-bar {
+
+            position:
+                relative;
+
+            grid-template-columns:
+                44px
+                minmax(0, 1fr)
+                44px;
+
+            min-height:
+                78px;
+
+            padding:
+                14px 32px;
+        }
+
+
+        .payment-content {
+
+            padding:
+                40px;
+
+            padding-bottom:
+                60px;
+        }
+
+
+        .payment-layout {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                minmax(0, 1.2fr)
+                minmax(320px, 0.8fr);
+
+            align-items:
+                start;
+
+            gap:
+                32px;
+        }
+
+
+        .payment-left,
+        .payment-right {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                20px;
+        }
+
+
+        .amount-panel {
+
+            min-height:
+                300px;
+
+            justify-content:
+                center;
+        }
+
+
+        .payment-actions {
+
+            position:
+                static;
+
+            padding:
+                0;
+
+            border-top:
+                none;
+
+            background:
+                transparent;
+        }
+
+
+        .payment-sheet {
+
+            left:
+                50%;
+
+            right:
+                auto;
+
+            bottom:
+                50%;
+
+            width:
+                min(
+                    540px,
+                    calc(
+                        100vw
+                        - 60px
+                    )
+                );
+
+            max-height:
+                680px;
+
+            transform:
+                translate(
+                    -50%,
+                    50%
+                );
+
+            border-radius:
+                24px;
+
+            padding:
+                18px
+                24px
+                28px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="payment-page">
+
+    <div class="payment-shell">
+
+
+        <!-- =================================================
+             Desktop Navigation
+             ================================================= -->
+
+        <aside
+            class="desktop-sidebar"
+            data-class="navigation_bar"
+            data-semantic="desktop_navigation"
+        >
+
+            <div class="paypal-wordmark">
+                PayPal
+            </div>
+
+
+            {% for item in payment.navigation %}
+
+            <button
+                class="
+                    sidebar-item
+                    {% if item.semantic == "send" %}
+                    active
+                    {% endif %}
+                "
+                data-class="navigation_item"
+                data-semantic="sidebar_{{ item.semantic }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="{{ item.semantic }}_icon"
+                >
+                    {{ item.icon }}
+                </span>
+
+                {{ item.label }}
+
+            </button>
+
+            {% endfor %}
+
+        </aside>
+
+
+        <!-- =================================================
+             Main
+             ================================================= -->
+
+        <main>
+
+
+            <!-- =============================================
+                 App Bar
+                 ============================================= -->
+
+            <header
+                class="payment-app-bar"
+                data-class="app_bar"
+                data-semantic="payment_app_bar"
+            >
+
+                <button
+                    class="app-bar-button"
+                    data-class="button"
+                    data-semantic="back_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="back_icon"
+                    >
+                        arrow_back
+                    </span>
+
+                </button>
+
+
+                <div
+                    class="payment-app-title"
+                    data-class="text"
+                    data-semantic="payment_title"
+                >
+                    {{ payment.title }}
+                </div>
+
+
+                <button
+                    class="app-bar-button"
+                    data-class="button"
+                    data-semantic="close_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <!-- =============================================
+                 Content
+                 ============================================= -->
+
+            <div class="payment-content">
+
+                <div class="payment-layout">
+
+
+                    <!-- =====================================
+                         Left
+                         ===================================== -->
+
+                    <div class="payment-left">
+
+
+                        <!-- Recipient -->
+
+                        <section
+                            class="recipient-card"
+                            data-class="card"
+                            data-semantic="recipient_card"
+                        >
+
+                            <div
+                                class="recipient-avatar"
+                                data-class="avatar"
+                                data-semantic="recipient_avatar"
+                            >
+
+                                {% if payment.recipient.avatar %}
+
+                                <img
+                                    src="{{ payment.recipient.avatar }}"
+                                    alt=""
+                                >
+
+                                {% else %}
+
+                                {{ payment.recipient.initial }}
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="recipient-copy">
+
+                                <div class="recipient-label">
+                                    Sending to
+                                </div>
+
+                                <div
+                                    class="recipient-name"
+                                    data-class="text"
+                                    data-semantic="recipient_name"
+                                >
+                                    {{ payment.recipient.name }}
+                                </div>
+
+                                <div
+                                    class="recipient-email"
+                                    data-class="text"
+                                    data-semantic="recipient_email"
+                                >
+                                    {{ payment.recipient.email }}
+                                </div>
+
+                            </div>
+
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="recipient_verified"
+                            >
+                                verified
+                            </span>
+
+                        </section>
+
+
+                        <!-- Amount -->
+
+                        <section
+                            class="amount-panel"
+                            data-class="card"
+                            data-semantic="amount_card"
+                        >
+
+                            <div
+                                class="amount-label"
+                                data-class="text"
+                                data-semantic="amount_label"
+                            >
+                                Amount
+                            </div>
+
+
+                            <div class="amount-entry">
+
+                                <span
+                                    class="amount-symbol"
+                                    data-class="text"
+                                    data-semantic="currency_symbol"
+                                >
+                                    {{ payment.currency.symbol }}
+                                </span>
+
+
+                                <input
+                                    class="amount-input"
+                                    value="{{ payment.amount.formatted }}"
+                                    data-class="input_field"
+                                    data-semantic="amount_input"
+                                >
+
+                            </div>
+
+
+                            <button
+                                class="currency-selector"
+                                data-class="button"
+                                data-semantic="currency_selector"
+                            >
+
+                                {{ payment.currency.code }}
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="currency_dropdown_icon"
+                                >
+                                    keyboard_arrow_down
+                                </span>
+
+                            </button>
+
+                        </section>
+
+
+                        <!-- Note -->
+
+                        <div
+                            class="note-field"
+                            data-class="input_field"
+                            data-semantic="payment_note"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="note_icon"
+                            >
+                                edit_note
+                            </span>
+
+                            <input
+                                placeholder="{{ payment.note_placeholder }}"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- =====================================
+                         Right
+                         ===================================== -->
+
+                    <div class="payment-right">
+
+
+                        <!-- Payment Method -->
+
+                        <section
+                            data-class="section"
+                            data-semantic="payment_method_section"
+                        >
+
+                            <div class="section-heading">
+
+                                <h2 class="section-title">
+                                    Paying with
+                                </h2>
+
+                                <button
+                                    class="section-action"
+                                    data-class="button"
+                                    data-semantic="change_payment_method"
+                                >
+                                    Change
+                                </button>
+
+                            </div>
+
+
+                            {% set selected_method =
+                                payment.payment_methods[0]
+                            %}
+
+
+                            <div
+                                class="payment-method-card"
+                                data-class="card"
+                                data-semantic="selected_payment_method"
+                            >
+
+                                <div
+                                    class="method-icon"
+                                >
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="payment_method_icon"
+                                    >
+                                        {{ selected_method.icon }}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="method-copy">
+
+                                    <div
+                                        class="method-name"
+                                        data-class="text"
+                                        data-semantic="payment_method_name"
+                                    >
+                                        {{ selected_method.label }}
+                                    </div>
+
+                                    <div
+                                        class="method-subtitle"
+                                        data-class="text"
+                                        data-semantic="payment_method_subtitle"
+                                    >
+                                        {{ selected_method.subtitle }}
+                                    </div>
+
+                                </div>
+
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="payment_method_arrow"
+                                >
+                                    chevron_right
+                                </span>
+
+                            </div>
+
+                        </section>
+
+
+                        <!-- Summary -->
+
+                        <section
+                            class="summary-card"
+                            data-class="card"
+                            data-semantic="payment_summary"
+                        >
+
+                            <div class="summary-row">
+
+                                <span>
+                                    Amount
+                                </span>
+
+                                <strong>
+                                    {{ payment.currency.symbol }}
+                                    {{ payment.amount.formatted }}
+                                </strong>
+
+                            </div>
+
+
+                            <div class="summary-row">
+
+                                <span>
+                                    Fee
+                                </span>
+
+                                <strong>
+                                    {{ payment.fee_text }}
+                                </strong>
+
+                            </div>
+
+
+                            <div class="summary-row total">
+
+                                <span>
+                                    Total
+                                </span>
+
+                                <span>
+                                    {{ payment.currency.symbol }}
+                                    {{ "%.2f"|format(payment.total) }}
+                                </span>
+
+                            </div>
+
+                        </section>
+
+
+                        <!-- Desktop Actions -->
+
+                        <div class="payment-actions">
+
+                            <button
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="cancel_payment"
+                            >
+                                Cancel
+                            </button>
+
+
+                            <button
+                                class="primary-button"
+                                data-class="button"
+                                data-semantic="send_payment"
+                            >
+                                {{ payment.send_label }}
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Payment Method Bottom Sheet
+         ===================================================== -->
+
+    {% if payment.show_payment_sheet %}
+
+    <div
+        class="sheet-scrim"
+        data-occluder="true"
+    >
+    </div>
+
+
+    <section
+        class="payment-sheet"
+        data-class="bottom_sheet"
+        data-semantic="payment_method_sheet"
+        data-occluder="true"
+    >
+
+        <div class="sheet-handle">
+        </div>
+
+
+        <h2
+            class="sheet-title"
+            data-class="text"
+            data-semantic="payment_sheet_title"
+        >
+            Choose how to pay
+        </h2>
+
+
+        {% for method in payment.payment_methods %}
+
+        <button
+            class="sheet-method"
+            data-class="list_item"
+            data-semantic="payment_option_{{ loop.index }}"
+        >
+
+            <div class="method-icon">
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="payment_option_icon_{{ loop.index }}"
+                >
+                    {{ method.icon }}
+                </span>
+
+            </div>
+
+
+            <div class="method-copy">
+
+                <div class="method-name">
+
+                    {{ method.label }}
+
+                </div>
+
+                <div class="method-subtitle">
+
+                    {{ method.subtitle }}
+
+                </div>
+
+            </div>
+
+
+            <span
+                class="
+                    selection-circle
+                    {% if method.selected %}
+                    selected
+                    {% endif %}
+                "
+                data-class="selection_indicator"
+                data-semantic="payment_option_selection_{{ loop.index }}"
+            >
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

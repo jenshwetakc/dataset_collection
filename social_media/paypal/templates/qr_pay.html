@@ -1,0 +1,2494 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+PayPal QR Pay
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .qr-page {
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Shell
+       ====================================================== */
+
+    .qr-shell {
+
+        display:
+            block;
+    }
+
+
+    .qr-sidebar {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .qr-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            110;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            44px
+            minmax(0, 1fr)
+            44px;
+
+        align-items:
+            center;
+
+        min-height:
+            64px;
+
+        padding:
+            8px var(--page-gap);
+
+        border-bottom:
+            1px solid var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .app-bar-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .qr-app-title {
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            17px;
+
+        font-weight:
+            760;
+
+        text-align:
+            center;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Content
+       ====================================================== */
+
+    .qr-content {
+
+        width:
+            min(
+                100%,
+                1180px
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            20px var(--page-gap);
+
+        padding-bottom:
+            calc(
+                var(--mobile-nav-height)
+                + 30px
+            );
+    }
+
+
+    .qr-heading {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            clamp(
+                26px,
+                6vw,
+                40px
+            );
+
+        font-weight:
+            820;
+
+        letter-spacing:
+            -0.9px;
+    }
+
+
+    .qr-subtitle {
+
+        margin-top:
+            7px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+    }
+
+
+    /* ======================================================
+       Tabs
+       ====================================================== */
+
+    .qr-tabs {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            5px;
+
+        margin-top:
+            20px;
+
+        padding:
+            4px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .qr-tab {
+
+        position:
+            relative;
+
+        min-height:
+            42px;
+
+        border-radius:
+            999px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            720;
+    }
+
+
+    .qr-tab.active {
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .qr-tab-indicator {
+
+        position:
+            absolute;
+
+        left:
+            34%;
+
+        right:
+            34%;
+
+        bottom:
+            3px;
+
+        height:
+            2px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Scanner
+       ====================================================== */
+
+    .scanner-card {
+
+        position:
+            relative;
+
+        overflow:
+            hidden;
+
+        min-height:
+            460px;
+
+        margin-top:
+            20px;
+
+        border-radius:
+            26px;
+
+        background:
+            #18191c;
+    }
+
+
+    .scanner-background {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        background:
+            radial-gradient(
+                circle at center,
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.08
+                ),
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.38
+                )
+            );
+    }
+
+
+    .scanner-grid {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        background-image:
+            linear-gradient(
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.035
+                )
+                1px,
+                transparent
+                1px
+            ),
+            linear-gradient(
+                90deg,
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.035
+                )
+                1px,
+                transparent
+                1px
+            );
+
+        background-size:
+            36px
+            36px;
+    }
+
+
+    .scanner-content {
+
+        position:
+            relative;
+
+        z-index:
+            2;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            460px;
+
+        padding:
+            30px 20px;
+    }
+
+
+    .scan-frame {
+
+        position:
+            relative;
+
+        width:
+            min(
+                64vw,
+                270px
+            );
+
+        aspect-ratio:
+            1;
+
+        border:
+            2px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.25
+            );
+
+        border-radius:
+            22px;
+    }
+
+
+    .scan-corner {
+
+        position:
+            absolute;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        border-color:
+            white;
+
+        border-style:
+            solid;
+    }
+
+
+    .scan-corner.top-left {
+
+        top:
+            -3px;
+
+        left:
+            -3px;
+
+        border-width:
+            4px
+            0
+            0
+            4px;
+
+        border-radius:
+            18px
+            0
+            0
+            0;
+    }
+
+
+    .scan-corner.top-right {
+
+        top:
+            -3px;
+
+        right:
+            -3px;
+
+        border-width:
+            4px
+            4px
+            0
+            0;
+
+        border-radius:
+            0
+            18px
+            0
+            0;
+    }
+
+
+    .scan-corner.bottom-left {
+
+        left:
+            -3px;
+
+        bottom:
+            -3px;
+
+        border-width:
+            0
+            0
+            4px
+            4px;
+
+        border-radius:
+            0
+            0
+            0
+            18px;
+    }
+
+
+    .scan-corner.bottom-right {
+
+        right:
+            -3px;
+
+        bottom:
+            -3px;
+
+        border-width:
+            0
+            4px
+            4px
+            0;
+
+        border-radius:
+            0
+            0
+            18px
+            0;
+    }
+
+
+    .scan-line {
+
+        position:
+            absolute;
+
+        left:
+            12%;
+
+        right:
+            12%;
+
+        top:
+            50%;
+
+        height:
+            2px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary);
+    }
+
+
+    .scanner-message {
+
+        margin-top:
+            20px;
+
+        max-width:
+            310px;
+
+        color:
+            white;
+
+        font-size:
+            12px;
+
+        line-height:
+            1.5;
+
+        text-align:
+            center;
+    }
+
+
+    .scanner-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            18px;
+
+        margin-top:
+            24px;
+    }
+
+
+    .scanner-action {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        color:
+            white;
+
+        font-size:
+            10px;
+
+        font-weight:
+            650;
+    }
+
+
+    .scanner-action-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            52px;
+
+        height:
+            52px;
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.14
+            );
+
+        color:
+            white;
+    }
+
+
+    .scanner-action-icon.active {
+
+        background:
+            white;
+
+        color:
+            #111111;
+    }
+
+
+    /* ======================================================
+       Personal QR Card
+       ====================================================== */
+
+    .personal-qr-card {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        margin-top:
+            20px;
+
+        padding:
+            28px 20px;
+
+        border:
+            1px solid var(--border-subtle);
+
+        border-radius:
+            24px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .personal-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            58px;
+
+        height:
+            58px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            20px;
+
+        font-weight:
+            760;
+    }
+
+
+    .personal-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .personal-name {
+
+        margin-top:
+            10px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            17px;
+
+        font-weight:
+            760;
+    }
+
+
+    .personal-username {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .qr-code {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                13,
+                1fr
+            );
+
+        width:
+            min(
+                62vw,
+                250px
+            );
+
+        aspect-ratio:
+            1;
+
+        margin-top:
+            22px;
+
+        padding:
+            12px;
+
+        gap:
+            1px;
+
+        border-radius:
+            14px;
+
+        background:
+            white;
+    }
+
+
+    .qr-cell {
+
+        background:
+            transparent;
+    }
+
+
+    .qr-cell.filled {
+
+        background:
+            #111111;
+    }
+
+
+    .qr-code-label {
+
+        margin-top:
+            14px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        text-align:
+            center;
+    }
+
+
+    .qr-share-actions {
+
+        display:
+            flex;
+
+        gap:
+            10px;
+
+        margin-top:
+            20px;
+    }
+
+
+    .qr-action-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            44px;
+
+        padding:
+            0 16px;
+
+        border:
+            1px solid var(--border-subtle);
+
+        border-radius:
+            999px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .qr-action-button.primary {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Recent Recipients
+       ====================================================== */
+
+    .recent-section {
+
+        margin-top:
+            28px;
+    }
+
+
+    .section-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+
+        margin-bottom:
+            14px;
+    }
+
+
+    .section-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            760;
+    }
+
+
+    .section-action {
+
+        color:
+            var(--primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .recipient-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+    }
+
+
+    .recipient-card {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-width:
+            0;
+
+        padding:
+            14px 6px;
+
+        border:
+            1px solid var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .recipient-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            50px;
+
+        height:
+            50px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-weight:
+            750;
+    }
+
+
+    .recipient-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .recipient-name {
+
+        width:
+            100%;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+
+        text-align:
+            center;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Bottom Navigation
+       ====================================================== */
+
+    .mobile-bottom-nav {
+
+        position:
+            fixed;
+
+        z-index:
+            150;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        height:
+            var(--mobile-nav-height);
+
+        padding:
+            7px 8px;
+
+        border-top:
+            1px solid var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .mobile-nav-item {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            4px;
+
+        min-width:
+            0;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .mobile-nav-label {
+
+        font-size:
+            10px;
+
+        font-weight:
+            650;
+    }
+
+
+    /* ======================================================
+   Permission Modal Layer
+   ====================================================== */
+
+        .permission-modal-layer {
+
+            position:
+                fixed;
+
+            z-index:
+                500;
+
+            inset:
+                0;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            padding:
+                20px;
+        }
+
+
+        /* ======================================================
+           Scrim
+
+           Visual only.
+           No annotation.
+           ====================================================== */
+
+        .permission-scrim {
+
+            position:
+                absolute;
+
+            z-index:
+                0;
+
+            inset:
+                0;
+
+            background:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.42
+                );
+        }
+
+
+        /* ======================================================
+           Permission Dialog
+           ====================================================== */
+
+        .permission-dialog {
+
+            position:
+                relative;
+
+            z-index:
+                1;
+
+            width:
+                min(
+                    100%,
+                    400px
+                );
+
+            padding:
+                22px;
+
+            border-radius:
+                22px;
+
+            background:
+                var(--surface);
+        }
+
+
+        .permission-icon {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            width:
+                48px;
+
+            height:
+                48px;
+
+            border-radius:
+                14px;
+
+            background:
+                var(--primary-container);
+
+            color:
+                var(--on-primary-container);
+        }
+
+
+        .permission-title {
+
+            margin-top:
+                15px;
+
+            color:
+                var(--text-primary);
+
+            font-size:
+                20px;
+
+            font-weight:
+                800;
+        }
+
+
+        .permission-description {
+
+            margin-top:
+                8px;
+
+            color:
+                var(--text-secondary);
+
+            font-size:
+                12px;
+
+            line-height:
+                1.5;
+        }
+
+
+        .permission-actions {
+
+            display:
+                flex;
+
+            justify-content:
+                flex-end;
+
+            gap:
+                8px;
+
+            margin-top:
+                22px;
+        }
+
+
+        .permission-button {
+
+            min-height:
+                42px;
+
+            padding:
+                0 15px;
+
+            border-radius:
+                999px;
+
+            color:
+                var(--text-primary);
+
+            font-size:
+                12px;
+
+            font-weight:
+                700;
+        }
+
+
+        .permission-button.primary {
+
+            background:
+                var(--primary);
+
+            color:
+                var(--on-primary);
+        }
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 600px
+    ) and (
+        max-width: 1023px
+    ) {
+
+        .qr-content {
+
+            padding-left:
+                40px;
+
+            padding-right:
+                40px;
+        }
+
+
+        .qr-mobile-layout {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                minmax(0, 1.2fr)
+                minmax(280px, 0.8fr);
+
+            align-items:
+                start;
+
+            gap:
+                22px;
+        }
+
+
+        .personal-qr-card,
+        .scanner-card {
+
+            margin-top:
+                20px;
+        }
+
+
+        .recipient-grid {
+
+            grid-template-columns:
+                repeat(
+                    6,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+    }
+
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 1024px
+    ) {
+
+        .qr-shell {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                244px
+                minmax(0, 1fr);
+
+            min-height:
+                100vh;
+        }
+
+
+        .qr-sidebar {
+
+            position:
+                sticky;
+
+            top:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            height:
+                100vh;
+
+            padding:
+                28px 18px;
+
+            border-right:
+                1px solid var(--border-subtle);
+
+            background:
+                var(--surface);
+        }
+
+
+        .paypal-wordmark {
+
+            margin:
+                0 10px
+                30px;
+
+            color:
+                var(--primary);
+
+            font-size:
+                25px;
+
+            font-weight:
+                800;
+        }
+
+
+        .sidebar-navigation {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                6px;
+        }
+
+
+        .sidebar-item {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            width:
+                100%;
+
+            gap:
+                13px;
+
+            min-height:
+                48px;
+
+            padding:
+                0 14px;
+
+            border-radius:
+                12px;
+
+            color:
+                var(--text-secondary);
+
+            font-size:
+                14px;
+
+            font-weight:
+                650;
+
+            text-align:
+                left;
+        }
+
+
+        .qr-app-bar {
+
+            position:
+                relative;
+
+            min-height:
+                78px;
+
+            padding:
+                14px 32px;
+        }
+
+
+        .qr-content {
+
+            padding:
+                34px 42px
+                70px;
+        }
+
+
+        .qr-desktop-layout {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                minmax(420px, 1.2fr)
+                minmax(320px, 0.75fr);
+
+            align-items:
+                start;
+
+            gap:
+                30px;
+        }
+
+
+        .qr-primary,
+        .qr-secondary {
+
+            min-width:
+                0;
+        }
+
+
+        .scanner-card {
+
+            min-height:
+                560px;
+        }
+
+
+        .scanner-content {
+
+            min-height:
+                560px;
+        }
+
+
+        .scan-frame {
+
+            width:
+                290px;
+        }
+
+
+        .personal-qr-card {
+
+            margin-top:
+                0;
+        }
+
+
+        .recipient-grid {
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .mobile-bottom-nav {
+
+            display:
+                none;
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .scanner-card,
+        .scanner-content {
+
+            min-height:
+                410px;
+        }
+
+
+        .recipient-grid {
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="qr-page">
+
+    <div class="qr-shell">
+
+
+        <!-- =================================================
+             Desktop Sidebar
+             ================================================= -->
+
+        <aside
+            class="qr-sidebar"
+            data-class="navigation_bar"
+            data-semantic="desktop_navigation"
+        >
+
+            <div
+                class="paypal-wordmark"
+                data-class="text"
+                data-semantic="paypal_wordmark"
+            >
+                PayPal
+            </div>
+
+
+            <nav class="sidebar-navigation">
+
+                {% for item in qr.navigation %}
+
+                <button
+                    class="sidebar-item{% if item.semantic == 'send' %} active{% endif %}"
+                    data-class="navigation_item"
+                    data-semantic="sidebar_{{ item.semantic }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="{{ item.semantic }}_icon"
+                    >
+                        {{ item.icon }}
+                    </span>
+
+                    <span>
+                        {{ item.label }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </nav>
+
+        </aside>
+
+
+        <main>
+
+
+            <!-- =============================================
+                 App Bar
+                 ============================================= -->
+
+            <header
+                class="qr-app-bar"
+                data-class="app_bar"
+                data-semantic="qr_app_bar"
+            >
+
+                <button
+                    class="app-bar-button"
+                    data-class="button"
+                    data-semantic="back_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="back_icon"
+                    >
+                        arrow_back
+                    </span>
+
+                </button>
+
+
+                <div
+                    class="qr-app-title"
+                    data-class="text"
+                    data-semantic="qr_app_title"
+                >
+                    QR
+                </div>
+
+
+                <button
+                    class="app-bar-button"
+                    data-class="button"
+                    data-semantic="help_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="help_icon"
+                    >
+                        help
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <!-- =============================================
+                 Content
+                 ============================================= -->
+
+            <div class="qr-content">
+
+
+                <section
+                    data-class="section"
+                    data-semantic="qr_header"
+                >
+
+                    <h1
+                        class="qr-heading"
+                        data-class="text"
+                        data-semantic="qr_heading"
+                    >
+                        {{ qr.title }}
+                    </h1>
+
+
+                    <p
+                        class="qr-subtitle"
+                        data-class="text"
+                        data-semantic="qr_subtitle"
+                    >
+                        {{ qr.subtitle }}
+                    </p>
+
+                </section>
+
+
+                <!-- =========================================
+                     Tabs
+                     ========================================= -->
+
+                <div
+                    class="qr-tabs"
+                    data-class="toolbar"
+                    data-semantic="qr_tabs"
+                >
+
+                    {% for tab in qr.tabs %}
+
+                    <button
+                        class="qr-tab{% if qr.active_mode == tab.semantic %} active{% endif %}"
+                        data-class="tab"
+                        data-semantic="qr_tab_{{ tab.semantic }}"
+                    >
+
+                        {{ tab.label }}
+
+
+                        {% if qr.active_mode == tab.semantic %}
+
+                        <span
+                            class="qr-tab-indicator"
+                            data-class="selection_indicator"
+                            data-semantic="active_qr_tab"
+                        >
+                        </span>
+
+                        {% endif %}
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <div class="qr-desktop-layout">
+
+
+                    <!-- =====================================
+                         Primary
+                         ===================================== -->
+
+                    <div class="qr-primary">
+
+
+                        {% if qr.active_mode == 'scan' %}
+
+                        <!-- ================================
+                             Scanner
+                             ================================ -->
+
+                        <section
+                            class="scanner-card"
+                            data-class="card"
+                            data-semantic="qr_scanner"
+                        >
+
+                            <div class="scanner-background">
+                            </div>
+
+                            <div class="scanner-grid">
+                            </div>
+
+
+                            <div class="scanner-content">
+
+                                <div
+                                    class="scan-frame"
+                                    data-semantic="qr_scan_frame"
+                                >
+
+                                    <span
+                                        class="
+                                            scan-corner
+                                            top-left
+                                        "
+                                    >
+                                    </span>
+
+                                    <span
+                                        class="
+                                            scan-corner
+                                            top-right
+                                        "
+                                    >
+                                    </span>
+
+                                    <span
+                                        class="
+                                            scan-corner
+                                            bottom-left
+                                        "
+                                    >
+                                    </span>
+
+                                    <span
+                                        class="
+                                            scan-corner
+                                            bottom-right
+                                        "
+                                    >
+                                    </span>
+
+
+                                    <span
+                                        class="scan-line"
+                                        data-class="progress_bar"
+                                        data-semantic="scan_line"
+                                    >
+                                    </span>
+
+                                </div>
+
+
+                                <p
+                                    class="scanner-message"
+                                    data-class="text"
+                                    data-semantic="scanner_message"
+                                >
+                                    {{ qr.camera_message }}
+                                </p>
+
+
+                                <div class="scanner-actions">
+
+                                    <button
+                                        class="scanner-action"
+                                        data-class="button"
+                                        data-semantic="flash_button"
+                                    >
+
+                                        <span
+                                            class="scanner-action-icon{% if qr.flash_enabled %} active{% endif %}"
+                                        >
+
+                                            <span
+                                                class="material-symbols-rounded"
+                                                data-class="icon"
+                                                data-semantic="flash_icon"
+                                            >
+                                                flash_on
+                                            </span>
+
+                                        </span>
+
+                                        Flash
+
+                                    </button>
+
+
+                                    <button
+                                        class="scanner-action"
+                                        data-class="button"
+                                        data-semantic="gallery_button"
+                                    >
+
+                                        <span class="scanner-action-icon">
+
+                                            <span
+                                                class="material-symbols-rounded"
+                                                data-class="icon"
+                                                data-semantic="gallery_icon"
+                                            >
+                                                photo_library
+                                            </span>
+
+                                        </span>
+
+                                        Photos
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </section>
+
+                        {% else %}
+
+
+                        <!-- ================================
+                             Personal QR
+                             ================================ -->
+
+                        <section
+                            class="personal-qr-card"
+                            data-class="card"
+                            data-semantic="personal_qr_card"
+                        >
+
+                            <div
+                                class="personal-avatar"
+                                data-class="avatar"
+                                data-semantic="personal_qr_avatar"
+                            >
+
+                                {% if qr.user.avatar %}
+
+                                <img
+                                    src="{{ qr.user.avatar }}"
+                                    alt=""
+                                >
+
+                                {% else %}
+
+                                {{ qr.user.name[0] }}
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div
+                                class="personal-name"
+                                data-class="text"
+                                data-semantic="personal_qr_name"
+                            >
+                                {{ qr.user.name }}
+                            </div>
+
+
+                            <div
+                                class="personal-username"
+                                data-class="text"
+                                data-semantic="personal_qr_username"
+                            >
+                                {{ qr.user.username }}
+                            </div>
+
+
+                            <div
+                                class="qr-code"
+                                data-class="image"
+                                data-semantic="personal_qr_code"
+                            >
+
+                                {% for row in qr.qr_cells %}
+
+                                    {% for cell in row %}
+
+                                    <span
+                                        class="qr-cell{% if cell %} filled{% endif %}"
+                                    >
+                                    </span>
+
+                                    {% endfor %}
+
+                                {% endfor %}
+
+                            </div>
+
+
+                            <div
+                                class="qr-code-label"
+                                data-class="text"
+                                data-semantic="qr_instruction"
+                            >
+                                Ask someone to scan this code to pay you.
+                            </div>
+
+
+                            <div class="qr-share-actions">
+
+                                <button
+                                    class="qr-action-button primary"
+                                    data-class="button"
+                                    data-semantic="share_qr"
+                                >
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="share_qr_icon"
+                                    >
+                                        share
+                                    </span>
+
+                                    Share
+
+                                </button>
+
+
+                                <button
+                                    class="qr-action-button"
+                                    data-class="button"
+                                    data-semantic="save_qr"
+                                >
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="save_qr_icon"
+                                    >
+                                        download
+                                    </span>
+
+                                    Save
+
+                                </button>
+
+                            </div>
+
+                        </section>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- =====================================
+                         Secondary
+                         ===================================== -->
+
+                    <div class="qr-secondary">
+
+                        {% if qr.active_mode == 'scan' %}
+
+                        <!-- Personal code shortcut -->
+
+                        <section
+                            class="personal-qr-card"
+                            data-class="card"
+                            data-semantic="my_code_shortcut"
+                        >
+
+                            <div
+                                class="
+                                    material-symbols-rounded
+                                    permission-icon
+                                "
+                                data-class="icon"
+                                data-semantic="my_code_icon"
+                            >
+                                qr_code_2
+                            </div>
+
+
+                            <div
+                                class="personal-name"
+                                data-class="text"
+                                data-semantic="my_code_title"
+                            >
+                                Your QR code
+                            </div>
+
+
+                            <div
+                                class="qr-code-label"
+                                data-class="text"
+                                data-semantic="my_code_description"
+                            >
+                                Let someone scan your code to send you money.
+                            </div>
+
+
+                            <button
+                                class="qr-action-button primary"
+                                data-class="button"
+                                data-semantic="show_my_code"
+                                style="
+                                    margin-top: 18px;
+                                "
+                            >
+                                Show my code
+                            </button>
+
+                        </section>
+
+                        {% endif %}
+
+
+                        <!-- ================================
+                             Recent recipients
+                             ================================ -->
+
+                        <section
+                            class="recent-section"
+                            data-class="section"
+                            data-semantic="recent_qr_recipients"
+                        >
+
+                            <div class="section-header">
+
+                                <h2
+                                    class="section-title"
+                                    data-class="text"
+                                    data-semantic="recent_recipients_title"
+                                >
+                                    Recent
+                                </h2>
+
+
+                                <button
+                                    class="section-action"
+                                    data-class="button"
+                                    data-semantic="view_all_recipients"
+                                >
+                                    View all
+                                </button>
+
+                            </div>
+
+
+                            <div class="recipient-grid">
+
+                                {% for recipient in qr.recent_recipients %}
+
+                                <button
+                                    class="recipient-card"
+                                    data-class="button"
+                                    data-semantic="qr_recipient_{{ loop.index }}"
+                                >
+
+                                    <div
+                                        class="recipient-avatar"
+                                        data-class="avatar"
+                                        data-semantic="qr_recipient_avatar_{{ loop.index }}"
+                                    >
+
+                                        {% if recipient.avatar %}
+
+                                        <img
+                                            src="{{ recipient.avatar }}"
+                                            alt=""
+                                        >
+
+                                        {% else %}
+
+                                        {{ recipient.initial }}
+
+                                        {% endif %}
+
+                                    </div>
+
+
+                                    <div
+                                        class="recipient-name"
+                                        data-class="text"
+                                        data-semantic="qr_recipient_name_{{ loop.index }}"
+                                    >
+                                        {{ recipient.name }}
+                                    </div>
+
+                                </button>
+
+                                {% endfor %}
+
+                            </div>
+
+                        </section>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Bottom Navigation
+         ===================================================== -->
+
+    <nav
+        class="mobile-bottom-nav"
+        data-class="navigation_bar"
+        data-semantic="mobile_bottom_navigation"
+        data-occluder="true"
+    >
+
+        {% for item in qr.navigation %}
+
+        <button
+            class="mobile-nav-item"
+            data-class="navigation_item"
+            data-semantic="bottom_nav_{{ item.semantic }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="bottom_nav_{{ item.semantic }}_icon"
+            >
+                {{ item.icon }}
+            </span>
+
+
+            <span class="mobile-nav-label">
+                {{ item.label }}
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+    <!-- =====================================================
+     Optional Permission Dialog
+
+     IMPORTANT:
+
+     permission-modal-layer
+         -> full viewport
+         -> data-occluder="true"
+         -> suppresses background annotations
+
+     permission-scrim
+         -> visual only
+         -> NO data-class
+
+     permission-dialog
+         -> annotated popup
+
+     dialog children
+         -> remain annotatable because they are descendants
+            of the modal occluder
+     ===================================================== -->
+
+{% if qr.show_permission_dialog %}
+
+<div
+    class="permission-modal-layer"
+    data-occluder="true"
+    data-semantic="permission_modal_layer"
+>
+
+
+    <!-- ================================================
+         Visual Scrim
+
+         DO NOT annotate this.
+         ================================================ -->
+
+    <div
+        class="permission-scrim"
+        data-semantic="permission_scrim"
+    >
+    </div>
+
+
+    <!-- ================================================
+         Dialog
+         ================================================ -->
+
+    <section
+        class="permission-dialog"
+        data-class="dialog"
+        data-semantic="{{ qr.permission_type }}_permission_dialog"
+    >
+
+
+        <!-- Permission Icon -->
+
+        <div
+            class="
+                material-symbols-rounded
+                permission-icon
+            "
+            data-class="icon"
+            data-semantic="permission_icon"
+        >
+
+            {% if qr.permission_type == 'camera' %}
+
+            photo_camera
+
+            {% else %}
+
+            photo_library
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- Title -->
+
+        <h2
+            class="permission-title"
+            data-class="text"
+            data-semantic="permission_title"
+        >
+
+            {% if qr.permission_type == 'camera' %}
+
+            Allow camera access?
+
+            {% else %}
+
+            Allow photo access?
+
+            {% endif %}
+
+        </h2>
+
+
+        <!-- Description -->
+
+        <p
+            class="permission-description"
+            data-class="text"
+            data-semantic="permission_description"
+        >
+
+            {% if qr.permission_type == 'camera' %}
+
+            Camera access is needed to scan QR payment codes.
+
+            {% else %}
+
+            Photo access lets you scan QR codes saved on your device.
+
+            {% endif %}
+
+        </p>
+
+
+        <!-- Actions -->
+
+        <div class="permission-actions">
+
+
+            <button
+                class="permission-button"
+                data-class="button"
+                data-semantic="permission_cancel"
+            >
+                Not now
+            </button>
+
+
+            <button
+                class="permission-button primary"
+                data-class="button"
+                data-semantic="permission_allow"
+            >
+                Allow
+            </button>
+
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endif %}
+
+
+
+</div>
+
+{% endblock %}
