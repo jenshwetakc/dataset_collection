@@ -1,0 +1,2164 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+{{ notebook.filename }} | PyCharm
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .notebook-page {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+
+        height:
+            calc(
+                100vh
+                - var(--system-status-height)
+            );
+
+        min-height:
+            620px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    @media (
+        min-width: 1024px
+    ) {
+
+        .notebook-page {
+
+            height:
+                100vh;
+        }
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .ide-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            38px;
+
+        flex:
+            0 0 38px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .pc-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        margin-right:
+            8px;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .ide-menu {
+
+        display:
+            flex;
+
+        gap:
+            2px;
+    }
+
+
+    .menu-item {
+
+        padding:
+            6px 7px;
+
+        font-size:
+            11px;
+    }
+
+
+    .window-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-align:
+            center;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .header-actions {
+
+        display:
+            flex;
+
+        gap:
+            2px;
+    }
+
+
+    /* ======================================================
+       Notebook Toolbar
+       ====================================================== */
+
+    .notebook-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            44px;
+
+        flex:
+            0 0 44px;
+
+        gap:
+            5px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .notebook-file {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-width:
+            180px;
+
+        font-size:
+            11px;
+
+        font-weight:
+            600;
+    }
+
+
+    .toolbar-spacer {
+
+        flex:
+            1;
+    }
+
+
+    .kernel-selector {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        min-width:
+            120px;
+
+        height:
+            30px;
+
+        padding:
+            0 8px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--background);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Notebook Main
+       ====================================================== */
+
+    .notebook-main {
+
+        display:
+            flex;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       Notebook Rail
+       ====================================================== */
+
+    .notebook-rail {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        width:
+            38px;
+
+        flex:
+            0 0 38px;
+
+        gap:
+            5px;
+
+        padding-top:
+            8px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ======================================================
+       Notebook Content
+       ====================================================== */
+
+    .notebook-scroll {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            auto;
+
+        padding:
+            20px 24px 60px;
+
+        background:
+            var(--background);
+    }
+
+
+    .notebook-content {
+
+        width:
+            min(
+                920px,
+                100%
+            );
+
+        margin:
+            0 auto;
+    }
+
+
+    /* ======================================================
+       Cell
+       ====================================================== */
+
+    .notebook-cell {
+
+        position:
+            relative;
+
+        margin-bottom:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            7px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface);
+    }
+
+
+    .notebook-cell.selected {
+
+        border-color:
+            var(--primary);
+
+        box-shadow:
+            0 0 0 1px
+            var(--primary);
+    }
+
+
+    .cell-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            30px;
+
+        gap:
+            4px;
+
+        padding:
+            0 6px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .execution-count {
+
+        min-width:
+            46px;
+
+        color:
+            var(--text-secondary);
+
+        font-family:
+            Consolas,
+            monospace;
+
+        font-size:
+            9px;
+    }
+
+
+    .cell-toolbar-spacer {
+
+        flex:
+            1;
+    }
+
+
+    /* ======================================================
+       Code
+       ====================================================== */
+
+    .cell-code {
+
+        padding:
+            8px 0;
+
+        background:
+            var(--background);
+    }
+
+
+    .cell-code-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            36px
+            minmax(0, 1fr);
+
+        min-height:
+            20px;
+
+        font-family:
+            Consolas,
+            "Liberation Mono",
+            monospace;
+
+        font-size:
+            11px;
+
+        line-height:
+            20px;
+    }
+
+
+    .cell-line-number {
+
+        padding-right:
+            7px;
+
+        text-align:
+            right;
+
+        color:
+            var(--text-disabled);
+    }
+
+
+    .cell-code-text {
+
+        padding-left:
+            8px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            pre;
+    }
+
+
+    /* ======================================================
+       Running Cell
+       ====================================================== */
+
+    .running-cell {
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .running-indicator {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        padding:
+            8px 10px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .running-spinner {
+
+        width:
+            13px;
+
+        height:
+            13px;
+
+        border:
+            2px solid
+            var(--surface-variant);
+
+        border-top-color:
+            var(--primary);
+
+        border-radius:
+            50%;
+    }
+
+
+    /* ======================================================
+       Output
+       ====================================================== */
+
+    .cell-output {
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .output-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            30px;
+
+        gap:
+            6px;
+
+        padding:
+            0 8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    /* ======================================================
+       Table Output
+       ====================================================== */
+
+    .output-table {
+
+        width:
+            100%;
+
+        overflow:
+            hidden;
+    }
+
+
+    .table-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(130px, 1.3fr)
+            100px
+            120px
+            90px;
+
+        align-items:
+            center;
+
+        min-height:
+            34px;
+
+        padding:
+            0 10px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            9px;
+    }
+
+
+    .table-header {
+
+        background:
+            var(--surface-variant);
+
+        font-weight:
+            700;
+    }
+
+
+    .table-status {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            fit-content;
+
+        min-width:
+            48px;
+
+        height:
+            20px;
+
+        padding:
+            0 7px;
+
+        border-radius:
+            99px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Error
+       ====================================================== */
+
+    .error-output {
+
+        padding:
+            12px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            color-mix(
+                in srgb,
+                var(--error) 8%,
+                var(--surface)
+            );
+    }
+
+
+    .error-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        margin-bottom:
+            9px;
+
+        color:
+            var(--error);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .error-message {
+
+        margin-bottom:
+            10px;
+
+        font-family:
+            Consolas,
+            monospace;
+
+        font-size:
+            10px;
+    }
+
+
+    .trace-row {
+
+        min-height:
+            21px;
+
+        font-family:
+            Consolas,
+            monospace;
+
+        font-size:
+            9px;
+
+        line-height:
+            21px;
+    }
+
+
+    /* ======================================================
+       Markdown
+       ====================================================== */
+
+    .markdown-cell {
+
+        padding:
+            22px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .markdown-title {
+
+        margin-bottom:
+            10px;
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+    }
+
+
+    .markdown-body {
+
+        max-width:
+            760px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        line-height:
+            1.7;
+    }
+
+
+    /* ======================================================
+       Add Cell
+       ====================================================== */
+
+    .add-cell-row {
+
+        display:
+            flex;
+
+        justify-content:
+            center;
+
+        gap:
+            7px;
+
+        margin:
+            12px 0 20px;
+    }
+
+
+    .add-cell-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        height:
+            30px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--surface);
+
+        font-size:
+            9px;
+    }
+
+
+    /* ======================================================
+       Status
+       ====================================================== */
+
+    .notebook-status {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            26px;
+
+        flex:
+            0 0 26px;
+
+        gap:
+            8px;
+
+        padding:
+            0 8px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .status-right {
+
+        display:
+            flex;
+
+        gap:
+            10px;
+
+        margin-left:
+            auto;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        max-width: 1023px
+    ) {
+
+        .menu-item:nth-child(n+5) {
+
+            display:
+                none;
+        }
+
+
+        .window-title {
+
+            display:
+                none;
+        }
+
+
+        .notebook-scroll {
+
+            padding:
+                16px;
+        }
+
+
+        .table-row {
+
+            grid-template-columns:
+                minmax(110px, 1fr)
+                80px
+                100px
+                70px;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .notebook-page {
+
+            min-height:
+                0;
+        }
+
+
+        .ide-menu {
+
+            display:
+                none;
+        }
+
+
+        .header-actions {
+
+            margin-left:
+                auto;
+        }
+
+
+        .notebook-file {
+
+            min-width:
+                0;
+
+            flex:
+                1;
+        }
+
+
+        .notebook-file span:last-child {
+
+            overflow:
+                hidden;
+
+            text-overflow:
+                ellipsis;
+
+            white-space:
+                nowrap;
+        }
+
+
+        .kernel-selector {
+
+            min-width:
+                38px;
+
+            width:
+                38px;
+
+            padding:
+                0;
+
+            justify-content:
+                center;
+        }
+
+
+        .kernel-selector
+        .kernel-name {
+
+            display:
+                none;
+        }
+
+
+        .notebook-rail {
+
+            display:
+                none;
+        }
+
+
+        .notebook-scroll {
+
+            padding:
+                10px 8px 30px;
+        }
+
+
+        .table-row {
+
+            grid-template-columns:
+                minmax(100px, 1fr)
+                75px
+                80px;
+        }
+
+
+        .table-row
+        span:nth-child(4) {
+
+            display:
+                none;
+        }
+
+
+        .markdown-cell {
+
+            padding:
+                16px;
+        }
+
+
+        .markdown-title {
+
+            font-size:
+                16px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="notebook-page"
+    data-class="section"
+    data-semantic="notebook_{{ notebook.notebook_state }}"
+>
+
+
+    <!-- ==================================================
+         IDE Header
+         ================================================== -->
+
+    <header
+        class="ide-header"
+        data-class="app_bar"
+        data-semantic="ide_header"
+    >
+
+        <div
+            class="pc-logo"
+            data-class="logo"
+            data-semantic="pycharm_logo"
+        >
+            PC
+        </div>
+
+
+        <nav
+            class="ide-menu"
+            data-class="navigation_bar"
+            data-semantic="main_menu"
+        >
+
+            {% for menu in [
+                "File",
+                "Edit",
+                "View",
+                "Navigate",
+                "Code",
+                "Run",
+                "Tools",
+                "Git"
+            ] %}
+
+            <span
+                class="menu-item"
+                data-class="text_button"
+                data-semantic="menu_{{ menu | lower }}"
+            >
+                {{ menu }}
+            </span>
+
+            {% endfor %}
+
+        </nav>
+
+
+        <span
+            class="window-title"
+            data-class="text"
+            data-semantic="window_title"
+        >
+            {{ notebook.filename }}
+        </span>
+
+
+        <div class="header-actions">
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="search_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_icon"
+                >
+                    search
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="settings_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="settings_icon"
+                >
+                    settings
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ==================================================
+         Notebook Toolbar
+         ================================================== -->
+
+    <div
+        class="notebook-toolbar"
+        data-class="navigation_bar"
+        data-semantic="notebook_toolbar"
+    >
+
+        <div
+            class="notebook-file"
+            data-class="text"
+            data-semantic="notebook_filename"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="notebook_icon"
+            >
+                description
+            </span>
+
+
+            <span>
+                {{ notebook.filename }}
+            </span>
+
+        </div>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="run_all_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="run_all_icon"
+            >
+                double_arrow
+            </span>
+        </button>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="interrupt_kernel_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="stop_icon"
+            >
+                stop
+            </span>
+        </button>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="restart_kernel_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="restart_icon"
+            >
+                restart_alt
+            </span>
+        </button>
+
+
+        <div class="toolbar-spacer"></div>
+
+
+        <div
+            class="kernel-selector"
+            data-class="button"
+            data-semantic="kernel_selector"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="kernel_icon"
+            >
+                memory
+            </span>
+
+
+            <span
+                class="kernel-name"
+                data-class="text"
+                data-semantic="kernel_name"
+            >
+                {{ notebook.kernel }}
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         Main
+         ================================================== -->
+
+    <div class="notebook-main">
+
+
+        <!-- ==============================================
+             Rail
+             ============================================== -->
+
+        <aside
+            class="notebook-rail"
+            data-class="navigation_bar"
+            data-semantic="notebook_tool_rail"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="add_code_cell_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    add
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="variables_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    data_object
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="outline_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    format_list_bulleted
+                </span>
+            </button>
+
+        </aside>
+
+
+        <!-- ==============================================
+             Notebook
+             ============================================== -->
+
+        <main
+            class="notebook-scroll"
+            data-class="section"
+            data-semantic="notebook_document"
+        >
+
+            <div class="notebook-content">
+
+
+                <!-- ======================================
+                     EDITING
+                     ====================================== -->
+
+                {% if notebook.notebook_state == "editing" %}
+
+                    {% for cell in notebook.editing["cells"] %}
+
+                    <section
+                        class="
+                            notebook-cell
+                            {% if cell.selected %}
+                                selected
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="code_cell"
+                    >
+
+                        <div
+                            class="cell-toolbar"
+                            data-class="navigation_bar"
+                            data-semantic="cell_toolbar"
+                        >
+
+                            <span
+                                class="execution-count"
+                                data-class="text"
+                                data-semantic="execution_count"
+                            >
+                                [{{ cell.execution_count }}]
+                            </span>
+
+
+                            <button
+                                class="icon-button"
+                                data-class="button"
+                                data-semantic="run_cell_button"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    play_arrow
+                                </span>
+                            </button>
+
+
+                            <div class="cell-toolbar-spacer"></div>
+
+
+                            <button
+                                class="icon-button"
+                                data-class="button"
+                                data-semantic="cell_options_button"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    more_horiz
+                                </span>
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            class="cell-code"
+                            data-class="section"
+                            data-semantic="cell_editor"
+                        >
+
+                            {% for line in cell.code_lines %}
+
+                            <div class="cell-code-row">
+
+                                <span
+                                    class="cell-line-number"
+                                    data-class="text"
+                                    data-semantic="cell_line_number"
+                                >
+                                    {{ line.number }}
+                                </span>
+
+
+                                <span
+                                    class="cell-code-text"
+                                    data-class="text"
+                                    data-semantic="code_text"
+                                >{{ line.content }}</span>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </section>
+
+                    {% endfor %}
+
+
+                <!-- ======================================
+                     RUNNING
+                     ====================================== -->
+
+                {% elif notebook.notebook_state == "running" %}
+
+                    {% for cell in notebook.running["cells"] %}
+
+                    <section
+                        class="
+                            notebook-cell
+                            {% if loop.index0 ==
+                                notebook.running.running_index %}
+                                running-cell
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="code_cell"
+                    >
+
+                        <div
+                            class="cell-toolbar"
+                            data-class="navigation_bar"
+                            data-semantic="cell_toolbar"
+                        >
+
+                            <span
+                                class="execution-count"
+                                data-class="text"
+                                data-semantic="execution_count"
+                            >
+                                {% if loop.index0 ==
+                                    notebook.running.running_index %}
+                                    [*]
+                                {% else %}
+                                    [{{ cell.execution_count }}]
+                                {% endif %}
+                            </span>
+
+
+                            <button
+                                class="icon-button"
+                                data-class="button"
+                                data-semantic="run_cell_button"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    play_arrow
+                                </span>
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            class="cell-code"
+                            data-class="section"
+                            data-semantic="cell_editor"
+                        >
+
+                            {% for line in cell.code_lines %}
+
+                            <div class="cell-code-row">
+
+                                <span
+                                    class="cell-line-number"
+                                    data-class="text"
+                                >
+                                    {{ line.number }}
+                                </span>
+
+
+                                <span
+                                    class="cell-code-text"
+                                    data-class="text"
+                                    data-semantic="code_text"
+                                >{{ line.content }}</span>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        {% if loop.index0 ==
+                            notebook.running.running_index %}
+
+                        <div
+                            class="running-indicator"
+                            data-class="progress_bar"
+                            data-semantic="cell_running_indicator"
+                        >
+
+                            <span
+                                class="running-spinner"
+                            ></span>
+
+
+                            <span
+                                data-class="text"
+                                data-semantic="running_text"
+                            >
+                                Executing…
+                                {{ notebook.running.elapsed }}
+                            </span>
+
+                        </div>
+
+                        {% endif %}
+
+                    </section>
+
+                    {% endfor %}
+
+
+                <!-- ======================================
+                     TABLE OUTPUT
+                     ====================================== -->
+
+                {% elif notebook.notebook_state == "table_output" %}
+
+                <section
+                    class="notebook-cell selected"
+                    data-class="card"
+                    data-semantic="code_cell_with_table_output"
+                >
+
+                    <div
+                        class="cell-toolbar"
+                        data-class="navigation_bar"
+                        data-semantic="cell_toolbar"
+                    >
+
+                        <span
+                            class="execution-count"
+                            data-class="text"
+                        >
+                            [{{ notebook.table_output.cell.execution_count }}]
+                        </span>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="run_cell_button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                play_arrow
+                            </span>
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="cell-code"
+                        data-class="section"
+                        data-semantic="cell_editor"
+                    >
+
+                        {% for line in
+                            notebook.table_output.cell.code_lines %}
+
+                        <div class="cell-code-row">
+
+                            <span
+                                class="cell-line-number"
+                                data-class="text"
+                            >
+                                {{ line.number }}
+                            </span>
+
+
+                            <span
+                                class="cell-code-text"
+                                data-class="text"
+                                data-semantic="code_text"
+                            >{{ line.content }}</span>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+
+                    <div
+                        class="cell-output"
+                        data-class="section"
+                        data-semantic="table_output"
+                    >
+
+                        <div
+                            class="output-header"
+                            data-class="navigation_bar"
+                            data-semantic="output_header"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                table_chart
+                            </span>
+
+
+                            <span
+                                data-class="text"
+                            >
+                                DataFrame •
+                                {{ notebook.table_output.row_count }}
+                                rows
+                            </span>
+
+                        </div>
+
+
+                        <div class="output-table">
+
+                            <div
+                                class="
+                                    table-row
+                                    table-header
+                                "
+                                data-class="navigation_bar"
+                                data-semantic="table_header"
+                            >
+                                <span data-class="text">Viewport</span>
+                                <span data-class="text">Samples</span>
+                                <span data-class="text">Annotations</span>
+                                <span data-class="text">Status</span>
+                            </div>
+
+
+                            {% for row in
+                                notebook.table_output["rows"] %}
+
+                            <div
+                                class="table-row"
+                                data-class="navigation_item"
+                                data-semantic="table_row"
+                            >
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="viewport_name"
+                                >
+                                    {{ row.viewport }}
+                                </span>
+
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="sample_count"
+                                >
+                                    {{ row.samples }}
+                                </span>
+
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="annotation_count"
+                                >
+                                    {{ row.annotations }}
+                                </span>
+
+
+                                <span
+                                    class="table-status"
+                                    data-class="badge"
+                                    data-semantic="row_status"
+                                >
+                                    {{ row.status }}
+                                </span>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ======================================
+                     ERROR OUTPUT
+                     ====================================== -->
+
+                {% elif notebook.notebook_state == "error_output" %}
+
+                <section
+                    class="notebook-cell selected"
+                    data-class="card"
+                    data-semantic="code_cell_with_error"
+                >
+
+                    <div
+                        class="cell-toolbar"
+                        data-class="navigation_bar"
+                    >
+
+                        <span
+                            class="execution-count"
+                            data-class="text"
+                        >
+                            [{{ notebook.error_output.cell.execution_count }}]
+                        </span>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                play_arrow
+                            </span>
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="cell-code"
+                        data-class="section"
+                    >
+
+                        {% for line in
+                            notebook.error_output.cell.code_lines %}
+
+                        <div class="cell-code-row">
+
+                            <span
+                                class="cell-line-number"
+                                data-class="text"
+                            >
+                                {{ line.number }}
+                            </span>
+
+                            <span
+                                class="cell-code-text"
+                                data-class="text"
+                            >{{ line.content }}</span>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+
+                    <div
+                        class="error-output"
+                        data-class="section"
+                        data-semantic="error_output"
+                    >
+
+                        <div
+                            class="error-title"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="error_icon"
+                            >
+                                error
+                            </span>
+
+
+                            <span
+                                data-class="text"
+                                data-semantic="error_type"
+                            >
+                                {{ notebook.error_output.error.type }}
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="error-message"
+                            data-class="text"
+                            data-semantic="error_message"
+                        >
+                            {{ notebook.error_output.error.message }}
+                        </div>
+
+
+                        {% for trace in
+                            notebook.error_output.error["trace"] %}
+
+                        <div
+                            class="trace-row"
+                            data-class="text"
+                            data-semantic="trace_line"
+                        >
+                            {{ trace }}
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+
+                <!-- ======================================
+                     MARKDOWN PREVIEW
+                     ====================================== -->
+
+                {% else %}
+
+                <section
+                    class="notebook-cell"
+                    data-class="card"
+                    data-semantic="markdown_cell"
+                >
+
+                    <div
+                        class="cell-toolbar"
+                        data-class="navigation_bar"
+                        data-semantic="markdown_toolbar"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            notes
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                        >
+                            Markdown
+                        </span>
+
+
+                        <div class="cell-toolbar-spacer"></div>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="edit_markdown_button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                edit
+                            </span>
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="markdown-cell"
+                        data-class="section"
+                        data-semantic="markdown_preview"
+                    >
+
+                        <h1
+                            class="markdown-title"
+                            data-class="text"
+                            data-semantic="markdown_title"
+                        >
+                            {{ notebook.markdown_preview.markdown.title }}
+                        </h1>
+
+
+                        <p
+                            class="markdown-body"
+                            data-class="text"
+                            data-semantic="markdown_body"
+                        >
+                            {{ notebook.markdown_preview.markdown.body }}
+                        </p>
+
+                    </div>
+
+                </section>
+
+
+                <section
+                    class="notebook-cell"
+                    data-class="card"
+                    data-semantic="code_cell"
+                >
+
+                    <div
+                        class="cell-toolbar"
+                        data-class="navigation_bar"
+                    >
+
+                        <span
+                            class="execution-count"
+                            data-class="text"
+                        >
+                            [{{ notebook.markdown_preview.code_cell.execution_count }}]
+                        </span>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                play_arrow
+                            </span>
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="cell-code"
+                        data-class="section"
+                    >
+
+                        {% for line in
+                            notebook.markdown_preview.code_cell.code_lines %}
+
+                        <div class="cell-code-row">
+
+                            <span
+                                class="cell-line-number"
+                                data-class="text"
+                            >
+                                {{ line.number }}
+                            </span>
+
+
+                            <span
+                                class="cell-code-text"
+                                data-class="text"
+                            >{{ line.content }}</span>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+                {% endif %}
+
+
+                <!-- ======================================
+                     Add Cell
+                     ====================================== -->
+
+                <div class="add-cell-row">
+
+                    <button
+                        class="add-cell-button"
+                        data-class="button"
+                        data-semantic="add_code_cell"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            add
+                        </span>
+
+                        Code
+
+                    </button>
+
+
+                    <button
+                        class="add-cell-button"
+                        data-class="button"
+                        data-semantic="add_markdown_cell"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            add
+                        </span>
+
+                        Markdown
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- ==================================================
+         Status Bar
+         ================================================== -->
+
+    <footer
+        class="notebook-status"
+        data-class="navigation_bar"
+        data-semantic="notebook_status_bar"
+    >
+
+        <span
+            class="material-symbols-rounded"
+            data-class="icon"
+            data-semantic="kernel_status_icon"
+        >
+            memory
+        </span>
+
+
+        <span
+            data-class="text"
+            data-semantic="kernel_status"
+        >
+            {{ notebook.kernel }}
+        </span>
+
+
+        <div class="status-right">
+
+            <span
+                data-class="text"
+                data-semantic="trust_status"
+            >
+                {% if notebook.trusted %}
+                    Trusted
+                {% else %}
+                    Not Trusted
+                {% endif %}
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="notebook_state"
+            >
+                {{ notebook.notebook_state | replace("_", " ") }}
+            </span>
+
+        </div>
+
+    </footer>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,2295 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+Version Control | PyCharm
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .vcs-page {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+
+        height:
+            calc(
+                100vh
+                - var(--system-status-height)
+            );
+
+        min-height:
+            620px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    @media (
+        min-width: 1024px
+    ) {
+
+        .vcs-page {
+
+            height:
+                100vh;
+        }
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .vcs-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            40px;
+
+        flex:
+            0 0 40px;
+
+        gap:
+            7px;
+
+        padding:
+            0 9px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .vcs-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .vcs-project-title {
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .header-spacer {
+
+        flex:
+            1;
+    }
+
+
+    /* ======================================================
+       Navigation
+       ====================================================== */
+
+    .vcs-tabs {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            38px;
+
+        flex:
+            0 0 38px;
+
+        gap:
+            3px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .vcs-tab {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        height:
+            32px;
+
+        padding:
+            0 10px;
+
+        border-radius:
+            5px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .vcs-tab.active {
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Content
+       ====================================================== */
+
+    .vcs-content {
+
+        display:
+            flex;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       Left Panel
+       ====================================================== */
+
+    .vcs-sidebar {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            310px;
+
+        flex:
+            0 0 310px;
+
+        min-height:
+            0;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .panel-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            36px;
+
+        flex:
+            0 0 36px;
+
+        gap:
+            6px;
+
+        padding:
+            0 9px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .panel-spacer {
+
+        flex:
+            1;
+    }
+
+
+    .vcs-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        height:
+            32px;
+
+        margin:
+            8px;
+
+        padding:
+            0 8px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       File Rows
+       ====================================================== */
+
+    .file-list {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    .file-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            24px
+            minmax(0, 1fr)
+            24px;
+
+        align-items:
+            center;
+
+        min-height:
+            34px;
+
+        padding:
+            0 9px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            10px;
+    }
+
+
+    .file-row.selected {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .file-status {
+
+        font-weight:
+            700;
+    }
+
+
+    .file-name {
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .file-path {
+
+        display:
+            block;
+
+        margin-top:
+            2px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    /* ======================================================
+       Main Panel
+       ====================================================== */
+
+    .vcs-main-panel {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    .main-panel-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            38px;
+
+        flex:
+            0 0 38px;
+
+        gap:
+            8px;
+
+        padding:
+            0 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Local Changes Preview
+       ====================================================== */
+
+    .change-preview {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        padding:
+            20px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .change-card {
+
+        max-width:
+            760px;
+
+        padding:
+            18px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .change-card-title {
+
+        margin-bottom:
+            8px;
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    .change-card-description {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        line-height:
+            1.5;
+    }
+
+
+    /* ======================================================
+       Commit
+       ====================================================== */
+
+    .commit-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(250px, 1fr)
+            340px;
+
+        flex:
+            1;
+
+        min-height:
+            0;
+    }
+
+
+    .commit-files {
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .commit-panel {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        min-width:
+            0;
+
+        padding:
+            14px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .commit-message {
+
+        min-height:
+            120px;
+
+        padding:
+            10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            6px;
+
+        background:
+            var(--background);
+
+        font-size:
+            11px;
+
+        line-height:
+            1.5;
+    }
+
+
+    .commit-option {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            36px;
+
+        margin-top:
+            6px;
+
+        font-size:
+            10px;
+    }
+
+
+    .checkbox-box {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            17px;
+
+        height:
+            17px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            3px;
+    }
+
+
+    .checkbox-box.checked {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .commit-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        height:
+            34px;
+
+        margin-top:
+            auto;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Diff
+       ====================================================== */
+
+    .diff-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            36px;
+
+        flex:
+            0 0 36px;
+
+        gap:
+            6px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .revision-label {
+
+        padding:
+            4px 8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            4px;
+
+        font-size:
+            9px;
+    }
+
+
+    .diff-editor {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+
+        font-family:
+            Consolas,
+            "Liberation Mono",
+            monospace;
+
+        font-size:
+            11px;
+
+        background:
+            var(--background);
+    }
+
+
+    .diff-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            42px
+            42px
+            minmax(0, 1fr);
+
+        min-height:
+            21px;
+
+        line-height:
+            21px;
+    }
+
+
+    .diff-number {
+
+        padding-right:
+            7px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        text-align:
+            right;
+
+        color:
+            var(--text-disabled);
+    }
+
+
+    .diff-code {
+
+        padding-left:
+            10px;
+
+        white-space:
+            pre;
+    }
+
+
+    .diff-row.added {
+
+        background:
+            color-mix(
+                in srgb,
+                var(--success) 15%,
+                var(--background)
+            );
+    }
+
+
+    .diff-row.removed {
+
+        background:
+            color-mix(
+                in srgb,
+                var(--error) 15%,
+                var(--background)
+            );
+    }
+
+
+    /* ======================================================
+       History
+       ====================================================== */
+
+    .history-list {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    .commit-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            84px
+            minmax(180px, 1fr)
+            110px
+            120px;
+
+        align-items:
+            center;
+
+        min-height:
+            40px;
+
+        padding:
+            0 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            10px;
+    }
+
+
+    .commit-row.selected {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .commit-hash {
+
+        font-family:
+            Consolas,
+            monospace;
+
+        color:
+            var(--primary);
+    }
+
+
+    .commit-author,
+    .commit-time {
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Branches
+       ====================================================== */
+
+    .branch-container {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(220px, 0.75fr)
+            minmax(280px, 1.25fr);
+
+        flex:
+            1;
+
+        min-height:
+            0;
+    }
+
+
+    .branch-list {
+
+        overflow:
+            hidden;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .branch-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            34px;
+
+        gap:
+            7px;
+
+        padding:
+            0 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            10px;
+    }
+
+
+    .branch-row.current {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-weight:
+            700;
+    }
+
+
+    .branch-info {
+
+        padding:
+            20px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .branch-info-card {
+
+        max-width:
+            600px;
+
+        padding:
+            18px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ======================================================
+       Footer
+       ====================================================== */
+
+    .vcs-footer {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            27px;
+
+        flex:
+            0 0 27px;
+
+        gap:
+            8px;
+
+        padding:
+            0 9px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .footer-right {
+
+        display:
+            flex;
+
+        gap:
+            10px;
+
+        margin-left:
+            auto;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        max-width: 1023px
+    ) {
+
+        .vcs-sidebar {
+
+            width:
+                230px;
+
+            flex-basis:
+                230px;
+        }
+
+
+        .commit-layout {
+
+            grid-template-columns:
+                1fr
+                280px;
+        }
+
+
+        .commit-row {
+
+            grid-template-columns:
+                75px
+                minmax(150px, 1fr)
+                100px;
+        }
+
+
+        .commit-time {
+
+            display:
+                none;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .vcs-page {
+
+            min-height:
+                0;
+        }
+
+
+        .vcs-project-title {
+
+            font-size:
+                11px;
+        }
+
+
+        .vcs-tab {
+
+            padding:
+                0 6px;
+
+            font-size:
+                9px;
+        }
+
+
+        .vcs-tab span:last-child {
+
+            display:
+                none;
+        }
+
+
+        .vcs-sidebar {
+
+            width:
+                92px;
+
+            flex-basis:
+                92px;
+        }
+
+
+        .panel-header span:first-child {
+
+            display:
+                none;
+        }
+
+
+        .vcs-search {
+
+            justify-content:
+                center;
+
+            width:
+                34px;
+
+            margin:
+                7px auto;
+
+            padding:
+                0;
+        }
+
+
+        .vcs-search span:last-child {
+
+            display:
+                none;
+        }
+
+
+        .file-row {
+
+            grid-template-columns:
+                20px
+                minmax(0, 1fr);
+
+            padding:
+                0 5px;
+        }
+
+
+        .file-row
+        .material-symbols-rounded {
+
+            display:
+                none;
+        }
+
+
+        .file-path {
+
+            display:
+                none;
+        }
+
+
+        .commit-layout {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+        }
+
+
+        .commit-files {
+
+            flex:
+                1;
+
+            border-right:
+                none;
+
+            border-bottom:
+                1px solid
+                var(--border-subtle);
+        }
+
+
+        .commit-panel {
+
+            flex:
+                0 0 190px;
+
+            padding:
+                9px;
+        }
+
+
+        .commit-message {
+
+            min-height:
+                70px;
+        }
+
+
+        .history-list
+        .commit-row {
+
+            grid-template-columns:
+                64px
+                minmax(0, 1fr);
+        }
+
+
+        .commit-author,
+        .commit-time {
+
+            display:
+                none;
+        }
+
+
+        .branch-container {
+
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .branch-info {
+
+            display:
+                none;
+        }
+
+
+        .diff-row {
+
+            grid-template-columns:
+                32px
+                minmax(0, 1fr);
+        }
+
+
+        .diff-row
+        .diff-number:nth-child(2) {
+
+            display:
+                none;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="vcs-page"
+    data-class="section"
+    data-semantic="version_control_{{ vcs.state }}"
+>
+
+
+    <!-- ==================================================
+         Header
+         ================================================== -->
+
+    <header
+        class="vcs-header"
+        data-class="app_bar"
+        data-semantic="version_control_header"
+    >
+
+        <div
+            class="vcs-logo"
+            data-class="logo"
+            data-semantic="pycharm_logo"
+        >
+            PC
+        </div>
+
+
+        <span
+            class="vcs-project-title"
+            data-class="text"
+            data-semantic="project_name"
+        >
+            {{ vcs.project_name }}
+        </span>
+
+
+        <div class="header-spacer"></div>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="refresh_vcs_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="refresh_vcs_icon"
+            >
+                refresh
+            </span>
+        </button>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="vcs_settings_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="vcs_settings_icon"
+            >
+                settings
+            </span>
+        </button>
+
+    </header>
+
+
+    <!-- ==================================================
+         State Navigation
+         ================================================== -->
+
+    <nav
+        class="vcs-tabs"
+        data-class="navigation_bar"
+        data-semantic="version_control_tabs"
+    >
+
+        {% set tabs = [
+            ("local_changes", "Changes", "edit_document"),
+            ("commit", "Commit", "commit"),
+            ("diff", "Diff", "difference"),
+            ("history", "Log", "history"),
+            ("branches", "Branches", "account_tree")
+        ] %}
+
+
+        {% for state, label, icon in tabs %}
+
+        <div
+            class="
+                vcs-tab
+                {% if vcs.state == state %}
+                    active
+                {% endif %}
+            "
+            data-class="tab"
+            data-semantic="vcs_{{ state }}_tab"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="vcs_tab_icon"
+            >
+                {{ icon }}
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="vcs_tab_label"
+            >
+                {{ label }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </nav>
+
+
+    <!-- ==================================================
+         LOCAL CHANGES
+         ================================================== -->
+
+    {% if vcs.state == "local_changes" %}
+
+    <div class="vcs-content">
+
+        <aside
+            class="vcs-sidebar"
+            data-class="card"
+            data-semantic="changed_files_panel"
+        >
+
+            <div
+                class="panel-header"
+                data-class="navigation_bar"
+                data-semantic="changed_files_header"
+            >
+
+                <span
+                    data-class="text"
+                    data-semantic="changed_files_title"
+                >
+                    Local Changes
+                </span>
+
+
+                <div class="panel-spacer"></div>
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="expand_all_icon"
+                >
+                    unfold_more
+                </span>
+
+            </div>
+
+
+            <div
+                class="vcs-search"
+                data-class="search_bar"
+                data-semantic="changed_files_search"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_icon"
+                >
+                    search
+                </span>
+
+                <span
+                    data-class="text"
+                    data-semantic="search_placeholder"
+                >
+                    Search changed files
+                </span>
+            </div>
+
+
+            <div class="file-list">
+
+                {% for file in vcs.local_changes["files"] %}
+
+                <div
+                    class="
+                        file-row
+                        {% if loop.index0 ==
+                            vcs.local_changes.selected_index %}
+                            selected
+                        {% endif %}
+                    "
+                    data-class="navigation_item"
+                    data-semantic="changed_file"
+                >
+
+                    <span
+                        class="file-status"
+                        data-class="badge"
+                        data-semantic="file_status"
+                    >
+                        {{ file.symbol }}
+                    </span>
+
+
+                    <div>
+
+                        <span
+                            class="file-name"
+                            data-class="text"
+                            data-semantic="changed_filename"
+                        >
+                            {{ file.name }}
+                        </span>
+
+                        <span
+                            class="file-path"
+                            data-class="text"
+                            data-semantic="changed_file_path"
+                        >
+                            {{ file.path }}
+                        </span>
+
+                    </div>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="file_icon"
+                    >
+                        code
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </aside>
+
+
+        <main
+            class="vcs-main-panel"
+            data-class="section"
+            data-semantic="change_preview_panel"
+        >
+
+            <div
+                class="main-panel-header"
+                data-class="navigation_bar"
+                data-semantic="change_preview_header"
+            >
+                Preview
+            </div>
+
+
+            <div class="change-preview">
+
+                <div
+                    class="change-card"
+                    data-class="card"
+                    data-semantic="change_summary_card"
+                >
+
+                    <div
+                        class="change-card-title"
+                        data-class="text"
+                        data-semantic="change_summary_title"
+                    >
+                        Uncommitted changes
+                    </div>
+
+
+                    <div
+                        class="change-card-description"
+                        data-class="text"
+                        data-semantic="change_summary_description"
+                    >
+                        Select a changed file to inspect its
+                        modifications before committing.
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- ==================================================
+         COMMIT
+         ================================================== -->
+
+    {% elif vcs.state == "commit" %}
+
+    <div
+        class="commit-layout"
+        data-class="section"
+        data-semantic="commit_workspace"
+    >
+
+        <section
+            class="commit-files"
+            data-class="section"
+            data-semantic="commit_files"
+        >
+
+            <div
+                class="panel-header"
+                data-class="navigation_bar"
+                data-semantic="commit_files_header"
+            >
+                <span
+                    data-class="text"
+                    data-semantic="commit_files_title"
+                >
+                    Changes
+                </span>
+            </div>
+
+
+            {% for file in vcs.commit["files"] %}
+
+            <div
+                class="file-row"
+                data-class="navigation_item"
+                data-semantic="commit_file"
+            >
+
+                <span
+                    class="file-status"
+                    data-class="badge"
+                    data-semantic="commit_file_status"
+                >
+                    {{ file.symbol }}
+                </span>
+
+
+                <div>
+
+                    <span
+                        class="file-name"
+                        data-class="text"
+                        data-semantic="commit_filename"
+                    >
+                        {{ file.name }}
+                    </span>
+
+                    <span
+                        class="file-path"
+                        data-class="text"
+                        data-semantic="commit_file_path"
+                    >
+                        {{ file.path }}
+                    </span>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </section>
+
+
+        <aside
+            class="commit-panel"
+            data-class="card"
+            data-semantic="commit_message_panel"
+        >
+
+            <div
+                class="section-title"
+                data-class="text"
+                data-semantic="commit_message_title"
+            >
+                Commit Message
+            </div>
+
+
+            <div
+                class="commit-message"
+                data-class="input_field"
+                data-semantic="commit_message"
+            >
+                {{ vcs.commit.message }}
+            </div>
+
+
+            <div class="commit-option">
+
+                <div
+                    class="
+                        checkbox-box
+                        {% if vcs.commit.amend %}
+                            checked
+                        {% endif %}
+                    "
+                    data-class="checkbox"
+                    data-semantic="amend_checkbox"
+                >
+                    {% if vcs.commit.amend %}
+                        ✓
+                    {% endif %}
+                </div>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="amend_label"
+                >
+                    Amend commit
+                </span>
+
+            </div>
+
+
+            <div class="commit-option">
+
+                <div
+                    class="
+                        checkbox-box
+                        {% if vcs.commit.run_checks %}
+                            checked
+                        {% endif %}
+                    "
+                    data-class="checkbox"
+                    data-semantic="run_checks_checkbox"
+                >
+                    {% if vcs.commit.run_checks %}
+                        ✓
+                    {% endif %}
+                </div>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="run_checks_label"
+                >
+                    Run checks before commit
+                </span>
+
+            </div>
+
+
+            <button
+                class="commit-button"
+                data-class="button"
+                data-semantic="commit_button"
+            >
+                Commit
+            </button>
+
+        </aside>
+
+    </div>
+
+
+    <!-- ==================================================
+         DIFF
+         ================================================== -->
+
+    {% elif vcs.state == "diff" %}
+
+    <main
+        class="vcs-main-panel"
+        data-class="section"
+        data-semantic="diff_workspace"
+    >
+
+        <div
+            class="main-panel-header"
+            data-class="navigation_bar"
+            data-semantic="diff_header"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="diff_file_icon"
+            >
+                code
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="diff_filename"
+            >
+                {{ vcs.diff.filename }}
+            </span>
+
+        </div>
+
+
+        <div
+            class="diff-toolbar"
+            data-class="navigation_bar"
+            data-semantic="diff_toolbar"
+        >
+
+            <span
+                class="revision-label"
+                data-class="badge"
+                data-semantic="left_revision"
+            >
+                {{ vcs.diff.left_revision }}
+            </span>
+
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="compare_icon"
+            >
+                compare_arrows
+            </span>
+
+
+            <span
+                class="revision-label"
+                data-class="badge"
+                data-semantic="right_revision"
+            >
+                {{ vcs.diff.right_revision }}
+            </span>
+
+
+            <div class="header-spacer"></div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="previous_change_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="previous_change_icon"
+                >
+                    keyboard_arrow_up
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="next_change_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="next_change_icon"
+                >
+                    keyboard_arrow_down
+                </span>
+            </button>
+
+        </div>
+
+
+        <div
+            class="diff-editor"
+            data-class="section"
+            data-semantic="diff_editor"
+        >
+
+            {% for line in vcs.diff["lines"] %}
+
+            <div
+                class="
+                    diff-row
+                    {{ line.type }}
+                "
+            >
+
+                <span
+                    class="diff-number"
+                    data-class="text"
+                    data-semantic="old_line_number"
+                >
+                    {% if line.old is not none %}
+                        {{ line.old }}
+                    {% endif %}
+                </span>
+
+
+                <span
+                    class="diff-number"
+                    data-class="text"
+                    data-semantic="new_line_number"
+                >
+                    {% if line.new is not none %}
+                        {{ line.new }}
+                    {% endif %}
+                </span>
+
+
+                <span
+                    class="diff-code"
+                    data-class="text"
+                    data-semantic="diff_code"
+                >
+                    {% if line.type == "added" %}+{% elif line.type == "removed" %}-{% else %} {% endif %}{{ line.text }}
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </main>
+
+
+    <!-- ==================================================
+         HISTORY
+         ================================================== -->
+
+    {% elif vcs.state == "history" %}
+
+    <main
+        class="vcs-main-panel"
+        data-class="section"
+        data-semantic="git_history"
+    >
+
+        <div
+            class="main-panel-header"
+            data-class="navigation_bar"
+            data-semantic="history_header"
+        >
+
+            <span
+                data-class="text"
+                data-semantic="history_title"
+            >
+                Git Log
+            </span>
+
+
+            <div class="header-spacer"></div>
+
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="history_filter_icon"
+            >
+                filter_alt
+            </span>
+
+        </div>
+
+
+        <div class="history-list">
+
+            {% for commit in vcs.history["commits"] %}
+
+            <div
+                class="
+                    commit-row
+                    {% if loop.index0 ==
+                        vcs.history.selected_index %}
+                        selected
+                    {% endif %}
+                "
+                data-class="navigation_item"
+                data-semantic="git_commit"
+            >
+
+                <span
+                    class="commit-hash"
+                    data-class="text"
+                    data-semantic="commit_hash"
+                >
+                    {{ commit.hash }}
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="commit_message"
+                >
+                    {{ commit.message }}
+                </span>
+
+
+                <span
+                    class="commit-author"
+                    data-class="text"
+                    data-semantic="commit_author"
+                >
+                    {{ commit.author }}
+                </span>
+
+
+                <span
+                    class="commit-time"
+                    data-class="timestamp"
+                    data-semantic="commit_time"
+                >
+                    {{ commit.time }}
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </main>
+
+
+    <!-- ==================================================
+         BRANCHES
+         ================================================== -->
+
+    {% else %}
+
+    <div
+        class="branch-container"
+        data-class="section"
+        data-semantic="branches_workspace"
+    >
+
+        <aside
+            class="branch-list"
+            data-class="card"
+            data-semantic="branch_list"
+        >
+
+            <div
+                class="panel-header"
+                data-class="navigation_bar"
+                data-semantic="branches_header"
+            >
+                <span
+                    data-class="text"
+                    data-semantic="branches_title"
+                >
+                    Branches
+                </span>
+            </div>
+
+
+            <div
+                class="vcs-search"
+                data-class="search_bar"
+                data-semantic="branch_search"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="branch_search_icon"
+                >
+                    search
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="branch_search_query"
+                >
+
+                    {% if vcs.branches.search_query %}
+
+                        {{ vcs.branches.search_query }}
+
+                    {% else %}
+
+                        Search branches
+
+                    {% endif %}
+
+                </span>
+
+            </div>
+
+
+            {% for branch in vcs.branches["branches"] %}
+
+            <div
+                class="
+                    branch-row
+                    {% if branch.current %}
+                        current
+                    {% endif %}
+                "
+                data-class="navigation_item"
+                data-semantic="git_branch_item"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="branch_icon"
+                >
+                    {% if branch.remote %}
+                        cloud
+                    {% else %}
+                        account_tree
+                    {% endif %}
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="branch_name"
+                >
+                    {{ branch.name }}
+                </span>
+
+
+                {% if branch.current %}
+
+                <span
+                    class="material-symbols-rounded"
+                    style="margin-left:auto;"
+                    data-class="icon"
+                    data-semantic="current_branch_indicator"
+                >
+                    check
+                </span>
+
+                {% endif %}
+
+            </div>
+
+            {% endfor %}
+
+        </aside>
+
+
+        <main
+            class="branch-info"
+            data-class="section"
+            data-semantic="branch_details"
+        >
+
+            <div
+                class="branch-info-card"
+                data-class="card"
+                data-semantic="branch_summary"
+            >
+
+                <h2
+                    style="
+                        margin-bottom:8px;
+                        font-size:14px;
+                    "
+                    data-class="text"
+                    data-semantic="branch_summary_title"
+                >
+                    Branch Management
+                </h2>
+
+
+                <p
+                    style="
+                        font-size:10px;
+                        line-height:1.5;
+                        color:var(--text-secondary);
+                    "
+                    data-class="text"
+                    data-semantic="branch_summary_description"
+                >
+                    Checkout, compare, merge, rename,
+                    or delete local and remote branches.
+                </p>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Footer
+         ================================================== -->
+
+    <footer
+        class="vcs-footer"
+        data-class="navigation_bar"
+        data-semantic="version_control_status_bar"
+    >
+
+        <span
+            class="material-symbols-rounded"
+            data-class="icon"
+            data-semantic="current_branch_icon"
+        >
+            account_tree
+        </span>
+
+
+        <span
+            data-class="text"
+            data-semantic="current_branch"
+        >
+            {{ vcs.branch }}
+        </span>
+
+
+        <div class="footer-right">
+
+            <span
+                data-class="text"
+                data-semantic="vcs_name"
+            >
+                Git
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="vcs_sync_status"
+            >
+                Up to date
+            </span>
+
+        </div>
+
+    </footer>
+
+</div>
+
+{% endblock %}

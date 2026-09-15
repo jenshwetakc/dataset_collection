@@ -1,0 +1,2629 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+{{ workspace.window_title }} | PyCharm
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .tool-page {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+
+        height:
+            calc(
+                100vh
+                - var(--system-status-height)
+            );
+
+        min-height:
+            620px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    @media (
+        min-width: 1024px
+    ) {
+
+        .tool-page {
+
+            height:
+                100vh;
+        }
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .ide-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            38px;
+
+        flex:
+            0 0 38px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .pc-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        margin-right:
+            8px;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .ide-menu {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            2px;
+    }
+
+
+    .ide-menu-item {
+
+        height:
+            26px;
+
+        padding:
+            6px 7px;
+
+        font-size:
+            11px;
+    }
+
+
+    .window-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-align:
+            center;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .header-actions {
+
+        display:
+            flex;
+
+        gap:
+            2px;
+    }
+
+
+    /* ======================================================
+       Toolbar
+       ====================================================== */
+
+    .ide-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            42px;
+
+        flex:
+            0 0 42px;
+
+        gap:
+            4px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .run-config {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            160px;
+
+        height:
+            30px;
+
+        padding:
+            0 9px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--background);
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+
+        font-size:
+            11px;
+    }
+
+
+    .toolbar-spacer {
+
+        flex:
+            1;
+    }
+
+
+    /* ======================================================
+       Workspace Body
+       ====================================================== */
+
+    .workspace-body {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       Editor
+       ====================================================== */
+
+    .editor-pane {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    .editor-tabs {
+
+        display:
+            flex;
+
+        height:
+            36px;
+
+        flex:
+            0 0 36px;
+
+        overflow:
+            hidden;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .editor-tab {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        min-width:
+            120px;
+
+        max-width:
+            180px;
+
+        padding:
+            0 9px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .editor-tab.active {
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-weight:
+            600;
+    }
+
+
+    .editor-tab-name {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .code-area {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+
+        padding:
+            8px 0;
+
+        background:
+            var(--background);
+    }
+
+
+    .code-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            48px
+            minmax(0, 1fr);
+
+        min-height:
+            20px;
+
+        font-family:
+            Consolas,
+            "Liberation Mono",
+            monospace;
+
+        font-size:
+            12px;
+
+        line-height:
+            20px;
+    }
+
+
+    .line-number {
+
+        padding-right:
+            9px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        text-align:
+            right;
+
+        color:
+            var(--text-disabled);
+    }
+
+
+    .code-text {
+
+        padding-left:
+            11px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            pre;
+    }
+
+
+    /* ======================================================
+       Desktop Tool Window
+       ====================================================== */
+
+    .desktop-tool-window {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        border-left:
+            1px solid
+            var(--border);
+
+        background:
+            var(--surface);
+
+        transition:
+            none;
+    }
+
+
+    /* ------------------------------------------------------
+       OPEN = HALF VIEWPORT
+       ------------------------------------------------------ */
+
+    .desktop-tool-window.open {
+
+        width:
+            50vw;
+
+        flex:
+            0 0 50vw;
+    }
+
+
+    /* ------------------------------------------------------
+       CLOSED = ICON STRIPE
+       ------------------------------------------------------ */
+
+    .desktop-tool-window.closed {
+
+        width:
+            38px;
+
+        flex:
+            0 0 38px;
+    }
+
+
+    .tool-window-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            38px;
+
+        flex:
+            0 0 38px;
+
+        gap:
+            7px;
+
+        padding:
+            0 6px 0 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .tool-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .desktop-tool-window.closed
+    .tool-title,
+
+    .desktop-tool-window.closed
+    .tool-window-content,
+
+    .desktop-tool-window.closed
+    .tool-header-actions {
+
+        display:
+            none;
+    }
+
+
+    .desktop-tool-window.closed
+    .tool-window-header {
+
+        justify-content:
+            center;
+
+        height:
+            100%;
+
+        padding:
+            0;
+    }
+
+
+    .panel-toggle {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        flex:
+            0 0 28px;
+
+        border-radius:
+            5px;
+    }
+
+
+    .panel-toggle:hover {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .tool-header-actions {
+
+        display:
+            flex;
+
+        gap:
+            2px;
+    }
+
+
+    .tool-window-content {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       Generic Tool Toolbar
+       ====================================================== */
+
+    .tool-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            34px;
+
+        gap:
+            4px;
+
+        padding:
+            0 7px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .tool-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        flex:
+            1;
+
+        height:
+            27px;
+
+        padding:
+            0 7px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Database Browser
+       ====================================================== */
+
+    .database-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(170px, 0.7fr)
+            minmax(260px, 1.3fr);
+
+        height:
+            100%;
+    }
+
+
+    .database-tree {
+
+        overflow:
+            hidden;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        padding-top:
+            5px;
+    }
+
+
+    .database-tree-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            27px;
+
+        gap:
+            4px;
+
+        padding-right:
+            6px;
+
+        font-size:
+            10px;
+    }
+
+
+    .tree-arrow {
+
+        width:
+            16px;
+
+        flex:
+            0 0 16px;
+
+        font-size:
+            15px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .database-table-area {
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       Data Table
+       ====================================================== */
+
+    .data-table {
+
+        width:
+            100%;
+
+        overflow:
+            hidden;
+    }
+
+
+    .data-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            70px
+            minmax(120px, 1fr)
+            110px
+            130px;
+
+        align-items:
+            center;
+
+        min-height:
+            31px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            9px;
+    }
+
+
+    .data-header {
+
+        background:
+            var(--surface-variant);
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Query Console
+       ====================================================== */
+
+    .query-layout {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        height:
+            100%;
+    }
+
+
+    .query-editor {
+
+        flex:
+            0 0 44%;
+
+        padding:
+            12px;
+
+        overflow:
+            hidden;
+
+        border-bottom:
+            1px solid
+            var(--border);
+
+        background:
+            var(--background);
+
+        font-family:
+            Consolas,
+            monospace;
+
+        font-size:
+            11px;
+
+        line-height:
+            1.55;
+
+        white-space:
+            pre-wrap;
+    }
+
+
+    .query-results {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    .query-status {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            28px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    /* ======================================================
+       Services
+       ====================================================== */
+
+    .service-list {
+
+        height:
+            100%;
+
+        overflow:
+            hidden;
+    }
+
+
+    .service-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            28px
+            minmax(130px, 1fr)
+            minmax(100px, 1fr)
+            82px;
+
+        align-items:
+            center;
+
+        min-height:
+            42px;
+
+        gap:
+            7px;
+
+        padding:
+            0 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            10px;
+    }
+
+
+    .service-detail {
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .status-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            58px;
+
+        height:
+            22px;
+
+        padding:
+            0 7px;
+
+        border-radius:
+            99px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            9px;
+    }
+
+
+    .status-running {
+
+        color:
+            var(--success);
+    }
+
+
+    .status-stopped {
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Docker
+       ====================================================== */
+
+    .docker-list {
+
+        height:
+            100%;
+
+        overflow:
+            hidden;
+    }
+
+
+    .docker-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            28px
+            minmax(120px, 1fr)
+            minmax(130px, 1.2fr)
+            90px
+            100px;
+
+        align-items:
+            center;
+
+        min-height:
+            40px;
+
+        gap:
+            7px;
+
+        padding:
+            0 9px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            9px;
+    }
+
+
+    .docker-header {
+
+        background:
+            var(--surface-variant);
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Profiler
+       ====================================================== */
+
+    .profiler-summary {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(0, 1fr)
+            );
+
+        gap:
+            8px;
+
+        padding:
+            10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .profiler-card {
+
+        padding:
+            10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            6px;
+
+        background:
+            var(--background);
+    }
+
+
+    .profiler-value {
+
+        font-size:
+            16px;
+
+        font-weight:
+            700;
+    }
+
+
+    .profiler-label {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .profiler-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(130px, 1fr)
+            minmax(120px, 1fr)
+            70px
+            65px;
+
+        align-items:
+            center;
+
+        min-height:
+            34px;
+
+        padding:
+            0 9px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            9px;
+    }
+
+
+    .profiler-header {
+
+        background:
+            var(--surface-variant);
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Status Bar
+       ====================================================== */
+
+    .ide-status {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            26px;
+
+        flex:
+            0 0 26px;
+
+        gap:
+            8px;
+
+        padding:
+            0 8px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .status-right {
+
+        display:
+            flex;
+
+        gap:
+            10px;
+
+        margin-left:
+            auto;
+    }
+
+
+    /* ======================================================
+       Tablet / Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 1023px
+    ) {
+
+        .ide-menu-item:nth-child(n+5) {
+
+            display:
+                none;
+        }
+
+
+        .window-title {
+
+            display:
+                none;
+        }
+
+
+        .workspace-body {
+
+            flex-direction:
+                column;
+        }
+
+
+        /*
+         * On tablet/mobile an open tool window becomes
+         * a bottom panel.
+         */
+
+        .desktop-tool-window.open {
+
+            width:
+                100%;
+
+            height:
+                46vh;
+
+            flex:
+                0 0 46vh;
+
+            border-left:
+                none;
+
+            border-top:
+                1px solid
+                var(--border);
+        }
+
+
+        .desktop-tool-window.closed {
+
+            width:
+                100%;
+
+            height:
+                36px;
+
+            flex:
+                0 0 36px;
+
+            border-left:
+                none;
+
+            border-top:
+                1px solid
+                var(--border);
+        }
+
+
+        .desktop-tool-window.closed
+        .tool-window-header {
+
+            justify-content:
+                flex-end;
+
+            width:
+                100%;
+
+            height:
+                36px;
+
+            padding:
+                0 6px;
+        }
+
+
+        .database-layout {
+
+            grid-template-columns:
+                190px
+                minmax(250px, 1fr);
+        }
+    }
+
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .tool-page {
+
+            min-height:
+                0;
+        }
+
+
+        .ide-menu {
+
+            display:
+                none;
+        }
+
+
+        .header-actions {
+
+            margin-left:
+                auto;
+        }
+
+
+        .run-config {
+
+            width:
+                105px;
+        }
+
+
+        .editor-tab:not(.active) {
+
+            display:
+                none;
+        }
+
+
+        .editor-tab.active {
+
+            width:
+                100%;
+
+            max-width:
+                none;
+        }
+
+
+        .desktop-tool-window.open {
+
+            height:
+                52vh;
+
+            flex-basis:
+                52vh;
+        }
+
+
+        .database-layout {
+
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .database-tree {
+
+            display:
+                none;
+        }
+
+
+        .data-row {
+
+            grid-template-columns:
+                58px
+                minmax(100px, 1fr)
+                90px;
+        }
+
+
+        .data-row span:last-child {
+
+            display:
+                none;
+        }
+
+
+        .service-row {
+
+            grid-template-columns:
+                26px
+                minmax(100px, 1fr)
+                70px;
+        }
+
+
+        .service-detail {
+
+            display:
+                none;
+        }
+
+
+        .docker-row {
+
+            grid-template-columns:
+                24px
+                minmax(100px, 1fr)
+                80px;
+        }
+
+
+        .docker-row
+        span:nth-child(3),
+
+        .docker-row
+        span:last-child {
+
+            display:
+                none;
+        }
+
+
+        .profiler-summary {
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    1fr
+                );
+
+            gap:
+                4px;
+
+            padding:
+                6px;
+        }
+
+
+        .profiler-card {
+
+            padding:
+                7px;
+        }
+
+
+        .profiler-value {
+
+            font-size:
+                12px;
+        }
+
+
+        .profiler-row {
+
+            grid-template-columns:
+                minmax(100px, 1fr)
+                55px;
+        }
+
+
+        .profiler-row
+        span:nth-child(2),
+
+        .profiler-row
+        span:last-child {
+
+            display:
+                none;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="tool-page"
+    data-class="section"
+    data-semantic="tool_window_{{ workspace.tool_window_state }}"
+>
+
+
+    <!-- ==================================================
+         Header
+         ================================================== -->
+
+    <header
+        class="ide-header"
+        data-class="app_bar"
+        data-semantic="ide_header"
+    >
+
+        <div
+            class="pc-logo"
+            data-class="logo"
+            data-semantic="pycharm_logo"
+        >
+            PC
+        </div>
+
+
+        <nav
+            class="ide-menu"
+            data-class="navigation_bar"
+            data-semantic="main_menu"
+        >
+
+            {% for menu in [
+                "File",
+                "Edit",
+                "View",
+                "Navigate",
+                "Code",
+                "Run",
+                "Tools",
+                "Git"
+            ] %}
+
+            <span
+                class="ide-menu-item"
+                data-class="text_button"
+                data-semantic="menu_{{ menu | lower }}"
+            >
+                {{ menu }}
+            </span>
+
+            {% endfor %}
+
+        </nav>
+
+
+        <span
+            class="window-title"
+            data-class="text"
+            data-semantic="window_title"
+        >
+            {{ workspace.window_title }}
+        </span>
+
+
+        <div class="header-actions">
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="search_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_icon"
+                >
+                    search
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="settings_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="settings_icon"
+                >
+                    settings
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ==================================================
+         Toolbar
+         ================================================== -->
+
+    <div
+        class="ide-toolbar"
+        data-class="navigation_bar"
+        data-semantic="main_toolbar"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="project_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="project_icon"
+            >
+                folder_open
+            </span>
+        </button>
+
+
+        <div
+            class="run-config"
+            data-class="button"
+            data-semantic="run_configuration"
+        >
+            {{ workspace.active_file }}
+        </div>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="run_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="run_icon"
+            >
+                play_arrow
+            </span>
+        </button>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="debug_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="debug_icon"
+            >
+                bug_report
+            </span>
+        </button>
+
+
+        <div class="toolbar-spacer"></div>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="notifications_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="notifications_icon"
+            >
+                notifications
+            </span>
+        </button>
+
+    </div>
+
+
+    <!-- ==================================================
+         Workspace
+         ================================================== -->
+
+    <div class="workspace-body">
+
+
+        <!-- ==============================================
+             Editor
+             ============================================== -->
+
+        <main
+            class="editor-pane"
+            data-class="section"
+            data-semantic="editor_workspace"
+        >
+
+            <div
+                class="editor-tabs"
+                data-class="navigation_bar"
+                data-semantic="editor_tabs"
+            >
+
+                {% for tab in workspace.tabs %}
+
+                <div
+                    class="
+                        editor-tab
+                        {% if tab.active %}
+                            active
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="editor_tab"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="file_icon"
+                    >
+                        code
+                    </span>
+
+
+                    <span
+                        class="editor-tab-name"
+                        data-class="text"
+                        data-semantic="tab_name"
+                    >
+                        {{ tab.name }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <section
+                class="code-area"
+                data-class="section"
+                data-semantic="code_editor"
+            >
+
+                {% for line in workspace.code_lines %}
+
+                <div class="code-row">
+
+                    <span
+                        class="line-number"
+                        data-class="text"
+                        data-semantic="line_number"
+                    >
+                        {{ line.number }}
+                    </span>
+
+
+                    <span
+                        class="code-text"
+                        data-class="text"
+                        data-semantic="code_text"
+                    >{{ line.content }}</span>
+
+                </div>
+
+                {% endfor %}
+
+            </section>
+
+        </main>
+
+
+        <!-- ==============================================
+             Tool Window
+             ============================================== -->
+
+        <aside
+            class="
+                desktop-tool-window
+                {% if workspace.panel_open %}
+                    open
+                {% else %}
+                    closed
+                {% endif %}
+            "
+            data-class="card"
+            data-semantic="
+                {{ workspace.tool_window_state }}_tool_window
+            "
+        >
+
+
+            <!-- ==========================================
+                 Header / Open-Close Control
+                 ========================================== -->
+
+            <div
+                class="tool-window-header"
+                data-class="navigation_bar"
+                data-semantic="tool_window_header"
+            >
+
+                {% if workspace.panel_open %}
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="tool_window_icon"
+                >
+
+                    {% if workspace.tool_window_state ==
+                        "database_browser" %}
+                        database
+
+                    {% elif workspace.tool_window_state ==
+                        "query_console" %}
+                        terminal
+
+                    {% elif workspace.tool_window_state ==
+                        "services" %}
+                        dns
+
+                    {% elif workspace.tool_window_state ==
+                        "docker" %}
+                        deployed_code
+
+                    {% else %}
+                        monitoring
+                    {% endif %}
+
+                </span>
+
+
+                <span
+                    class="tool-title"
+                    data-class="text"
+                    data-semantic="tool_window_title"
+                >
+
+                    {% if workspace.tool_window_state ==
+                        "database_browser" %}
+                        Database
+
+                    {% elif workspace.tool_window_state ==
+                        "query_console" %}
+                        Query Console
+
+                    {% elif workspace.tool_window_state ==
+                        "services" %}
+                        Services
+
+                    {% elif workspace.tool_window_state ==
+                        "docker" %}
+                        Docker
+
+                    {% else %}
+                        Profiler
+                    {% endif %}
+
+                </span>
+
+
+                <div class="tool-header-actions">
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="tool_options_button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="tool_options_icon"
+                        >
+                            more_horiz
+                        </span>
+                    </button>
+
+                </div>
+
+
+                <!-- CLOSE / COLLAPSE -->
+
+                <button
+                    class="panel-toggle"
+                    data-class="button"
+                    data-semantic="close_tool_window_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_tool_window_icon"
+                    >
+                        chevron_right
+                    </span>
+                </button>
+
+
+                {% else %}
+
+
+                <!-- OPEN -->
+
+                <button
+                    class="panel-toggle"
+                    data-class="button"
+                    data-semantic="open_tool_window_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="open_tool_window_icon"
+                    >
+                        chevron_left
+                    </span>
+                </button>
+
+
+                {% endif %}
+
+            </div>
+
+
+            {% if workspace.panel_open %}
+
+            <div class="tool-window-content">
+
+
+                <!-- ======================================
+                     DATABASE
+                     ====================================== -->
+
+                {% if workspace.tool_window_state ==
+                    "database_browser" %}
+
+                <div
+                    class="database-layout"
+                    data-class="section"
+                    data-semantic="database_browser"
+                >
+
+                    <section
+                        class="database-tree"
+                        data-class="section"
+                        data-semantic="database_tree"
+                    >
+
+                        {% for item in workspace.database["tree"] %}
+
+                        <div
+                            class="database-tree-row"
+                            style="
+                                padding-left:
+                                {{ 5 + item.depth * 14 }}px;
+                            "
+                            data-class="navigation_item"
+                            data-semantic="database_tree_item"
+                        >
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    tree-arrow
+                                "
+                                data-class="icon"
+                                data-semantic="database_expand_icon"
+                            >
+                                {% if item.expanded is defined %}
+
+                                    {% if item.expanded %}
+                                        expand_more
+                                    {% else %}
+                                        chevron_right
+                                    {% endif %}
+
+                                {% endif %}
+                            </span>
+
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="database_item_icon"
+                            >
+                                {{ item.icon }}
+                            </span>
+
+
+                            <span
+                                data-class="text"
+                                data-semantic="database_item_name"
+                            >
+                                {{ item.name }}
+                            </span>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </section>
+
+
+                    <section
+                        class="database-table-area"
+                        data-class="section"
+                        data-semantic="database_table"
+                    >
+
+                        <div
+                            class="tool-toolbar"
+                            data-class="navigation_bar"
+                            data-semantic="database_toolbar"
+                        >
+
+                            <span
+                                data-class="text"
+                                data-semantic="database_table_name"
+                            >
+                                {{ workspace.database.table_name }}
+                            </span>
+
+
+                            <div class="toolbar-spacer"></div>
+
+
+                            <button
+                                class="icon-button"
+                                data-class="button"
+                                data-semantic="refresh_table_button"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="refresh_table_icon"
+                                >
+                                    refresh
+                                </span>
+                            </button>
+
+                        </div>
+
+
+                        <div class="data-table">
+
+                            <div
+                                class="
+                                    data-row
+                                    data-header
+                                "
+                                data-class="navigation_bar"
+                                data-semantic="database_header"
+                            >
+                                <span data-class="text">ID</span>
+                                <span data-class="text">Name</span>
+                                <span data-class="text">Status</span>
+                                <span data-class="text">Viewport</span>
+                            </div>
+
+
+                            {% for row in workspace.database["rows"] %}
+
+                            <div
+                                class="data-row"
+                                data-class="navigation_item"
+                                data-semantic="database_row"
+                            >
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="database_id"
+                                >
+                                    {{ row.id }}
+                                </span>
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="database_name"
+                                >
+                                    {{ row.name }}
+                                </span>
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="database_status"
+                                >
+                                    {{ row.status }}
+                                </span>
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="database_viewport"
+                                >
+                                    {{ row.viewport }}
+                                </span>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+
+                <!-- ======================================
+                     QUERY CONSOLE
+                     ====================================== -->
+
+                {% elif workspace.tool_window_state ==
+                    "query_console" %}
+
+                <section
+                    class="query-layout"
+                    data-class="section"
+                    data-semantic="query_console"
+                >
+
+                    <div
+                        class="tool-toolbar"
+                        data-class="navigation_bar"
+                        data-semantic="query_toolbar"
+                    >
+
+                        <span
+                            data-class="text"
+                            data-semantic="database_connection"
+                        >
+                            {{ workspace.query_console.connection }}
+                        </span>
+
+
+                        <div class="toolbar-spacer"></div>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="execute_query_button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="execute_query_icon"
+                            >
+                                play_arrow
+                            </span>
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="query-editor"
+                        data-class="input_field"
+                        data-semantic="sql_editor"
+                    >{{ workspace.query_console.query }}</div>
+
+
+                    <div
+                        class="query-results"
+                        data-class="section"
+                        data-semantic="query_results"
+                    >
+
+                        <div
+                            class="query-status"
+                            data-class="text"
+                            data-semantic="query_execution_status"
+                        >
+                            4 rows •
+                            {{ workspace.query_console.execution_time }}
+                        </div>
+
+
+                        {% for row in
+                            workspace.query_console["rows"] %}
+
+                        <div
+                            class="data-row"
+                            data-class="navigation_item"
+                            data-semantic="query_result_row"
+                        >
+                            <span data-class="text">{{ row.id }}</span>
+                            <span data-class="text">{{ row.name }}</span>
+                            <span data-class="text">{{ row.status }}</span>
+                            <span data-class="text">{{ row.viewport }}</span>
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+
+                <!-- ======================================
+                     SERVICES
+                     ====================================== -->
+
+                {% elif workspace.tool_window_state ==
+                    "services" %}
+
+                <section
+                    class="service-list"
+                    data-class="section"
+                    data-semantic="services_list"
+                >
+
+                    {% for service in
+                        workspace.services["services"] %}
+
+                    <div
+                        class="service-row"
+                        data-class="navigation_item"
+                        data-semantic="service_item"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="service_icon"
+                        >
+                            {{ service.icon }}
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                            data-semantic="service_name"
+                        >
+                            {{ service.name }}
+                        </span>
+
+
+                        <span
+                            class="service-detail"
+                            data-class="text"
+                            data-semantic="service_detail"
+                        >
+                            {{ service.detail }}
+                        </span>
+
+
+                        <span
+                            class="
+                                status-badge
+                                status-{{ service.status }}
+                            "
+                            data-class="badge"
+                            data-semantic="service_status"
+                        >
+                            {{ service.status }}
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </section>
+
+
+                <!-- ======================================
+                     DOCKER
+                     ====================================== -->
+
+                {% elif workspace.tool_window_state ==
+                    "docker" %}
+
+                <section
+                    class="docker-list"
+                    data-class="section"
+                    data-semantic="docker_containers"
+                >
+
+                    <div
+                        class="
+                            docker-row
+                            docker-header
+                        "
+                        data-class="navigation_bar"
+                        data-semantic="docker_header"
+                    >
+                        <span></span>
+                        <span data-class="text">Container</span>
+                        <span data-class="text">Image</span>
+                        <span data-class="text">Status</span>
+                        <span data-class="text">Ports</span>
+                    </div>
+
+
+                    {% for container in
+                        workspace.docker["containers"] %}
+
+                    <div
+                        class="docker-row"
+                        data-class="navigation_item"
+                        data-semantic="docker_container"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="container_icon"
+                        >
+                            deployed_code
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                            data-semantic="container_name"
+                        >
+                            {{ container.name }}
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                            data-semantic="container_image"
+                        >
+                            {{ container.image }}
+                        </span>
+
+
+                        <span
+                            class="
+                                status-{{ container.status }}
+                            "
+                            data-class="badge"
+                            data-semantic="container_status"
+                        >
+                            {{ container.status }}
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                            data-semantic="container_port"
+                        >
+                            {{ container.port }}
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </section>
+
+
+                <!-- ======================================
+                     PROFILER
+                     ====================================== -->
+
+                {% else %}
+
+                <section
+                    data-class="section"
+                    data-semantic="profiler_panel"
+                >
+
+                    <div
+                        class="profiler-summary"
+                        data-class="section"
+                        data-semantic="profiler_summary"
+                    >
+
+                        <div
+                            class="profiler-card"
+                            data-class="card"
+                            data-semantic="profile_duration"
+                        >
+                            <div
+                                class="profiler-value"
+                                data-class="text"
+                            >
+                                {{ workspace.profiler.duration }}
+                            </div>
+
+                            <div
+                                class="profiler-label"
+                                data-class="text"
+                            >
+                                Duration
+                            </div>
+                        </div>
+
+
+                        <div
+                            class="profiler-card"
+                            data-class="card"
+                            data-semantic="profile_cpu"
+                        >
+                            <div
+                                class="profiler-value"
+                                data-class="text"
+                            >
+                                {{ workspace.profiler.cpu }}
+                            </div>
+
+                            <div
+                                class="profiler-label"
+                                data-class="text"
+                            >
+                                CPU
+                            </div>
+                        </div>
+
+
+                        <div
+                            class="profiler-card"
+                            data-class="card"
+                            data-semantic="profile_memory"
+                        >
+                            <div
+                                class="profiler-value"
+                                data-class="text"
+                            >
+                                {{ workspace.profiler.memory }}
+                            </div>
+
+                            <div
+                                class="profiler-label"
+                                data-class="text"
+                            >
+                                Memory
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            profiler-row
+                            profiler-header
+                        "
+                        data-class="navigation_bar"
+                        data-semantic="profiler_table_header"
+                    >
+                        <span data-class="text">Function</span>
+                        <span data-class="text">Module</span>
+                        <span data-class="text">Time</span>
+                        <span data-class="text">Calls</span>
+                    </div>
+
+
+                    {% for function in
+                        workspace.profiler["functions"] %}
+
+                    <div
+                        class="profiler-row"
+                        data-class="navigation_item"
+                        data-semantic="profile_function"
+                    >
+
+                        <span
+                            data-class="text"
+                            data-semantic="function_name"
+                        >
+                            {{ function.name }}
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                            data-semantic="function_module"
+                        >
+                            {{ function.module }}
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                            data-semantic="function_time"
+                        >
+                            {{ function.time }}
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                            data-semantic="function_calls"
+                        >
+                            {{ function.calls }}
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </section>
+
+                {% endif %}
+
+            </div>
+
+            {% endif %}
+
+        </aside>
+
+    </div>
+
+
+    <!-- ==================================================
+         Status
+         ================================================== -->
+
+    <footer
+        class="ide-status"
+        data-class="navigation_bar"
+        data-semantic="ide_status_bar"
+    >
+
+        <span
+            class="material-symbols-rounded"
+            data-class="icon"
+            data-semantic="branch_icon"
+        >
+            account_tree
+        </span>
+
+
+        <span
+            data-class="text"
+            data-semantic="branch_name"
+        >
+            {{ workspace.branch }}
+        </span>
+
+
+        <div class="status-right">
+
+            <span
+                data-class="text"
+                data-semantic="caret_position"
+            >
+                {{ workspace.caret.line }}:
+                {{ workspace.caret.column }}
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="interpreter"
+            >
+                {{ workspace.interpreter }}
+            </span>
+
+        </div>
+
+    </footer>
+
+</div>
+
+{% endblock %}

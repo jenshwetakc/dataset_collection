@@ -1,0 +1,2834 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+{{ overlay.window_title }} | PyCharm
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .overlay-page {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            calc(
+                100vh
+                - var(--system-status-height)
+            );
+
+        min-height:
+            620px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    @media (
+        min-width: 1024px
+    ) {
+
+        .overlay-page {
+
+            height:
+                100vh;
+        }
+    }
+
+
+    /* ======================================================
+       Background IDE Container
+
+       Entire container is visible but annotation-skipped.
+       ====================================================== */
+
+    .background-ide-shell {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       IDE Header
+       ====================================================== */
+
+    .ide-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            38px;
+
+        flex:
+            0 0 38px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .pc-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        margin-right:
+            8px;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .ide-menu {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+    }
+
+
+    .menu-item {
+
+        padding:
+            6px 7px;
+
+        font-size:
+            11px;
+    }
+
+
+    .window-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-align:
+            center;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .header-actions {
+
+        display:
+            flex;
+
+        gap:
+            2px;
+    }
+
+
+    /* ======================================================
+       Toolbar
+       ====================================================== */
+
+    .ide-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            42px;
+
+        flex:
+            0 0 42px;
+
+        gap:
+            4px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .run-config {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            165px;
+
+        height:
+            30px;
+
+        padding:
+            0 9px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--background);
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+
+        font-size:
+            11px;
+    }
+
+
+    .toolbar-spacer {
+
+        flex:
+            1;
+    }
+
+
+    /* ======================================================
+       Background IDE
+       ====================================================== */
+
+    .ide-background {
+
+        display:
+            flex;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       Project Tree
+       ====================================================== */
+
+    .project-panel {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            240px;
+
+        flex:
+            0 0 240px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .project-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            34px;
+
+        flex:
+            0 0 34px;
+
+        padding:
+            0 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .project-tree {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        padding-top:
+            4px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .project-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            25px;
+
+        gap:
+            4px;
+
+        padding-right:
+            6px;
+
+        overflow:
+            hidden;
+
+        font-size:
+            10px;
+    }
+
+
+    .project-arrow {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            16px;
+
+        flex:
+            0 0 16px;
+
+        font-size:
+            15px;
+    }
+
+
+    .project-name {
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    /* ======================================================
+       Editor Background
+       ====================================================== */
+
+    .editor-panel {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    .editor-tabs {
+
+        display:
+            flex;
+
+        height:
+            36px;
+
+        flex:
+            0 0 36px;
+
+        overflow:
+            hidden;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .editor-tab {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        min-width:
+            120px;
+
+        max-width:
+            180px;
+
+        padding:
+            0 9px;
+
+        overflow:
+            hidden;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .editor-tab.active {
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-weight:
+            600;
+    }
+
+
+    .tab-name {
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .code-editor {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+
+        padding:
+            8px 0;
+
+        background:
+            var(--background);
+    }
+
+
+    .code-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            48px
+            minmax(0, 1fr);
+
+        min-height:
+            20px;
+
+        font-family:
+            Consolas,
+            "Liberation Mono",
+            monospace;
+
+        font-size:
+            12px;
+
+        line-height:
+            20px;
+    }
+
+
+    .line-number {
+
+        padding-right:
+            9px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        text-align:
+            right;
+
+        color:
+            var(--text-disabled);
+    }
+
+
+    .code-text {
+
+        padding-left:
+            11px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            pre;
+    }
+
+
+    /* ======================================================
+       Status
+       ====================================================== */
+
+    .ide-status {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            26px;
+
+        flex:
+            0 0 26px;
+
+        gap:
+            8px;
+
+        padding:
+            0 8px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .status-right {
+
+        display:
+            flex;
+
+        gap:
+            10px;
+
+        margin-left:
+            auto;
+    }
+
+
+    /* ======================================================
+       Overlay Layer
+
+       Visual backdrop only.
+       Never annotated.
+       ====================================================== */
+
+    .partial-overlay-layer {
+
+        position:
+            absolute;
+
+        z-index:
+            400;
+
+        inset:
+            0;
+
+        background:
+            rgba(0, 0, 0, 0.12);
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .partial-dialog {
+
+        position:
+            absolute;
+
+        z-index:
+            500;
+
+        left:
+            50%;
+
+        top:
+            50%;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        max-height:
+            72vh;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            9px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 18px 50px
+            rgba(0, 0, 0, 0.28);
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    /* ======================================================
+       Different Dialog Sizes
+       ====================================================== */
+
+    .partial-dialog.compact {
+
+        width:
+            min(
+                440px,
+                45vw
+            );
+    }
+
+
+    .partial-dialog.medium {
+
+        width:
+            min(
+                620px,
+                58vw
+            );
+    }
+
+
+    .partial-dialog.wide {
+
+        width:
+            min(
+                820px,
+                72vw
+            );
+    }
+
+
+    /* ======================================================
+       Dialog Header
+       ====================================================== */
+
+    .dialog-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            44px;
+
+        flex:
+            0 0 44px;
+
+        gap:
+            7px;
+
+        padding:
+            0 10px
+            0 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .dialog-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Dialog Content
+       ====================================================== */
+
+    .dialog-content {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            auto;
+
+        padding:
+            16px;
+    }
+
+
+    /* ======================================================
+       Dialog Footer
+       ====================================================== */
+
+    .dialog-footer {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            54px;
+
+        flex:
+            0 0 54px;
+
+        padding:
+            0 14px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    /* ======================================================
+       Fields
+       ====================================================== */
+
+    .field-group {
+
+        margin-bottom:
+            14px;
+    }
+
+
+    .field-label {
+
+        display:
+            block;
+
+        margin-bottom:
+            6px;
+
+        font-size:
+            10px;
+
+        font-weight:
+            600;
+    }
+
+
+    .dialog-input {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-height:
+            34px;
+
+        padding:
+            0 9px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--background);
+
+        font-size:
+            10px;
+    }
+
+
+    .dialog-select {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            8px;
+
+        width:
+            100%;
+
+        min-height:
+            34px;
+
+        padding:
+            0 9px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--background);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Buttons
+       ====================================================== */
+
+    .dialog-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            82px;
+
+        height:
+            32px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            10px;
+    }
+
+
+    .dialog-button.primary {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Options
+       ====================================================== */
+
+    .option-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            32px;
+
+        font-size:
+            10px;
+    }
+
+
+    .checkbox-box {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            17px;
+
+        height:
+            17px;
+
+        flex:
+            0 0 17px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            3px;
+    }
+
+
+    .checkbox-box.checked {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Rename
+       ====================================================== */
+
+    .rename-symbol {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        margin-bottom:
+            15px;
+
+        padding:
+            10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            6px;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Run Configuration
+       ====================================================== */
+
+    .configuration-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            160px
+            minmax(0, 1fr);
+
+        align-items:
+            center;
+
+        gap:
+            10px 12px;
+    }
+
+
+    .configuration-label {
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Breakpoint
+       ====================================================== */
+
+    .breakpoint-location {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        margin-bottom:
+            15px;
+
+        padding:
+            10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            6px;
+
+        background:
+            var(--background);
+    }
+
+
+    .breakpoint-dot {
+
+        width:
+            12px;
+
+        height:
+            12px;
+
+        flex:
+            0 0 12px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--error);
+    }
+
+
+    /* ======================================================
+       File Chooser
+       ====================================================== */
+
+    .file-path-bar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        height:
+            34px;
+
+        margin-bottom:
+            10px;
+
+        padding:
+            0 8px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--background);
+
+        font-size:
+            10px;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .file-list {
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            6px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .file-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            34px;
+
+        padding:
+            0 9px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            10px;
+    }
+
+
+    .file-row:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .file-row.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        max-width: 1023px
+    ) {
+
+        .project-panel {
+
+            width:
+                190px;
+
+            flex-basis:
+                190px;
+        }
+
+
+        .menu-item:nth-child(n+5) {
+
+            display:
+                none;
+        }
+
+
+        .window-title {
+
+            display:
+                none;
+        }
+
+
+        .partial-dialog.compact {
+
+            width:
+                55vw;
+        }
+
+
+        .partial-dialog.medium {
+
+            width:
+                70vw;
+        }
+
+
+        .partial-dialog.wide {
+
+            width:
+                82vw;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .overlay-page {
+
+            min-height:
+                0;
+        }
+
+
+        .ide-menu {
+
+            display:
+                none;
+        }
+
+
+        .header-actions {
+
+            margin-left:
+                auto;
+        }
+
+
+        .run-config {
+
+            width:
+                105px;
+        }
+
+
+        .project-panel {
+
+            display:
+                none;
+        }
+
+
+        .editor-tab:not(.active) {
+
+            display:
+                none;
+        }
+
+
+        .editor-tab.active {
+
+            width:
+                100%;
+
+            max-width:
+                none;
+        }
+
+
+        .partial-dialog.compact,
+        .partial-dialog.medium,
+        .partial-dialog.wide {
+
+            width:
+                calc(
+                    100vw
+                    - 24px
+                );
+
+            max-height:
+                78vh;
+        }
+
+
+        .configuration-grid {
+
+            grid-template-columns:
+                1fr;
+
+            gap:
+                5px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<!-- ======================================================
+     Root
+
+     IMPORTANT:
+     No data-class here because this is the entire viewport.
+     We do NOT want a background annotation.
+     ====================================================== -->
+
+<div
+    class="overlay-page"
+    data-semantic="partial_overlay_{{ overlay.overlay_state }}"
+>
+
+
+    <!-- ==================================================
+         BACKGROUND IDE
+
+         IMPORTANT:
+         Everything inside this container is visible,
+         but completely ignored by the annotation renderer.
+         ================================================== -->
+
+    <div
+        class="background-ide-shell"
+        data-annotation-skip="true"
+    >
+
+
+        <!-- ==============================================
+             Header
+             ============================================== -->
+
+        <header
+            class="ide-header"
+        >
+
+            <div
+                class="pc-logo"
+            >
+                PC
+            </div>
+
+
+            <nav
+                class="ide-menu"
+            >
+
+                {% for menu in [
+                    "File",
+                    "Edit",
+                    "View",
+                    "Navigate",
+                    "Code",
+                    "Run",
+                    "Tools",
+                    "Git"
+                ] %}
+
+                <span
+                    class="menu-item"
+                >
+                    {{ menu }}
+                </span>
+
+                {% endfor %}
+
+            </nav>
+
+
+            <span
+                class="window-title"
+            >
+                {{ overlay.window_title }}
+            </span>
+
+
+            <div class="header-actions">
+
+                <button
+                    class="icon-button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                    >
+                        search
+                    </span>
+                </button>
+
+
+                <button
+                    class="icon-button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                    >
+                        settings
+                    </span>
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- ==============================================
+             Toolbar
+             ============================================== -->
+
+        <div
+            class="ide-toolbar"
+        >
+
+            <button
+                class="icon-button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                >
+                    folder_open
+                </span>
+            </button>
+
+
+            <div
+                class="run-config"
+            >
+                {{ overlay.active_file }}
+            </div>
+
+
+            <button
+                class="icon-button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                >
+                    play_arrow
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                >
+                    bug_report
+                </span>
+            </button>
+
+
+            <div class="toolbar-spacer"></div>
+
+        </div>
+
+
+        <!-- ==============================================
+             Main Background IDE
+             ============================================== -->
+
+        <div class="ide-background">
+
+
+            <!-- ==========================================
+                 Project Tree
+                 ========================================== -->
+
+            <aside
+                class="project-panel"
+            >
+
+                <div
+                    class="project-header"
+                >
+                    Project
+                </div>
+
+
+                <div
+                    class="project-tree"
+                >
+
+                    {% for item in overlay.project_tree %}
+
+                    <div
+                        class="project-row"
+                        style="
+                            padding-left:
+                            {{ 5 + item.depth * 15 }}px;
+                        "
+                    >
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                project-arrow
+                            "
+                        >
+                            {% if item.type == "folder" %}
+
+                                {% if item.expanded %}
+                                    expand_more
+                                {% else %}
+                                    chevron_right
+                                {% endif %}
+
+                            {% endif %}
+                        </span>
+
+
+                        <span
+                            class="material-symbols-rounded"
+                        >
+                            {% if item.type == "folder" %}
+
+                                {% if item.expanded %}
+                                    folder_open
+                                {% else %}
+                                    folder
+                                {% endif %}
+
+                            {% elif item.type == "python" %}
+
+                                code
+
+                            {% else %}
+
+                                description
+
+                            {% endif %}
+                        </span>
+
+
+                        <span
+                            class="project-name"
+                        >
+                            {{ item.name }}
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </aside>
+
+
+            <!-- ==========================================
+                 Editor
+                 ========================================== -->
+
+            <main
+                class="editor-panel"
+            >
+
+                <div
+                    class="editor-tabs"
+                >
+
+                    {% for tab in overlay.tabs %}
+
+                    <div
+                        class="
+                            editor-tab
+                            {% if tab.active %}
+                                active
+                            {% endif %}
+                        "
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                        >
+                            code
+                        </span>
+
+
+                        <span
+                            class="tab-name"
+                        >
+                            {{ tab.name }}
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <section
+                    class="code-editor"
+                >
+
+                    {% for line in overlay.code_lines %}
+
+                    <div class="code-row">
+
+                        <span
+                            class="line-number"
+                        >
+                            {{ line.number }}
+                        </span>
+
+
+                        <span
+                            class="code-text"
+                        >{{ line.content }}</span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </section>
+
+            </main>
+
+        </div>
+
+
+        <!-- ==============================================
+             Background Status Bar
+             ============================================== -->
+
+        <footer
+            class="ide-status"
+        >
+
+            <span
+                class="material-symbols-rounded"
+            >
+                account_tree
+            </span>
+
+
+            <span>
+                {{ overlay.branch }}
+            </span>
+
+
+            <div class="status-right">
+
+                <span>
+                    {{ overlay.caret.line }}:
+                    {{ overlay.caret.column }}
+                </span>
+
+
+                <span>
+                    {{ overlay.interpreter }}
+                </span>
+
+            </div>
+
+        </footer>
+
+    </div>
+
+
+    <!-- ==================================================
+         BACKDROP
+
+         Also skipped from annotation.
+         It is purely visual.
+         ================================================== -->
+
+    <div
+        class="partial-overlay-layer"
+        data-annotation-skip="true"
+    ></div>
+
+
+    <!-- ==================================================
+         ACTUAL POPUP
+
+         IMPORTANT:
+         This is NOT inside any data-annotation-skip parent.
+
+         Only this popup and its descendants receive
+         annotations.
+         ================================================== -->
+
+    <section
+        class="
+            partial-dialog
+            {{ overlay.dialog_size }}
+        "
+        data-class="dialog"
+        data-semantic="{{ overlay.overlay_state }}_dialog"
+        data-occluder="true"
+    >
+
+
+        <!-- ==============================================
+             FIND / REPLACE
+             ============================================== -->
+
+        {% if overlay.overlay_state == "find_replace" %}
+
+        <div
+            class="dialog-header"
+            data-class="navigation_bar"
+            data-semantic="find_dialog_header"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="find_icon"
+            >
+                search
+            </span>
+
+
+            <span
+                class="dialog-title"
+                data-class="text"
+                data-semantic="dialog_title"
+            >
+                Find in Files
+            </span>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_dialog_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_dialog_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div class="dialog-content">
+
+            <div class="field-group">
+
+                <label
+                    class="field-label"
+                    data-class="text"
+                    data-semantic="search_label"
+                >
+                    Text to find
+                </label>
+
+
+                <div
+                    class="dialog-input"
+                    data-class="input_field"
+                    data-semantic="search_input"
+                >
+                    {{ overlay.find_replace.query }}
+                </div>
+
+            </div>
+
+
+            <div class="field-group">
+
+                <label
+                    class="field-label"
+                    data-class="text"
+                    data-semantic="replace_label"
+                >
+                    Replace with
+                </label>
+
+
+                <div
+                    class="dialog-input"
+                    data-class="input_field"
+                    data-semantic="replace_input"
+                >
+                    {{ overlay.find_replace.replacement }}
+                </div>
+
+            </div>
+
+
+            <div class="field-group">
+
+                <label
+                    class="field-label"
+                    data-class="text"
+                    data-semantic="scope_label"
+                >
+                    Scope
+                </label>
+
+
+                <div
+                    class="dialog-select"
+                    data-class="button"
+                    data-semantic="scope_selector"
+                >
+
+                    <span
+                        data-class="text"
+                        data-semantic="scope_value"
+                    >
+                        {{ overlay.find_replace.scope }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="scope_dropdown_icon"
+                    >
+                        expand_more
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="option-row">
+
+                <div
+                    class="
+                        checkbox-box
+                        {% if overlay.find_replace.case_sensitive %}
+                            checked
+                        {% endif %}
+                    "
+                    data-class="checkbox"
+                    data-semantic="case_sensitive_checkbox"
+                >
+                    {% if overlay.find_replace.case_sensitive %}
+                        ✓
+                    {% endif %}
+                </div>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="case_sensitive_label"
+                >
+                    Match case
+                </span>
+
+            </div>
+
+
+            <div class="option-row">
+
+                <div
+                    class="
+                        checkbox-box
+                        {% if overlay.find_replace.regex %}
+                            checked
+                        {% endif %}
+                    "
+                    data-class="checkbox"
+                    data-semantic="regex_checkbox"
+                >
+                    {% if overlay.find_replace.regex %}
+                        ✓
+                    {% endif %}
+                </div>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="regex_label"
+                >
+                    Regex
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="dialog-footer"
+            data-class="navigation_bar"
+            data-semantic="dialog_actions"
+        >
+
+            <button
+                class="dialog-button"
+                data-class="button"
+                data-semantic="cancel_button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    primary
+                "
+                data-class="button"
+                data-semantic="find_button"
+            >
+                Find
+            </button>
+
+        </div>
+
+
+        <!-- ==============================================
+             RENAME
+             ============================================== -->
+
+        {% elif overlay.overlay_state == "rename" %}
+
+        <div
+            class="dialog-header"
+            data-class="navigation_bar"
+            data-semantic="rename_dialog_header"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="rename_icon"
+            >
+                edit
+            </span>
+
+
+            <span
+                class="dialog-title"
+                data-class="text"
+                data-semantic="dialog_title"
+            >
+                Rename
+            </span>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_dialog_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_dialog_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div class="dialog-content">
+
+            <div
+                class="rename-symbol"
+                data-class="card"
+                data-semantic="rename_symbol"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="symbol_icon"
+                >
+                    function
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="old_symbol_name"
+                >
+                    {{ overlay.rename.old_name }}
+                </span>
+
+            </div>
+
+
+            <div class="field-group">
+
+                <label
+                    class="field-label"
+                    data-class="text"
+                    data-semantic="new_name_label"
+                >
+                    New name
+                </label>
+
+
+                <div
+                    class="dialog-input"
+                    data-class="input_field"
+                    data-semantic="new_name_input"
+                >
+                    {{ overlay.rename.new_name }}
+                </div>
+
+            </div>
+
+
+            <div class="option-row">
+
+                <div
+                    class="
+                        checkbox-box
+                        {% if overlay.rename.search_comments %}
+                            checked
+                        {% endif %}
+                    "
+                    data-class="checkbox"
+                    data-semantic="search_comments_checkbox"
+                >
+                    {% if overlay.rename.search_comments %}
+                        ✓
+                    {% endif %}
+                </div>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="search_comments_label"
+                >
+                    Search in comments
+                </span>
+
+            </div>
+
+
+            <div class="option-row">
+
+                <div
+                    class="
+                        checkbox-box
+                        {% if overlay.rename.search_strings %}
+                            checked
+                        {% endif %}
+                    "
+                    data-class="checkbox"
+                    data-semantic="search_strings_checkbox"
+                >
+                    {% if overlay.rename.search_strings %}
+                        ✓
+                    {% endif %}
+                </div>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="search_strings_label"
+                >
+                    Search in strings
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="dialog-footer"
+            data-class="navigation_bar"
+            data-semantic="dialog_actions"
+        >
+
+            <button
+                class="dialog-button"
+                data-class="button"
+                data-semantic="cancel_button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    primary
+                "
+                data-class="button"
+                data-semantic="refactor_button"
+            >
+                Refactor
+            </button>
+
+        </div>
+
+
+        <!-- ==============================================
+             RUN CONFIGURATION
+             ============================================== -->
+
+        {% elif overlay.overlay_state == "run_configuration" %}
+
+        <div
+            class="dialog-header"
+            data-class="navigation_bar"
+            data-semantic="run_configuration_header"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="run_configuration_icon"
+            >
+                play_arrow
+            </span>
+
+
+            <span
+                class="dialog-title"
+                data-class="text"
+                data-semantic="dialog_title"
+            >
+                Run/Debug Configurations
+            </span>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_dialog_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_dialog_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div class="dialog-content">
+
+            <div class="configuration-grid">
+
+
+                <span
+                    class="configuration-label"
+                    data-class="text"
+                    data-semantic="configuration_name_label"
+                >
+                    Name
+                </span>
+
+
+                <div
+                    class="dialog-input"
+                    data-class="input_field"
+                    data-semantic="configuration_name"
+                >
+                    {{ overlay.run_configuration.name }}
+                </div>
+
+
+                <span
+                    class="configuration-label"
+                    data-class="text"
+                    data-semantic="script_path_label"
+                >
+                    Script path
+                </span>
+
+
+                <div
+                    class="dialog-input"
+                    data-class="input_field"
+                    data-semantic="script_path"
+                >
+                    {{ overlay.run_configuration.script }}
+                </div>
+
+
+                <span
+                    class="configuration-label"
+                    data-class="text"
+                    data-semantic="parameters_label"
+                >
+                    Parameters
+                </span>
+
+
+                <div
+                    class="dialog-input"
+                    data-class="input_field"
+                    data-semantic="script_parameters"
+                >
+                    {{ overlay.run_configuration.parameters }}
+                </div>
+
+
+                <span
+                    class="configuration-label"
+                    data-class="text"
+                    data-semantic="working_directory_label"
+                >
+                    Working directory
+                </span>
+
+
+                <div
+                    class="dialog-input"
+                    data-class="input_field"
+                    data-semantic="working_directory"
+                >
+                    {{ overlay.run_configuration.working_directory }}
+                </div>
+
+
+                <span
+                    class="configuration-label"
+                    data-class="text"
+                    data-semantic="interpreter_label"
+                >
+                    Python interpreter
+                </span>
+
+
+                <div
+                    class="dialog-select"
+                    data-class="button"
+                    data-semantic="interpreter_selector"
+                >
+
+                    <span
+                        data-class="text"
+                        data-semantic="interpreter_value"
+                    >
+                        {{ overlay.run_configuration.interpreter }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="interpreter_dropdown_icon"
+                    >
+                        expand_more
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="dialog-footer"
+            data-class="navigation_bar"
+            data-semantic="dialog_actions"
+        >
+
+            <button
+                class="dialog-button"
+                data-class="button"
+                data-semantic="cancel_button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="dialog-button"
+                data-class="button"
+                data-semantic="apply_button"
+            >
+                Apply
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    primary
+                "
+                data-class="button"
+                data-semantic="ok_button"
+            >
+                OK
+            </button>
+
+        </div>
+
+
+        <!-- ==============================================
+             BREAKPOINT
+             ============================================== -->
+
+        {% elif overlay.overlay_state == "breakpoint" %}
+
+        <div
+            class="dialog-header"
+            data-class="navigation_bar"
+            data-semantic="breakpoint_dialog_header"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="breakpoint_header_icon"
+            >
+                breakpoint
+            </span>
+
+
+            <span
+                class="dialog-title"
+                data-class="text"
+                data-semantic="dialog_title"
+            >
+                Breakpoint Properties
+            </span>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_dialog_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_dialog_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div class="dialog-content">
+
+            <div
+                class="breakpoint-location"
+                data-class="card"
+                data-semantic="breakpoint_location"
+            >
+
+                <span
+                    class="breakpoint-dot"
+                    data-class="badge"
+                    data-semantic="breakpoint_indicator"
+                ></span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="breakpoint_file"
+                >
+                    {{ overlay.breakpoint.file }}:
+                    {{ overlay.breakpoint.line }}
+                </span>
+
+            </div>
+
+
+            <div class="field-group">
+
+                <label
+                    class="field-label"
+                    data-class="text"
+                    data-semantic="condition_label"
+                >
+                    Condition
+                </label>
+
+
+                <div
+                    class="dialog-input"
+                    data-class="input_field"
+                    data-semantic="breakpoint_condition"
+                >
+                    {{ overlay.breakpoint.condition }}
+                </div>
+
+            </div>
+
+
+            <div class="field-group">
+
+                <label
+                    class="field-label"
+                    data-class="text"
+                    data-semantic="suspend_label"
+                >
+                    Suspend
+                </label>
+
+
+                <div
+                    class="dialog-select"
+                    data-class="button"
+                    data-semantic="suspend_selector"
+                >
+
+                    <span
+                        data-class="text"
+                        data-semantic="suspend_value"
+                    >
+                        {{ overlay.breakpoint.suspend }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="suspend_dropdown_icon"
+                    >
+                        expand_more
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="field-group">
+
+                <label
+                    class="field-label"
+                    data-class="text"
+                    data-semantic="log_message_label"
+                >
+                    Log message
+                </label>
+
+
+                <div
+                    class="dialog-input"
+                    data-class="input_field"
+                    data-semantic="log_message"
+                >
+                    {{ overlay.breakpoint.log_message }}
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="dialog-footer"
+            data-class="navigation_bar"
+            data-semantic="dialog_actions"
+        >
+
+            <button
+                class="dialog-button"
+                data-class="button"
+                data-semantic="cancel_button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    primary
+                "
+                data-class="button"
+                data-semantic="done_button"
+            >
+                Done
+            </button>
+
+        </div>
+
+
+        <!-- ==============================================
+             FILE CHOOSER
+             ============================================== -->
+
+        {% else %}
+
+        <div
+            class="dialog-header"
+            data-class="navigation_bar"
+            data-semantic="file_chooser_header"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="file_chooser_header_icon"
+            >
+                folder_open
+            </span>
+
+
+            <span
+                class="dialog-title"
+                data-class="text"
+                data-semantic="dialog_title"
+            >
+                Select File or Directory
+            </span>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_dialog_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_dialog_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div class="dialog-content">
+
+            <div
+                class="file-path-bar"
+                data-class="input_field"
+                data-semantic="file_path"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="file_path_icon"
+                >
+                    folder
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="file_path_text"
+                >
+                    {{ overlay.file_chooser.path }}
+                </span>
+
+            </div>
+
+
+            <div
+                class="file-list"
+                data-class="section"
+                data-semantic="file_chooser_list"
+            >
+
+                {% for item in overlay.file_chooser["items"] %}
+
+                <div
+                    class="
+                        file-row
+                        {% if loop.index0 ==
+                            overlay.file_chooser.selected_index %}
+                            selected
+                        {% endif %}
+                    "
+                    data-class="navigation_item"
+                    data-semantic="file_chooser_item"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="file_chooser_icon"
+                    >
+                        {{ item.icon }}
+                    </span>
+
+
+                    <span
+                        data-class="text"
+                        data-semantic="file_chooser_name"
+                    >
+                        {{ item.name }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="dialog-footer"
+            data-class="navigation_bar"
+            data-semantic="dialog_actions"
+        >
+
+            <button
+                class="dialog-button"
+                data-class="button"
+                data-semantic="cancel_button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    primary
+                "
+                data-class="button"
+                data-semantic="select_button"
+            >
+                Select
+            </button>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+</div>
+
+{% endblock %}

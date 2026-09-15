@@ -1,0 +1,2079 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+{{ editor.window_title }} | PyCharm
+
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Workspace Root
+       ====================================================== */
+
+    .workspace {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+
+        height:
+            calc(
+                100vh
+                - var(--system-status-height)
+            );
+
+        min-height:
+            620px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    @media (
+        min-width: 1024px
+    ) {
+
+        .workspace {
+
+            height:
+                100vh;
+        }
+    }
+
+
+    /* ======================================================
+       Menu Bar
+       ====================================================== */
+
+    .menu-bar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            var(--menu-bar-height);
+
+        flex:
+            0 0 var(--menu-bar-height);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .application-mark {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            100%;
+
+        flex:
+            0 0 40px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--on-primary);
+
+        background:
+            var(--primary);
+    }
+
+
+    .menu-items {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            2px;
+
+        height:
+            100%;
+
+        padding:
+            0 6px;
+    }
+
+
+    .menu-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            26px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            var(--radius-small);
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .menu-item:hover {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .window-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        padding:
+            0 12px;
+
+        overflow:
+            hidden;
+
+        text-align:
+            center;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .window-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            2px;
+
+        padding:
+            0 6px;
+    }
+
+
+    /* ======================================================
+       Main Toolbar
+       ====================================================== */
+
+    .main-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        height:
+            var(--toolbar-height);
+
+        flex:
+            0 0 var(--toolbar-height);
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .toolbar-separator {
+
+        width:
+            1px;
+
+        height:
+            22px;
+
+        margin:
+            0 5px;
+
+        flex:
+            0 0 1px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .run-configuration {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            160px;
+
+        max-width:
+            220px;
+
+        height:
+            30px;
+
+        padding:
+            0 10px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--radius-medium);
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .toolbar-spacer {
+
+        flex:
+            1;
+    }
+
+
+    /* ======================================================
+       Main IDE Area
+       ====================================================== */
+
+    .ide-main {
+
+        display:
+            flex;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       Project Sidebar
+       ====================================================== */
+
+    .project-sidebar {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            var(--sidebar-width);
+
+        flex:
+            0 0 var(--sidebar-width);
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .tool-window-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            36px;
+
+        flex:
+            0 0 36px;
+
+        padding:
+            0 7px 0 12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .tool-window-title {
+
+        flex:
+            1;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Project Tree
+       ====================================================== */
+
+    .project-tree {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+
+        padding:
+            4px 0 10px;
+    }
+
+
+    .tree-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        height:
+            27px;
+
+        padding-right:
+            8px;
+
+        overflow:
+            hidden;
+
+        font-size:
+            12px;
+
+        white-space:
+            nowrap;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .tree-row:hover {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    /* IMPORTANT:
+       tree-toggle now uses Material Symbols correctly */
+
+    .tree-toggle {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            16px;
+
+        height:
+            20px;
+
+        flex:
+            0 0 16px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--icon-secondary);
+
+        font-size:
+            16px;
+
+        line-height:
+            16px;
+    }
+
+
+    .tree-icon {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        margin-right:
+            4px;
+
+        flex:
+            0 0 20px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--icon);
+
+        font-size:
+            17px;
+
+        line-height:
+            17px;
+    }
+
+
+    .tree-name {
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    /* ======================================================
+       Editor Shell
+       ====================================================== */
+
+    .editor-shell {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Editor Tabs
+       ====================================================== */
+
+    .editor-tabs {
+
+        display:
+            flex;
+
+        align-items:
+            stretch;
+
+        height:
+            var(--editor-tab-height);
+
+        flex:
+            0 0 var(--editor-tab-height);
+
+        overflow:
+            hidden;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .editor-tab {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-width:
+            120px;
+
+        max-width:
+            190px;
+
+        height:
+            100%;
+
+        padding:
+            0 10px;
+
+        overflow:
+            hidden;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .editor-tab.active {
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .editor-tab.active::after {
+
+        position:
+            absolute;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        height:
+            2px;
+
+        content:
+            "";
+
+        background:
+            var(--primary);
+    }
+
+
+    .tab-file-icon {
+
+        flex:
+            0 0 auto;
+
+        font-size:
+            17px;
+
+        color:
+            var(--icon);
+    }
+
+
+    .tab-name {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .modified-indicator {
+
+        width:
+            6px;
+
+        height:
+            6px;
+
+        flex:
+            0 0 6px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--icon-secondary);
+    }
+
+
+    .tab-close-icon {
+
+        flex:
+            0 0 auto;
+
+        font-size:
+            16px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Breadcrumb
+       ====================================================== */
+
+    .breadcrumb {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+
+        height:
+            var(--breadcrumb-height);
+
+        flex:
+            0 0 var(--breadcrumb-height);
+
+        padding:
+            0 10px;
+
+        overflow:
+            hidden;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .breadcrumb-item {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+
+        flex:
+            0 0 auto;
+    }
+
+
+    .breadcrumb-separator {
+
+        font-size:
+            15px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Code Editor
+       ====================================================== */
+
+    .code-area {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    .code-lines {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        padding:
+            8px 0 24px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .code-line {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            var(--editor-gutter-width)
+            minmax(0, 1fr);
+
+        width:
+            100%;
+
+        min-height:
+            21px;
+
+        font-size:
+            13px;
+
+        line-height:
+            21px;
+    }
+
+
+    .line-number {
+
+        padding-right:
+            11px;
+
+        overflow:
+            hidden;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        text-align:
+            right;
+
+        color:
+            var(--text-disabled);
+    }
+
+
+    .line-content {
+
+        min-width:
+            0;
+
+        padding-left:
+            12px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            pre;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .code-line.keyword
+    .line-content {
+
+        font-weight:
+            600;
+    }
+
+
+    .code-line.comment
+    .line-content {
+
+        color:
+            var(--text-secondary);
+
+        font-style:
+            italic;
+    }
+
+
+    /* ======================================================
+       Right Tool Window Stripe
+       ====================================================== */
+
+    .tool-stripe {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        width:
+            var(--tool-stripe-width);
+
+        flex:
+            0 0 var(--tool-stripe-width);
+
+        border-left:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .tool-stripe-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            38px;
+
+        flex:
+            0 0 38px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .tool-stripe-button:hover {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    /* ======================================================
+       Bottom IDE Status Bar
+       ====================================================== */
+
+    .ide-status-bar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        height:
+            var(--ide-status-height);
+
+        flex:
+            0 0 var(--ide-status-height);
+
+        padding:
+            0 10px;
+
+        overflow:
+            hidden;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .status-left {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-width:
+            0;
+    }
+
+
+    .status-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-width:
+            0;
+
+        margin-left:
+            auto;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        max-width: 1023px
+    ) {
+
+        :root {
+
+            --sidebar-width:
+                210px;
+        }
+
+
+        .menu-items
+        .menu-item:nth-child(n+5) {
+
+            display:
+                none;
+        }
+
+
+        .window-title {
+
+            display:
+                none;
+        }
+
+
+        .run-configuration {
+
+            min-width:
+                120px;
+
+            max-width:
+                150px;
+        }
+
+
+        .tool-stripe {
+
+            display:
+                none;
+        }
+
+
+        .status-right {
+
+            gap:
+                8px;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        :root {
+
+            --toolbar-height:
+                40px;
+
+            --editor-tab-height:
+                36px;
+
+            --editor-gutter-width:
+                42px;
+        }
+
+
+        .workspace {
+
+            min-height:
+                0;
+        }
+
+
+        .menu-items {
+
+            display:
+                none;
+        }
+
+
+        .application-mark {
+
+            width:
+                38px;
+
+            flex-basis:
+                38px;
+        }
+
+
+        .menu-bar {
+
+            justify-content:
+                space-between;
+        }
+
+
+        .window-actions {
+
+            margin-left:
+                auto;
+        }
+
+
+        .window-actions
+        .icon-button:nth-child(-n+2) {
+
+            display:
+                none;
+        }
+
+
+        .main-toolbar {
+
+            padding:
+                0 5px;
+        }
+
+
+        .toolbar-separator {
+
+            display:
+                none;
+        }
+
+
+        .toolbar-hide-mobile {
+
+            display:
+                none;
+        }
+
+
+        .run-configuration {
+
+            width:
+                110px;
+
+            min-width:
+                0;
+
+            max-width:
+                110px;
+        }
+
+
+        .project-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .editor-tab {
+
+            min-width:
+                112px;
+
+            max-width:
+                150px;
+        }
+
+
+        .editor-tab:not(.active) {
+
+            display:
+                none;
+        }
+
+
+        .editor-tab.active {
+
+            width:
+                100%;
+
+            max-width:
+                none;
+        }
+
+
+        .breadcrumb {
+
+            overflow:
+                hidden;
+        }
+
+
+        .code-line {
+
+            font-size:
+                12px;
+        }
+
+
+        .status-right
+        span:nth-child(-n+3) {
+
+            display:
+                none;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="workspace"
+    data-class="section"
+    data-semantic="pycharm_workspace"
+>
+
+
+    <!-- ==================================================
+         Menu Bar
+         ================================================== -->
+
+    <header
+        class="menu-bar"
+        data-class="app_bar"
+        data-semantic="ide_menu_bar"
+    >
+
+        <div
+            class="application-mark"
+            data-class="logo"
+            data-semantic="pycharm_logo"
+        >
+            PC
+        </div>
+
+
+        <nav
+            class="menu-items"
+            data-class="navigation_bar"
+            data-semantic="main_menu"
+        >
+
+            {% for item in [
+                "File",
+                "Edit",
+                "View",
+                "Navigate",
+                "Code",
+                "Refactor",
+                "Run",
+                "Tools",
+                "Git",
+                "Window",
+                "Help"
+            ] %}
+
+            <div
+                class="menu-item"
+                data-class="text_button"
+                data-semantic="menu_{{ item | lower }}"
+            >
+                {{ item }}
+            </div>
+
+            {% endfor %}
+
+        </nav>
+
+
+        <div
+            class="window-title"
+            data-class="text"
+            data-semantic="window_title"
+        >
+            {{ editor.window_title }}
+        </div>
+
+
+        <div class="window-actions">
+
+            <button
+                class="
+                    icon-button
+                    icon-button-small
+                "
+                data-class="button"
+                data-semantic="search_everywhere_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_everywhere_icon"
+                >
+                    search
+                </span>
+
+            </button>
+
+
+            <button
+                class="
+                    icon-button
+                    icon-button-small
+                "
+                data-class="button"
+                data-semantic="settings_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="settings_icon"
+                >
+                    settings
+                </span>
+
+            </button>
+
+
+            <button
+                class="
+                    icon-button
+                    icon-button-small
+                "
+                data-class="button"
+                data-semantic="more_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="more_icon"
+                >
+                    more_vert
+                </span>
+
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ==================================================
+         Main Toolbar
+         ================================================== -->
+
+    <div
+        class="main-toolbar"
+        data-class="navigation_bar"
+        data-semantic="main_toolbar"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="project_menu_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="project_menu_icon"
+            >
+                folder_open
+            </span>
+
+        </button>
+
+
+        <div class="toolbar-separator"></div>
+
+
+        <div
+            class="run-configuration"
+            data-class="button"
+            data-semantic="run_configuration"
+        >
+            {{ editor.active_file }}
+        </div>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="run_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="run_icon"
+            >
+                play_arrow
+            </span>
+
+        </button>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="debug_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="debug_icon"
+            >
+                bug_report
+            </span>
+
+        </button>
+
+
+        <button
+            class="
+                icon-button
+                toolbar-hide-mobile
+            "
+            data-class="button"
+            data-semantic="stop_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="stop_icon"
+            >
+                stop
+            </span>
+
+        </button>
+
+
+        <div class="toolbar-separator"></div>
+
+
+        <button
+            class="
+                icon-button
+                toolbar-hide-mobile
+            "
+            data-class="button"
+            data-semantic="git_update_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="git_update_icon"
+            >
+                sync
+            </span>
+
+        </button>
+
+
+        <button
+            class="
+                icon-button
+                toolbar-hide-mobile
+            "
+            data-class="button"
+            data-semantic="git_commit_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="git_commit_icon"
+            >
+                commit
+            </span>
+
+        </button>
+
+
+        <div class="toolbar-spacer"></div>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="notifications_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="notifications_icon"
+            >
+                notifications
+            </span>
+
+        </button>
+
+    </div>
+
+
+    <!-- ==================================================
+         IDE Main
+         ================================================== -->
+
+    <div class="ide-main">
+
+
+        <!-- ==============================================
+             Project Sidebar
+             ============================================== -->
+
+        <aside
+            class="project-sidebar"
+            data-class="card"
+            data-semantic="project_tool_window"
+        >
+
+            <div
+                class="tool-window-header"
+                data-class="navigation_bar"
+                data-semantic="project_tool_window_header"
+            >
+
+                <span
+                    class="tool-window-title"
+                    data-class="text"
+                    data-semantic="project_title"
+                >
+                    Project
+                </span>
+
+
+                <button
+                    class="
+                        icon-button
+                        icon-button-small
+                    "
+                    data-class="button"
+                    data-semantic="project_options_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="project_options_icon"
+                    >
+                        more_horiz
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <!-- ==========================================
+                 Project Tree
+                 ========================================== -->
+
+            <div
+                class="project-tree"
+                data-class="section"
+                data-semantic="project_tree"
+            >
+
+                {% for item in editor.project_tree %}
+
+                <div
+                    class="tree-row"
+                    style="
+                        padding-left:
+                        {{ 5 + item.depth * 16 }}px;
+                    "
+                    data-class="navigation_item"
+                    data-semantic="project_tree_item"
+                >
+
+
+                    <!-- ==================================
+                         IMPORTANT FIX
+
+                         Previously this span did not have
+                         material-symbols-rounded, so values
+                         like expand_more and chevron_right
+                         appeared as text.
+                         ================================== -->
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            tree-toggle
+                        "
+                        {% if item.type == "folder" %}
+                        data-class="icon"
+                        data-semantic="tree_expand_icon"
+                        {% endif %}
+                    >
+
+                        {% if item.type == "folder" %}
+
+                            {% if item.expanded %}
+
+                                expand_more
+
+                            {% else %}
+
+                                chevron_right
+
+                            {% endif %}
+
+                        {% endif %}
+
+                    </span>
+
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            tree-icon
+                        "
+                        data-class="icon"
+                        data-semantic="project_item_icon"
+                    >
+
+                        {% if item.type == "folder" %}
+
+                            {% if item.expanded %}
+
+                                folder_open
+
+                            {% else %}
+
+                                folder
+
+                            {% endif %}
+
+                        {% elif item.type == "python" %}
+
+                            code
+
+                        {% elif item.type == "markdown" %}
+
+                            description
+
+                        {% else %}
+
+                            draft
+
+                        {% endif %}
+
+                    </span>
+
+
+                    <span
+                        class="tree-name"
+                        data-class="text"
+                        data-semantic="project_item_name"
+                    >
+                        {{ item.name }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </aside>
+
+
+        <!-- ==============================================
+             Editor Workspace
+             ============================================== -->
+
+        <main
+            class="editor-shell"
+            data-class="section"
+            data-semantic="editor_workspace"
+        >
+
+
+            <!-- ==========================================
+                 Editor Tabs
+                 ========================================== -->
+
+            <div
+                class="editor-tabs"
+                data-class="navigation_bar"
+                data-semantic="editor_tabs"
+            >
+
+                {% for tab in editor.tabs %}
+
+                <div
+                    class="
+                        editor-tab
+                        {% if tab.active %}
+                            active
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="
+                        {% if tab.active %}
+                            active_editor_tab
+                        {% else %}
+                            editor_tab
+                        {% endif %}
+                    "
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            tab-file-icon
+                        "
+                        data-class="icon"
+                        data-semantic="python_file_icon"
+                    >
+                        code
+                    </span>
+
+
+                    <span
+                        class="tab-name"
+                        data-class="text"
+                        data-semantic="editor_tab_name"
+                    >
+                        {{ tab.name }}
+                    </span>
+
+
+                    {% if tab.modified %}
+
+                    <span
+                        class="modified-indicator"
+                        data-class="badge"
+                        data-semantic="modified_indicator"
+                    ></span>
+
+                    {% endif %}
+
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            tab-close-icon
+                        "
+                        data-class="icon"
+                        data-semantic="close_tab_icon"
+                    >
+                        close
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- ==========================================
+                 Breadcrumb
+                 ========================================== -->
+
+            <div
+                class="breadcrumb"
+                data-class="navigation_bar"
+                data-semantic="editor_breadcrumb"
+            >
+
+                {% for item in editor.breadcrumbs %}
+
+                <span
+                    class="breadcrumb-item"
+                    data-class="text"
+                    data-semantic="breadcrumb_item"
+                >
+
+                    {{ item }}
+
+                </span>
+
+
+                {% if not loop.last %}
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        breadcrumb-separator
+                    "
+                    data-class="icon"
+                    data-semantic="breadcrumb_separator"
+                >
+                    chevron_right
+                </span>
+
+                {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- ==========================================
+                 Code Editor
+                 ========================================== -->
+
+            <div
+                class="code-area"
+                data-class="section"
+                data-semantic="code_editor"
+            >
+
+                <div class="code-lines code-font">
+
+                    {% for line in editor.code_lines %}
+
+                    <div
+                        class="
+                            code-line
+                            {{ line.type }}
+                        "
+                    >
+
+                        <span
+                            class="line-number"
+                            data-class="text"
+                            data-semantic="line_number"
+                        >
+                            {{ line.number }}
+                        </span>
+
+
+                        <span
+                            class="line-content"
+                            data-class="text"
+                            data-semantic="code_text"
+                        >{{ line.content }}</span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </main>
+
+
+        <!-- ==============================================
+             Right Tool Window Stripe
+             ============================================== -->
+
+        <aside
+            class="tool-stripe"
+            data-class="navigation_bar"
+            data-semantic="right_tool_window_bar"
+        >
+
+            {% for tool in [
+                ("database", "database"),
+                ("terminal", "terminal"),
+                ("structure", "account_tree"),
+                ("notifications", "notifications"),
+                ("ai_assistant", "auto_awesome")
+            ] %}
+
+            <button
+                class="tool-stripe-button"
+                data-class="button"
+                data-semantic="{{ tool[0] }}_tool_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="{{ tool[0] }}_tool_icon"
+                >
+                    {{ tool[1] }}
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </aside>
+
+    </div>
+
+
+    <!-- ==================================================
+         IDE Status Bar
+         ================================================== -->
+
+    <footer
+        class="ide-status-bar"
+        data-class="navigation_bar"
+        data-semantic="ide_status_bar"
+    >
+
+        <div class="status-left">
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="git_branch_icon"
+            >
+                account_tree
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="git_branch"
+            >
+                {{ editor.branch }}
+            </span>
+
+        </div>
+
+
+        <div class="status-right">
+
+            <span
+                data-class="text"
+                data-semantic="inspection_status"
+            >
+                {{ editor.inspection }}
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="caret_position"
+            >
+                {{ editor.caret.line }}:
+                {{ editor.caret.column }}
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="indentation"
+            >
+                {{ editor.indent }}
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="encoding"
+            >
+                {{ editor.encoding }}
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="python_interpreter"
+            >
+                {{ editor.interpreter }}
+            </span>
+
+        </div>
+
+    </footer>
+
+</div>
+
+{% endblock %}
