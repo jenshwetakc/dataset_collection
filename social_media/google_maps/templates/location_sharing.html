@@ -1,0 +1,2289 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Google Maps - Location Sharing
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .location-sharing-page {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        background:
+            var(--map-land);
+    }
+
+
+    /* ======================================================
+       Map
+       ====================================================== */
+
+    .sharing-map {
+
+        position:
+            fixed;
+
+        inset:
+            var(--status-bar-height)
+            0
+            0
+            0;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--map-land);
+    }
+
+
+    .map-road {
+
+        position:
+            absolute;
+
+        z-index:
+            3;
+
+        height:
+            6px;
+
+        border-radius:
+            999px;
+
+        transform-origin:
+            left center;
+
+        background:
+            var(--map-road);
+
+        box-shadow:
+            0 0 0 1px
+            var(--map-road-outline);
+    }
+
+
+    .map-road.major {
+
+        height:
+            9px;
+
+        box-shadow:
+            0 0 0 2px
+            var(--map-road-outline);
+    }
+
+
+    .map-building {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-building);
+
+        border:
+            1px solid
+            var(--map-road-outline);
+
+        border-radius:
+            3px;
+    }
+
+
+    .map-park {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-park);
+    }
+
+
+    .map-water {
+
+        position:
+            absolute;
+
+        border-radius:
+            45%;
+
+        background:
+            var(--map-water);
+    }
+
+
+    .map-label {
+
+        position:
+            absolute;
+
+        z-index:
+            5;
+
+        max-width:
+            110px;
+
+        color:
+            var(--map-secondary-label);
+
+        font-size:
+            10px;
+
+        white-space:
+            nowrap;
+    }
+
+
+    /* ======================================================
+       Person Marker
+       ====================================================== */
+
+    .person-marker {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    .person-marker-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            48px;
+
+        height:
+            48px;
+
+        overflow:
+            hidden;
+
+        border:
+            4px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        box-shadow:
+            0 3px 9px
+            rgba(
+                0,
+                0,
+                0,
+                0.24
+            );
+    }
+
+
+    .person-marker-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .person-marker-label {
+
+        max-width:
+            90px;
+
+        padding:
+            3px 7px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            9px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        box-shadow:
+            0 1px 4px
+            rgba(
+                0,
+                0,
+                0,
+                0.15
+            );
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Current Location
+       ====================================================== */
+
+    .sharing-current-location {
+
+        position:
+            absolute;
+
+        z-index:
+            24;
+
+        width:
+            22px;
+
+        height:
+            22px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border:
+            4px solid
+            #FFFFFF;
+
+        border-radius:
+            50%;
+
+        background:
+            #1A73E8;
+
+        box-shadow:
+            0 2px 6px
+            rgba(
+                0,
+                0,
+                0,
+                0.30
+            );
+    }
+
+
+    /* ======================================================
+       Mobile Header
+       ====================================================== */
+
+    .sharing-app-bar {
+
+        position:
+            relative;
+
+        z-index:
+            100;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            64px;
+
+        padding:
+            8px
+            12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.10
+            );
+    }
+
+
+    .app-bar-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        flex:
+            0 0 44px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .sharing-app-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+    }
+
+
+    /* ======================================================
+       Main Panel
+       ====================================================== */
+
+    .sharing-panel {
+
+        position:
+            relative;
+
+        z-index:
+            120;
+
+        margin-top:
+            210px;
+
+        border-radius:
+            26px
+            26px
+            0
+            0;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 -4px 16px
+            rgba(
+                0,
+                0,
+                0,
+                0.20
+            );
+    }
+
+
+    .sheet-handle {
+
+        width:
+            40px;
+
+        height:
+            4px;
+
+        margin:
+            10px auto
+            3px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border);
+    }
+
+
+    .sharing-panel-inner {
+
+        padding:
+            12px
+            16px
+            24px;
+    }
+
+
+    /* ======================================================
+       Intro
+       ====================================================== */
+
+    .sharing-heading {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            21px;
+
+        font-weight:
+            800;
+    }
+
+
+    .sharing-description {
+
+        margin-top:
+            6px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        line-height:
+            1.45;
+    }
+
+
+    /* ======================================================
+       Current Sharing Status
+       ====================================================== */
+
+    .sharing-status {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            42px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        margin-top:
+            16px;
+
+        min-height:
+            62px;
+
+        padding:
+            9px 11px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .sharing-status-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .sharing-status-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sharing-status-subtitle {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Switch
+       ====================================================== */
+
+    .sharing-switch {
+
+        position:
+            relative;
+
+        width:
+            48px;
+
+        height:
+            28px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .sharing-switch.enabled {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+    }
+
+
+    .sharing-switch-knob {
+
+        position:
+            absolute;
+
+        top:
+            3px;
+
+        left:
+            3px;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 1px 3px
+            rgba(
+                0,
+                0,
+                0,
+                0.22
+            );
+    }
+
+
+    .sharing-switch.enabled
+    .sharing-switch-knob {
+
+        left:
+            23px;
+    }
+
+
+    /* ======================================================
+       Generic Section
+       ====================================================== */
+
+    .sharing-section {
+
+        margin-top:
+            20px;
+
+        padding-top:
+            18px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .section-heading {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        font-weight:
+            800;
+    }
+
+
+    .section-subtitle {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Duration Options
+       ====================================================== */
+
+    .duration-list {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            8px;
+
+        margin-top:
+            12px;
+    }
+
+
+    .duration-option {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            38px;
+
+        padding:
+            0 13px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            600;
+    }
+
+
+    .duration-option.selected {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Share Method Tabs
+       ====================================================== */
+
+    .sharing-methods {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                1fr
+            );
+
+        gap:
+            6px;
+
+        margin-top:
+            12px;
+    }
+
+
+    .sharing-method {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+
+        height:
+            44px;
+
+        border-radius:
+            12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sharing-method.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .sharing-method
+    .material-symbols-rounded {
+
+        font-size:
+            19px;
+    }
+
+
+    .method-indicator {
+
+        position:
+            absolute;
+
+        left:
+            50%;
+
+        bottom:
+            2px;
+
+        width:
+            24px;
+
+        height:
+            3px;
+
+        transform:
+            translateX(
+                -50%
+            );
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Contact List
+       ====================================================== */
+
+    .contact-list {
+
+        margin-top:
+            10px;
+    }
+
+
+    .contact-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            46px
+            minmax(
+                0,
+                1fr
+            )
+            34px;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            64px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .contact-avatar-wrapper {
+
+        position:
+            relative;
+
+        width:
+            44px;
+
+        height:
+            44px;
+    }
+
+
+    .contact-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .contact-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .online-indicator {
+
+        position:
+            absolute;
+
+        right:
+            -1px;
+
+        bottom:
+            1px;
+
+        width:
+            11px;
+
+        height:
+            11px;
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--success);
+    }
+
+
+    .contact-name {
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    .contact-subtitle {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Checkbox
+       ====================================================== */
+
+    .contact-selection {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        border:
+            2px solid
+            var(--border);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+    }
+
+
+    .contact-selection.selected {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .contact-selection
+    .material-symbols-rounded {
+
+        font-size:
+            17px;
+    }
+
+
+    /* ======================================================
+       Existing Sharing
+       ====================================================== */
+
+    .existing-share-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            46px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            66px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .share-state {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        min-height:
+            24px;
+
+        padding:
+            3px 8px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Footer
+       ====================================================== */
+
+    .sharing-footer {
+
+        position:
+            sticky;
+
+        bottom:
+            0;
+
+        z-index:
+            20;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        margin:
+            20px
+            -16px
+            -24px;
+
+        padding:
+            12px 16px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .selected-count {
+
+        flex:
+            1;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .share-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+
+        min-width:
+            110px;
+
+        height:
+            42px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            22px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 840px
+    ) {
+
+        .location-sharing-page {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                var(--panel-width)
+                minmax(
+                    0,
+                    1fr
+                );
+
+            min-height:
+                100vh;
+        }
+
+
+        .sharing-map {
+
+            position:
+                fixed;
+
+            top:
+                0;
+
+            left:
+                var(--panel-width);
+
+            width:
+                calc(
+                    100%
+                    - var(--panel-width)
+                );
+
+            height:
+                100vh;
+        }
+
+
+        .sharing-app-bar {
+
+            grid-column:
+                1;
+
+            position:
+                sticky;
+
+            top:
+                0;
+
+            z-index:
+                200;
+
+            box-shadow:
+                none;
+        }
+
+
+        .sharing-panel {
+
+            grid-column:
+                1;
+
+            margin-top:
+                0;
+
+            min-height:
+                calc(
+                    100vh
+                    - 64px
+                );
+
+            border-radius:
+                0;
+
+            border-right:
+                1px solid
+                var(--border-subtle);
+
+            box-shadow:
+                2px 0 9px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.10
+                );
+        }
+
+
+        .sheet-handle {
+
+            display:
+                none;
+        }
+
+
+        .sharing-panel-inner {
+
+            padding-top:
+                20px;
+        }
+
+
+        .person-marker-avatar {
+
+            width:
+                52px;
+
+            height:
+                52px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Large Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 1440px
+    ) {
+
+        .sharing-panel-inner {
+
+            padding-left:
+                20px;
+
+            padding-right:
+                20px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .sharing-panel {
+
+            margin-top:
+                175px;
+        }
+
+
+        .sharing-panel-inner {
+
+            padding-left:
+                12px;
+
+            padding-right:
+                12px;
+        }
+
+
+        .duration-list {
+
+            gap:
+                5px;
+        }
+
+
+        .duration-option {
+
+            padding:
+                0 9px;
+
+            font-size:
+                9px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="location-sharing-page">
+
+
+    <!-- =====================================================
+         MAP
+         ===================================================== -->
+
+    <section
+        class="sharing-map"
+        data-class="map"
+        data-semantic="location_sharing_map"
+    >
+
+
+        {% if sharing.map.water %}
+
+        <div
+            class="map-water"
+            style="
+                left:
+                    {{ sharing.map.water.x }}%;
+
+                top:
+                    {{ sharing.map.water.y }}%;
+
+                width:
+                    {{ sharing.map.water.width }}%;
+
+                height:
+                    {{ sharing.map.water.height }}%;
+
+                transform:
+                    rotate(
+                        {{ sharing.map.water.rotation }}deg
+                    );
+            "
+        ></div>
+
+        {% endif %}
+
+
+        {% for park in sharing.map.parks %}
+
+        <div
+            class="map-park"
+            style="
+                left:
+                    {{ park.x }}%;
+
+                top:
+                    {{ park.y }}%;
+
+                width:
+                    {{ park.width }}%;
+
+                height:
+                    {{ park.height }}%;
+
+                border-radius:
+                    {{ park.radius }}%;
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        {% for building in sharing.map.buildings %}
+
+        <div
+            class="map-building"
+            style="
+                left:
+                    {{ building.x }}%;
+
+                top:
+                    {{ building.y }}%;
+
+                width:
+                    {{ building.width }}%;
+
+                height:
+                    {{ building.height }}%;
+
+                transform:
+                    rotate(
+                        {{ building.rotation }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        {% for road in sharing.map.roads %}
+
+        <div
+            class="
+                map-road
+                {% if road.major %}
+                major
+                {% endif %}
+            "
+            style="
+                left:
+                    {{ road.x }}%;
+
+                top:
+                    {{ road.y }}%;
+
+                width:
+                    {{ road.length }}%;
+
+                height:
+                    {{ road.width }}px;
+
+                transform:
+                    rotate(
+                        {{ road.angle }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        {% for label in sharing.map.labels %}
+
+        <span
+            class="map-label"
+            style="
+                left:
+                    {{ label.x }}%;
+
+                top:
+                    {{ label.y }}%;
+
+                transform:
+                    rotate(
+                        {{ label.rotation }}deg
+                    );
+            "
+        >
+            {{ label.text }}
+        </span>
+
+        {% endfor %}
+
+
+        <!-- Current Location -->
+
+        <div
+            class="sharing-current-location"
+            style="
+                left:
+                    {{ sharing.map.current_location.x }}%;
+
+                top:
+                    {{ sharing.map.current_location.y }}%;
+            "
+            data-class="selection_indicator"
+            data-semantic="current_location"
+        ></div>
+
+
+        <!-- Person Markers -->
+
+        {% for person in sharing.map.people %}
+
+        <div
+            class="person-marker"
+            style="
+                left:
+                    {{ person.x }}%;
+
+                top:
+                    {{ person.y }}%;
+            "
+        >
+
+            <div
+                class="person-marker-avatar"
+                data-class="avatar"
+                data-semantic="map_person_avatar_{{ person.id }}"
+            >
+
+                {% if person.avatar %}
+
+                <img
+                    src="{{ person.avatar }}"
+                    alt=""
+                >
+
+                {% else %}
+
+                <span class="material-symbols-rounded">
+                    person
+                </span>
+
+                {% endif %}
+
+            </div>
+
+
+            <span
+                class="person-marker-label"
+                data-class="badge"
+                data-semantic="map_person_label_{{ person.id }}"
+            >
+                {{ person.label }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+
+    <!-- =====================================================
+         APP BAR
+         ===================================================== -->
+
+    <header
+        class="sharing-app-bar"
+        data-class="app_bar"
+        data-semantic="location_sharing_app_bar"
+        data-occluder="true"
+    >
+
+        <button
+            class="app-bar-button"
+            data-class="button"
+            data-semantic="location_sharing_back"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="location_sharing_back_icon"
+            >
+                arrow_back
+            </span>
+
+        </button>
+
+
+        <h1
+            class="sharing-app-title"
+            data-class="text"
+            data-semantic="location_sharing_title"
+        >
+            {{ sharing.title }}
+        </h1>
+
+
+        <button
+            class="app-bar-button"
+            data-class="button"
+            data-semantic="location_sharing_help"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="location_sharing_help_icon"
+            >
+                help
+            </span>
+
+        </button>
+
+    </header>
+
+
+    <!-- =====================================================
+         PANEL
+         ===================================================== -->
+
+    <section
+        class="sharing-panel"
+        data-class="{% if viewport.size_class == 'expanded' %}section{% else %}bottom_sheet{% endif %}"
+        data-semantic="location_sharing_panel"
+        data-occluder="true"
+    >
+
+        <div class="sheet-handle"></div>
+
+
+        <div class="sharing-panel-inner">
+
+
+            <!-- Intro -->
+
+            <h2
+                class="sharing-heading"
+                data-class="text"
+                data-semantic="sharing_heading"
+            >
+                Share your real-time location
+            </h2>
+
+
+            <p
+                class="sharing-description"
+                data-class="text"
+                data-semantic="sharing_description"
+            >
+                People you choose can see your current location
+                and movement for the duration you select.
+            </p>
+
+
+            <!-- =============================================
+                 Sharing State
+                 ============================================= -->
+
+            <div
+                class="sharing-status"
+                data-class="card"
+                data-semantic="sharing_status_card"
+            >
+
+                <div class="sharing-status-icon">
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="sharing_status_icon"
+                    >
+                        location_on
+                    </span>
+
+                </div>
+
+
+                <div>
+
+                    <div
+                        class="sharing-status-title"
+                        data-class="text"
+                        data-semantic="sharing_status_title"
+                    >
+
+                        {% if sharing.sharing_enabled %}
+                        Location sharing is on
+                        {% else %}
+                        Location sharing is off
+                        {% endif %}
+
+                    </div>
+
+
+                    <div
+                        class="sharing-status-subtitle"
+                        data-class="text"
+                        data-semantic="sharing_status_subtitle"
+                    >
+                        Control whether your location can be shared
+                    </div>
+
+                </div>
+
+
+                <button
+                    class="
+                        sharing-switch
+
+                        {% if sharing.sharing_enabled %}
+                        enabled
+                        {% endif %}
+                    "
+                    data-class="switch"
+                    data-semantic="location_sharing_switch"
+                >
+
+                    <span
+                        class="sharing-switch-knob"
+                        data-class="selection_indicator"
+                        data-semantic="location_sharing_switch_indicator"
+                    ></span>
+
+                </button>
+
+            </div>
+
+
+            <!-- =============================================
+                 Duration
+                 ============================================= -->
+
+            <section
+                class="sharing-section"
+                data-class="section"
+                data-semantic="sharing_duration_section"
+            >
+
+                <h3
+                    class="section-heading"
+                    data-class="text"
+                    data-semantic="sharing_duration_title"
+                >
+                    Share for
+                </h3>
+
+
+                <div class="duration-list">
+
+                    {% for duration in sharing.durations %}
+
+                    <button
+                        class="
+                            duration-option
+
+                            {% if duration.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="button"
+                        data-semantic="sharing_duration_{{ duration.key }}"
+                    >
+
+                        {{ duration.label }}
+
+
+                        {% if duration.selected %}
+
+                        <span
+                            data-class="selection_indicator"
+                            data-semantic="selected_sharing_duration"
+                            style="
+                                position: absolute;
+                                width: 6px;
+                                height: 6px;
+                                right: 5px;
+                                top: 5px;
+                                border-radius: 50%;
+                                background: var(--primary);
+                            "
+                        ></span>
+
+                        {% endif %}
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 Sharing Method
+                 ============================================= -->
+
+            <section
+                class="sharing-section"
+                data-class="section"
+                data-semantic="sharing_method_section"
+            >
+
+                <h3
+                    class="section-heading"
+                    data-class="text"
+                    data-semantic="sharing_method_title"
+                >
+                    Share with
+                </h3>
+
+
+                <nav
+                    class="sharing-methods"
+                    data-class="toolbar"
+                    data-semantic="sharing_method_tabs"
+                >
+
+                    {% for method in sharing.methods %}
+
+                    <button
+                        class="
+                            sharing-method
+
+                            {% if method.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="tab"
+                        data-semantic="sharing_method_{{ method.key }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="sharing_method_icon_{{ method.key }}"
+                        >
+                            {{ method.icon }}
+                        </span>
+
+
+                        {{ method.label }}
+
+
+                        {% if method.selected %}
+
+                        <span
+                            class="method-indicator"
+                            data-class="selection_indicator"
+                            data-semantic="selected_sharing_method"
+                        ></span>
+
+                        {% endif %}
+
+                    </button>
+
+                    {% endfor %}
+
+                </nav>
+
+            </section>
+
+
+            <!-- =============================================
+                 Contact Selection
+                 ============================================= -->
+
+            <section
+                class="sharing-section"
+                data-class="section"
+                data-semantic="contact_selection_section"
+            >
+
+                <h3
+                    class="section-heading"
+                    data-class="text"
+                    data-semantic="contact_selection_title"
+                >
+                    Select people
+                </h3>
+
+
+                <p
+                    class="section-subtitle"
+                    data-class="text"
+                    data-semantic="contact_selection_subtitle"
+                >
+                    Choose who can see your location
+                </p>
+
+
+                <div class="contact-list">
+
+                    {% for contact in sharing.contacts %}
+
+                    <div
+                        class="contact-row"
+                        data-class="list_item"
+                        data-semantic="location_contact_{{ contact.id }}"
+                    >
+
+
+                        <div class="contact-avatar-wrapper">
+
+                            <div
+                                class="contact-avatar"
+                                data-class="avatar"
+                                data-semantic="contact_avatar_{{ contact.id }}"
+                            >
+
+                                {% if contact.avatar %}
+
+                                <img
+                                    src="{{ contact.avatar }}"
+                                    alt=""
+                                >
+
+                                {% else %}
+
+                                <span class="material-symbols-rounded">
+                                    person
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            {% if contact.online %}
+
+                            <span
+                                class="online-indicator"
+                                data-class="badge"
+                                data-semantic="contact_online_{{ contact.id }}"
+                            ></span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div>
+
+                            <div
+                                class="contact-name"
+                                data-class="text"
+                                data-semantic="contact_name_{{ contact.id }}"
+                            >
+                                {{ contact.name }}
+                            </div>
+
+
+                            <div
+                                class="contact-subtitle"
+                                data-class="text"
+                                data-semantic="contact_subtitle_{{ contact.id }}"
+                            >
+                                {{ contact.subtitle }}
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            class="
+                                contact-selection
+
+                                {% if contact.selected %}
+                                selected
+                                {% endif %}
+                            "
+                            data-class="button"
+                            data-semantic="select_contact_{{ contact.id }}"
+                        >
+
+                            {% if contact.selected %}
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="selection_indicator"
+                                data-semantic="contact_selected_{{ contact.id }}"
+                            >
+                                check
+                            </span>
+
+                            {% endif %}
+
+                        </button>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 Existing Shares
+                 ============================================= -->
+
+            <section
+                class="sharing-section"
+                data-class="section"
+                data-semantic="existing_shares_section"
+            >
+
+                <h3
+                    class="section-heading"
+                    data-class="text"
+                    data-semantic="existing_shares_title"
+                >
+                    Currently sharing with
+                </h3>
+
+
+                <div class="contact-list">
+
+                    {% for share in sharing.existing_shares %}
+
+                    <div
+                        class="existing-share-row"
+                        data-class="list_item"
+                        data-semantic="existing_share_{{ share.id }}"
+                    >
+
+                        <div
+                            class="contact-avatar"
+                            data-class="avatar"
+                            data-semantic="existing_share_avatar_{{ share.id }}"
+                        >
+
+                            {% if share.avatar %}
+
+                            <img
+                                src="{{ share.avatar }}"
+                                alt=""
+                            >
+
+                            {% else %}
+
+                            <span class="material-symbols-rounded">
+                                person
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div>
+
+                            <div
+                                class="contact-name"
+                                data-class="text"
+                                data-semantic="existing_share_name_{{ share.id }}"
+                            >
+                                {{ share.name }}
+                            </div>
+
+
+                            <div
+                                class="contact-subtitle"
+                                data-class="text"
+                                data-semantic="existing_share_distance_{{ share.id }}"
+                            >
+                                {{ share.distance }}
+                            </div>
+
+                        </div>
+
+
+                        <span
+                            class="share-state"
+                            data-class="badge"
+                            data-semantic="existing_share_remaining_{{ share.id }}"
+                        >
+                            {{ share.remaining }}
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 Footer
+                 ============================================= -->
+
+            <footer class="sharing-footer">
+
+                <div
+                    class="selected-count"
+                    data-class="text"
+                    data-semantic="selected_contact_count"
+                >
+                    {{ sharing.selected_count }}
+                    selected
+                </div>
+
+
+                <button
+                    class="share-button"
+                    data-class="button"
+                    data-semantic="share_location_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="share_location_icon"
+                    >
+                        share_location
+                    </span>
+
+                    Share
+
+                </button>
+
+            </footer>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}

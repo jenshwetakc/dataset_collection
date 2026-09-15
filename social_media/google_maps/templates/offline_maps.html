@@ -1,0 +1,1549 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Google Maps - Offline Maps
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .offline-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .offline-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            180;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            44px
+            minmax(0, 1fr)
+            44px;
+
+        align-items:
+            center;
+
+        min-height:
+            64px;
+
+        padding:
+            8px 12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .offline-app-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .offline-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+    }
+
+
+    /* ======================================================
+       Mobile Map
+       ====================================================== */
+
+    .offline-map {
+
+        position:
+            relative;
+
+        height:
+            330px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--map-land);
+    }
+
+
+    .map-road {
+
+        position:
+            absolute;
+
+        z-index:
+            3;
+
+        height:
+            6px;
+
+        border-radius:
+            999px;
+
+        transform-origin:
+            left center;
+
+        background:
+            var(--map-road);
+
+        box-shadow:
+            0 0 0 1px
+            var(--map-road-outline);
+    }
+
+
+    .map-building {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-building);
+
+        border:
+            1px solid
+            var(--map-road-outline);
+
+        border-radius:
+            3px;
+    }
+
+
+    .map-park {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-park);
+    }
+
+
+    .map-water {
+
+        position:
+            absolute;
+
+        border-radius:
+            45%;
+
+        background:
+            var(--map-water);
+    }
+
+
+    .map-label {
+
+        position:
+            absolute;
+
+        z-index:
+            5;
+
+        color:
+            var(--map-secondary-label);
+
+        font-size:
+            10px;
+
+        white-space:
+            nowrap;
+    }
+
+
+    /* ======================================================
+       Selection Region
+       ====================================================== */
+
+    .offline-selection {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        border:
+            3px solid
+            var(--primary);
+
+        border-radius:
+            5px;
+
+        background:
+            rgba(
+                26,
+                115,
+                232,
+                0.10
+            );
+
+        box-shadow:
+            0 0 0 9999px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .resize-handle {
+
+        position:
+            absolute;
+
+        width:
+            18px;
+
+        height:
+            18px;
+
+        border:
+            3px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+    }
+
+
+    .resize-handle.top-left {
+
+        left:
+            -10px;
+
+        top:
+            -10px;
+    }
+
+
+    .resize-handle.top-right {
+
+        right:
+            -10px;
+
+        top:
+            -10px;
+    }
+
+
+    .resize-handle.bottom-left {
+
+        left:
+            -10px;
+
+        bottom:
+            -10px;
+    }
+
+
+    .resize-handle.bottom-right {
+
+        right:
+            -10px;
+
+        bottom:
+            -10px;
+    }
+
+
+    .selection-label {
+
+        position:
+            absolute;
+
+        left:
+            50%;
+
+        top:
+            50%;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        padding:
+            7px 10px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        box-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+
+        white-space:
+            nowrap;
+    }
+
+
+    /* ======================================================
+       Content
+       ====================================================== */
+
+    .offline-content {
+
+        background:
+            var(--background);
+    }
+
+
+    .offline-section {
+
+        margin-top:
+            10px;
+
+        padding:
+            18px 16px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .section-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            800;
+    }
+
+
+    .section-subtitle {
+
+        margin-top:
+            5px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        line-height:
+            1.4;
+    }
+
+
+    /* ======================================================
+       Download Action
+       ====================================================== */
+
+    .selection-summary {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+
+        margin-top:
+            15px;
+
+        padding:
+            13px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .selection-size {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    .download-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+
+        height:
+            40px;
+
+        padding:
+            0 16px;
+
+        border-radius:
+            21px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Offline Area
+       ====================================================== */
+
+    .offline-area-list {
+
+        margin-top:
+            10px;
+    }
+
+
+    .offline-area-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            44px
+            minmax(0, 1fr)
+            38px;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            84px;
+
+        padding:
+            10px 0;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .offline-area-row:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .offline-area-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .offline-area-name {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .offline-area-meta {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .offline-area-state {
+
+        margin-top:
+            5px;
+
+        color:
+            var(--primary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    .area-menu {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Progress
+       ====================================================== */
+
+    .download-progress {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            7px;
+
+        margin-top:
+            7px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .download-progress-fill {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Storage
+       ====================================================== */
+
+    .storage-card {
+
+        margin-top:
+            14px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .storage-row {
+
+        display:
+            flex;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            11px;
+    }
+
+
+    .storage-row
+    + .storage-row {
+
+        margin-top:
+            7px;
+    }
+
+
+    .storage-bar {
+
+        height:
+            8px;
+
+        margin-top:
+            12px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .storage-fill {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+
+        border-radius:
+            inherit;
+    }
+
+
+    /* ======================================================
+       Settings
+       ====================================================== */
+
+    .setting-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            36px
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        min-height:
+            56px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .setting-row:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .setting-icon {
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .setting-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .setting-subtitle {
+
+        margin-top:
+            2px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .offline-switch {
+
+        position:
+            relative;
+
+        width:
+            48px;
+
+        height:
+            28px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .offline-switch.enabled {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+    }
+
+
+    .switch-knob {
+
+        position:
+            absolute;
+
+        left:
+            3px;
+
+        top:
+            3px;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+    }
+
+
+    .offline-switch.enabled
+    .switch-knob {
+
+        left:
+            23px;
+    }
+
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 840px
+    ) {
+
+        .offline-page {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                var(--panel-width)
+                minmax(0, 1fr);
+
+            align-items:
+                start;
+        }
+
+
+        .offline-left {
+
+            position:
+                relative;
+
+            z-index:
+                50;
+
+            min-height:
+                100vh;
+
+            border-right:
+                1px solid
+                var(--border-subtle);
+
+            background:
+                var(--background);
+
+            box-shadow:
+                2px 0 9px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.10
+                );
+        }
+
+
+        .offline-map {
+
+            position:
+                sticky;
+
+            top:
+                0;
+
+            grid-column:
+                2;
+
+            grid-row:
+                1;
+
+            height:
+                100vh;
+        }
+
+
+        .offline-left
+        .offline-map {
+
+            display:
+                none;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 839px
+    ) {
+
+        .desktop-offline-map {
+
+            display:
+                none;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="offline-page">
+
+
+    <!-- =====================================================
+         LEFT / MOBILE CONTENT
+         ===================================================== -->
+
+    <div class="offline-left">
+
+
+        <header
+            class="offline-app-bar"
+            data-class="app_bar"
+            data-semantic="offline_maps_app_bar"
+        >
+
+            <button
+                class="offline-app-button"
+                data-class="button"
+                data-semantic="offline_back"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="offline_back_icon"
+                >
+                    arrow_back
+                </span>
+
+            </button>
+
+
+            <h1
+                class="offline-title"
+                data-class="text"
+                data-semantic="offline_title"
+            >
+                Offline maps
+            </h1>
+
+
+            <button
+                class="offline-app-button"
+                data-class="button"
+                data-semantic="offline_settings"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="offline_settings_icon"
+                >
+                    settings
+                </span>
+
+            </button>
+
+        </header>
+
+
+        <!-- =================================================
+             MOBILE MAP
+             ================================================= -->
+
+        <section
+            class="offline-map"
+            data-class="map"
+            data-semantic="offline_mobile_map"
+        >
+
+            {% include "_offline_map_content.html" %}
+
+        </section>
+
+
+        <!-- =================================================
+             CONTENT
+             ================================================= -->
+
+        <main class="offline-content">
+
+
+            <section
+                class="offline-section"
+                data-class="section"
+                data-semantic="select_offline_area_section"
+            >
+
+                <h2
+                    class="section-title"
+                    data-class="text"
+                    data-semantic="select_offline_area_title"
+                >
+                    Select your own map
+                </h2>
+
+
+                <p
+                    class="section-subtitle"
+                    data-class="text"
+                    data-semantic="select_offline_area_description"
+                >
+                    Adjust the highlighted area on the map,
+                    then download it for offline navigation.
+                </p>
+
+
+                <div
+                    class="selection-summary"
+                    data-class="card"
+                    data-semantic="offline_selection_summary"
+                >
+
+                    <div>
+
+                        <div
+                            class="selection-size"
+                            data-class="text"
+                            data-semantic="offline_selection_size"
+                        >
+                            {{ offline.selection.size }}
+                        </div>
+
+                        <div class="section-subtitle">
+                            Estimated download size
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="download-button"
+                        data-class="button"
+                        data-semantic="download_offline_area"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="download_offline_area_icon"
+                        >
+                            download
+                        </span>
+
+                        Download
+
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- Downloaded Areas -->
+
+            <section
+                class="offline-section"
+                data-class="section"
+                data-semantic="downloaded_maps_section"
+            >
+
+                <h2
+                    class="section-title"
+                    data-class="text"
+                    data-semantic="downloaded_maps_title"
+                >
+                    Downloaded maps
+                </h2>
+
+
+                <div class="offline-area-list">
+
+                    {% for area in offline.offline_areas %}
+
+                    <article
+                        class="offline-area-row"
+                        data-class="list_item"
+                        data-semantic="offline_area_{{ area.id }}"
+                    >
+
+                        <div
+                            class="offline-area-icon"
+                            data-class="button"
+                            data-semantic="offline_area_icon_{{ area.id }}"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="offline_area_map_icon_{{ area.id }}"
+                            >
+                                map
+                            </span>
+
+                        </div>
+
+
+                        <div>
+
+                            <div
+                                class="offline-area-name"
+                                data-class="text"
+                                data-semantic="offline_area_name_{{ area.id }}"
+                            >
+                                {{ area.name }}
+                            </div>
+
+
+                            <div
+                                class="offline-area-meta"
+                                data-class="text"
+                                data-semantic="offline_area_size_{{ area.id }}"
+                            >
+                                {{ area.size }}
+                                ·
+                                {{ area.updated }}
+                            </div>
+
+
+                            {% if area.state == "downloading" %}
+
+                            <div
+                                class="offline-area-state"
+                                data-class="text"
+                                data-semantic="offline_area_progress_text_{{ area.id }}"
+                            >
+                                Downloading {{ area.progress }}%
+                            </div>
+
+
+                            <div
+                                class="download-progress"
+                                data-class="progress_bar"
+                                data-semantic="offline_area_progress_{{ area.id }}"
+                            >
+
+                                <div
+                                    class="download-progress-fill"
+                                    style="
+                                        width:
+                                            {{ area.progress }}%;
+                                    "
+                                ></div>
+
+                            </div>
+
+                            {% elif area.state == "update_available" %}
+
+                            <div
+                                class="offline-area-state"
+                                data-class="badge"
+                                data-semantic="offline_update_badge_{{ area.id }}"
+                            >
+                                Update available
+                            </div>
+
+                            {% else %}
+
+                            <div
+                                class="offline-area-state"
+                                data-class="text"
+                                data-semantic="offline_area_expiry_{{ area.id }}"
+                            >
+                                {{ area.expires }}
+                            </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <button
+                            class="area-menu"
+                            data-class="button"
+                            data-semantic="offline_area_menu_{{ area.id }}"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="offline_area_menu_icon_{{ area.id }}"
+                            >
+                                more_vert
+                            </span>
+
+                        </button>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- Storage -->
+
+            <section
+                class="offline-section"
+                data-class="section"
+                data-semantic="offline_storage_section"
+            >
+
+                <h2
+                    class="section-title"
+                    data-class="text"
+                    data-semantic="offline_storage_title"
+                >
+                    Storage
+                </h2>
+
+
+                <div
+                    class="storage-card"
+                    data-class="card"
+                    data-semantic="storage_card"
+                >
+
+                    <div class="storage-row">
+
+                        <span>
+                            Device storage
+                        </span>
+
+                        <span>
+                            {{ offline.storage.used }}
+                            /
+                            {{ offline.storage.total }}
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="storage-bar"
+                        data-class="progress_bar"
+                        data-semantic="device_storage_progress"
+                    >
+
+                        <div
+                            class="storage-fill"
+                            style="
+                                width:
+                                    {{ offline.storage.percent }}%;
+                            "
+                        ></div>
+
+                    </div>
+
+
+                    <div class="storage-row">
+
+                        <span>
+                            Offline maps
+                        </span>
+
+                        <span>
+                            {{ offline.storage.offline }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- Settings -->
+
+            <section
+                class="offline-section"
+                data-class="section"
+                data-semantic="offline_settings_section"
+            >
+
+                <h2
+                    class="section-title"
+                    data-class="text"
+                    data-semantic="offline_settings_title"
+                >
+                    Download preferences
+                </h2>
+
+
+                <div
+                    class="setting-row"
+                    data-class="list_item"
+                    data-semantic="wifi_only_setting"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            setting-icon
+                        "
+                        data-class="icon"
+                        data-semantic="wifi_only_icon"
+                    >
+                        wifi
+                    </span>
+
+
+                    <div>
+
+                        <div
+                            class="setting-title"
+                            data-class="text"
+                            data-semantic="wifi_only_title"
+                        >
+                            Download over Wi-Fi only
+                        </div>
+
+                        <div class="setting-subtitle">
+                            Helps reduce mobile data usage
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="
+                            offline-switch
+                            {% if offline.wifi_only %}
+                            enabled
+                            {% endif %}
+                        "
+                        data-class="switch"
+                        data-semantic="wifi_only_switch"
+                    >
+
+                        <span
+                            class="switch-knob"
+                            data-class="selection_indicator"
+                            data-semantic="wifi_only_indicator"
+                        ></span>
+
+                    </button>
+
+                </div>
+
+
+                <div
+                    class="setting-row"
+                    data-class="list_item"
+                    data-semantic="auto_update_setting"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            setting-icon
+                        "
+                        data-class="icon"
+                        data-semantic="auto_update_icon"
+                    >
+                        sync
+                    </span>
+
+
+                    <div>
+
+                        <div
+                            class="setting-title"
+                            data-class="text"
+                            data-semantic="auto_update_title"
+                        >
+                            Automatically update maps
+                        </div>
+
+                        <div class="setting-subtitle">
+                            Keeps offline areas current
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="
+                            offline-switch
+                            {% if offline.auto_update %}
+                            enabled
+                            {% endif %}
+                        "
+                        data-class="switch"
+                        data-semantic="auto_update_switch"
+                    >
+
+                        <span
+                            class="switch-knob"
+                            data-class="selection_indicator"
+                            data-semantic="auto_update_indicator"
+                        ></span>
+
+                    </button>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         DESKTOP MAP
+         ===================================================== -->
+
+    <section
+        class="
+            offline-map
+            desktop-offline-map
+        "
+        data-class="map"
+        data-semantic="offline_desktop_map"
+    >
+
+        {% include "_offline_map_content.html" %}
+
+    </section>
+
+</div>
+
+{% endblock %}

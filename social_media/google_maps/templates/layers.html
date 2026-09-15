@@ -1,0 +1,1794 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Google Maps - Layers
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .layers-page {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        min-height:
+            540px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--map-land);
+    }
+
+
+    /* ======================================================
+       Map
+       ====================================================== */
+
+    .layers-map {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--map-land);
+    }
+
+
+    .map-road {
+
+        position:
+            absolute;
+
+        z-index:
+            3;
+
+        height:
+            6px;
+
+        border-radius:
+            999px;
+
+        transform-origin:
+            left center;
+
+        background:
+            var(--map-road);
+
+        box-shadow:
+            0 0 0 1px
+            var(--map-road-outline);
+    }
+
+
+    .map-road.major {
+
+        height:
+            9px;
+
+        box-shadow:
+            0 0 0 2px
+            var(--map-road-outline);
+    }
+
+
+    .map-building {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-building);
+
+        border:
+            1px solid
+            var(--map-road-outline);
+
+        border-radius:
+            3px;
+    }
+
+
+    .map-park {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-park);
+    }
+
+
+    .map-water {
+
+        position:
+            absolute;
+
+        border-radius:
+            45%;
+
+        background:
+            var(--map-water);
+    }
+
+
+    .map-label {
+
+        position:
+            absolute;
+
+        z-index:
+            5;
+
+        max-width:
+            110px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--map-secondary-label);
+
+        font-size:
+            10px;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Marker
+       ====================================================== */
+
+    .map-marker {
+
+        position:
+            absolute;
+
+        z-index:
+            15;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border:
+            3px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.22
+            );
+    }
+
+
+    .map-marker
+    .material-symbols-rounded {
+
+        font-size:
+            17px;
+    }
+
+
+    /* ======================================================
+       Search
+       ====================================================== */
+
+    .layers-search {
+
+        position:
+            absolute;
+
+        z-index:
+            60;
+
+        top:
+            14px;
+
+        left:
+            50%;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            min(
+                600px,
+                calc(
+                    100%
+                    - 30px
+                )
+            );
+
+        height:
+            54px;
+
+        padding:
+            0 14px;
+
+        transform:
+            translateX(
+                -50%
+            );
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            28px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        box-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .layers-search-text {
+
+        flex:
+            1;
+
+        padding:
+            0 10px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            14px;
+    }
+
+
+    /* ======================================================
+       Standalone Map Controls
+       ====================================================== */
+
+    .map-controls {
+
+        position:
+            absolute;
+
+        z-index:
+            55;
+
+        right:
+            14px;
+
+        bottom:
+            20px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            9px;
+    }
+
+
+    .map-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            46px;
+
+        height:
+            46px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--icon);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.19
+            );
+    }
+
+
+    /* ======================================================
+       Overlay
+       ====================================================== */
+
+    .layers-overlay {
+
+        position:
+            absolute;
+
+        z-index:
+            100;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.24
+            );
+    }
+
+
+    /* ======================================================
+       Mobile Bottom Sheet
+       ====================================================== */
+
+    .layers-panel {
+
+        position:
+            absolute;
+
+        z-index:
+            120;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        max-height:
+            78%;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            26px 26px 0 0;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 -4px 18px
+            rgba(
+                0,
+                0,
+                0,
+                0.24
+            );
+    }
+
+
+    .sheet-handle {
+
+        width:
+            40px;
+
+        height:
+            4px;
+
+        margin:
+            10px auto
+            6px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border);
+    }
+
+
+    .layers-panel-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            54px;
+
+        padding:
+            5px 16px
+            8px;
+    }
+
+
+    .layers-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+    }
+
+
+    .close-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .layers-panel-content {
+
+        max-height:
+            calc(
+                78vh
+                - 70px
+            );
+
+        overflow-y:
+            auto;
+
+        padding:
+            0 16px
+            22px;
+    }
+
+
+    /* ======================================================
+       Section
+       ====================================================== */
+
+    .layer-section {
+
+        padding:
+            14px 0
+            18px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .layer-section:first-child {
+
+        border-top:
+            none;
+    }
+
+
+    .layer-section-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Map Type Cards
+       ====================================================== */
+
+    .map-type-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+
+        margin-top:
+            13px;
+    }
+
+
+    .map-type-card {
+
+        position:
+            relative;
+
+        min-width:
+            0;
+
+        padding:
+            0;
+
+        overflow:
+            hidden;
+
+        border:
+            2px solid
+            transparent;
+
+        border-radius:
+            13px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .map-type-card.selected {
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .map-preview {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        aspect-ratio:
+            1.25;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--map-land);
+    }
+
+
+    /* preview styles */
+
+    .preview-road {
+
+        position:
+            absolute;
+
+        height:
+            4px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--map-road);
+
+        transform-origin:
+            left center;
+
+        box-shadow:
+            0 0 0 1px
+            var(--map-road-outline);
+    }
+
+
+    .preview-block {
+
+        position:
+            absolute;
+
+        width:
+            18%;
+
+        height:
+            16%;
+
+        border-radius:
+            3px;
+
+        background:
+            var(--map-building);
+    }
+
+
+    .preview-water {
+
+        position:
+            absolute;
+
+        right:
+            -8%;
+
+        bottom:
+            -5%;
+
+        width:
+            50%;
+
+        height:
+            45%;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--map-water);
+    }
+
+
+    .preview-park {
+
+        position:
+            absolute;
+
+        left:
+            8%;
+
+        top:
+            12%;
+
+        width:
+            32%;
+
+        height:
+            28%;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--map-park);
+    }
+
+
+    .map-type-card[data-type="satellite"]
+    .map-preview {
+
+        background:
+            #384238;
+    }
+
+
+    .map-type-card[data-type="satellite"]
+    .preview-block {
+
+        background:
+            #5A6654;
+    }
+
+
+    .map-type-card[data-type="satellite"]
+    .preview-road {
+
+        background:
+            #D0CDBA;
+
+        opacity:
+            0.82;
+    }
+
+
+    .map-type-card[data-type="terrain"]
+    .map-preview {
+
+        background:
+            #DDE4CC;
+    }
+
+
+    .map-type-card[data-type="terrain"]
+    .preview-block {
+
+        background:
+            #C2CFAF;
+    }
+
+
+    .map-type-label {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            4px;
+
+        min-height:
+            36px;
+
+        padding:
+            5px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    .map-type-label
+    .material-symbols-rounded {
+
+        font-size:
+            16px;
+    }
+
+
+    .selected-check {
+
+        position:
+            absolute;
+
+        z-index:
+            8;
+
+        top:
+            6px;
+
+        right:
+            6px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .selected-check
+    .material-symbols-rounded {
+
+        font-size:
+            16px;
+    }
+
+
+    /* ======================================================
+       Detail Rows
+       ====================================================== */
+
+    .detail-list {
+
+        margin-top:
+            8px;
+    }
+
+
+    .layer-detail-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            54px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .layer-detail-row:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .layer-detail-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .layer-detail-label {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Switch
+       ====================================================== */
+
+    .layer-switch {
+
+        position:
+            relative;
+
+        width:
+            48px;
+
+        height:
+            28px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+
+        border:
+            1px solid
+            var(--border);
+    }
+
+
+    .layer-switch.enabled {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+    }
+
+
+    .switch-knob {
+
+        position:
+            absolute;
+
+        top:
+            3px;
+
+        left:
+            3px;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 1px 3px
+            rgba(
+                0,
+                0,
+                0,
+                0.25
+            );
+    }
+
+
+    .layer-switch.enabled
+    .switch-knob {
+
+        left:
+            23px;
+    }
+
+
+    /* ======================================================
+       Desktop Dialog
+       ====================================================== */
+
+    @media (
+        min-width: 840px
+    ) {
+
+        .layers-page {
+
+            height:
+                100vh;
+        }
+
+
+        .layers-search {
+
+            top:
+                20px;
+
+            left:
+                26px;
+
+            width:
+                480px;
+
+            transform:
+                none;
+        }
+
+
+        .layers-overlay {
+
+            background:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.18
+                );
+        }
+
+
+        .layers-panel {
+
+            top:
+                50%;
+
+            left:
+                50%;
+
+            right:
+                auto;
+
+            bottom:
+                auto;
+
+            width:
+                min(
+                    620px,
+                    calc(
+                        100%
+                        - 80px
+                    )
+                );
+
+            max-height:
+                min(
+                    720px,
+                    calc(
+                        100vh
+                        - 80px
+                    )
+                );
+
+            transform:
+                translate(
+                    -50%,
+                    -50%
+                );
+
+            border:
+                1px solid
+                var(--border-subtle);
+
+            border-radius:
+                22px;
+
+            box-shadow:
+                0 12px 40px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.30
+                );
+        }
+
+
+        .sheet-handle {
+
+            display:
+                none;
+        }
+
+
+        .layers-panel-header {
+
+            min-height:
+                66px;
+
+            padding:
+                12px 20px;
+        }
+
+
+        .layers-panel-content {
+
+            max-height:
+                calc(
+                    100vh
+                    - 180px
+                );
+
+            padding:
+                0 20px
+                22px;
+        }
+
+
+        .map-type-grid {
+
+            gap:
+                14px;
+        }
+
+
+        .layer-detail-row {
+
+            min-height:
+                58px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .map-type-grid {
+
+            gap:
+                6px;
+        }
+
+
+        .map-type-label {
+
+            font-size:
+                9px;
+        }
+
+
+        .layers-panel-content {
+
+            padding-left:
+                12px;
+
+            padding-right:
+                12px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="layers-page">
+
+
+    <!-- =====================================================
+         MAP
+         ===================================================== -->
+
+    <section
+        class="layers-map"
+        data-class="map"
+        data-semantic="layers_background_map"
+    >
+
+
+        {% if layers.map.water %}
+
+        <div
+            class="map-water"
+            style="
+                left:
+                    {{ layers.map.water.x }}%;
+
+                top:
+                    {{ layers.map.water.y }}%;
+
+                width:
+                    {{ layers.map.water.width }}%;
+
+                height:
+                    {{ layers.map.water.height }}%;
+
+                transform:
+                    rotate(
+                        {{ layers.map.water.rotation }}deg
+                    );
+            "
+        ></div>
+
+        {% endif %}
+
+
+        {% for park in layers.map.parks %}
+
+        <div
+            class="map-park"
+            style="
+                left:
+                    {{ park.x }}%;
+
+                top:
+                    {{ park.y }}%;
+
+                width:
+                    {{ park.width }}%;
+
+                height:
+                    {{ park.height }}%;
+
+                border-radius:
+                    {{ park.radius }}%;
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        {% for building in layers.map.buildings %}
+
+        <div
+            class="map-building"
+            style="
+                left:
+                    {{ building.x }}%;
+
+                top:
+                    {{ building.y }}%;
+
+                width:
+                    {{ building.width }}%;
+
+                height:
+                    {{ building.height }}%;
+
+                transform:
+                    rotate(
+                        {{ building.rotation }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        {% for road in layers.map.roads %}
+
+        <div
+            class="
+                map-road
+                {% if road.major %}
+                major
+                {% endif %}
+            "
+            style="
+                left:
+                    {{ road.x }}%;
+
+                top:
+                    {{ road.y }}%;
+
+                width:
+                    {{ road.length }}%;
+
+                height:
+                    {{ road.width }}px;
+
+                transform:
+                    rotate(
+                        {{ road.angle }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        {% for label in layers.map.labels %}
+
+        <span
+            class="map-label"
+            style="
+                left:
+                    {{ label.x }}%;
+
+                top:
+                    {{ label.y }}%;
+
+                transform:
+                    rotate(
+                        {{ label.rotation }}deg
+                    );
+            "
+        >
+            {{ label.text }}
+        </span>
+
+        {% endfor %}
+
+
+        {% for marker in layers.map.markers %}
+
+        <div
+            class="map-marker"
+            style="
+                left:
+                    {{ marker.x }}%;
+
+                top:
+                    {{ marker.y }}%;
+            "
+            data-class="selection_indicator"
+            data-semantic="layers_marker_{{ marker.id }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="layers_marker_icon_{{ marker.id }}"
+            >
+                {{ marker.icon }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+
+    <!-- =====================================================
+         SEARCH
+         ===================================================== -->
+
+    <div
+        class="layers-search"
+        data-class="search_bar"
+        data-semantic="map_search"
+        data-occluder="true"
+    >
+
+        <span
+            class="material-symbols-rounded"
+            data-class="icon"
+            data-semantic="map_search_icon"
+        >
+            search
+        </span>
+
+
+        <span
+            class="layers-search-text"
+        >
+            Search Google Maps
+        </span>
+
+
+        <span
+            class="material-symbols-rounded"
+            data-class="icon"
+            data-semantic="map_search_voice_icon"
+        >
+            mic
+        </span>
+
+    </div>
+
+
+    <!-- =====================================================
+         MAP CONTROLS
+         ===================================================== -->
+
+    <div class="map-controls">
+
+        <button
+            class="map-control"
+            data-class="button"
+            data-semantic="layers_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="layers_button_icon"
+            >
+                layers
+            </span>
+
+        </button>
+
+
+        <button
+            class="map-control"
+            data-class="button"
+            data-semantic="current_location_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="current_location_icon"
+            >
+                my_location
+            </span>
+
+        </button>
+
+    </div>
+
+
+    <!-- =====================================================
+         DIM OVERLAY
+         ===================================================== -->
+
+    <div
+        class="layers-overlay"
+    ></div>
+
+
+    <!-- =====================================================
+         LAYERS PANEL
+         ===================================================== -->
+
+    <section
+        class="layers-panel"
+        data-class="{% if viewport.size_class == 'expanded' %}dialog{% else %}bottom_sheet{% endif %}"
+        data-semantic="layers_panel"
+        data-occluder="true"
+    >
+
+        <div class="sheet-handle"></div>
+
+
+        <header class="layers-panel-header">
+
+            <h1
+                class="layers-title"
+                data-class="text"
+                data-semantic="layers_title"
+            >
+                Layers
+            </h1>
+
+
+            <button
+                class="close-button"
+                data-class="button"
+                data-semantic="close_layers"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_layers_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+        </header>
+
+
+        <div class="layers-panel-content">
+
+
+            <!-- =============================================
+                 MAP TYPE
+                 ============================================= -->
+
+            <section
+                class="layer-section"
+                data-class="section"
+                data-semantic="map_type_section"
+            >
+
+                <h2
+                    class="layer-section-title"
+                    data-class="text"
+                    data-semantic="map_type_title"
+                >
+                    Map type
+                </h2>
+
+
+                <div class="map-type-grid">
+
+                    {% for map_type in layers.map_types %}
+
+                    <button
+                        class="
+                            map-type-card
+
+                            {% if map_type.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-type="{{ map_type.key }}"
+                        data-class="card"
+                        data-semantic="map_type_{{ map_type.key }}"
+                    >
+
+
+                        <div class="map-preview">
+
+
+                            {% if map_type.preview.has_water %}
+
+                            <div class="preview-water"></div>
+
+                            {% endif %}
+
+
+                            {% if map_type.preview.has_park %}
+
+                            <div class="preview-park"></div>
+
+                            {% endif %}
+
+
+                            {% for block_index in range(
+                                map_type.preview.blocks
+                            ) %}
+
+                            <div
+                                class="preview-block"
+                                style="
+                                    left:
+                                        {{
+                                            8
+                                            + (
+                                                block_index * 17
+                                            ) % 76
+                                        }}%;
+
+                                    top:
+                                        {{
+                                            8
+                                            + (
+                                                block_index * 23
+                                            ) % 72
+                                        }}%;
+                                "
+                            ></div>
+
+                            {% endfor %}
+
+
+                            {% for road_index in range(
+                                map_type.preview.roads
+                            ) %}
+
+                            <div
+                                class="preview-road"
+                                style="
+                                    left:
+                                        {{
+                                            3
+                                            + (
+                                                road_index * 12
+                                            ) % 65
+                                        }}%;
+
+                                    top:
+                                        {{
+                                            12
+                                            + (
+                                                road_index * 19
+                                            ) % 70
+                                        }}%;
+
+                                    width:
+                                        65%;
+
+                                    transform:
+                                        rotate(
+                                            {{
+                                                -45
+                                                + road_index * 17
+                                            }}deg
+                                        );
+                                "
+                            ></div>
+
+                            {% endfor %}
+
+
+                            {% if map_type.selected %}
+
+                            <span
+                                class="selected-check"
+                                data-class="selection_indicator"
+                                data-semantic="selected_map_type"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="selected_map_type_icon"
+                                >
+                                    check
+                                </span>
+
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="map-type-label">
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="map_type_icon_{{ map_type.key }}"
+                            >
+                                {{ map_type.icon }}
+                            </span>
+
+                            {{ map_type.label }}
+
+                        </div>
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 MAP DETAILS
+                 ============================================= -->
+
+            <section
+                class="layer-section"
+                data-class="section"
+                data-semantic="map_details_section"
+            >
+
+                <h2
+                    class="layer-section-title"
+                    data-class="text"
+                    data-semantic="map_details_title"
+                >
+                    Map details
+                </h2>
+
+
+                <div class="detail-list">
+
+                    {% for detail in layers.details %}
+
+                    <div
+                        class="layer-detail-row"
+                        data-class="list_item"
+                        data-semantic="map_detail_{{ detail.key }}"
+                    >
+
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                layer-detail-icon
+                            "
+                            data-class="icon"
+                            data-semantic="map_detail_icon_{{ detail.key }}"
+                        >
+                            {{ detail.icon }}
+                        </span>
+
+
+                        <span
+                            class="layer-detail-label"
+                            data-class="text"
+                            data-semantic="map_detail_label_{{ detail.key }}"
+                        >
+                            {{ detail.label }}
+                        </span>
+
+
+                        <button
+                            class="
+                                layer-switch
+
+                                {% if detail.enabled %}
+                                enabled
+                                {% endif %}
+                            "
+                            data-class="switch"
+                            data-semantic="map_detail_switch_{{ detail.key }}"
+                        >
+
+                            <span
+                                class="switch-knob"
+                                data-class="selection_indicator"
+                                data-semantic="map_detail_switch_indicator_{{ detail.key }}"
+                            ></span>
+
+                        </button>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}

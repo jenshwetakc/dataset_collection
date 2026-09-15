@@ -1,0 +1,2375 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Google Maps - Search Results
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .search-results-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Mobile Header
+       ====================================================== */
+
+    .search-header {
+
+        position:
+            sticky;
+
+        z-index:
+            200;
+
+        top:
+            0;
+
+        padding:
+            10px 12px
+            8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .search-box {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        height:
+            54px;
+
+        padding:
+            0 8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            28px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.14
+            );
+    }
+
+
+    .header-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        flex:
+            0 0 40px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .query-text {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        padding:
+            0 8px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            600;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Filters
+       ====================================================== */
+
+    .filter-row {
+
+        display:
+            flex;
+
+        gap:
+            8px;
+
+        margin-top:
+            10px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .filter-chip {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        height:
+            36px;
+
+        flex:
+            0 0 auto;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--chip-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+    }
+
+
+    .filter-chip.selected {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .filter-chip
+    .material-symbols-rounded {
+
+        font-size:
+            17px;
+    }
+
+
+    /* ======================================================
+       Mini Map - Mobile / Tablet
+       ====================================================== */
+
+    .mobile-map-area {
+
+        position:
+            relative;
+
+        height:
+            250px;
+
+        overflow:
+            hidden;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--map-land);
+    }
+
+
+    .map-layer {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    .map-road {
+
+        position:
+            absolute;
+
+        z-index:
+            3;
+
+        height:
+            6px;
+
+        border-radius:
+            999px;
+
+        transform-origin:
+            left center;
+
+        background:
+            var(--map-road);
+
+        box-shadow:
+            0 0 0 1px
+            var(--map-road-outline);
+    }
+
+
+    .map-road.major {
+
+        box-shadow:
+            0 0 0 2px
+            var(--map-road-outline);
+    }
+
+
+    .map-building {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-building);
+
+        border:
+            1px solid
+            var(--map-road-outline);
+
+        border-radius:
+            3px;
+    }
+
+
+    .map-park {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-park);
+    }
+
+
+    .map-water {
+
+        position:
+            absolute;
+
+        border-radius:
+            45%;
+
+        background:
+            var(--map-water);
+    }
+
+
+    .map-text {
+
+        position:
+            absolute;
+
+        z-index:
+            6;
+
+        max-width:
+            100px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--map-secondary-label);
+
+        font-size:
+            9px;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Markers
+       ====================================================== */
+
+    .result-marker {
+
+        position:
+            absolute;
+
+        z-index:
+            15;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.24
+            );
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+    }
+
+
+    .result-marker.selected {
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        border-width:
+            3px;
+    }
+
+
+    /* ======================================================
+       Mobile Floating Map Button
+       ====================================================== */
+
+    .map-floating-button {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        right:
+            14px;
+
+        bottom:
+            14px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        height:
+            42px;
+
+        padding:
+            0 14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            22px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        box-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Results
+       ====================================================== */
+
+    .results-content {
+
+        width:
+            100%;
+
+        max-width:
+            850px;
+
+        margin:
+            0 auto;
+
+        background:
+            var(--background);
+    }
+
+
+    .results-summary {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+
+        padding:
+            16px
+            16px
+            8px;
+    }
+
+
+    .results-summary-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sort-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        height:
+            34px;
+
+        padding:
+            0 8px;
+
+        color:
+            var(--primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Result Card
+       ====================================================== */
+
+    .search-result-card {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            124px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            12px;
+
+        margin:
+            0 12px;
+
+        padding:
+            14px 4px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .search-result-card.selected {
+
+        margin:
+            4px 8px;
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--primary);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .result-image {
+
+        position:
+            relative;
+
+        width:
+            124px;
+
+        height:
+            112px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            var(--image-radius);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .result-image img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .result-image-fallback {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .sponsored-badge {
+
+        position:
+            absolute;
+
+        top:
+            6px;
+
+        left:
+            6px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        height:
+            22px;
+
+        padding:
+            0 7px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+
+        box-shadow:
+            0 1px 3px
+            rgba(
+                0,
+                0,
+                0,
+                0.16
+            );
+    }
+
+
+    .result-info {
+
+        min-width:
+            0;
+    }
+
+
+    .result-top-row {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        gap:
+            6px;
+    }
+
+
+    .result-name {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            700;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    .save-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        flex:
+            0 0 32px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .save-button.saved {
+
+        color:
+            var(--primary);
+    }
+
+
+    .rating-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            3px;
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .star-icon {
+
+        color:
+            #F9AB00;
+
+        font-size:
+            15px !important;
+    }
+
+
+    .result-detail {
+
+        margin-top:
+            5px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    .open-status {
+
+        color:
+            var(--success);
+
+        font-weight:
+            700;
+    }
+
+
+    .open-status.closed {
+
+        color:
+            var(--error);
+    }
+
+
+    .result-actions {
+
+        display:
+            flex;
+
+        gap:
+            8px;
+
+        margin-top:
+            10px;
+    }
+
+
+    .result-action {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        height:
+            32px;
+
+        padding:
+            0 11px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            17px;
+
+        color:
+            var(--primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .result-action.primary {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .result-action
+    .material-symbols-rounded {
+
+        font-size:
+            15px;
+    }
+
+
+    /* ======================================================
+       Bottom Padding
+       ====================================================== */
+
+    .results-end {
+
+        padding:
+            26px
+            16px
+            40px;
+
+        text-align:
+            center;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    /* ======================================================
+       Desktop Layout
+       ====================================================== */
+
+    @media (
+        min-width: 840px
+    ) {
+
+        .search-results-page {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                var(--panel-width)
+                minmax(
+                    0,
+                    1fr
+                );
+
+            align-items:
+                start;
+
+            min-height:
+                100vh;
+        }
+
+
+        .results-column {
+
+            position:
+                relative;
+
+            z-index:
+                50;
+
+            min-height:
+                100vh;
+
+            border-right:
+                1px solid
+                var(--border-subtle);
+
+            background:
+                var(--background);
+
+            box-shadow:
+                2px 0 8px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.08
+                );
+        }
+
+
+        .search-header {
+
+            top:
+                0;
+
+            padding:
+                14px 14px
+                10px;
+        }
+
+
+        .mobile-map-area {
+
+            display:
+                none;
+        }
+
+
+        .results-content {
+
+            max-width:
+                none;
+        }
+
+
+        .search-result-card {
+
+            grid-template-columns:
+                116px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            margin:
+                0;
+
+            padding:
+                15px 14px;
+        }
+
+
+        .search-result-card.selected {
+
+            margin:
+                8px;
+
+            padding:
+                12px;
+        }
+
+
+        .result-image {
+
+            width:
+                116px;
+
+            height:
+                104px;
+        }
+
+
+        .desktop-map {
+
+            position:
+                sticky;
+
+            top:
+                0;
+
+            display:
+                block;
+
+            width:
+                100%;
+
+            height:
+                100vh;
+
+            overflow:
+                hidden;
+
+            background:
+                var(--map-land);
+        }
+
+
+        .desktop-map-controls {
+
+            position:
+                absolute;
+
+            z-index:
+                30;
+
+            right:
+                20px;
+
+            bottom:
+                24px;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            gap:
+                9px;
+        }
+
+
+        .desktop-map-control {
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            width:
+                46px;
+
+            height:
+                46px;
+
+            border:
+                1px solid
+                var(--border-subtle);
+
+            border-radius:
+                50%;
+
+            background:
+                var(--surface);
+
+            color:
+                var(--icon);
+
+            box-shadow:
+                0 2px 7px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.17
+                );
+        }
+
+
+        .selected-map-card {
+
+            position:
+                absolute;
+
+            z-index:
+                35;
+
+            left:
+                20px;
+
+            bottom:
+                20px;
+
+            display:
+                grid;
+
+            grid-template-columns:
+                96px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap:
+                10px;
+
+            width:
+                min(
+                    350px,
+                    calc(
+                        100%
+                        - 100px
+                    )
+                );
+
+            padding:
+                10px;
+
+            border:
+                1px solid
+                var(--border-subtle);
+
+            border-radius:
+                16px;
+
+            background:
+                var(--surface);
+
+            box-shadow:
+                0 3px 12px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.20
+                );
+        }
+
+
+        .selected-map-image {
+
+            width:
+                96px;
+
+            height:
+                84px;
+
+            overflow:
+                hidden;
+
+            border-radius:
+                11px;
+
+            background:
+                var(--surface-variant);
+        }
+
+
+        .selected-map-image img {
+
+            width:
+                100%;
+
+            height:
+                100%;
+
+            object-fit:
+                cover;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 839px
+    ) {
+
+        .desktop-map {
+
+            display:
+                none;
+        }
+
+    }
+
+
+    @media (
+        max-width: 430px
+    ) {
+
+        .search-result-card {
+
+            grid-template-columns:
+                106px
+                minmax(
+                    0,
+                    1fr
+                );
+        }
+
+
+        .result-image {
+
+            width:
+                106px;
+
+            height:
+                102px;
+        }
+
+
+        .result-actions {
+
+            overflow:
+                hidden;
+        }
+
+    }
+
+
+    @media (
+        max-width: 340px
+    ) {
+
+        .search-result-card {
+
+            grid-template-columns:
+                90px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap:
+                8px;
+
+            margin:
+                0 8px;
+        }
+
+
+        .result-image {
+
+            width:
+                90px;
+
+            height:
+                92px;
+        }
+
+
+        .result-name {
+
+            font-size:
+                14px;
+        }
+
+
+        .result-action {
+
+            padding:
+                0 8px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class="search-results-page">
+
+
+    <!-- =====================================================
+         RESULTS COLUMN
+         ===================================================== -->
+
+    <section
+        class="results-column"
+        data-class="section"
+        data-semantic="search_results_section"
+    >
+
+
+        <!-- =================================================
+             SEARCH HEADER
+             ================================================= -->
+
+        <header
+            class="search-header"
+            data-class="app_bar"
+            data-semantic="search_results_app_bar"
+            data-occluder="true"
+        >
+
+            <div
+                class="search-box"
+                data-class="search_bar"
+                data-semantic="search_query"
+            >
+
+                <button
+                    class="header-action"
+                    data-class="button"
+                    data-semantic="back_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="back_icon"
+                    >
+                        arrow_back
+                    </span>
+
+                </button>
+
+
+                <div
+                    class="query-text"
+                    data-class="text"
+                    data-semantic="query_text"
+                >
+                    {{ search.query }}
+                </div>
+
+
+                <button
+                    class="header-action"
+                    data-class="button"
+                    data-semantic="voice_search_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="voice_search_icon"
+                    >
+                        mic
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="header-action"
+                    data-class="button"
+                    data-semantic="clear_search_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="clear_search_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <!-- Filter Chips -->
+
+            <div class="filter-row">
+
+                {% for filter in search.filters %}
+
+                <button
+                    class="
+                        filter-chip
+
+                        {% if filter.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="filter_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="filter_icon_{{ loop.index }}"
+                    >
+                        {{ filter.icon }}
+                    </span>
+
+
+                    <span>
+                        {{ filter.label }}
+                    </span>
+
+
+                    {% if filter.type == "menu" %}
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="filter_expand_{{ loop.index }}"
+                    >
+                        expand_more
+                    </span>
+
+                    {% endif %}
+
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             MOBILE MAP
+             ================================================= -->
+
+        <section
+            class="mobile-map-area"
+            data-class="map"
+            data-semantic="search_results_mobile_map"
+        >
+
+            <div class="map-layer">
+
+
+                {% if search.map.water %}
+
+                <div
+                    class="map-water"
+                    style="
+                        left:
+                            {{ search.map.water.x }}%;
+
+                        top:
+                            {{ search.map.water.y }}%;
+
+                        width:
+                            {{ search.map.water.width }}%;
+
+                        height:
+                            {{ search.map.water.height }}%;
+
+                        transform:
+                            rotate(
+                                {{ search.map.water.rotation }}deg
+                            );
+                    "
+                ></div>
+
+                {% endif %}
+
+
+                {% for park in search.map.parks %}
+
+                <div
+                    class="map-park"
+                    style="
+                        left:
+                            {{ park.x }}%;
+
+                        top:
+                            {{ park.y }}%;
+
+                        width:
+                            {{ park.width }}%;
+
+                        height:
+                            {{ park.height }}%;
+
+                        border-radius:
+                            {{ park.radius }}%;
+                    "
+                ></div>
+
+                {% endfor %}
+
+
+                {% for building in search.map.buildings %}
+
+                <div
+                    class="map-building"
+                    style="
+                        left:
+                            {{ building.x }}%;
+
+                        top:
+                            {{ building.y }}%;
+
+                        width:
+                            {{ building.width }}%;
+
+                        height:
+                            {{ building.height }}%;
+
+                        transform:
+                            rotate(
+                                {{ building.rotation }}deg
+                            );
+                    "
+                ></div>
+
+                {% endfor %}
+
+
+                {% for road in search.map.roads %}
+
+                <div
+                    class="
+                        map-road
+
+                        {% if road.major %}
+                        major
+                        {% endif %}
+                    "
+                    style="
+                        left:
+                            {{ road.x }}%;
+
+                        top:
+                            {{ road.y }}%;
+
+                        width:
+                            {{ road.length }}%;
+
+                        height:
+                            {{ road.width }}px;
+
+                        transform:
+                            rotate(
+                                {{ road.angle }}deg
+                            );
+                    "
+                ></div>
+
+                {% endfor %}
+
+
+                {% for label in search.map.labels %}
+
+                <span
+                    class="map-text"
+                    style="
+                        left:
+                            {{ label.x }}%;
+
+                        top:
+                            {{ label.y }}%;
+
+                        transform:
+                            rotate(
+                                {{ label.rotation }}deg
+                            );
+                    "
+                >
+                    {{ label.text }}
+                </span>
+
+                {% endfor %}
+
+
+                {% for marker in search.map.markers %}
+
+                <button
+                    class="
+                        result-marker
+
+                        {% if marker.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    style="
+                        left:
+                            {{ marker.x }}%;
+
+                        top:
+                            {{ marker.y }}%;
+                    "
+                    data-class="button"
+                    data-semantic="mobile_result_marker_{{ marker.id }}"
+                >
+                    {{ loop.index }}
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+
+            <button
+                class="map-floating-button"
+                data-class="button"
+                data-semantic="expand_map_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="expand_map_icon"
+                >
+                    map
+                </span>
+
+                Map
+
+            </button>
+
+        </section>
+
+
+        <!-- =================================================
+             RESULTS
+             ================================================= -->
+
+        <main class="results-content">
+
+
+            <div class="results-summary">
+
+                <div
+                    class="results-summary-title"
+                    data-class="text"
+                    data-semantic="results_summary"
+                >
+                    {{ search.result_summary }}
+                </div>
+
+
+                <button
+                    class="sort-button"
+                    data-class="button"
+                    data-semantic="sort_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="sort_icon"
+                    >
+                        sort
+                    </span>
+
+                    {{ search.sort_label }}
+
+                </button>
+
+            </div>
+
+
+            {% for result in search.results %}
+
+            <article
+                class="
+                    search-result-card
+
+                    {% if result.selected %}
+                    selected
+                    {% endif %}
+                "
+                data-class="card"
+                data-semantic="search_result_{{ result.id }}"
+            >
+
+
+                <!-- Image -->
+
+                <div
+                    class="result-image"
+                    data-class="image"
+                    data-semantic="result_image_{{ result.id }}"
+                >
+
+                    {% if result.image %}
+
+                    <img
+                        src="{{ result.image }}"
+                        alt=""
+                    >
+
+                    {% else %}
+
+                    <div class="result-image-fallback">
+
+                        <span class="material-symbols-rounded">
+                            image
+                        </span>
+
+                    </div>
+
+                    {% endif %}
+
+
+                    {% if result.sponsored %}
+
+                    <span
+                        class="sponsored-badge"
+                        data-class="badge"
+                        data-semantic="sponsored_badge_{{ result.id }}"
+                    >
+                        Sponsored
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- Information -->
+
+                <div class="result-info">
+
+
+                    <div class="result-top-row">
+
+                        <h3
+                            class="result-name"
+                            data-class="text"
+                            data-semantic="result_name_{{ result.id }}"
+                        >
+                            {{ result.name }}
+                        </h3>
+
+
+                        <button
+                            class="
+                                save-button
+
+                                {% if result.saved %}
+                                saved
+                                {% endif %}
+                            "
+                            data-class="button"
+                            data-semantic="save_result_{{ result.id }}"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="save_icon_{{ result.id }}"
+                            >
+                                {% if result.saved %}
+                                bookmark
+                                {% else %}
+                                bookmark_border
+                                {% endif %}
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- Rating -->
+
+                    <div class="rating-row">
+
+                        <span>
+                            {{ result.rating }}
+                        </span>
+
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                star-icon
+                            "
+                        >
+                            star
+                        </span>
+
+
+                        <span>
+                            ({{ result.reviews }})
+                        </span>
+
+
+                        {% if result.price %}
+
+                        <span>
+                            ·
+                            {{ result.price }}
+                        </span>
+
+                        {% endif %}
+
+
+                        {% if result.popular %}
+
+                        <span
+                            data-class="badge"
+                            data-semantic="popular_badge_{{ result.id }}"
+                        >
+                            · Popular
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div
+                        class="result-detail"
+                        data-class="text"
+                        data-semantic="result_category_{{ result.id }}"
+                    >
+                        {{ result.type }}
+                        ·
+                        {{ result.distance }}
+                    </div>
+
+
+                    <div
+                        class="result-detail"
+                        data-class="text"
+                        data-semantic="result_address_{{ result.id }}"
+                    >
+                        {{ result.address }}
+                        ·
+                        {{ result.neighborhood }}
+                    </div>
+
+
+                    <div class="result-detail">
+
+                        <span
+                            class="
+                                open-status
+
+                                {% if not result.open_now %}
+                                closed
+                                {% endif %}
+                            "
+                        >
+                            {{ result.open_text }}
+                        </span>
+
+
+                        {% if result.delivery %}
+
+                        <span>
+                            · Delivery
+                        </span>
+
+                        {% endif %}
+
+
+                        {% if result.takeout %}
+
+                        <span>
+                            · Takeout
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- Actions -->
+
+                    <div class="result-actions">
+
+                        <button
+                            class="
+                                result-action
+                                primary
+                            "
+                            data-class="button"
+                            data-semantic="directions_{{ result.id }}"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="directions_icon_{{ result.id }}"
+                            >
+                                directions
+                            </span>
+
+                            Directions
+
+                        </button>
+
+
+                        <button
+                            class="result-action"
+                            data-class="button"
+                            data-semantic="call_{{ result.id }}"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="call_icon_{{ result.id }}"
+                            >
+                                call
+                            </span>
+
+                            Call
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+
+            <div
+                class="results-end"
+                data-class="text"
+                data-semantic="results_end"
+            >
+                You've reached the end of these results
+            </div>
+
+        </main>
+
+    </section>
+
+
+    <!-- =====================================================
+         DESKTOP MAP
+         ===================================================== -->
+
+    <aside
+        class="desktop-map"
+        data-class="map"
+        data-semantic="search_results_desktop_map"
+    >
+
+        <div class="map-layer">
+
+
+            {% if search.map.water %}
+
+            <div
+                class="map-water"
+                style="
+                    left:
+                        {{ search.map.water.x }}%;
+
+                    top:
+                        {{ search.map.water.y }}%;
+
+                    width:
+                        {{ search.map.water.width }}%;
+
+                    height:
+                        {{ search.map.water.height }}%;
+
+                    transform:
+                        rotate(
+                            {{ search.map.water.rotation }}deg
+                        );
+                "
+            ></div>
+
+            {% endif %}
+
+
+            {% for park in search.map.parks %}
+
+            <div
+                class="map-park"
+                style="
+                    left:
+                        {{ park.x }}%;
+
+                    top:
+                        {{ park.y }}%;
+
+                    width:
+                        {{ park.width }}%;
+
+                    height:
+                        {{ park.height }}%;
+
+                    border-radius:
+                        {{ park.radius }}%;
+                "
+            ></div>
+
+            {% endfor %}
+
+
+            {% for building in search.map.buildings %}
+
+            <div
+                class="map-building"
+                style="
+                    left:
+                        {{ building.x }}%;
+
+                    top:
+                        {{ building.y }}%;
+
+                    width:
+                        {{ building.width }}%;
+
+                    height:
+                        {{ building.height }}%;
+
+                    transform:
+                        rotate(
+                            {{ building.rotation }}deg
+                        );
+                "
+            ></div>
+
+            {% endfor %}
+
+
+            {% for road in search.map.roads %}
+
+            <div
+                class="
+                    map-road
+
+                    {% if road.major %}
+                    major
+                    {% endif %}
+                "
+                style="
+                    left:
+                        {{ road.x }}%;
+
+                    top:
+                        {{ road.y }}%;
+
+                    width:
+                        {{ road.length }}%;
+
+                    height:
+                        {{ road.width }}px;
+
+                    transform:
+                        rotate(
+                            {{ road.angle }}deg
+                        );
+                "
+            ></div>
+
+            {% endfor %}
+
+
+            {% for label in search.map.labels %}
+
+            <span
+                class="map-text"
+                style="
+                    left:
+                        {{ label.x }}%;
+
+                    top:
+                        {{ label.y }}%;
+
+                    transform:
+                        rotate(
+                            {{ label.rotation }}deg
+                        );
+                "
+            >
+                {{ label.text }}
+            </span>
+
+            {% endfor %}
+
+
+            {% for marker in search.map.markers %}
+
+            <button
+                class="
+                    result-marker
+
+                    {% if marker.selected %}
+                    selected
+                    {% endif %}
+                "
+                style="
+                    left:
+                        {{ marker.x }}%;
+
+                    top:
+                        {{ marker.y }}%;
+                "
+                data-class="button"
+                data-semantic="desktop_result_marker_{{ marker.id }}"
+            >
+                {{ loop.index }}
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+
+        <!-- Desktop Map Controls -->
+
+        <div class="desktop-map-controls">
+
+            <button
+                class="desktop-map-control"
+                data-class="button"
+                data-semantic="desktop_layers"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="desktop_layers_icon"
+                >
+                    layers
+                </span>
+
+            </button>
+
+
+            <button
+                class="desktop-map-control"
+                data-class="button"
+                data-semantic="desktop_location"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="desktop_location_icon"
+                >
+                    my_location
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <!-- Selected Map Result -->
+
+        <article
+            class="selected-map-card"
+            data-class="card"
+            data-semantic="selected_map_result"
+            data-occluder="true"
+        >
+
+            <div
+                class="selected-map-image"
+                data-class="image"
+                data-semantic="selected_map_image"
+            >
+
+                {% if search.selected_result.image %}
+
+                <img
+                    src="{{ search.selected_result.image }}"
+                    alt=""
+                >
+
+                {% else %}
+
+                <div class="result-image-fallback">
+
+                    <span class="material-symbols-rounded">
+                        image
+                    </span>
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <div>
+
+                <div
+                    class="result-name"
+                    data-class="text"
+                    data-semantic="selected_map_name"
+                >
+                    {{ search.selected_result.name }}
+                </div>
+
+
+                <div class="rating-row">
+
+                    {{ search.selected_result.rating }}
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            star-icon
+                        "
+                    >
+                        star
+                    </span>
+
+                    (
+                    {{ search.selected_result.reviews }}
+                    )
+
+                </div>
+
+
+                <div class="result-detail">
+
+                    {{ search.selected_result.type }}
+
+                    ·
+
+                    {{ search.selected_result.distance }}
+
+                </div>
+
+            </div>
+
+        </article>
+
+    </aside>
+
+</div>
+
+{% endblock %}

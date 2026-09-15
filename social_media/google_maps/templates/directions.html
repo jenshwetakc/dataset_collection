@@ -1,0 +1,1820 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Google Maps - Directions
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .directions-page {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        background:
+            var(--map-land);
+    }
+
+
+    /* ======================================================
+       Map
+       ====================================================== */
+
+    .directions-map {
+
+        position:
+            fixed;
+
+        inset:
+            var(--status-bar-height)
+            0
+            0
+            0;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--map-land);
+    }
+
+
+    .map-road {
+
+        position:
+            absolute;
+
+        z-index:
+            2;
+
+        height:
+            6px;
+
+        border-radius:
+            999px;
+
+        transform-origin:
+            left center;
+
+        background:
+            var(--map-road);
+
+        box-shadow:
+            0 0 0 1px
+            var(--map-road-outline);
+    }
+
+
+    .map-road.major {
+
+        box-shadow:
+            0 0 0 2px
+            var(--map-road-outline);
+    }
+
+
+    .map-building {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-building);
+
+        border:
+            1px solid
+            var(--map-road-outline);
+
+        border-radius:
+            3px;
+    }
+
+
+    .map-park {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-park);
+    }
+
+
+    .map-water {
+
+        position:
+            absolute;
+
+        border-radius:
+            45%;
+
+        background:
+            var(--map-water);
+    }
+
+
+    .map-label {
+
+        position:
+            absolute;
+
+        z-index:
+            4;
+
+        max-width:
+            110px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--map-secondary-label);
+
+        font-size:
+            10px;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Route Lines
+       ====================================================== */
+
+    .route-segment {
+
+        position:
+            absolute;
+
+        z-index:
+            15;
+
+        height:
+            6px;
+
+        transform-origin:
+            left center;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--map-route);
+
+        box-shadow:
+            0 0 0 2px
+            rgba(
+                255,
+                255,
+                255,
+                0.8
+            );
+    }
+
+
+    .route-segment.alternate {
+
+        z-index:
+            12;
+
+        height:
+            5px;
+
+        background:
+            var(--icon-secondary);
+
+        opacity:
+            0.65;
+    }
+
+
+    /* ======================================================
+       Start / Destination Marker
+       ====================================================== */
+
+    .route-marker {
+
+        position:
+            absolute;
+
+        z-index:
+            25;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border:
+            3px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.24
+            );
+    }
+
+
+    .route-marker.destination {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    .route-marker
+    .material-symbols-rounded {
+
+        font-size:
+            18px;
+    }
+
+
+    /* ======================================================
+       Main Directions Panel
+       ====================================================== */
+
+    .directions-panel {
+
+        position:
+            relative;
+
+        z-index:
+            100;
+
+        width:
+            100%;
+
+        background:
+            transparent;
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .directions-header {
+
+        padding:
+            10px
+            12px
+            12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.14
+            );
+    }
+
+
+    .header-row {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        gap:
+            8px;
+    }
+
+
+    .back-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        flex:
+            0 0 42px;
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Location Inputs
+       ====================================================== */
+
+    .location-inputs {
+
+        position:
+            relative;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .location-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .location-row
+    + .location-row {
+
+        margin-top:
+            8px;
+    }
+
+
+    .location-marker-dot {
+
+        width:
+            11px;
+
+        height:
+            11px;
+
+        flex:
+            0 0 11px;
+
+        border:
+            3px solid
+            var(--primary);
+
+        border-radius:
+            50%;
+    }
+
+
+    .location-marker-dot.destination {
+
+        border-radius:
+            2px;
+
+        border-color:
+            var(--error);
+    }
+
+
+    .location-field {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        height:
+            42px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+    }
+
+
+    .swap-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        flex:
+            0 0 42px;
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Travel Modes
+       ====================================================== */
+
+    .travel-modes {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                1fr
+            );
+
+        gap:
+            4px;
+
+        margin-top:
+            12px;
+    }
+
+
+    .travel-mode {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            3px;
+
+        height:
+            54px;
+
+        border-radius:
+            12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            600;
+    }
+
+
+    .travel-mode.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .travel-mode
+    .material-symbols-rounded {
+
+        font-size:
+            22px;
+    }
+
+
+    .mode-indicator {
+
+        position:
+            absolute;
+
+        right:
+            8px;
+
+        bottom:
+            5px;
+
+        width:
+            6px;
+
+        height:
+            6px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Mobile Route Sheet
+       ====================================================== */
+
+    .mobile-route-sheet {
+
+        position:
+            absolute;
+
+        z-index:
+            120;
+
+        top:
+            304px;
+
+        left:
+            8px;
+
+        right:
+            8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--sheet-radius);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 4px 16px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .sheet-handle {
+
+        width:
+            38px;
+
+        height:
+            4px;
+
+        margin:
+            9px auto;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border);
+    }
+
+
+    .route-option {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        gap:
+            12px;
+
+        padding:
+            14px 16px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .route-option:first-of-type {
+
+        border-top:
+            none;
+    }
+
+
+    .route-option.selected {
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .route-duration {
+
+        color:
+            var(--primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            800;
+    }
+
+
+    .route-option.selected
+    .route-duration {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .route-via {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .route-meta {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .route-badges {
+
+        display:
+            flex;
+
+        gap:
+            5px;
+
+        margin-top:
+            6px;
+    }
+
+
+    .route-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        min-height:
+            20px;
+
+        padding:
+            2px 7px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    .route-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+    }
+
+
+    .start-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        height:
+            42px;
+
+        padding:
+            0 17px;
+
+        border-radius:
+            22px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Bottom Actions
+       ====================================================== */
+
+    .sheet-bottom-actions {
+
+        display:
+            flex;
+
+        gap:
+            8px;
+
+        padding:
+            12px 14px
+            16px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .secondary-action {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        height:
+            38px;
+
+        padding:
+            0 13px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            20px;
+
+        color:
+            var(--primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Map Controls
+       ====================================================== */
+
+    .map-controls {
+
+        position:
+            fixed;
+
+        z-index:
+            80;
+
+        right:
+            14px;
+
+        bottom:
+            20px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            9px;
+    }
+
+
+    .map-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            46px;
+
+        height:
+            46px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--icon);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 840px
+    ) {
+
+        .directions-page {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                var(--panel-width)
+                minmax(
+                    0,
+                    1fr
+                );
+
+            min-height:
+                100vh;
+        }
+
+
+        .directions-map {
+
+            position:
+                fixed;
+
+            top:
+                0;
+
+            left:
+                var(--panel-width);
+
+            width:
+                calc(
+                    100%
+                    - var(--panel-width)
+                );
+
+            height:
+                100vh;
+        }
+
+
+        .directions-panel {
+
+            min-height:
+                100vh;
+
+            border-right:
+                1px solid
+                var(--border-subtle);
+
+            background:
+                var(--surface);
+
+            box-shadow:
+                2px 0 10px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.12
+                );
+        }
+
+
+        .directions-header {
+
+            position:
+                sticky;
+
+            top:
+                0;
+
+            z-index:
+                150;
+
+            box-shadow:
+                none;
+        }
+
+
+        .mobile-route-sheet {
+
+            position:
+                relative;
+
+            top:
+                auto;
+
+            left:
+                auto;
+
+            right:
+                auto;
+
+            margin:
+                0;
+
+            border:
+                none;
+
+            border-top:
+                1px solid
+                var(--border-subtle);
+
+            border-radius:
+                0;
+
+            box-shadow:
+                none;
+        }
+
+
+        .sheet-handle {
+
+            display:
+                none;
+        }
+
+
+        .route-option {
+
+            padding:
+                17px 18px;
+        }
+
+
+        .map-controls {
+
+            right:
+                22px;
+
+            bottom:
+                24px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .directions-header {
+
+            padding-left:
+                7px;
+
+            padding-right:
+                7px;
+        }
+
+
+        .back-button,
+        .swap-button {
+
+            width:
+                36px;
+
+            flex-basis:
+                36px;
+        }
+
+
+        .location-field {
+
+            padding:
+                0 8px;
+
+            font-size:
+                12px;
+        }
+
+
+        .mobile-route-sheet {
+
+            left:
+                4px;
+
+            right:
+                4px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="directions-page">
+
+
+    <!-- =====================================================
+         MAP
+         ===================================================== -->
+
+    <section
+        class="directions-map"
+        data-class="map"
+        data-semantic="directions_map"
+    >
+
+
+        {% if directions.map.water %}
+
+        <div
+            class="map-water"
+            style="
+                left:
+                    {{ directions.map.water.x }}%;
+
+                top:
+                    {{ directions.map.water.y }}%;
+
+                width:
+                    {{ directions.map.water.width }}%;
+
+                height:
+                    {{ directions.map.water.height }}%;
+
+                transform:
+                    rotate(
+                        {{ directions.map.water.rotation }}deg
+                    );
+            "
+        ></div>
+
+        {% endif %}
+
+
+        {% for park in directions.map.parks %}
+
+        <div
+            class="map-park"
+            style="
+                left:
+                    {{ park.x }}%;
+
+                top:
+                    {{ park.y }}%;
+
+                width:
+                    {{ park.width }}%;
+
+                height:
+                    {{ park.height }}%;
+
+                border-radius:
+                    {{ park.radius }}%;
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        {% for building in directions.map.buildings %}
+
+        <div
+            class="map-building"
+            style="
+                left:
+                    {{ building.x }}%;
+
+                top:
+                    {{ building.y }}%;
+
+                width:
+                    {{ building.width }}%;
+
+                height:
+                    {{ building.height }}%;
+
+                transform:
+                    rotate(
+                        {{ building.rotation }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        {% for road in directions.map.roads %}
+
+        <div
+            class="
+                map-road
+                {% if road.major %}
+                major
+                {% endif %}
+            "
+            style="
+                left:
+                    {{ road.x }}%;
+
+                top:
+                    {{ road.y }}%;
+
+                width:
+                    {{ road.length }}%;
+
+                height:
+                    {{ road.width }}px;
+
+                transform:
+                    rotate(
+                        {{ road.angle }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        {% for label in directions.map.labels %}
+
+        <span
+            class="map-label"
+            style="
+                left:
+                    {{ label.x }}%;
+
+                top:
+                    {{ label.y }}%;
+
+                transform:
+                    rotate(
+                        {{ label.rotation }}deg
+                    );
+            "
+        >
+            {{ label.text }}
+        </span>
+
+        {% endfor %}
+
+
+        <!-- ==============================================
+             Route Alternatives
+             ============================================== -->
+
+        {% for route in directions.routes %}
+
+    {% for segment in route.segments %}
+
+    <div
+        class="
+            route-segment
+
+            {% if not route.selected %}
+            alternate
+            {% endif %}
+        "
+        style="
+            left:
+                {{ segment.x }}%;
+
+            top:
+                {{ segment.y }}%;
+
+            width:
+                {{ segment.length }}%;
+
+            transform:
+                rotate(
+                    {{ segment.angle }}deg
+                );
+        "
+    ></div>
+
+    {% endfor %}
+
+{% endfor %}
+
+        <!-- Start -->
+
+        {% set start = directions.selected_route.points[0] %}
+
+        <div
+            class="route-marker"
+            style="
+                left:
+                    {{ start.x }}%;
+
+                top:
+                    {{ start.y }}%;
+            "
+            data-class="selection_indicator"
+            data-semantic="route_start"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="route_start_icon"
+            >
+                my_location
+            </span>
+
+        </div>
+
+
+        <!-- Destination -->
+
+        {% set end = directions.selected_route.points[-1] %}
+
+        <div
+            class="
+                route-marker
+                destination
+            "
+            style="
+                left:
+                    {{ end.x }}%;
+
+                top:
+                    {{ end.y }}%;
+            "
+            data-class="selection_indicator"
+            data-semantic="route_destination"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="destination_icon"
+            >
+                location_on
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         DIRECTIONS PANEL
+         ===================================================== -->
+
+    <section
+        class="directions-panel"
+        data-class="section"
+        data-semantic="directions_panel"
+        data-occluder="true"
+    >
+
+
+        <!-- Header -->
+
+        <header
+            class="directions-header"
+            data-class="app_bar"
+            data-semantic="directions_app_bar"
+        >
+
+            <div class="header-row">
+
+                <button
+                    class="back-button"
+                    data-class="button"
+                    data-semantic="back_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="back_icon"
+                    >
+                        arrow_back
+                    </span>
+
+                </button>
+
+
+                <div class="location-inputs">
+
+
+                    <!-- Origin -->
+
+                    <div class="location-row">
+
+                        <span
+                            class="location-marker-dot"
+                            data-class="selection_indicator"
+                            data-semantic="origin_indicator"
+                        ></span>
+
+
+                        <div
+                            class="location-field"
+                            data-class="input_field"
+                            data-semantic="origin_field"
+                        >
+                            <span class="truncate">
+                                {{ directions.origin }}
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <!-- Destination -->
+
+                    <div class="location-row">
+
+                        <span
+                            class="
+                                location-marker-dot
+                                destination
+                            "
+                            data-class="selection_indicator"
+                            data-semantic="destination_indicator"
+                        ></span>
+
+
+                        <div
+                            class="location-field"
+                            data-class="input_field"
+                            data-semantic="destination_field"
+                        >
+                            <span class="truncate">
+                                {{ directions.destination }}
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Swap -->
+
+                <button
+                    class="swap-button"
+                    data-class="button"
+                    data-semantic="swap_locations"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="swap_icon"
+                    >
+                        swap_vert
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <!-- Travel Modes -->
+
+            <nav
+                class="travel-modes"
+                data-class="toolbar"
+                data-semantic="travel_mode_toolbar"
+            >
+
+                {% for mode in directions.travel_modes %}
+
+                <button
+                    class="
+                        travel-mode
+
+                        {% if mode.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="travel_mode_{{ mode.key }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="travel_mode_icon_{{ mode.key }}"
+                    >
+                        {{ mode.icon }}
+                    </span>
+
+
+                    <span>
+                        {{ mode.label }}
+                    </span>
+
+
+                    {% if mode.selected %}
+
+                    <span
+                        class="mode-indicator"
+                        data-class="selection_indicator"
+                        data-semantic="selected_travel_mode"
+                    ></span>
+
+                    {% endif %}
+
+                </button>
+
+                {% endfor %}
+
+            </nav>
+
+        </header>
+
+
+        <!-- =================================================
+             ROUTE OPTIONS
+             ================================================= -->
+
+        <section
+            class="mobile-route-sheet"
+            data-class="bottom_sheet"
+            data-semantic="route_options"
+        >
+
+            <div class="sheet-handle"></div>
+
+
+            {% for route in directions.routes %}
+
+            <article
+                class="
+                    route-option
+
+                    {% if route.selected %}
+                    selected
+                    {% endif %}
+                "
+                data-class="card"
+                data-semantic="route_option_{{ route.id }}"
+            >
+
+                <div>
+
+                    <div
+                        class="route-duration"
+                        data-class="text"
+                        data-semantic="route_duration_{{ route.id }}"
+                    >
+                        {{ route.duration }}
+                    </div>
+
+
+                    <div
+                        class="route-via"
+                        data-class="text"
+                        data-semantic="route_via_{{ route.id }}"
+                    >
+                        {{ route.via }}
+                    </div>
+
+
+                    <div
+                        class="route-meta"
+                        data-class="text"
+                        data-semantic="route_metadata_{{ route.id }}"
+                    >
+                        {{ route.distance }}
+                        ·
+                        Arrive {{ route.arrival }}
+                        ·
+                        {{ route.traffic }}
+                    </div>
+
+
+                    <div class="route-badges">
+
+                        {% if route.fastest %}
+
+                        <span
+                            class="route-badge"
+                            data-class="badge"
+                            data-semantic="fastest_route_badge"
+                        >
+                            Fastest
+                        </span>
+
+                        {% endif %}
+
+
+                        {% if route.toll %}
+
+                        <span
+                            class="route-badge"
+                            data-class="badge"
+                            data-semantic="toll_route_badge"
+                        >
+                            Tolls
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="route-actions">
+
+                    {% if route.selected %}
+
+                    <button
+                        class="start-button"
+                        data-class="button"
+                        data-semantic="start_navigation"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="start_navigation_icon"
+                        >
+                            navigation
+                        </span>
+
+                        Start
+
+                    </button>
+
+                    {% else %}
+
+                    <button
+                        class="secondary-action"
+                        data-class="button"
+                        data-semantic="select_route_{{ route.id }}"
+                    >
+                        Select
+                    </button>
+
+                    {% endif %}
+
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+
+            <!-- Bottom actions -->
+
+            <div class="sheet-bottom-actions">
+
+                <button
+                    class="secondary-action"
+                    data-class="button"
+                    data-semantic="route_options_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="route_options_icon"
+                    >
+                        tune
+                    </span>
+
+                    Options
+
+                </button>
+
+
+                <button
+                    class="secondary-action"
+                    data-class="button"
+                    data-semantic="share_route_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="share_route_icon"
+                    >
+                        share
+                    </span>
+
+                    Share
+
+                </button>
+
+            </div>
+
+        </section>
+
+    </section>
+
+
+    <!-- =====================================================
+         MAP CONTROLS
+         ===================================================== -->
+
+    <div class="map-controls">
+
+        <button
+            class="map-control"
+            data-class="button"
+            data-semantic="recenter_map"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="recenter_map_icon"
+            >
+                my_location
+            </span>
+
+        </button>
+
+
+        <button
+            class="map-control"
+            data-class="button"
+            data-semantic="map_layers"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="map_layers_icon"
+            >
+                layers
+            </span>
+
+        </button>
+
+    </div>
+
+</div>
+
+{% endblock %}

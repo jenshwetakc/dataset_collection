@@ -1,0 +1,2365 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Google Maps - Explore
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .maps-home {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        min-height:
+            540px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--map-land);
+    }
+
+
+    /* ======================================================
+       Map Canvas
+       ====================================================== */
+
+    .map-canvas {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--map-land);
+    }
+
+
+    /* ======================================================
+       Water
+       ====================================================== */
+
+    .map-water {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-water);
+
+        border-radius:
+            45%;
+
+        opacity:
+            0.92;
+    }
+
+
+    /* ======================================================
+       Parks
+       ====================================================== */
+
+    .map-park {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-park);
+
+        opacity:
+            0.88;
+    }
+
+
+    /* ======================================================
+       Buildings
+       ====================================================== */
+
+    .map-building {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-building);
+
+        border:
+            1px solid
+            var(--map-road-outline);
+
+        border-radius:
+            3px;
+
+        opacity:
+            0.82;
+    }
+
+
+    /* ======================================================
+       Roads
+       ====================================================== */
+
+    .map-road {
+
+        position:
+            absolute;
+
+        height:
+            6px;
+
+        transform-origin:
+            left center;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--map-road);
+
+        box-shadow:
+            0 0 0 1px
+            var(--map-road-outline);
+    }
+
+
+    .map-road.major {
+
+        z-index:
+            3;
+
+        box-shadow:
+            0 0 0 2px
+            var(--map-road-outline);
+    }
+
+
+    /* ======================================================
+       Map Labels
+       ====================================================== */
+
+    .map-label {
+
+        position:
+            absolute;
+
+        z-index:
+            4;
+
+        max-width:
+            110px;
+
+        color:
+            var(--map-secondary-label);
+
+        font-size:
+            10px;
+
+        font-weight:
+            500;
+
+        white-space:
+            nowrap;
+
+        pointer-events:
+            none;
+
+        text-shadow:
+            0 1px 0
+            var(--map-land);
+    }
+
+
+    /* ======================================================
+       Map Marker
+       ====================================================== */
+
+    .map-marker {
+
+        position:
+            absolute;
+
+        z-index:
+            15;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50% 50% 50% 6px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            )
+            rotate(
+                -45deg
+            );
+
+        background:
+            var(--surface);
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.20
+            );
+    }
+
+
+    .map-marker.selected {
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        background:
+            var(--primary);
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .map-marker .material-symbols-rounded {
+
+        font-size:
+            18px;
+
+        color:
+            var(--icon);
+
+        transform:
+            rotate(
+                45deg
+            );
+    }
+
+
+    .map-marker.selected
+    .material-symbols-rounded {
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Current Location
+       ====================================================== */
+
+    .current-location {
+
+        position:
+            absolute;
+
+        z-index:
+            14;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        border:
+            4px solid
+            #FFFFFF;
+
+        border-radius:
+            50%;
+
+        background:
+            #1A73E8;
+
+        box-shadow:
+            0 1px 5px
+            rgba(
+                0,
+                0,
+                0,
+                0.35
+            );
+    }
+
+
+    .current-location::before {
+
+        content:
+            "";
+
+        position:
+            absolute;
+
+        inset:
+            -15px;
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(
+                26,
+                115,
+                232,
+                0.16
+            );
+    }
+
+
+    /* ======================================================
+       Search Area
+       ====================================================== */
+
+    .map-search-area {
+
+        position:
+            absolute;
+
+        z-index:
+            80;
+
+        top:
+            14px;
+
+        left:
+            50%;
+
+        width:
+            min(
+                680px,
+                calc(
+                    100%
+                    - 32px
+                )
+            );
+
+        transform:
+            translateX(
+                -50%
+            );
+    }
+
+
+    .map-search-bar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        height:
+            var(--search-height);
+
+        padding:
+            0 8px
+            0 16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            28px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .map-search-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        color:
+            var(--icon);
+    }
+
+
+    .map-search-placeholder {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        padding:
+            0 14px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            500;
+    }
+
+
+    .search-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        flex:
+            0 0 40px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .profile-avatar {
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        flex:
+            0 0 36px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .profile-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .profile-avatar-fallback {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    /* ======================================================
+       Category Chips
+       ====================================================== */
+
+    .category-row {
+
+        display:
+            flex;
+
+        gap:
+            8px;
+
+        width:
+            100%;
+
+        margin-top:
+            10px;
+
+        overflow:
+            hidden;
+
+        padding:
+            0 2px;
+    }
+
+
+    .category-chip {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+
+        height:
+            38px;
+
+        flex:
+            0 0 auto;
+
+        padding:
+            0 14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--chip-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        box-shadow:
+            0 1px 4px
+            rgba(
+                0,
+                0,
+                0,
+                0.12
+            );
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .category-chip
+    .material-symbols-rounded {
+
+        font-size:
+            18px;
+    }
+
+
+    /* ======================================================
+       Floating Controls
+       ====================================================== */
+
+    .map-controls {
+
+        position:
+            absolute;
+
+        z-index:
+            70;
+
+        right:
+            16px;
+
+        bottom:
+            235px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            10px;
+    }
+
+
+    .map-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            var(
+                --floating-control-size
+            );
+
+        height:
+            var(
+                --floating-control-size
+            );
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--icon);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.20
+            );
+    }
+
+
+    .map-control
+    .material-symbols-rounded {
+
+        font-size:
+            23px;
+    }
+
+
+    .map-control.location-control {
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Mobile Bottom Sheet
+       ====================================================== */
+
+    .mobile-place-sheet {
+
+        position:
+            absolute;
+
+        z-index:
+            100;
+
+        left:
+            8px;
+
+        right:
+            8px;
+
+        bottom:
+            calc(
+                var(--mobile-nav-height)
+                + 8px
+            );
+
+        height:
+            176px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            22px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 -2px 12px
+            rgba(
+                0,
+                0,
+                0,
+                0.14
+            );
+    }
+
+
+    .sheet-handle {
+
+        width:
+            38px;
+
+        height:
+            4px;
+
+        margin:
+            8px auto
+            5px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border);
+    }
+
+
+    .sheet-heading {
+
+        padding:
+            2px 14px
+            8px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            700;
+    }
+
+
+    .mobile-place-list {
+
+        display:
+            flex;
+
+        gap:
+            10px;
+
+        overflow:
+            hidden;
+
+        padding:
+            0 12px
+            12px;
+    }
+
+
+    .mobile-place-card {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            82px 1fr;
+
+        gap:
+            10px;
+
+        width:
+            min(
+                300px,
+                calc(
+                    100vw
+                    - 42px
+                )
+            );
+
+        min-width:
+            min(
+                300px,
+                calc(
+                    100vw
+                    - 42px
+                )
+            );
+
+        height:
+            106px;
+
+        padding:
+            8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .mobile-place-image {
+
+        width:
+            82px;
+
+        height:
+            88px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            11px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .mobile-place-image img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .image-fallback {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        color:
+            var(--icon-secondary);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .mobile-place-info {
+
+        min-width:
+            0;
+
+        padding-top:
+            3px;
+    }
+
+
+    .place-name {
+
+        overflow:
+            hidden;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    .place-meta {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .rating-star {
+
+        color:
+            #F9AB00;
+
+        font-size:
+            14px !important;
+    }
+
+
+    .place-open {
+
+        margin-top:
+            5px;
+
+        color:
+            var(--success);
+
+        font-size:
+            11px;
+
+        font-weight:
+            600;
+    }
+
+
+    .place-open.closed {
+
+        color:
+            var(--error);
+    }
+
+
+    /* ======================================================
+       Mobile Navigation
+       ====================================================== */
+
+    .mobile-navigation {
+
+        position:
+            absolute;
+
+        z-index:
+            120;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                1fr
+            );
+
+        height:
+            var(
+                --mobile-nav-height
+            );
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .mobile-nav-item {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            600;
+    }
+
+
+    .mobile-nav-item.selected {
+
+        color:
+            var(--primary);
+    }
+
+
+    .mobile-nav-item
+    .material-symbols-rounded {
+
+        position:
+            relative;
+
+        z-index:
+            2;
+
+        font-size:
+            23px;
+    }
+
+
+    .nav-selection {
+
+        position:
+            absolute;
+
+        top:
+            9px;
+
+        left:
+            50%;
+
+        width:
+            55px;
+
+        height:
+            30px;
+
+        transform:
+            translateX(
+                -50%
+            );
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary-container);
+    }
+
+
+    /* ======================================================
+       Desktop Side Panel
+       ====================================================== */
+
+    .desktop-side-panel {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Desktop Controls
+       ====================================================== */
+
+    .desktop-map-tools {
+
+        display:
+            none;
+    }
+
+
+    /* ======================================================
+       Expanded Layout
+       ====================================================== */
+
+    @media (
+        min-width: 840px
+    ) {
+
+        .maps-home {
+
+            height:
+                100vh;
+        }
+
+
+        .map-search-area {
+
+            top:
+                18px;
+
+            left:
+                calc(
+                    var(--panel-width)
+                    + 24px
+                );
+
+            width:
+                min(
+                    600px,
+                    calc(
+                        100%
+                        - var(--panel-width)
+                        - 110px
+                    )
+                );
+
+            transform:
+                none;
+        }
+
+
+        .category-row {
+
+            max-width:
+                760px;
+        }
+
+
+        .desktop-side-panel {
+
+            position:
+                absolute;
+
+            z-index:
+                120;
+
+            top:
+                0;
+
+            left:
+                0;
+
+            bottom:
+                0;
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            width:
+                var(--panel-width);
+
+            overflow:
+                hidden;
+
+            border-right:
+                1px solid
+                var(--border-subtle);
+
+            background:
+                var(--surface);
+
+            box-shadow:
+                2px 0 10px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.12
+                );
+        }
+
+
+        .desktop-panel-header {
+
+            padding:
+                20px
+                18px
+                12px;
+
+            border-bottom:
+                1px solid
+                var(--border-subtle);
+        }
+
+
+        .desktop-panel-title {
+
+            color:
+                var(--text-primary);
+
+            font-size:
+                24px;
+
+            font-weight:
+                700;
+        }
+
+
+        .desktop-panel-subtitle {
+
+            margin-top:
+                5px;
+
+            color:
+                var(--text-secondary);
+
+            font-size:
+                13px;
+        }
+
+
+        .desktop-results {
+
+            flex:
+                1;
+
+            overflow:
+                hidden;
+        }
+
+
+        .desktop-place-card {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                118px 1fr;
+
+            gap:
+                12px;
+
+            padding:
+                14px 16px;
+
+            border-bottom:
+                1px solid
+                var(--border-subtle);
+
+            background:
+                var(--surface);
+        }
+
+
+        .desktop-place-image {
+
+            width:
+                118px;
+
+            height:
+                102px;
+
+            overflow:
+                hidden;
+
+            border-radius:
+                12px;
+
+            background:
+                var(--surface-variant);
+        }
+
+
+        .desktop-place-image img {
+
+            width:
+                100%;
+
+            height:
+                100%;
+
+            object-fit:
+                cover;
+        }
+
+
+        .desktop-place-name {
+
+            color:
+                var(--text-primary);
+
+            font-size:
+                15px;
+
+            font-weight:
+                700;
+        }
+
+
+        .desktop-place-address {
+
+            margin-top:
+                5px;
+
+            overflow:
+                hidden;
+
+            color:
+                var(--text-secondary);
+
+            font-size:
+                12px;
+
+            white-space:
+                nowrap;
+
+            text-overflow:
+                ellipsis;
+        }
+
+
+        .map-controls {
+
+            right:
+                24px;
+
+            bottom:
+                30px;
+        }
+
+
+        .mobile-place-sheet,
+        .mobile-navigation {
+
+            display:
+                none;
+        }
+
+
+        .desktop-map-tools {
+
+            position:
+                absolute;
+
+            z-index:
+                70;
+
+            right:
+                24px;
+
+            top:
+                20px;
+
+            display:
+                flex;
+
+            gap:
+                8px;
+        }
+
+
+        .desktop-tool {
+
+            display:
+                inline-flex;
+
+            align-items:
+                center;
+
+            gap:
+                7px;
+
+            height:
+                42px;
+
+            padding:
+                0 13px;
+
+            border:
+                1px solid
+                var(--border-subtle);
+
+            border-radius:
+                21px;
+
+            background:
+                var(--surface);
+
+            color:
+                var(--text-primary);
+
+            box-shadow:
+                0 2px 6px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.15
+                );
+
+            font-size:
+                13px;
+
+            font-weight:
+                600;
+        }
+
+    }
+
+
+    /* ======================================================
+       Larger Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 1280px
+    ) {
+
+        :root {
+
+            --panel-width:
+                420px;
+        }
+
+
+        .map-search-area {
+
+            left:
+                calc(
+                    var(--panel-width)
+                    + 28px
+                );
+        }
+
+    }
+
+
+    /* ======================================================
+       Very Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .map-search-area {
+
+            width:
+                calc(
+                    100%
+                    - 20px
+                );
+
+            top:
+                9px;
+        }
+
+
+        .map-search-placeholder {
+
+            padding:
+                0 8px;
+
+            font-size:
+                14px;
+        }
+
+
+        .search-action {
+
+            display:
+                none;
+        }
+
+
+        .mobile-place-sheet {
+
+            left:
+                5px;
+
+            right:
+                5px;
+        }
+
+
+        .map-controls {
+
+            right:
+                10px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="maps-home">
+
+
+    <!-- =====================================================
+         MAP
+         ===================================================== -->
+
+    <div
+        class="map-canvas"
+        data-class="map"
+        data-semantic="main_map"
+    >
+
+
+        <!-- Water -->
+
+        {% if home.map.water %}
+
+        <div
+            class="map-water"
+            style="
+                left:
+                    {{ home.map.water.x }}%;
+
+                top:
+                    {{ home.map.water.y }}%;
+
+                width:
+                    {{ home.map.water.width }}%;
+
+                height:
+                    {{ home.map.water.height }}%;
+
+                transform:
+                    rotate(
+                        {{ home.map.water.rotation }}deg
+                    );
+            "
+        ></div>
+
+        {% endif %}
+
+
+        <!-- Parks -->
+
+        {% for park in home.map.parks %}
+
+        <div
+            class="map-park"
+            style="
+                left:
+                    {{ park.x }}%;
+
+                top:
+                    {{ park.y }}%;
+
+                width:
+                    {{ park.width }}%;
+
+                height:
+                    {{ park.height }}%;
+
+                border-radius:
+                    {{ park.radius }}%;
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        <!-- Buildings -->
+
+        {% for building in home.map.buildings %}
+
+        <div
+            class="map-building"
+            style="
+                left:
+                    {{ building.x }}%;
+
+                top:
+                    {{ building.y }}%;
+
+                width:
+                    {{ building.width }}%;
+
+                height:
+                    {{ building.height }}%;
+
+                transform:
+                    rotate(
+                        {{ building.rotation }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        <!-- Roads -->
+
+        {% for road in home.map.roads %}
+
+        <div
+            class="
+                map-road
+
+                {% if road.major %}
+                major
+                {% endif %}
+            "
+            style="
+                left:
+                    {{ road.x }}%;
+
+                top:
+                    {{ road.y }}%;
+
+                width:
+                    {{ road.length }}%;
+
+                height:
+                    {{ road.width }}px;
+
+                transform:
+                    rotate(
+                        {{ road.angle }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        <!-- Map Labels -->
+
+        {% for label in home.map.labels %}
+
+        <div
+            class="map-label"
+            style="
+                left:
+                    {{ label.x }}%;
+
+                top:
+                    {{ label.y }}%;
+
+                transform:
+                    rotate(
+                        {{ label.rotation }}deg
+                    );
+            "
+        >
+            {{ label.text }}
+        </div>
+
+        {% endfor %}
+
+
+        <!-- POI Markers -->
+
+        {% for marker in home.map.markers %}
+
+        <button
+            class="
+                map-marker
+
+                {% if marker.selected %}
+                selected
+                {% endif %}
+            "
+            style="
+                left:
+                    {{ marker.x }}%;
+
+                top:
+                    {{ marker.y }}%;
+            "
+            data-class="button"
+            data-semantic="poi_marker_{{ marker.id }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="poi_marker_icon_{{ marker.id }}"
+            >
+                {{ marker.icon }}
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+
+        <!-- Current Location -->
+
+        <div
+            class="current-location"
+            style="
+                left:
+                    {{ home.current_location.x }}%;
+
+                top:
+                    {{ home.current_location.y }}%;
+            "
+            data-class="selection_indicator"
+            data-semantic="current_location"
+        ></div>
+
+    </div>
+
+
+    <!-- =====================================================
+         DESKTOP SIDE PANEL
+         ===================================================== -->
+
+    <aside
+        class="desktop-side-panel"
+        data-class="section"
+        data-semantic="explore_results_panel"
+        data-occluder="true"
+    >
+
+        <div class="desktop-panel-header">
+
+            <div
+                class="desktop-panel-title"
+                data-class="text"
+                data-semantic="results_title"
+            >
+                {{ home.sheet_title }}
+            </div>
+
+            <div
+                class="desktop-panel-subtitle"
+                data-class="text"
+                data-semantic="results_subtitle"
+            >
+                Recommended places based on this area
+            </div>
+
+        </div>
+
+
+        <div class="desktop-results">
+
+            {% for place in home.places[:6] %}
+
+            <article
+                class="desktop-place-card"
+                data-class="card"
+                data-semantic="place_card_{{ place.id }}"
+            >
+
+                <div
+                    class="desktop-place-image"
+                    data-class="image"
+                    data-semantic="place_image_{{ place.id }}"
+                >
+
+                    {% if place.image %}
+
+                    <img
+                        src="{{ place.image }}"
+                        alt=""
+                    >
+
+                    {% else %}
+
+                    <div class="image-fallback">
+
+                        <span class="material-symbols-rounded">
+                            image
+                        </span>
+
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div>
+
+                    <div
+                        class="desktop-place-name truncate"
+                        data-class="text"
+                        data-semantic="place_name_{{ place.id }}"
+                    >
+                        {{ place.name }}
+                    </div>
+
+
+                    <div class="place-meta">
+
+                        <span>
+                            {{ place.rating }}
+                        </span>
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                rating-star
+                            "
+                        >
+                            star
+                        </span>
+
+                        <span>
+                            ({{ place.reviews }})
+                        </span>
+
+                        {% if place.price_level %}
+
+                        <span>
+                            · {{ place.price_level }}
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div
+                        class="place-meta"
+                    >
+                        {{ place.type }}
+                        ·
+                        {{ place.distance }}
+                    </div>
+
+
+                    <div
+                        class="
+                            place-open
+
+                            {% if
+                                place.open_status
+                                == "closed"
+                            %}
+                            closed
+                            {% endif %}
+                        "
+                    >
+                        {{ place.open_label }}
+                    </div>
+
+
+                    <div
+                        class="desktop-place-address"
+                        data-class="text"
+                        data-semantic="place_address_{{ place.id }}"
+                    >
+                        {{ place.address }}
+                    </div>
+
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+        </div>
+
+    </aside>
+
+
+    <!-- =====================================================
+         SEARCH
+         ===================================================== -->
+
+    <div class="map-search-area">
+
+        <div
+            class="map-search-bar"
+            data-class="search_bar"
+            data-semantic="maps_search"
+            data-occluder="true"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    map-search-icon
+                "
+                data-class="icon"
+                data-semantic="search_icon"
+            >
+                search
+            </span>
+
+
+            <div
+                class="
+                    map-search-placeholder
+                    truncate
+                "
+            >
+                {{ home.search_placeholder }}
+            </div>
+
+
+            <button
+                class="search-action"
+                data-class="button"
+                data-semantic="voice_search"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="voice_search_icon"
+                >
+                    mic
+                </span>
+
+            </button>
+
+
+            <button
+                class="profile-avatar"
+                data-class="button"
+                data-semantic="profile_button"
+            >
+
+                {% if home.avatar %}
+
+                <img
+                    src="{{ home.avatar }}"
+                    alt=""
+                    data-class="avatar"
+                    data-semantic="profile_avatar"
+                >
+
+                {% else %}
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        profile-avatar-fallback
+                    "
+                    data-class="icon"
+                    data-semantic="profile_icon"
+                >
+                    account_circle
+                </span>
+
+                {% endif %}
+
+            </button>
+
+        </div>
+
+
+        <!-- Categories -->
+
+        <div class="category-row">
+
+            {% for category in home.categories %}
+
+            <button
+                class="category-chip"
+                data-class="button"
+                data-semantic="
+                    category_
+                    {{ category.label | lower | replace(' ', '_') }}
+                "
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="category_icon_{{ loop.index }}"
+                >
+                    {{ category.icon }}
+                </span>
+
+                <span>
+                    {{ category.label }}
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         DESKTOP TOP TOOLS
+         ===================================================== -->
+
+    <div class="desktop-map-tools">
+
+        <button
+            class="desktop-tool"
+            data-class="button"
+            data-semantic="layers_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="layers_icon"
+            >
+                layers
+            </span>
+
+            Layers
+
+        </button>
+
+
+        <button
+            class="desktop-tool"
+            data-class="button"
+            data-semantic="saved_places_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="saved_places_icon"
+            >
+                bookmark
+            </span>
+
+            Saved
+
+        </button>
+
+    </div>
+
+
+    <!-- =====================================================
+         MAP CONTROLS
+         ===================================================== -->
+
+    <div class="map-controls">
+
+        <button
+            class="map-control"
+            data-class="button"
+            data-semantic="layers_control"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="layers_control_icon"
+            >
+                layers
+            </span>
+
+        </button>
+
+
+        <button
+            class="
+                map-control
+                location-control
+            "
+            data-class="button"
+            data-semantic="current_location_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="current_location_icon"
+            >
+                my_location
+            </span>
+
+        </button>
+
+    </div>
+
+
+    <!-- =====================================================
+         MOBILE BOTTOM SHEET
+         ===================================================== -->
+
+    <section
+        class="mobile-place-sheet"
+        data-class="bottom_sheet"
+        data-semantic="explore_bottom_sheet"
+        data-occluder="true"
+    >
+
+        <div class="sheet-handle"></div>
+
+
+        <div
+            class="sheet-heading"
+            data-class="text"
+            data-semantic="bottom_sheet_title"
+        >
+            {{ home.sheet_title }}
+        </div>
+
+
+        <div class="mobile-place-list">
+
+            {% for place in home.places[:3] %}
+
+            <article
+                class="mobile-place-card"
+                data-class="card"
+                data-semantic="mobile_place_card_{{ place.id }}"
+            >
+
+                <div
+                    class="mobile-place-image"
+                    data-class="image"
+                    data-semantic="mobile_place_image_{{ place.id }}"
+                >
+
+                    {% if place.image %}
+
+                    <img
+                        src="{{ place.image }}"
+                        alt=""
+                    >
+
+                    {% else %}
+
+                    <div class="image-fallback">
+
+                        <span class="material-symbols-rounded">
+                            image
+                        </span>
+
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="mobile-place-info">
+
+                    <div
+                        class="place-name"
+                        data-class="text"
+                        data-semantic="mobile_place_name_{{ place.id }}"
+                    >
+                        {{ place.name }}
+                    </div>
+
+
+                    <div class="place-meta">
+
+                        <span>
+                            {{ place.rating }}
+                        </span>
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                rating-star
+                            "
+                        >
+                            star
+                        </span>
+
+                        <span>
+                            ({{ place.reviews }})
+                        </span>
+
+                    </div>
+
+
+                    <div class="place-meta">
+
+                        {{ place.type }}
+                        ·
+                        {{ place.distance }}
+
+                    </div>
+
+
+                    <div
+                        class="
+                            place-open
+
+                            {% if
+                                place.open_status
+                                == "closed"
+                            %}
+                            closed
+                            {% endif %}
+                        "
+                    >
+                        {{ place.open_label }}
+                    </div>
+
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         MOBILE NAVIGATION
+         ===================================================== -->
+
+    <nav
+        class="mobile-navigation"
+        data-class="navigation_bar"
+        data-semantic="main_navigation"
+        data-occluder="true"
+    >
+
+        {% for item in home.navigation_items %}
+
+        <button
+            class="
+                mobile-nav-item
+
+                {% if item.selected %}
+                selected
+                {% endif %}
+            "
+            data-class="navigation_item"
+            data-semantic="
+                navigation_
+                {{ item.label | lower }}
+            "
+        >
+
+            {% if item.selected %}
+
+            <span
+                class="nav-selection"
+                data-class="selection_indicator"
+                data-semantic="
+                    selected_
+                    {{ item.label | lower }}
+                "
+            ></span>
+
+            {% endif %}
+
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="
+                    navigation_icon_
+                    {{ item.label | lower }}
+                "
+            >
+                {{ item.icon }}
+            </span>
+
+
+            <span>
+                {{ item.label }}
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+</div>
+
+{% endblock %}

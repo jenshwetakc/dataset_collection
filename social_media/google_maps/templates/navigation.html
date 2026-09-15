@@ -1,0 +1,2030 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Google Maps - Navigation
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .navigation-page {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        min-height:
+            520px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--map-land);
+    }
+
+
+    /* ======================================================
+       Map
+       ====================================================== */
+
+    .navigation-map {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--map-land);
+    }
+
+
+    .map-road {
+
+        position:
+            absolute;
+
+        z-index:
+            3;
+
+        height:
+            6px;
+
+        border-radius:
+            999px;
+
+        transform-origin:
+            left center;
+
+        background:
+            var(--map-road);
+
+        box-shadow:
+            0 0 0 1px
+            var(--map-road-outline);
+    }
+
+
+    .map-road.major {
+
+        height:
+            9px;
+
+        box-shadow:
+            0 0 0 2px
+            var(--map-road-outline);
+    }
+
+
+    .map-building {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-building);
+
+        border:
+            1px solid
+            var(--map-road-outline);
+
+        border-radius:
+            3px;
+
+        opacity:
+            0.85;
+    }
+
+
+    .map-park {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-park);
+
+        opacity:
+            0.90;
+    }
+
+
+    .map-water {
+
+        position:
+            absolute;
+
+        border-radius:
+            46%;
+
+        background:
+            var(--map-water);
+    }
+
+
+    .map-label {
+
+        position:
+            absolute;
+
+        z-index:
+            5;
+
+        max-width:
+            110px;
+
+        overflow:
+            hidden;
+
+        color:
+            var(--map-secondary-label);
+
+        font-size:
+            10px;
+
+        font-weight:
+            500;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    /* ======================================================
+       Alternate Route
+       ====================================================== */
+
+    .alternate-route-segment {
+
+        position:
+            absolute;
+
+        z-index:
+            11;
+
+        height:
+            5px;
+
+        border-radius:
+            999px;
+
+        transform-origin:
+            left center;
+
+        background:
+            var(--icon-secondary);
+
+        opacity:
+            0.60;
+    }
+
+
+    /* ======================================================
+       Main Route
+       ====================================================== */
+
+    .navigation-route-segment {
+
+        position:
+            absolute;
+
+        z-index:
+            15;
+
+        height:
+            9px;
+
+        border-radius:
+            999px;
+
+        transform-origin:
+            left center;
+
+        background:
+            var(--map-route);
+
+        box-shadow:
+            0 0 0 3px
+            rgba(
+                255,
+                255,
+                255,
+                0.86
+            );
+    }
+
+
+    /* ======================================================
+       Navigation Arrow
+       ====================================================== */
+
+    .vehicle-marker {
+
+        position:
+            absolute;
+
+        z-index:
+            40;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            52px;
+
+        height:
+            52px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border:
+            4px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        box-shadow:
+            0 3px 10px
+            rgba(
+                0,
+                0,
+                0,
+                0.28
+            );
+    }
+
+
+    .vehicle-marker
+    .material-symbols-rounded {
+
+        font-size:
+            31px;
+
+        transform:
+            rotate(
+                -45deg
+            );
+    }
+
+
+    /* ======================================================
+       Maneuver Banner
+       ====================================================== */
+
+    .maneuver-banner {
+
+        position:
+            absolute;
+
+        z-index:
+            120;
+
+        top:
+            12px;
+
+        left:
+            10px;
+
+        right:
+            10px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            64px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            92px;
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        box-shadow:
+            0 3px 12px
+            rgba(
+                0,
+                0,
+                0,
+                0.24
+            );
+    }
+
+
+    .maneuver-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            58px;
+
+        height:
+            58px;
+    }
+
+
+    .maneuver-icon
+    .material-symbols-rounded {
+
+        font-size:
+            48px;
+    }
+
+
+    .maneuver-content {
+
+        min-width:
+            0;
+    }
+
+
+    .maneuver-distance {
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+
+        opacity:
+            0.94;
+    }
+
+
+    .maneuver-instruction {
+
+        margin-top:
+            2px;
+
+        overflow:
+            hidden;
+
+        font-size:
+            19px;
+
+        font-weight:
+            800;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    .maneuver-road {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        opacity:
+            0.94;
+    }
+
+
+    .next-turn {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            3px;
+
+        min-width:
+            48px;
+
+        padding:
+            5px;
+
+        border-left:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.28
+            );
+
+        font-size:
+            9px;
+
+        text-align:
+            center;
+    }
+
+
+    .next-turn
+    .material-symbols-rounded {
+
+        font-size:
+            21px;
+    }
+
+
+    /* ======================================================
+       Lane Guidance
+       ====================================================== */
+
+    .lane-guidance {
+
+        position:
+            absolute;
+
+        z-index:
+            105;
+
+        top:
+            118px;
+
+        left:
+            50%;
+
+        display:
+            flex;
+
+        gap:
+            3px;
+
+        transform:
+            translateX(
+                -50%
+            );
+
+        padding:
+            6px 9px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 2px 6px
+            rgba(
+                0,
+                0,
+                0,
+                0.14
+            );
+    }
+
+
+    .lane {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        border-radius:
+            7px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .lane.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .lane
+    .material-symbols-rounded {
+
+        font-size:
+            19px;
+    }
+
+
+    /* ======================================================
+       Speed Panel
+       ====================================================== */
+
+    .speed-panel {
+
+        position:
+            absolute;
+
+        z-index:
+            90;
+
+        left:
+            12px;
+
+        bottom:
+            98px;
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        gap:
+            8px;
+    }
+
+
+    .current-speed {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            62px;
+
+        height:
+            62px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .current-speed-value {
+
+        font-size:
+            23px;
+
+        font-weight:
+            800;
+
+        line-height:
+            1;
+    }
+
+
+    .current-speed-unit {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            600;
+    }
+
+
+    .speed-limit {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            50px;
+
+        height:
+            58px;
+
+        border:
+            4px solid
+            #D93025;
+
+        border-radius:
+            8px;
+
+        background:
+            #FFFFFF;
+
+        color:
+            #202124;
+
+        box-shadow:
+            0 2px 6px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .speed-limit-label {
+
+        font-size:
+            8px;
+
+        font-weight:
+            800;
+
+        text-transform:
+            uppercase;
+    }
+
+
+    .speed-limit-value {
+
+        margin-top:
+            1px;
+
+        font-size:
+            20px;
+
+        font-weight:
+            900;
+    }
+
+
+    /* ======================================================
+       Map Controls
+       ====================================================== */
+
+    .navigation-controls {
+
+        position:
+            absolute;
+
+        z-index:
+            90;
+
+        right:
+            12px;
+
+        bottom:
+            98px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            9px;
+    }
+
+
+    .navigation-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            46px;
+
+        height:
+            46px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--icon);
+
+        box-shadow:
+            0 2px 7px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .navigation-control
+    .material-symbols-rounded {
+
+        font-size:
+            23px;
+    }
+
+
+    /* ======================================================
+       Traffic Bubble
+       ====================================================== */
+
+    .traffic-bubble {
+
+        position:
+            absolute;
+
+        z-index:
+            85;
+
+        right:
+            12px;
+
+        bottom:
+            205px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            34px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            18px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        box-shadow:
+            0 2px 6px
+            rgba(
+                0,
+                0,
+                0,
+                0.13
+            );
+
+        font-size:
+            10px;
+
+        font-weight:
+            600;
+    }
+
+
+    .traffic-indicator {
+
+        width:
+            8px;
+
+        height:
+            8px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--success);
+    }
+
+
+    /* ======================================================
+       Bottom ETA Panel
+       ====================================================== */
+
+    .eta-panel {
+
+        position:
+            absolute;
+
+        z-index:
+            130;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                1fr
+            )
+            58px;
+
+        align-items:
+            center;
+
+        min-height:
+            82px;
+
+        padding:
+            8px
+            8px
+            10px
+            12px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 -2px 10px
+            rgba(
+                0,
+                0,
+                0,
+                0.15
+            );
+    }
+
+
+    .eta-item {
+
+        min-width:
+            0;
+
+        padding:
+            0 5px;
+    }
+
+
+    .eta-primary {
+
+        overflow:
+            hidden;
+
+        color:
+            var(--primary);
+
+        font-size:
+            17px;
+
+        font-weight:
+            800;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    .eta-secondary {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            600;
+    }
+
+
+    .exit-navigation {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            48px;
+
+        height:
+            48px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    .exit-navigation
+    .material-symbols-rounded {
+
+        font-size:
+            24px;
+    }
+
+
+    /* ======================================================
+       Desktop / Landscape
+       ====================================================== */
+
+    @media (
+        min-width: 840px
+    ) {
+
+        .navigation-page {
+
+            height:
+                100vh;
+        }
+
+
+        .maneuver-banner {
+
+            top:
+                20px;
+
+            left:
+                20px;
+
+            right:
+                auto;
+
+            width:
+                min(
+                    460px,
+                    calc(
+                        100%
+                        - 120px
+                    )
+                );
+
+            min-height:
+                106px;
+
+            border-radius:
+                18px;
+        }
+
+
+        .maneuver-instruction {
+
+            font-size:
+                22px;
+        }
+
+
+        .lane-guidance {
+
+            top:
+                140px;
+
+            left:
+                20px;
+
+            transform:
+                none;
+        }
+
+
+        .eta-panel {
+
+            left:
+                20px;
+
+            right:
+                auto;
+
+            bottom:
+                20px;
+
+            width:
+                440px;
+
+            min-height:
+                82px;
+
+            border:
+                1px solid
+                var(--border-subtle);
+
+            border-radius:
+                18px;
+
+            box-shadow:
+                0 3px 12px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.19
+                );
+        }
+
+
+        .speed-panel {
+
+            left:
+                auto;
+
+            right:
+                22px;
+
+            bottom:
+                28px;
+        }
+
+
+        .navigation-controls {
+
+            right:
+                22px;
+
+            bottom:
+                110px;
+        }
+
+
+        .traffic-bubble {
+
+            right:
+                22px;
+
+            bottom:
+                220px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Landscape Mobile
+       ====================================================== */
+
+    @media (
+        max-height: 500px
+    )
+    and (
+        min-width: 600px
+    ) {
+
+        .maneuver-banner {
+
+            top:
+                8px;
+
+            left:
+                8px;
+
+            right:
+                auto;
+
+            width:
+                390px;
+
+            min-height:
+                76px;
+
+            grid-template-columns:
+                52px
+                1fr
+                auto;
+
+            padding:
+                8px;
+        }
+
+
+        .maneuver-icon {
+
+            width:
+                48px;
+
+            height:
+                48px;
+        }
+
+
+        .maneuver-icon
+        .material-symbols-rounded {
+
+            font-size:
+                39px;
+        }
+
+
+        .maneuver-instruction {
+
+            font-size:
+                16px;
+        }
+
+
+        .lane-guidance {
+
+            top:
+                92px;
+
+            left:
+                8px;
+
+            transform:
+                none;
+        }
+
+
+        .eta-panel {
+
+            left:
+                8px;
+
+            right:
+                auto;
+
+            bottom:
+                8px;
+
+            width:
+                390px;
+
+            min-height:
+                65px;
+
+            border:
+                1px solid
+                var(--border-subtle);
+
+            border-radius:
+                15px;
+        }
+
+
+        .speed-panel {
+
+            left:
+                auto;
+
+            right:
+                10px;
+
+            bottom:
+                10px;
+        }
+
+
+        .navigation-controls {
+
+            right:
+                10px;
+
+            bottom:
+                84px;
+        }
+
+
+        .traffic-bubble {
+
+            display:
+                none;
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .maneuver-banner {
+
+            grid-template-columns:
+                50px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            min-height:
+                84px;
+        }
+
+
+        .next-turn {
+
+            display:
+                none;
+        }
+
+
+        .maneuver-icon {
+
+            width:
+                48px;
+
+            height:
+                48px;
+        }
+
+
+        .maneuver-icon
+        .material-symbols-rounded {
+
+            font-size:
+                40px;
+        }
+
+
+        .maneuver-instruction {
+
+            font-size:
+                16px;
+        }
+
+
+        .eta-panel {
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    1fr
+                )
+                48px;
+        }
+
+
+        .exit-navigation {
+
+            width:
+                42px;
+
+            height:
+                42px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="navigation-page">
+
+
+    <!-- =====================================================
+         MAP
+         ===================================================== -->
+
+    <section
+        class="navigation-map"
+        data-class="map"
+        data-semantic="active_navigation_map"
+    >
+
+
+        <!-- Water -->
+
+        {% if navigation.map.water %}
+
+        <div
+            class="map-water"
+            style="
+                left:
+                    {{ navigation.map.water.x }}%;
+
+                top:
+                    {{ navigation.map.water.y }}%;
+
+                width:
+                    {{ navigation.map.water.width }}%;
+
+                height:
+                    {{ navigation.map.water.height }}%;
+
+                transform:
+                    rotate(
+                        {{ navigation.map.water.rotation }}deg
+                    );
+            "
+        ></div>
+
+        {% endif %}
+
+
+        <!-- Parks -->
+
+        {% for park in navigation.map.parks %}
+
+        <div
+            class="map-park"
+            style="
+                left:
+                    {{ park.x }}%;
+
+                top:
+                    {{ park.y }}%;
+
+                width:
+                    {{ park.width }}%;
+
+                height:
+                    {{ park.height }}%;
+
+                border-radius:
+                    {{ park.radius }}%;
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        <!-- Buildings -->
+
+        {% for building in navigation.map.buildings %}
+
+        <div
+            class="map-building"
+            style="
+                left:
+                    {{ building.x }}%;
+
+                top:
+                    {{ building.y }}%;
+
+                width:
+                    {{ building.width }}%;
+
+                height:
+                    {{ building.height }}%;
+
+                transform:
+                    rotate(
+                        {{ building.rotation }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        <!-- Roads -->
+
+        {% for road in navigation.map.roads %}
+
+        <div
+            class="
+                map-road
+
+                {% if road.major %}
+                major
+                {% endif %}
+            "
+            style="
+                left:
+                    {{ road.x }}%;
+
+                top:
+                    {{ road.y }}%;
+
+                width:
+                    {{ road.length }}%;
+
+                height:
+                    {{ road.width }}px;
+
+                transform:
+                    rotate(
+                        {{ road.angle }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        <!-- Labels -->
+
+        {% for label in navigation.map.labels %}
+
+        <span
+            class="map-label"
+            style="
+                left:
+                    {{ label.x }}%;
+
+                top:
+                    {{ label.y }}%;
+
+                transform:
+                    rotate(
+                        {{ label.rotation }}deg
+                    );
+            "
+        >
+            {{ label.text }}
+        </span>
+
+        {% endfor %}
+
+
+        <!-- ==============================================
+             Alternate Route
+             ============================================== -->
+
+        {% if navigation.map.secondary_route %}
+
+            {% for segment in
+                navigation.map.secondary_route.segments
+            %}
+
+            <div
+                class="alternate-route-segment"
+                style="
+                    left:
+                        {{ segment.x }}%;
+
+                    top:
+                        {{ segment.y }}%;
+
+                    width:
+                        {{ segment.length }}%;
+
+                    transform:
+                        rotate(
+                            {{ segment.angle }}deg
+                        );
+                "
+            ></div>
+
+            {% endfor %}
+
+        {% endif %}
+
+
+        <!-- ==============================================
+             Active Route
+             ============================================== -->
+
+        {% for segment in navigation.map.route_segments %}
+
+        <div
+            class="navigation-route-segment"
+            style="
+                left:
+                    {{ segment.x }}%;
+
+                top:
+                    {{ segment.y }}%;
+
+                width:
+                    {{ segment.length }}%;
+
+                transform:
+                    rotate(
+                        {{ segment.angle }}deg
+                    );
+            "
+        ></div>
+
+        {% endfor %}
+
+
+        <!-- Vehicle -->
+
+        <div
+            class="vehicle-marker"
+            style="
+                left:
+                    {{ navigation.vehicle_position.x }}%;
+
+                top:
+                    {{ navigation.vehicle_position.y }}%;
+            "
+            data-class="selection_indicator"
+            data-semantic="navigation_position"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="navigation_position_icon"
+            >
+                navigation
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         MANEUVER BANNER
+         ===================================================== -->
+
+    <section
+        class="maneuver-banner"
+        data-class="card"
+        data-semantic="maneuver_banner"
+        data-occluder="true"
+    >
+
+
+        <div class="maneuver-icon">
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="maneuver_icon"
+            >
+                {{ navigation.maneuver.icon }}
+            </span>
+
+        </div>
+
+
+        <div class="maneuver-content">
+
+            <div
+                class="maneuver-distance"
+                data-class="text"
+                data-semantic="maneuver_distance"
+            >
+                {{ navigation.maneuver.distance }}
+            </div>
+
+
+            <div
+                class="maneuver-instruction"
+                data-class="text"
+                data-semantic="maneuver_instruction"
+            >
+                {{ navigation.maneuver.instruction }}
+            </div>
+
+
+            <div
+                class="maneuver-road"
+                data-class="text"
+                data-semantic="maneuver_road"
+            >
+                {{ navigation.maneuver.road }}
+            </div>
+
+        </div>
+
+
+        <div class="next-turn">
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="next_turn_icon"
+            >
+                {{ navigation.next_maneuver.icon }}
+            </span>
+
+            <span>
+                {{ navigation.next_maneuver.distance }}
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         LANE GUIDANCE
+         ===================================================== -->
+
+    {% if navigation.lane_guidance %}
+
+    <div
+        class="lane-guidance"
+        data-class="toolbar"
+        data-semantic="lane_guidance"
+        data-occluder="true"
+    >
+
+        {% for lane_index in range(navigation.lane_count) %}
+
+        <div
+            class="
+                lane
+
+                {% if
+                    lane_index + 1
+                    == navigation.active_lane
+                %}
+                active
+                {% endif %}
+            "
+            data-class="selection_indicator"
+            data-semantic="lane_{{ lane_index + 1 }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="lane_icon_{{ lane_index + 1 }}"
+            >
+                straight
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         TRAFFIC
+         ===================================================== -->
+
+    <div
+        class="traffic-bubble"
+        data-class="badge"
+        data-semantic="traffic_status"
+        data-occluder="true"
+    >
+
+        <span class="traffic-indicator"></span>
+
+        {{ navigation.traffic }}
+
+    </div>
+
+
+    <!-- =====================================================
+         SPEED
+         ===================================================== -->
+
+    <div class="speed-panel">
+
+        <div
+            class="current-speed"
+            data-class="card"
+            data-semantic="current_speed"
+            data-occluder="true"
+        >
+
+            <div
+                class="current-speed-value"
+                data-class="text"
+                data-semantic="current_speed_value"
+            >
+                {{ navigation.speed.current }}
+            </div>
+
+            <div
+                class="current-speed-unit"
+                data-class="text"
+                data-semantic="current_speed_unit"
+            >
+                {{ navigation.speed.unit }}
+            </div>
+
+        </div>
+
+
+        <div
+            class="speed-limit"
+            data-class="card"
+            data-semantic="speed_limit"
+            data-occluder="true"
+        >
+
+            <span class="speed-limit-label">
+                Speed
+            </span>
+
+            <span
+                class="speed-limit-value"
+                data-class="text"
+                data-semantic="speed_limit_value"
+            >
+                {{ navigation.speed.limit }}
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         CONTROLS
+         ===================================================== -->
+
+    <div class="navigation-controls">
+
+        <button
+            class="navigation-control"
+            data-class="button"
+            data-semantic="recenter_navigation"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="recenter_navigation_icon"
+            >
+                my_location
+            </span>
+
+        </button>
+
+
+        <button
+            class="navigation-control"
+            data-class="button"
+            data-semantic="route_overview"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="route_overview_icon"
+            >
+                route
+            </span>
+
+        </button>
+
+
+        <button
+            class="navigation-control"
+            data-class="button"
+            data-semantic="voice_navigation"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="voice_navigation_icon"
+            >
+                {% if navigation.voice_muted %}
+                volume_off
+                {% else %}
+                volume_up
+                {% endif %}
+            </span>
+
+        </button>
+
+    </div>
+
+
+    <!-- =====================================================
+         ETA
+         ===================================================== -->
+
+    <section
+        class="eta-panel"
+        data-class="bottom_sheet"
+        data-semantic="navigation_eta_panel"
+        data-occluder="true"
+    >
+
+        <div class="eta-item">
+
+            <div
+                class="eta-primary"
+                data-class="text"
+                data-semantic="remaining_time"
+            >
+                {{ navigation.eta.duration_text }}
+            </div>
+
+            <div class="eta-secondary">
+                remaining
+            </div>
+
+        </div>
+
+
+        <div class="eta-item">
+
+            <div
+                class="eta-primary"
+                data-class="text"
+                data-semantic="remaining_distance"
+            >
+                {{ navigation.eta.distance_text }}
+            </div>
+
+            <div class="eta-secondary">
+                distance
+            </div>
+
+        </div>
+
+
+        <div class="eta-item">
+
+            <div
+                class="eta-primary"
+                data-class="text"
+                data-semantic="arrival_time"
+            >
+                {{ navigation.eta.arrival_time }}
+            </div>
+
+            <div class="eta-secondary">
+                arrival
+            </div>
+
+        </div>
+
+
+        <button
+            class="exit-navigation"
+            data-class="button"
+            data-semantic="exit_navigation"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="exit_navigation_icon"
+            >
+                close
+            </span>
+
+        </button>
+
+    </section>
+
+</div>
+
+{% endblock %}

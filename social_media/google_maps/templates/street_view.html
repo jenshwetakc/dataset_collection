@@ -1,0 +1,1667 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Google Maps - Street View
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .street-view-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Viewer
+       ====================================================== */
+
+    .street-viewer {
+
+        position:
+            relative;
+
+        height:
+            56vh;
+
+        min-height:
+            360px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .street-view-image {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+
+        transform:
+            scale(
+                1.03
+            );
+    }
+
+
+    .street-view-fallback {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        color:
+            var(--icon-secondary);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .street-view-fallback
+    .material-symbols-rounded {
+
+        font-size:
+            72px;
+    }
+
+
+    /* ======================================================
+       Viewer Gradient
+       ====================================================== */
+
+    .viewer-gradient {
+
+        position:
+            absolute;
+
+        z-index:
+            5;
+
+        inset:
+            0;
+
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.35
+                ),
+                transparent 25%,
+                transparent 65%,
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.28
+                )
+            );
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Top Actions
+       ====================================================== */
+
+    .viewer-top-actions {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        top:
+            14px;
+
+        left:
+            14px;
+
+        right:
+            14px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+    }
+
+
+    .viewer-button-group {
+
+        display:
+            flex;
+
+        gap:
+            8px;
+    }
+
+
+    .viewer-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.35
+            );
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(
+                30,
+                30,
+                30,
+                0.60
+            );
+
+        color:
+            #FFFFFF;
+
+        backdrop-filter:
+            blur(
+                6px
+            );
+    }
+
+
+    /* ======================================================
+       Hotspots
+       ====================================================== */
+
+    .street-hotspot {
+
+        position:
+            absolute;
+
+        z-index:
+            25;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    .hotspot-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            50px;
+
+        height:
+            50px;
+
+        border:
+            3px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.92
+            );
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(
+                26,
+                115,
+                232,
+                0.88
+            );
+
+        color:
+            #FFFFFF;
+
+        box-shadow:
+            0 3px 10px
+            rgba(
+                0,
+                0,
+                0,
+                0.28
+            );
+    }
+
+
+    .hotspot-control
+    .material-symbols-rounded {
+
+        font-size:
+            28px;
+    }
+
+
+    .hotspot-distance {
+
+        padding:
+            3px
+            7px;
+
+        border-radius:
+            10px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.62
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Viewer Controls
+       ====================================================== */
+
+    .viewer-controls {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        right:
+            14px;
+
+        bottom:
+            16px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+    }
+
+
+    .viewer-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(
+                30,
+                30,
+                30,
+                0.65
+            );
+
+        color:
+            #FFFFFF;
+
+        box-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.24
+            );
+    }
+
+
+    /* ======================================================
+       Compass
+       ====================================================== */
+
+    .compass-control {
+
+        position:
+            relative;
+
+        width:
+            50px;
+
+        height:
+            50px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.20
+            );
+    }
+
+
+    .compass-arrow {
+
+        position:
+            absolute;
+
+        left:
+            50%;
+
+        top:
+            50%;
+
+        color:
+            var(--error);
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            )
+            rotate(
+                var(--compass-angle)
+            );
+    }
+
+
+    /* ======================================================
+       Place Panel
+       ====================================================== */
+
+    .street-details {
+
+        background:
+            var(--surface);
+    }
+
+
+    .street-summary {
+
+        padding:
+            18px
+            16px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .street-place-name {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            22px;
+
+        font-weight:
+            800;
+    }
+
+
+    .street-rating {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            4px;
+
+        margin-top:
+            7px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .street-rating
+    .material-symbols-rounded {
+
+        color:
+            #F9AB00;
+
+        font-size:
+            16px;
+    }
+
+
+    .street-address {
+
+        margin-top:
+            7px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .street-status {
+
+        margin-top:
+            5px;
+
+        color:
+            var(--success);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Action Bar
+       ====================================================== */
+
+    .street-actions {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            8px;
+
+        margin-top:
+            16px;
+    }
+
+
+    .street-action {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        min-height:
+            58px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            13px;
+
+        color:
+            var(--primary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    .street-action.primary {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Content Section
+       ====================================================== */
+
+    .street-section {
+
+        margin-top:
+            10px;
+
+        padding:
+            18px
+            16px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .section-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+    }
+
+
+    .section-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            17px;
+
+        font-weight:
+            800;
+    }
+
+
+    .section-action {
+
+        color:
+            var(--primary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Photo Strip
+       ====================================================== */
+
+    .street-photo-strip {
+
+        display:
+            flex;
+
+        gap:
+            7px;
+
+        margin-top:
+            13px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .street-photo {
+
+        width:
+            112px;
+
+        height:
+            90px;
+
+        flex:
+            0 0 112px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            11px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .street-photo img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    /* ======================================================
+       Mini Map
+       ====================================================== */
+
+    .street-minimap {
+
+        position:
+            relative;
+
+        height:
+            210px;
+
+        margin-top:
+            13px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--map-land);
+    }
+
+
+    .map-road {
+
+        position:
+            absolute;
+
+        z-index:
+            3;
+
+        height:
+            5px;
+
+        border-radius:
+            999px;
+
+        transform-origin:
+            left center;
+
+        background:
+            var(--map-road);
+
+        box-shadow:
+            0 0 0 1px
+            var(--map-road-outline);
+    }
+
+
+    .map-building {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-building);
+
+        border:
+            1px solid
+            var(--map-road-outline);
+
+        border-radius:
+            3px;
+    }
+
+
+    .map-park {
+
+        position:
+            absolute;
+
+        background:
+            var(--map-park);
+    }
+
+
+    .map-water {
+
+        position:
+            absolute;
+
+        border-radius:
+            45%;
+
+        background:
+            var(--map-water);
+    }
+
+
+    .map-label {
+
+        position:
+            absolute;
+
+        z-index:
+            5;
+
+        color:
+            var(--map-secondary-label);
+
+        font-size:
+            9px;
+    }
+
+
+    .minimap-marker {
+
+        position:
+            absolute;
+
+        z-index:
+            25;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border:
+            3px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 840px
+    ) {
+
+        .street-view-page {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                minmax(
+                    0,
+                    1fr
+                )
+                390px;
+
+            height:
+                100vh;
+
+            overflow:
+                hidden;
+        }
+
+
+        .street-viewer {
+
+            height:
+                100vh;
+
+            min-height:
+                100vh;
+        }
+
+
+        .street-details {
+
+            height:
+                100vh;
+
+            overflow-y:
+                auto;
+
+            border-left:
+                1px solid
+                var(--border-subtle);
+
+            box-shadow:
+                -2px 0 10px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.10
+                );
+        }
+
+
+        .street-summary {
+
+            padding-top:
+                22px;
+        }
+
+
+        .street-photo-strip {
+
+            flex-wrap:
+                wrap;
+
+            overflow:
+                visible;
+        }
+
+
+        .street-photo {
+
+            width:
+                calc(
+                    50%
+                    - 4px
+                );
+
+            height:
+                112px;
+
+            flex:
+                0 0
+                calc(
+                    50%
+                    - 4px
+                );
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .street-viewer {
+
+            min-height:
+                320px;
+        }
+
+
+        .street-actions {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    1fr
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="street-view-page">
+
+
+    <!-- =====================================================
+         STREET VIEW
+         ===================================================== -->
+
+    <section
+        class="street-viewer"
+        data-class="image"
+        data-semantic="street_view_panorama"
+    >
+
+        {% if street.street_view_image %}
+
+        <img
+            class="street-view-image"
+            src="{{ street.street_view_image }}"
+            alt=""
+        >
+
+        {% else %}
+
+        <div class="street-view-fallback">
+
+            <span class="material-symbols-rounded">
+                panorama
+            </span>
+
+        </div>
+
+        {% endif %}
+
+
+        <div class="viewer-gradient"></div>
+
+
+        <!-- Top buttons -->
+
+        <div class="viewer-top-actions">
+
+            <button
+                class="viewer-button"
+                data-class="button"
+                data-semantic="street_view_back"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="street_view_back_icon"
+                >
+                    arrow_back
+                </span>
+
+            </button>
+
+
+            <div class="viewer-button-group">
+
+                <button
+                    class="viewer-button"
+                    data-class="button"
+                    data-semantic="street_view_share"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="street_view_share_icon"
+                    >
+                        share
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="viewer-button"
+                    data-class="button"
+                    data-semantic="street_view_menu"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="street_view_menu_icon"
+                    >
+                        more_vert
+                    </span>
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- Hotspots -->
+
+        {% for hotspot in street.hotspots %}
+
+        <div
+            class="street-hotspot"
+            style="
+                left:
+                    {{ hotspot.x }}%;
+
+                top:
+                    {{ hotspot.y }}%;
+            "
+        >
+
+            <button
+                class="hotspot-control"
+                data-class="button"
+                data-semantic="street_hotspot_{{ hotspot.id }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="street_hotspot_icon_{{ hotspot.id }}"
+                >
+                    {{ hotspot.icon }}
+                </span>
+
+            </button>
+
+
+            <span
+                class="hotspot-distance"
+                data-class="badge"
+                data-semantic="street_hotspot_distance_{{ hotspot.id }}"
+            >
+                {{ hotspot.distance }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+
+        <!-- Viewer Controls -->
+
+        <div class="viewer-controls">
+
+            <div
+                class="compass-control"
+                data-class="button"
+                data-semantic="street_compass"
+                style="
+                    --compass-angle:
+                        {{ street.orientation }}deg;
+                "
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        compass-arrow
+                    "
+                    data-class="icon"
+                    data-semantic="street_compass_icon"
+                >
+                    navigation
+                </span>
+
+            </div>
+
+
+            <button
+                class="viewer-control"
+                data-class="button"
+                data-semantic="street_zoom_in"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="street_zoom_in_icon"
+                >
+                    add
+                </span>
+
+            </button>
+
+
+            <button
+                class="viewer-control"
+                data-class="button"
+                data-semantic="street_zoom_out"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="street_zoom_out_icon"
+                >
+                    remove
+                </span>
+
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         DETAILS
+         ===================================================== -->
+
+    <aside class="street-details">
+
+
+        <!-- Summary -->
+
+        <section
+            class="street-summary"
+            data-class="card"
+            data-semantic="street_place_summary"
+        >
+
+            <h1
+                class="street-place-name"
+                data-class="text"
+                data-semantic="street_place_name"
+            >
+                {{ street.place_name }}
+            </h1>
+
+
+            <div class="street-rating">
+
+                <span
+                    data-class="text"
+                    data-semantic="street_rating"
+                >
+                    {{ street.rating }}
+                </span>
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="street_rating_star"
+                >
+                    star
+                </span>
+
+
+                <span>
+                    ({{ street.reviews }})
+                </span>
+
+
+                <span>
+                    ·
+                    {{ street.place_type }}
+                </span>
+
+            </div>
+
+
+            <div
+                class="street-address"
+                data-class="text"
+                data-semantic="street_address"
+            >
+                {{ street.address }},
+                {{ street.city }}
+            </div>
+
+
+            <div
+                class="street-status"
+                data-class="badge"
+                data-semantic="street_open_status"
+            >
+                {{ street.open_text }}
+            </div>
+
+
+            <!-- Actions -->
+
+            <div class="street-actions">
+
+                <button
+                    class="
+                        street-action
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="street_directions"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="street_directions_icon"
+                    >
+                        directions
+                    </span>
+
+                    Directions
+
+                </button>
+
+
+                <button
+                    class="street-action"
+                    data-class="button"
+                    data-semantic="street_save"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="street_save_icon"
+                    >
+                        {% if street.saved %}
+                        bookmark
+                        {% else %}
+                        bookmark_border
+                        {% endif %}
+                    </span>
+
+                    Save
+
+                </button>
+
+
+                <button
+                    class="street-action"
+                    data-class="button"
+                    data-semantic="street_share_action"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="street_share_action_icon"
+                    >
+                        share
+                    </span>
+
+                    Share
+
+                </button>
+
+
+                <button
+                    class="street-action"
+                    data-class="button"
+                    data-semantic="street_photos_action"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="street_photos_action_icon"
+                    >
+                        photo_library
+                    </span>
+
+                    Photos
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- Photos -->
+
+        <section
+            class="street-section"
+            data-class="section"
+            data-semantic="street_photos_section"
+        >
+
+            <div class="section-header">
+
+                <h2
+                    class="section-title"
+                    data-class="text"
+                    data-semantic="street_photos_title"
+                >
+                    Photos
+                </h2>
+
+
+                <button
+                    class="section-action"
+                    data-class="button"
+                    data-semantic="street_all_photos"
+                >
+                    See all
+                </button>
+
+            </div>
+
+
+            <div class="street-photo-strip">
+
+                {% for image in street.photos %}
+
+                <div
+                    class="street-photo"
+                    data-class="image"
+                    data-semantic="street_photo_{{ loop.index }}"
+                >
+
+                    <img
+                        src="{{ image }}"
+                        alt=""
+                    >
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+
+        <!-- Minimap -->
+
+        <section
+            class="street-section"
+            data-class="section"
+            data-semantic="street_location_section"
+        >
+
+            <div class="section-header">
+
+                <h2
+                    class="section-title"
+                    data-class="text"
+                    data-semantic="street_location_title"
+                >
+                    Location
+                </h2>
+
+            </div>
+
+
+            <div
+                class="street-minimap"
+                data-class="map"
+                data-semantic="street_minimap"
+            >
+
+                {% if street.map.water %}
+
+                <div
+                    class="map-water"
+                    style="
+                        left:
+                            {{ street.map.water.x }}%;
+
+                        top:
+                            {{ street.map.water.y }}%;
+
+                        width:
+                            {{ street.map.water.width }}%;
+
+                        height:
+                            {{ street.map.water.height }}%;
+                    "
+                ></div>
+
+                {% endif %}
+
+
+                {% for park in street.map.parks %}
+
+                <div
+                    class="map-park"
+                    style="
+                        left:
+                            {{ park.x }}%;
+
+                        top:
+                            {{ park.y }}%;
+
+                        width:
+                            {{ park.width }}%;
+
+                        height:
+                            {{ park.height }}%;
+                    "
+                ></div>
+
+                {% endfor %}
+
+
+                {% for building in street.map.buildings %}
+
+                <div
+                    class="map-building"
+                    style="
+                        left:
+                            {{ building.x }}%;
+
+                        top:
+                            {{ building.y }}%;
+
+                        width:
+                            {{ building.width }}%;
+
+                        height:
+                            {{ building.height }}%;
+                    "
+                ></div>
+
+                {% endfor %}
+
+
+                {% for road in street.map.roads %}
+
+                <div
+                    class="map-road"
+                    style="
+                        left:
+                            {{ road.x }}%;
+
+                        top:
+                            {{ road.y }}%;
+
+                        width:
+                            {{ road.length }}%;
+
+                        transform:
+                            rotate(
+                                {{ road.angle }}deg
+                            );
+                    "
+                ></div>
+
+                {% endfor %}
+
+
+                {% for label in street.map.labels %}
+
+                <span
+                    class="map-label"
+                    style="
+                        left:
+                            {{ label.x }}%;
+
+                        top:
+                            {{ label.y }}%;
+                    "
+                >
+                    {{ label.text }}
+                </span>
+
+                {% endfor %}
+
+
+                <div
+                    class="minimap-marker"
+                    style="
+                        left:
+                            {{ street.map.marker.x }}%;
+
+                        top:
+                            {{ street.map.marker.y }}%;
+                    "
+                    data-class="selection_indicator"
+                    data-semantic="street_minimap_marker"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="street_minimap_marker_icon"
+                    >
+                        location_on
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </aside>
+
+</div>
+
+{% endblock %}
