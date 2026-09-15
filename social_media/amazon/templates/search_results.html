@@ -1,0 +1,2115 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Amazon Search Results
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .search-page-header {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            120;
+
+        background:
+            var(--surface);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .search-header-main {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto minmax(280px, 1fr) auto;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            68px;
+
+        padding:
+            10px
+            var(--page-padding);
+    }
+
+
+    .search-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            108px;
+
+        height:
+            42px;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            19px;
+
+        font-weight:
+            800;
+    }
+
+
+    .search-control {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            )
+            50px;
+
+        height:
+            46px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+
+        overflow:
+            hidden;
+    }
+
+
+    .search-control input {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        padding:
+            0 15px;
+
+        font-size:
+            14px;
+    }
+
+
+    .search-submit {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .header-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    /* ======================================================
+       Results Toolbar
+       ====================================================== */
+
+    .results-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            16px;
+
+        min-height:
+            54px;
+
+        padding:
+            8px
+            var(--page-padding);
+
+        background:
+            var(--surface);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .results-summary {
+
+        min-width:
+            0;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+    }
+
+
+    .results-query {
+
+        font-weight:
+            800;
+    }
+
+
+    .toolbar-actions {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .toolbar-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            38px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Sort Popup
+       ====================================================== */
+
+    .sort-popup {
+
+        position:
+            absolute;
+
+        z-index:
+            300;
+
+        top:
+            calc(
+                100%
+                + 8px
+            );
+
+        right:
+            0;
+
+        width:
+            240px;
+
+        padding:
+            8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .sort-option {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-height:
+            42px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            var(--small-radius);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        text-align:
+            left;
+    }
+
+
+    .sort-option-selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Active Filters
+       ====================================================== */
+
+    .active-filter-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            10px
+            var(--page-padding);
+
+        overflow:
+            hidden;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .filter-chip {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        min-height:
+            34px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        white-space:
+            nowrap;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Main Layout
+       ====================================================== */
+
+    .search-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            230px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            24px;
+
+        width:
+            min(
+                calc(
+                    100%
+                    - (
+                        var(--page-padding)
+                        * 2
+                    )
+                ),
+                var(--content-max-width)
+            );
+
+        margin:
+            0 auto;
+
+        padding-top:
+            22px;
+
+        padding-bottom:
+            40px;
+    }
+
+
+    /* ======================================================
+       Filters
+       ====================================================== */
+
+    .filter-sidebar {
+
+        align-self:
+            start;
+
+        padding:
+            16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .filter-title {
+
+        margin-bottom:
+            16px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            800;
+    }
+
+
+    .filter-group {
+
+        padding:
+            15px 0;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .filter-group:first-of-type {
+
+        border-top:
+            none;
+
+        padding-top:
+            0;
+    }
+
+
+    .filter-group-title {
+
+        margin-bottom:
+            10px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .filter-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            9px;
+    }
+
+
+    .filter-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .filter-checkbox {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            18px;
+
+        height:
+            18px;
+
+        flex:
+            0 0 auto;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            4px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .filter-checkbox-selected {
+
+        background:
+            var(--primary);
+
+        border-color:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .checkbox-icon {
+
+        font-size:
+            15px;
+    }
+
+
+    /* ======================================================
+       Product Results
+       ====================================================== */
+
+    .result-column {
+
+        min-width:
+            0;
+    }
+
+
+    .result-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            16px;
+    }
+
+
+    .result-card {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        min-width:
+            0;
+
+        min-height:
+            410px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+
+        overflow:
+            hidden;
+    }
+
+
+    .result-image-wrap {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        aspect-ratio:
+            1 / 1;
+
+        background:
+            var(--surface-variant);
+
+        overflow:
+            hidden;
+    }
+
+
+    .result-image {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .result-badge {
+
+        position:
+            absolute;
+
+        top:
+            8px;
+
+        left:
+            8px;
+
+        padding:
+            5px 8px;
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--badge-background);
+
+        color:
+            var(--badge-text);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .result-content {
+
+        display:
+            flex;
+
+        flex:
+            1;
+
+        flex-direction:
+            column;
+
+        gap:
+            7px;
+
+        padding:
+            12px;
+    }
+
+
+    .sponsored-label {
+
+        min-height:
+            14px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .result-product-title {
+
+        min-height:
+            38px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+
+        line-height:
+            1.4;
+    }
+
+
+    .rating-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+    }
+
+
+    .rating-star {
+
+        color:
+            var(--warning);
+
+        font-size:
+            17px;
+    }
+
+
+    .rating-value {
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .review-count {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .price-row {
+
+        display:
+            flex;
+
+        align-items:
+            baseline;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            6px;
+    }
+
+
+    .current-price {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+    }
+
+
+    .old-price {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        text-decoration:
+            line-through;
+    }
+
+
+    .discount {
+
+        color:
+            var(--error);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .prime-badge {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        width:
+            fit-content;
+
+        min-height:
+            22px;
+
+        padding:
+            0 7px;
+
+        border-radius:
+            var(--small-radius);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .delivery {
+
+        min-height:
+            28px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        line-height:
+            1.3;
+    }
+
+
+    .stock {
+
+        color:
+            var(--success);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .result-action {
+
+        width:
+            100%;
+
+        margin-top:
+            auto;
+    }
+
+
+    /* ======================================================
+       Empty Results
+       ====================================================== */
+
+    .empty-results {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            14px;
+
+        min-height:
+            420px;
+
+        padding:
+            40px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+
+        text-align:
+            center;
+    }
+
+
+    .empty-icon {
+
+        font-size:
+            52px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .empty-title {
+
+        font-size:
+            22px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .empty-text {
+
+        max-width:
+            430px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+    }
+
+
+    /* ======================================================
+       Bottom Sheet
+       ====================================================== */
+
+    .sheet-backdrop {
+
+        position:
+            fixed;
+
+        z-index:
+            490;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.34
+            );
+    }
+
+
+    .mobile-sheet {
+
+        position:
+            fixed;
+
+        z-index:
+            500;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        max-height:
+            76vh;
+
+        padding:
+            12px 16px 24px;
+
+        border-radius:
+            22px 22px 0 0;
+
+        background:
+            var(--surface);
+
+        overflow-y:
+            auto;
+    }
+
+
+    .sheet-handle {
+
+        width:
+            42px;
+
+        height:
+            4px;
+
+        margin:
+            0 auto 16px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--border);
+    }
+
+
+    .sheet-title {
+
+        margin-bottom:
+            16px;
+
+        font-size:
+            19px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 600px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .search-layout {
+
+            grid-template-columns:
+                190px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap:
+                16px;
+        }
+
+
+        .result-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .search-logo {
+
+            width:
+                88px;
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .search-page-header {
+
+            position:
+                relative;
+        }
+
+
+        .search-header-main {
+
+            grid-template-columns:
+                auto
+                minmax(
+                    0,
+                    1fr
+                )
+                auto;
+
+            gap:
+                8px;
+
+            padding:
+                8px
+                var(--page-padding);
+        }
+
+
+        .search-logo {
+
+            width:
+                78px;
+
+            height:
+                38px;
+
+            font-size:
+                15px;
+        }
+
+
+        .search-control {
+
+            grid-column:
+                1 / -1;
+
+            grid-row:
+                2;
+
+            height:
+                44px;
+        }
+
+
+        .header-account {
+
+            display:
+                none;
+        }
+
+
+        .results-toolbar {
+
+            min-height:
+                50px;
+
+            padding:
+                7px
+                var(--page-padding);
+        }
+
+
+        .results-summary {
+
+            font-size:
+                12px;
+        }
+
+
+        .desktop-sort {
+
+            display:
+                none;
+        }
+
+
+        .active-filter-row {
+
+            padding:
+                8px
+                var(--page-padding);
+        }
+
+
+        .search-layout {
+
+            display:
+                block;
+
+            width:
+                calc(
+                    100%
+                    - (
+                        var(--page-padding)
+                        * 2
+                    )
+                );
+
+            padding-top:
+                14px;
+        }
+
+
+        .filter-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .result-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                8px;
+        }
+
+
+        .result-card {
+
+            min-height:
+                345px;
+        }
+
+
+        .result-content {
+
+            padding:
+                9px;
+        }
+
+
+        .current-price {
+
+            font-size:
+                17px;
+        }
+
+
+        .result-product-title {
+
+            font-size:
+                12px;
+        }
+    }
+
+
+    /* ======================================================
+       Large Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 1600px
+    ) {
+
+        .result-grid {
+
+            grid-template-columns:
+                repeat(
+                    5,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<!-- ==========================================================
+     Header
+     ========================================================== -->
+
+<header
+    class="search-page-header"
+    data-class="app_bar"
+    data-semantic="amazon_search_header"
+>
+
+    <div class="search-header-main">
+
+        <div
+            class="search-logo"
+            data-class="logo"
+            data-semantic="amazon_logo"
+        >
+            amazon
+        </div>
+
+
+        <div
+            class="search-control"
+            data-class="search_bar"
+            data-semantic="search_bar"
+        >
+
+            <input
+                type="text"
+                value="{{ amazon.query }}"
+                data-class="input_field"
+                data-semantic="search_input"
+            >
+
+            <button
+                class="search-submit"
+                data-class="button"
+                data-semantic="search_submit"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    search
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div class="header-actions">
+
+            <button
+                class="
+                    icon-button
+                    header-account
+                "
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    person
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    shopping_cart
+                </span>
+            </button>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<!-- ==========================================================
+     Results Toolbar
+     ========================================================== -->
+
+<div
+    class="results-toolbar"
+    data-class="toolbar"
+>
+
+    <div
+        class="results-summary"
+        data-class="text"
+    >
+
+        {% if amazon.result_count > 0 %}
+
+            {{ amazon.result_count }}
+            results for
+
+            <span class="results-query">
+                "{{ amazon.query }}"
+            </span>
+
+        {% else %}
+
+            No results for
+
+            <span class="results-query">
+                "{{ amazon.query }}"
+            </span>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="toolbar-actions">
+
+        <button
+            class="toolbar-button"
+            data-class="button"
+            data-semantic="filter_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                tune
+            </span>
+
+            Filter
+        </button>
+
+
+        <button
+            class="
+                toolbar-button
+                desktop-sort
+            "
+            data-class="button"
+            data-semantic="sort_button"
+        >
+
+            Sort:
+            {{ amazon.selected_sort.label }}
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                expand_more
+            </span>
+
+        </button>
+
+
+        {% if amazon.show_sort_menu %}
+
+        <div
+            class="sort-popup"
+            data-class="dialog"
+            data-semantic="sort_popup"
+        >
+
+            {% for option in amazon.sort_options %}
+
+            <button
+                class="
+                    sort-option
+                    {% if option.value == amazon.selected_sort.value %}
+                    sort-option-selected
+                    {% endif %}
+                "
+                data-class="button"
+            >
+                {{ option.label }}
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ==========================================================
+     Active Filters
+     ========================================================== -->
+
+{% if amazon.active_filters %}
+
+<div
+    class="active-filter-row"
+    data-class="toolbar"
+>
+
+    {% for filter_name in amazon.active_filters %}
+
+    <button
+        class="filter-chip"
+        data-class="chip"
+    >
+        {{ filter_name }}
+
+        <span
+            class="material-symbols-rounded"
+            data-class="icon"
+        >
+            close
+        </span>
+    </button>
+
+    {% endfor %}
+
+</div>
+
+{% endif %}
+
+
+<!-- ==========================================================
+     Main
+     ========================================================== -->
+
+<main class="search-layout">
+
+
+    <!-- ======================================================
+         Desktop Filters
+         ====================================================== -->
+
+    <aside
+        class="filter-sidebar"
+        data-class="section"
+        data-semantic="filter_sidebar"
+    >
+
+        <h2
+            class="filter-title"
+            data-class="text"
+        >
+            Filters
+        </h2>
+
+
+        {% for group in amazon.filters %}
+
+        <section class="filter-group">
+
+            <h3
+                class="filter-group-title"
+                data-class="text"
+            >
+                {{ group.name }}
+            </h3>
+
+
+            <div class="filter-list">
+
+                {% for item in group["items"] %}
+
+                <div class="filter-row">
+
+                    <button
+                        class="
+                            filter-checkbox
+                            {% if item.selected %}
+                            filter-checkbox-selected
+                            {% endif %}
+                        "
+                        data-class="checkbox"
+                    >
+
+                        {% if item.selected %}
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                checkbox-icon
+                            "
+                            data-class="icon"
+                        >
+                            check
+                        </span>
+
+                        {% endif %}
+
+                    </button>
+
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ item.label }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        {% endfor %}
+
+    </aside>
+
+
+    <!-- ======================================================
+         Results
+         ====================================================== -->
+
+    <section
+        class="result-column"
+        data-class="section"
+        data-semantic="search_results"
+    >
+
+
+        {% if amazon.products %}
+
+        <div class="result-grid">
+
+            {% for product in amazon.products %}
+
+            <article
+                class="result-card"
+                data-class="card"
+                data-semantic="result_product_{{ loop.index }}"
+            >
+
+                <div class="result-image-wrap">
+
+
+                    {% if product.image %}
+
+                    <img
+                        class="result-image"
+                        src="{{ product.image }}"
+                        alt=""
+                        data-class="image"
+                    >
+
+                    {% endif %}
+
+
+                    {% if product.badge %}
+
+                    <span
+                        class="result-badge"
+                        data-class="badge"
+                    >
+                        {{ product.badge }}
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="result-content">
+
+                    <div
+                        class="sponsored-label"
+                        data-class="text"
+                    >
+                        {% if product.sponsored %}
+                            Sponsored
+                        {% endif %}
+                    </div>
+
+
+                    <div
+                        class="
+                            result-product-title
+                            line-clamp-2
+                        "
+                        data-class="text"
+                    >
+                        {{ product.title }}
+                    </div>
+
+
+                    <div class="rating-row">
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                rating-star
+                            "
+                            data-class="icon"
+                        >
+                            star
+                        </span>
+
+
+                        <span
+                            class="rating-value"
+                            data-class="text"
+                        >
+                            {{ product.rating }}
+                        </span>
+
+
+                        <span
+                            class="review-count"
+                            data-class="text"
+                        >
+                            ({{ product.review_count }})
+                        </span>
+
+                    </div>
+
+
+                    <div class="price-row">
+
+                        <span
+                            class="current-price"
+                            data-class="text"
+                        >
+                            ${{ "%.2f"|format(product.price.current) }}
+                        </span>
+
+
+                        {% if product.price.original %}
+
+                        <span
+                            class="old-price"
+                            data-class="text"
+                        >
+                            ${{ "%.2f"|format(product.price.original) }}
+                        </span>
+
+
+                        <span
+                            class="discount"
+                            data-class="text"
+                        >
+                            -{{ product.price.discount }}%
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    {% if product.prime %}
+
+                    <span
+                        class="prime-badge"
+                        data-class="badge"
+                    >
+                        Prime
+                    </span>
+
+                    {% endif %}
+
+
+                    <div
+                        class="delivery"
+                        data-class="text"
+                    >
+                        {% if product.free_delivery %}
+                            FREE delivery available
+                        {% else %}
+                            Standard delivery available
+                        {% endif %}
+                    </div>
+
+
+                    <div
+                        class="stock"
+                        data-class="text"
+                    >
+                        {{ product.stock }}
+                    </div>
+
+
+                    <button
+                        class="
+                            primary-button
+                            result-action
+                        "
+                        data-class="button"
+                    >
+                        Add to cart
+                    </button>
+
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+        </div>
+
+
+        {% else %}
+
+
+        <!-- ==================================================
+             Empty State
+             ================================================== -->
+
+        <div
+            class="empty-results"
+            data-class="card"
+            data-semantic="empty_results"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    empty-icon
+                "
+                data-class="icon"
+            >
+                search_off
+            </span>
+
+
+            <h2
+                class="empty-title"
+                data-class="text"
+            >
+                No matching products
+            </h2>
+
+
+            <p
+                class="empty-text"
+                data-class="text"
+            >
+                Try checking the spelling,
+                removing filters, or using
+                broader search terms.
+            </p>
+
+
+            <button
+                class="primary-button"
+                data-class="button"
+            >
+                Clear filters
+            </button>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+</main>
+
+
+<!-- ==========================================================
+     Mobile Filter Bottom Sheet
+     ========================================================== -->
+
+{% if amazon.show_filter_sheet %}
+
+<div class="sheet-backdrop"></div>
+
+<div
+    class="mobile-sheet"
+    data-class="bottom_sheet"
+    data-semantic="mobile_filter_sheet"
+>
+
+    <div class="sheet-handle"></div>
+
+
+    <h2
+        class="sheet-title"
+        data-class="text"
+    >
+        Filters
+    </h2>
+
+
+    {% for group in amazon.filters %}
+
+    <section class="filter-group">
+
+        <h3
+            class="filter-group-title"
+            data-class="text"
+        >
+            {{ group.name }}
+        </h3>
+
+
+        <div class="filter-list">
+
+            {% for item in group["items"] %}
+
+            <div class="filter-row">
+
+                <button
+                    class="
+                        filter-checkbox
+                        {% if item.selected %}
+                        filter-checkbox-selected
+                        {% endif %}
+                    "
+                    data-class="checkbox"
+                >
+
+                    {% if item.selected %}
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            checkbox-icon
+                        "
+                        data-class="icon"
+                    >
+                        check
+                    </span>
+
+                    {% endif %}
+
+                </button>
+
+
+                <span data-class="text">
+                    {{ item.label }}
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+    {% endfor %}
+
+
+    <button
+        class="primary-button"
+        style="width:100%; margin-top:16px;"
+        data-class="button"
+    >
+        Show results
+    </button>
+
+</div>
+
+{% endif %}
+
+
+<!-- ==========================================================
+     Mobile Sort Bottom Sheet
+     ========================================================== -->
+
+{% if amazon.show_sort_sheet %}
+
+<div class="sheet-backdrop"></div>
+
+<div
+    class="mobile-sheet"
+    data-class="bottom_sheet"
+    data-semantic="mobile_sort_sheet"
+>
+
+    <div class="sheet-handle"></div>
+
+
+    <h2
+        class="sheet-title"
+        data-class="text"
+    >
+        Sort by
+    </h2>
+
+
+    {% for option in amazon.sort_options %}
+
+    <button
+        class="
+            sort-option
+            {% if option.value == amazon.selected_sort.value %}
+            sort-option-selected
+            {% endif %}
+        "
+        data-class="button"
+    >
+        {{ option.label }}
+    </button>
+
+    {% endfor %}
+
+</div>
+
+{% endif %}
+
+
+{% endblock %}
