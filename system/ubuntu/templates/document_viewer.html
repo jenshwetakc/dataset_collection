@@ -1,0 +1,3207 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Ubuntu Document Viewer
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    .document-desktop {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        overflow:
+            hidden;
+
+        background:
+            linear-gradient(
+                145deg,
+                var(--primary-container),
+                var(--background)
+            );
+    }
+
+
+    /* ======================================================
+       Top Panel
+       ====================================================== */
+
+    .document-top-panel {
+
+        position:
+            absolute;
+
+        z-index:
+            100;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        height:
+            var(--panel-height);
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            auto
+            1fr;
+
+        align-items:
+            center;
+
+        padding:
+            0 10px;
+
+        background:
+            rgba(
+                20,
+                20,
+                22,
+                0.96
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size:
+            13px;
+    }
+
+
+    .panel-left {
+
+        justify-self:
+            start;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+    }
+
+
+    .panel-center {
+
+        justify-self:
+            center;
+
+        font-weight:
+            600;
+    }
+
+
+    .panel-right {
+
+        justify-self:
+            end;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .panel-system-item {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            26px;
+
+        height:
+            26px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .panel-system-icon {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        font-size:
+            18px;
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Dock
+       ====================================================== */
+
+    .document-dock {
+
+        position:
+            absolute;
+
+        z-index:
+            80;
+
+        top:
+            50%;
+
+        left:
+            10px;
+
+        transform:
+            translateY(-50%);
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            6px;
+
+        padding:
+            8px;
+
+        border-radius:
+            14px;
+
+        background:
+            rgba(
+                30,
+                30,
+                32,
+                0.90
+            );
+
+        box-shadow:
+            var(--popup-shadow);
+    }
+
+
+    .dock-button {
+
+        position:
+            relative;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            var(--dock-item-size);
+
+        height:
+            var(--dock-item-size);
+
+        border-radius:
+            10px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .dock-button.active {
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.18
+            );
+    }
+
+
+    .dock-dot {
+
+        position:
+            absolute;
+
+        left:
+            -5px;
+
+        width:
+            4px;
+
+        height:
+            4px;
+
+        border-radius:
+            50%;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Viewer Window
+       ====================================================== */
+
+    .document-window {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        left:
+            9%;
+
+        top:
+            7%;
+
+        width:
+            86%;
+
+        height:
+            88%;
+
+        min-width:
+            820px;
+
+        min-height:
+            540px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--window-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--window-shadow);
+    }
+
+
+    .document-window.presentation {
+
+        z-index:
+            300;
+
+        inset:
+            0;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        border:
+            none;
+
+        border-radius:
+            0;
+
+        background:
+            #09090A;
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .document-header {
+
+        flex:
+            0 0
+            50px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            0 10px;
+
+        background:
+            var(--surface-variant);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .header-left,
+    .header-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .document-title {
+
+        justify-self:
+            center;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    .header-button,
+    .window-control {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--icon);
+    }
+
+
+    .window-control {
+
+        width:
+            29px;
+
+        height:
+            29px;
+
+        border-radius:
+            50%;
+    }
+
+
+    .window-control.close {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    /* ======================================================
+       Toolbar
+       ====================================================== */
+
+    .document-toolbar {
+
+        flex:
+            0 0
+            44px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        padding:
+            0 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .toolbar-button {
+
+        min-width:
+            34px;
+
+        height:
+            34px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        padding:
+            0 8px;
+
+        border-radius:
+            7px;
+
+        color:
+            var(--icon);
+
+        font-size:
+            11px;
+    }
+
+
+    .toolbar-button.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .toolbar-divider {
+
+        width:
+            1px;
+
+        height:
+            24px;
+
+        margin:
+            0 4px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .page-indicator {
+
+        min-width:
+            100px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .zoom-value {
+
+        min-width:
+            50px;
+
+        text-align:
+            center;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Search Toolbar
+       ====================================================== */
+
+    .search-toolbar {
+
+        flex:
+            0 0
+            46px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            6px;
+
+        padding:
+            5px 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .document-search {
+
+        width:
+            340px;
+
+        height:
+            36px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .document-search input {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    /* ======================================================
+       Layout
+       ====================================================== */
+
+    .document-main {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            );
+
+        overflow:
+            hidden;
+    }
+
+
+    .document-main.with-sidebar {
+
+        grid-template-columns:
+            240px
+            minmax(
+                0,
+                1fr
+            );
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .document-sidebar {
+
+        min-height:
+            0;
+
+        overflow:
+            auto;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .sidebar-title {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            2;
+
+        min-height:
+            42px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        padding:
+            0 12px;
+
+        background:
+            var(--surface-variant);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Thumbnails
+       ====================================================== */
+
+    .thumbnail-list {
+
+        display:
+            grid;
+
+        gap:
+            12px;
+
+        padding:
+            12px;
+    }
+
+
+    .page-thumbnail {
+
+        position:
+            relative;
+
+        min-height:
+            150px;
+
+        padding:
+            10px;
+
+        border:
+            2px solid
+            transparent;
+
+        border-radius:
+            8px;
+
+        background:
+            #FFFFFF;
+
+        color:
+            #222222;
+
+        box-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.12
+            );
+    }
+
+
+    .page-thumbnail.selected {
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .thumbnail-lines {
+
+        display:
+            grid;
+
+        gap:
+            5px;
+
+        margin-top:
+            10px;
+    }
+
+
+    .thumbnail-line {
+
+        height:
+            4px;
+
+        border-radius:
+            2px;
+
+        background:
+            #D7D7D7;
+    }
+
+
+    .thumbnail-number {
+
+        position:
+            absolute;
+
+        right:
+            7px;
+
+        bottom:
+            6px;
+
+        font-size:
+            9px;
+
+        color:
+            #666666;
+    }
+
+
+    /* ======================================================
+       Bookmarks / Search / Annotations Rows
+       ====================================================== */
+
+    .sidebar-row {
+
+        min-height:
+            58px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            30px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            7px 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-row-icon {
+
+        color:
+            var(--primary);
+    }
+
+
+    .sidebar-row-title {
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-row-meta {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .page-badge {
+
+        min-width:
+            25px;
+
+        min-height:
+            20px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    /* ======================================================
+       Document Canvas
+       ====================================================== */
+
+    .document-canvas {
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            auto;
+
+        padding:
+            30px;
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        justify-content:
+            center;
+
+        gap:
+            24px;
+
+        background:
+            #4A474C;
+    }
+
+
+    .document-canvas.presentation {
+
+        align-items:
+            center;
+
+        background:
+            #050506;
+    }
+
+
+    /* ======================================================
+       PDF Page
+       ====================================================== */
+
+    .pdf-page {
+
+        flex:
+            0 0 auto;
+
+        width:
+            620px;
+
+        min-height:
+            820px;
+
+        padding:
+            58px 54px;
+
+        background:
+            #FFFFFF;
+
+        color:
+            #191919;
+
+        box-shadow:
+            0 6px 26px
+            rgba(
+                0,
+                0,
+                0,
+                0.30
+            );
+
+        transform-origin:
+            top center;
+    }
+
+
+    .pdf-page.zoomed {
+
+        width:
+            calc(
+                620px
+                *
+                var(--zoom-scale)
+            );
+    }
+
+
+    .page-title {
+
+        margin-bottom:
+            22px;
+
+        font-family:
+            serif;
+
+        font-size:
+            24px;
+
+        font-weight:
+            700;
+    }
+
+
+    .page-paragraph {
+
+        margin-bottom:
+            16px;
+
+        font-family:
+            serif;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.65;
+
+        text-align:
+            justify;
+    }
+
+
+    .document-figure {
+
+        height:
+            200px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        margin:
+            22px 0;
+
+        border:
+            1px solid
+            #D6D6D6;
+
+        background:
+            linear-gradient(
+                135deg,
+                #E9EFF9,
+                #DCE5F4
+            );
+
+        color:
+            #4D5563;
+    }
+
+
+    .document-table {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                1fr
+            );
+
+        margin:
+            20px 0;
+
+        border:
+            1px solid
+            #CFCFCF;
+    }
+
+
+    .table-cell {
+
+        min-height:
+            34px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        padding:
+            5px 7px;
+
+        border-right:
+            1px solid
+            #D6D6D6;
+
+        border-bottom:
+            1px solid
+            #D6D6D6;
+
+        font-size:
+            9px;
+    }
+
+
+    .page-number {
+
+        margin-top:
+            40px;
+
+        text-align:
+            center;
+
+        color:
+            #777777;
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Presentation Overlay
+       ====================================================== */
+
+    .presentation-controls {
+
+        position:
+            absolute;
+
+        z-index:
+            400;
+
+        left:
+            50%;
+
+        bottom:
+            22px;
+
+        transform:
+            translateX(-50%);
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            8px 12px;
+
+        border-radius:
+            999px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.66
+            );
+    }
+
+
+    .presentation-button {
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            50%;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Properties Popup
+       ====================================================== */
+
+    .properties-popup {
+
+        position:
+            absolute;
+
+        z-index:
+            400;
+
+        top:
+            72px;
+
+        right:
+            78px;
+
+        width:
+            330px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--popup-shadow);
+    }
+
+
+    .properties-title {
+
+        margin-bottom:
+            12px;
+
+        font-size:
+            16px;
+
+        font-weight:
+            700;
+    }
+
+
+    .property-row {
+
+        min-height:
+            56px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            30px
+            minmax(
+                0,
+                1fr
+            );
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .property-label {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .property-value {
+
+        margin-top:
+            2px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .dialog-backdrop {
+
+        position:
+            absolute;
+
+        z-index:
+            600;
+
+        inset:
+            0;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.42
+            );
+    }
+
+
+    .document-dialog {
+
+        width:
+            min(
+                470px,
+                calc(
+                    100%
+                    -
+                    48px
+                )
+            );
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--window-shadow);
+    }
+
+
+    .dialog-title {
+
+        padding:
+            20px
+            22px
+            8px;
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-content {
+
+        padding:
+            8px
+            22px
+            18px;
+
+        color:
+            var(--text-secondary);
+
+        line-height:
+            1.5;
+    }
+
+
+    .dialog-field {
+
+        min-height:
+            40px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        margin-top:
+            14px;
+
+        padding:
+            0 11px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        padding:
+            10px
+            18px
+            18px;
+    }
+
+
+    .dialog-button {
+
+        min-height:
+            38px;
+
+        padding:
+            0 16px;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+
+        font-weight:
+            600;
+    }
+
+
+    .dialog-button.primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .dialog-button.danger {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    /* ======================================================
+       Print
+       ====================================================== */
+
+    .print-options {
+
+        display:
+            grid;
+
+        gap:
+            10px;
+
+        margin-top:
+            14px;
+    }
+
+
+    .print-row {
+
+        min-height:
+            50px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+    }
+
+
+    .document-switch {
+
+        position:
+            relative;
+
+        width:
+            38px;
+
+        height:
+            22px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border);
+    }
+
+
+    .document-switch.enabled {
+
+        background:
+            var(--primary);
+    }
+
+
+    .document-switch-thumb {
+
+        position:
+            absolute;
+
+        top:
+            3px;
+
+        left:
+            3px;
+
+        width:
+            16px;
+
+        height:
+            16px;
+
+        border-radius:
+            50%;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    .document-switch.enabled
+    .document-switch-thumb {
+
+        left:
+            19px;
+    }
+
+
+    @media (
+        max-width: 1200px
+    ) {
+
+        .document-window {
+
+            left:
+                8%;
+
+            width:
+                88%;
+        }
+
+
+        .pdf-page {
+
+            width:
+                540px;
+
+            min-height:
+                720px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<div
+    class="document-desktop"
+    data-state="{{ document.state }}"
+>
+
+
+    <!-- =====================================================
+         System UI
+         ===================================================== -->
+
+    {% if document.state != "presentation_mode" %}
+
+    <header
+        class="document-top-panel"
+        data-class="status_bar"
+        data-semantic="ubuntu_top_panel"
+    >
+
+        <div class="panel-left">
+
+            <button
+                data-class="button"
+                data-semantic="activities"
+            >
+                Activities
+            </button>
+
+            <span>
+                Document Viewer
+            </span>
+
+        </div>
+
+
+        <div
+            class="panel-center"
+            data-class="system_text"
+            data-semantic="date_time"
+        >
+            {{ system.date_text }}
+            {{ system.time_text }}
+        </div>
+
+
+        <div class="panel-right">
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="wifi"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    {% if system.wifi.connected %}
+                    wifi
+                    {% else %}
+                    wifi_off
+                    {% endif %}
+                </span>
+            </span>
+
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="audio"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    volume_up
+                </span>
+            </span>
+
+
+            {% if system.battery.available %}
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="battery"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    battery_full
+                </span>
+            </span>
+
+            {% endif %}
+
+        </div>
+
+    </header>
+
+
+    <nav
+        class="document-dock"
+        data-class="navigation_bar"
+        data-semantic="ubuntu_dock"
+    >
+
+        {% for icon, semantic, active in [
+            ("language", "firefox", false),
+            ("folder", "files", false),
+            ("terminal", "terminal", false),
+            ("picture_as_pdf", "document_viewer", true),
+            ("settings", "settings", false)
+        ] %}
+
+        <button
+            class="
+                dock-button
+                {% if active %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="dock_{{ semantic }}"
+        >
+
+            {% if active %}
+
+            <span
+                class="dock-dot"
+                data-class="selection_indicator"
+                data-semantic="running_{{ semantic }}"
+            >
+            </span>
+
+            {% endif %}
+
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                style="
+                    font-size:29px;
+                "
+            >
+                {{ icon }}
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Main Window
+         ===================================================== -->
+
+    <section
+        class="
+            document-window
+
+            {% if document.state == "presentation_mode" %}
+            presentation
+            {% endif %}
+        "
+        data-class="section"
+        data-semantic="document_viewer_window"
+    >
+
+
+        {% if document.state != "presentation_mode" %}
+
+        <!-- =================================================
+             Header
+             ================================================= -->
+
+        <header
+            class="document-header"
+            data-class="app_bar"
+            data-semantic="document_header"
+        >
+
+            <div class="header-left">
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="open_document"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        folder_open
+                    </span>
+                </button>
+
+            </div>
+
+
+            <div class="document-title">
+                {{ document.document_name }}
+            </div>
+
+
+            <div class="header-right">
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="search"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        search
+                    </span>
+                </button>
+
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="print"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        print
+                    </span>
+                </button>
+
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="document_menu"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        menu
+                    </span>
+                </button>
+
+
+                <button
+                    class="window-control"
+                    data-class="button"
+                    data-semantic="minimize"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        remove
+                    </span>
+                </button>
+
+
+                <button
+                    class="window-control"
+                    data-class="button"
+                    data-semantic="maximize"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        crop_square
+                    </span>
+                </button>
+
+
+                <button
+                    class="
+                        window-control
+                        close
+                    "
+                    data-class="button"
+                    data-semantic="close"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        close
+                    </span>
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             Toolbar
+             ================================================= -->
+
+        <nav
+            class="document-toolbar"
+            data-class="toolbar"
+            data-semantic="document_toolbar"
+        >
+
+            <button
+                class="
+                    toolbar-button
+                    {% if document.state == "thumbnail_sidebar" %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="thumbnails"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    view_sidebar
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    toolbar-button
+                    {% if document.state == "bookmarks_open" %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="bookmarks"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    bookmarks
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    toolbar-button
+                    {% if document.state == "annotations_open" %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="annotations"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    edit_note
+                </span>
+            </button>
+
+
+            <div class="toolbar-divider">
+            </div>
+
+
+            <button
+                class="toolbar-button"
+                data-class="button"
+                data-semantic="previous_page"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    keyboard_arrow_up
+                </span>
+            </button>
+
+
+            <div
+                class="page-indicator"
+                data-class="badge"
+                data-semantic="page_indicator"
+            >
+                Page
+                {{ document.current_page.number }}
+                of
+                {{ document.total_pages }}
+            </div>
+
+
+            <button
+                class="toolbar-button"
+                data-class="button"
+                data-semantic="next_page"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    keyboard_arrow_down
+                </span>
+            </button>
+
+
+            <div class="toolbar-divider">
+            </div>
+
+
+            <button
+                class="toolbar-button"
+                data-class="button"
+                data-semantic="zoom_out"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    zoom_out
+                </span>
+            </button>
+
+
+            <span class="zoom-value">
+                {{ document.zoom }}%
+            </span>
+
+
+            <button
+                class="toolbar-button"
+                data-class="button"
+                data-semantic="zoom_in"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    zoom_in
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    toolbar-button
+                    {% if document.state == "two_page_view" %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="two_page_view"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    menu_book
+                </span>
+            </button>
+
+
+            <button
+                class="toolbar-button"
+                data-class="button"
+                data-semantic="presentation"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    slideshow
+                </span>
+            </button>
+
+        </nav>
+
+
+        <!-- =================================================
+             Search
+             ================================================= -->
+
+        {% if document.state in [
+            "search_open",
+            "search_results"
+        ] %}
+
+        <div
+            class="search-toolbar"
+            data-class="toolbar"
+            data-semantic="document_search_toolbar"
+        >
+
+            <div
+                class="document-search"
+                data-class="search_bar"
+                data-semantic="document_search"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    search
+                </span>
+
+
+                <input
+                    value="{{ document.search_query }}"
+                    placeholder="Find in document"
+                >
+
+
+                <button
+                    data-class="button"
+                    data-semantic="previous_match"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        keyboard_arrow_up
+                    </span>
+                </button>
+
+
+                <button
+                    data-class="button"
+                    data-semantic="next_match"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        keyboard_arrow_down
+                    </span>
+                </button>
+
+            </div>
+
+
+            <button
+                class="toolbar-button"
+                data-class="button"
+                data-semantic="close_search"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+        {% endif %}
+
+        {% endif %}
+
+
+        <!-- =================================================
+             Main
+             ================================================= -->
+
+        <div
+            class="
+                document-main
+
+                {% if document.state in [
+                    "thumbnail_sidebar",
+                    "search_results",
+                    "bookmarks_open",
+                    "annotations_open"
+                ] %}
+                with-sidebar
+                {% endif %}
+            "
+        >
+
+
+            <!-- =============================================
+                 Thumbnail Sidebar
+                 ============================================= -->
+
+            {% if document.state == "thumbnail_sidebar" %}
+
+            <aside
+                class="document-sidebar"
+                data-class="section"
+                data-semantic="thumbnail_sidebar"
+            >
+
+                <div class="sidebar-title">
+                    Pages
+                </div>
+
+
+                <div class="thumbnail-list">
+
+                    {% for page in document.pages %}
+
+                    <article
+                        class="
+                            page-thumbnail
+                            {% if page.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="page_thumbnail_{{ loop.index }}"
+                    >
+
+                        <div
+                            style="
+                                height:8px;
+                                width:55%;
+                                background:#AFAFAF;
+                                border-radius:3px;
+                            "
+                        >
+                        </div>
+
+
+                        <div class="thumbnail-lines">
+
+                            {% for _ in range(7) %}
+
+                            <div
+                                class="thumbnail-line"
+                                style="
+                                    width:
+                                        {{ range(65, 100) | random }}%;
+                                "
+                            >
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        <span class="thumbnail-number">
+                            {{ page.number }}
+                        </span>
+
+
+                        {% if page.selected %}
+
+                        <span
+                            data-class="selection_indicator"
+                            data-semantic="selected_page"
+                            style="
+                                position:absolute;
+                                left:6px;
+                                bottom:6px;
+                                width:7px;
+                                height:7px;
+                                border-radius:50%;
+                                background:var(--primary);
+                            "
+                        >
+                        </span>
+
+                        {% endif %}
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </aside>
+
+
+            <!-- =============================================
+                 Search Results
+                 ============================================= -->
+
+            {% elif document.state == "search_results" %}
+
+            <aside
+                class="document-sidebar"
+                data-class="section"
+                data-semantic="search_results_sidebar"
+            >
+
+                <div class="sidebar-title">
+                    Search Results
+                </div>
+
+
+                {% for result in document.search_results %}
+
+                <div
+                    class="sidebar-row"
+                    data-class="list_item"
+                    data-semantic="search_result_{{ loop.index }}"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-row-icon
+                        "
+                        data-class="icon"
+                    >
+                        search
+                    </span>
+
+
+                    <div>
+
+                        <div class="sidebar-row-title">
+                            Match
+                            {{ result.match_index }}
+                        </div>
+
+                        <div class="sidebar-row-meta">
+                            {{ result.snippet }}
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="page-badge"
+                        data-class="badge"
+                    >
+                        {{ result.page }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </aside>
+
+
+            <!-- =============================================
+                 Bookmarks
+                 ============================================= -->
+
+            {% elif document.state == "bookmarks_open" %}
+
+            <aside
+                class="document-sidebar"
+                data-class="section"
+                data-semantic="bookmark_sidebar"
+            >
+
+                <div class="sidebar-title">
+                    Bookmarks
+                </div>
+
+
+                {% for bookmark in document.bookmarks %}
+
+                <div
+                    class="sidebar-row"
+                    data-class="list_item"
+                    data-semantic="bookmark_{{ loop.index }}"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-row-icon
+                        "
+                        data-class="icon"
+                    >
+                        bookmark
+                    </span>
+
+
+                    <div>
+
+                        <div class="sidebar-row-title">
+                            {{ bookmark.title }}
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="page-badge"
+                        data-class="badge"
+                    >
+                        {{ bookmark.page }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </aside>
+
+
+            <!-- =============================================
+                 Annotations
+                 ============================================= -->
+
+            {% elif document.state == "annotations_open" %}
+
+            <aside
+                class="document-sidebar"
+                data-class="section"
+                data-semantic="annotations_sidebar"
+            >
+
+                <div class="sidebar-title">
+                    Annotations
+                </div>
+
+
+                {% for annotation in document.annotations %}
+
+                <div
+                    class="sidebar-row"
+                    data-class="list_item"
+                    data-semantic="annotation_{{ loop.index }}"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            sidebar-row-icon
+                        "
+                        data-class="icon"
+                    >
+                        {{ annotation.icon }}
+                    </span>
+
+
+                    <div>
+
+                        <div class="sidebar-row-title">
+                            {{ annotation.type }}
+                        </div>
+
+                        <div class="sidebar-row-meta">
+                            {{ annotation.text }}
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="page-badge"
+                        data-class="badge"
+                    >
+                        {{ annotation.page }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </aside>
+
+            {% endif %}
+
+
+            <!-- =============================================
+                 Document Canvas
+
+                 IMPORTANT:
+                 This is a layout/scroll container only.
+                 Do NOT annotate it as "section".
+
+                 document-window is already the primary
+                 application section, so annotating this
+                 inner canvas would create a redundant large
+                 bounding box in big_components.
+                 ============================================= -->
+
+            <section
+                class="
+                    document-canvas
+
+                    {% if document.state == "presentation_mode" %}
+                    presentation
+                    {% endif %}
+                "
+                data-semantic="document_canvas"
+            >
+
+
+                {% set visible_pages = [document.current_page] %}
+
+
+                {% if document.state == "two_page_view" %}
+
+                    {% set current_index =
+                        document.current_page.number
+                        - 1
+                    %}
+
+                    {% if
+                        current_index + 1
+                        <
+                        document.pages | length
+                    %}
+
+                        {% set visible_pages = [
+                            document.current_page,
+                            document.pages[
+                                current_index + 1
+                            ]
+                        ] %}
+
+                    {% endif %}
+
+                {% endif %}
+
+
+                {% for page in visible_pages %}
+
+                <article
+                    class="
+                        pdf-page
+                        {% if document.zoom != 100 %}
+                        zoomed
+                        {% endif %}
+                    "
+                    data-class="image"
+                    data-semantic="pdf_page_{{ page.number }}"
+
+                    style="
+                        --zoom-scale:
+                            {{ document.zoom / 100 }};
+                    "
+                >
+
+
+                    {% if page.title %}
+
+                    <div class="page-title">
+                        {{ page.title }}
+                    </div>
+
+                    {% endif %}
+
+
+                    {% for paragraph in page.paragraphs %}
+
+                    <p
+                        class="page-paragraph"
+                        data-class="text"
+                        data-semantic="page_text_{{ page.number }}_{{ loop.index }}"
+                    >
+                        {{ paragraph }}
+                    </p>
+
+
+                    {% if
+                        loop.index == 2
+                        and
+                        page.has_figure
+                    %}
+
+                    <div
+                        class="document-figure"
+                        data-class="image"
+                        data-semantic="document_figure_{{ page.number }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            style="
+                                font-size:54px;
+                            "
+                        >
+                            analytics
+                        </span>
+
+                    </div>
+
+                    {% endif %}
+
+
+                    {% if
+                        loop.index == 3
+                        and
+                        page.has_table
+                    %}
+
+                    <div
+                        class="document-table"
+                        data-class="card"
+                        data-semantic="document_table_{{ page.number }}"
+                    >
+
+                        {% for cell in range(16) %}
+
+                        <div class="table-cell">
+                            {{ range(1, 99) | random }}
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                    {% endif %}
+
+                    {% endfor %}
+
+
+                    <div class="page-number">
+                        {{ page.number }}
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+        </div>
+
+
+        <!-- =================================================
+             Presentation Controls
+             ================================================= -->
+
+        {% if document.state == "presentation_mode" %}
+
+        <div class="presentation-controls">
+
+            <button
+                class="presentation-button"
+                data-class="button"
+                data-semantic="previous_slide"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    chevron_left
+                </span>
+            </button>
+
+
+            <span
+                data-class="badge"
+                data-semantic="presentation_page"
+                style="
+                    color:#FFFFFF;
+                    font-size:11px;
+                "
+            >
+                {{ document.current_page.number }}
+                /
+                {{ document.total_pages }}
+            </span>
+
+
+            <button
+                class="presentation-button"
+                data-class="button"
+                data-semantic="next_slide"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    chevron_right
+                </span>
+            </button>
+
+
+            <button
+                class="presentation-button"
+                data-class="button"
+                data-semantic="exit_presentation"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- =====================================================
+         Properties
+         ===================================================== -->
+
+    {% if document.state == "properties_open" %}
+
+    <section
+        class="properties-popup"
+        data-class="card"
+        data-semantic="document_properties"
+        data-occluder="true"
+    >
+
+        <div class="properties-title">
+            Document Properties
+        </div>
+
+
+        {% for entry in document.properties %}
+
+        <div
+            class="property-row"
+            data-class="list_item"
+            data-semantic="property_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                {{ entry.icon }}
+            </span>
+
+
+            <div>
+
+                <div class="property-label">
+                    {{ entry.label }}
+                </div>
+
+                <div class="property-value">
+                    {{ entry.value }}
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Password Prompt
+         ===================================================== -->
+
+    {% if document.state == "password_prompt" %}
+
+    <div
+        class="dialog-backdrop"
+        data-occluder="true"
+    >
+
+        <section
+            class="document-dialog"
+            data-class="dialog"
+            data-semantic="document_password_dialog"
+        >
+
+            <div class="dialog-title">
+                Password Required
+            </div>
+
+
+            <div class="dialog-content">
+
+                This document is protected.
+                Enter the password to open it.
+
+
+                <div
+                    class="dialog-field"
+                    data-class="input_field"
+                    data-semantic="password_input"
+                >
+                    ••••••••
+                </div>
+
+
+                {% if document.password_hint %}
+
+                <div
+                    style="
+                        margin-top:8px;
+                        font-size:10px;
+                    "
+                >
+                    {{ document.password_hint }}
+                </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="dialog-button"
+                    data-class="button"
+                    data-semantic="cancel_password"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="
+                        dialog-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="unlock_document"
+                >
+                    Unlock
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Print Dialog
+         ===================================================== -->
+
+    {% if document.state == "print_dialog" %}
+
+    <div
+        class="dialog-backdrop"
+        data-occluder="true"
+    >
+
+        <section
+            class="document-dialog"
+            data-class="dialog"
+            data-semantic="print_document_dialog"
+        >
+
+            <div class="dialog-title">
+                Print Document
+            </div>
+
+
+            <div class="dialog-content">
+
+                <div class="print-options">
+
+                    <div
+                        class="print-row"
+                        data-class="list_item"
+                    >
+
+                        <span>
+                            Printer
+                        </span>
+
+                        <strong>
+                            Office Printer
+                        </strong>
+
+                    </div>
+
+
+                    <div
+                        class="print-row"
+                        data-class="list_item"
+                    >
+
+                        <span>
+                            Copies
+                        </span>
+
+                        <div
+                            class="dialog-field"
+                            data-class="input_field"
+                            style="
+                                min-height:32px;
+                                width:70px;
+                                margin:0;
+                            "
+                        >
+                            {{ document.copies }}
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="print-row"
+                        data-class="list_item"
+                    >
+
+                        <span>
+                            Print all pages
+                        </span>
+
+                        <div
+                            class="
+                                document-switch
+                                {% if document.print_all_pages %}
+                                enabled
+                                {% endif %}
+                            "
+                            data-class="switch"
+                        >
+                            <span class="document-switch-thumb">
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="print-row"
+                        data-class="list_item"
+                    >
+
+                        <span>
+                            Two-sided
+                        </span>
+
+                        <div
+                            class="
+                                document-switch
+                                {% if document.duplex %}
+                                enabled
+                                {% endif %}
+                            "
+                            data-class="switch"
+                        >
+                            <span class="document-switch-thumb">
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="dialog-button"
+                    data-class="button"
+                    data-semantic="cancel_print"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="
+                        dialog-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="confirm_print"
+                >
+                    Print
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Close Unsaved Dialog
+         ===================================================== -->
+
+    {% if document.state == "close_unsaved_dialog" %}
+
+    <div
+        class="dialog-backdrop"
+        data-occluder="true"
+    >
+
+        <section
+            class="document-dialog"
+            data-class="dialog"
+            data-semantic="close_unsaved_document_dialog"
+        >
+
+            <div class="dialog-title">
+                Save Annotations?
+            </div>
+
+
+            <div class="dialog-content">
+
+                This document contains unsaved annotations.
+                Save them before closing?
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="
+                        dialog-button
+                        danger
+                    "
+                    data-class="button"
+                    data-semantic="discard_annotations"
+                >
+                    Discard
+                </button>
+
+
+                <button
+                    class="dialog-button"
+                    data-class="button"
+                    data-semantic="cancel_close"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="
+                        dialog-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="save_annotations"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+{% endblock %}

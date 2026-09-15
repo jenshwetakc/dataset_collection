@@ -1,0 +1,3188 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Ubuntu Clocks
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    .clocks-desktop {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        overflow:
+            hidden;
+
+        background:
+            linear-gradient(
+                145deg,
+                var(--primary-container),
+                var(--background)
+            );
+    }
+
+
+    /* ======================================================
+       Top Panel
+       ====================================================== */
+
+    .clocks-top-panel {
+
+        position:
+            absolute;
+
+        z-index:
+            100;
+
+        inset:
+            0 0 auto 0;
+
+        height:
+            var(--panel-height);
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            auto
+            1fr;
+
+        align-items:
+            center;
+
+        padding:
+            0 10px;
+
+        background:
+            rgba(
+                20,
+                20,
+                22,
+                0.96
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size:
+            13px;
+    }
+
+
+    .panel-left {
+
+        justify-self:
+            start;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+    }
+
+
+    .panel-center {
+
+        justify-self:
+            center;
+
+        font-weight:
+            600;
+    }
+
+
+    .panel-right {
+
+        justify-self:
+            end;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .panel-system-item {
+
+        width:
+            26px;
+
+        height:
+            26px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .panel-system-icon {
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        font-size:
+            18px;
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Dock
+       ====================================================== */
+
+    .clocks-dock {
+
+        position:
+            absolute;
+
+        z-index:
+            80;
+
+        top:
+            50%;
+
+        left:
+            10px;
+
+        transform:
+            translateY(-50%);
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            6px;
+
+        padding:
+            8px;
+
+        border-radius:
+            14px;
+
+        background:
+            rgba(
+                30,
+                30,
+                32,
+                0.90
+            );
+
+        box-shadow:
+            var(--popup-shadow);
+    }
+
+
+    .dock-button {
+
+        position:
+            relative;
+
+        width:
+            var(--dock-item-size);
+
+        height:
+            var(--dock-item-size);
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            10px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .dock-button.active {
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.18
+            );
+    }
+
+
+    .dock-dot {
+
+        position:
+            absolute;
+
+        left:
+            -5px;
+
+        width:
+            4px;
+
+        height:
+            4px;
+
+        border-radius:
+            50%;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Window
+       ====================================================== */
+
+    .clocks-window {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        left:
+            13%;
+
+        top:
+            9%;
+
+        width:
+            76%;
+
+        height:
+            82%;
+
+        min-width:
+            760px;
+
+        min-height:
+            520px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--window-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--window-shadow);
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .clocks-header {
+
+        flex:
+            0 0 52px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            auto
+            1fr;
+
+        align-items:
+            center;
+
+        padding:
+            0 10px;
+
+        background:
+            var(--surface-variant);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .header-title {
+
+        justify-self:
+            center;
+
+        font-size:
+            15px;
+
+        font-weight:
+            700;
+    }
+
+
+    .header-right {
+
+        justify-self:
+            end;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .header-button,
+    .window-control {
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--icon);
+    }
+
+
+    .window-control {
+
+        width:
+            29px;
+
+        height:
+            29px;
+
+        border-radius:
+            50%;
+    }
+
+
+    .window-control.close {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    /* ======================================================
+       Tabs
+       ====================================================== */
+
+    .clocks-tabs {
+
+        flex:
+            0 0 52px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                1fr
+            );
+
+        gap:
+            4px;
+
+        padding:
+            6px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .clock-tab {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .clock-tab.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Content
+       ====================================================== */
+
+    .clocks-content {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            auto;
+
+        padding:
+            22px;
+    }
+
+
+    /* ======================================================
+       World Clocks
+       ====================================================== */
+
+    .world-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            14px;
+    }
+
+
+    .world-card {
+
+        position:
+            relative;
+
+        min-height:
+            170px;
+
+        padding:
+            20px;
+
+        border:
+            2px solid
+            transparent;
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .world-card.selected {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .world-card-top {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        justify-content:
+            space-between;
+    }
+
+
+    .world-city {
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .world-country {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .world-period {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        padding:
+            4px 7px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .world-time {
+
+        margin-top:
+            22px;
+
+        font-size:
+            44px;
+
+        font-weight:
+            300;
+
+        line-height:
+            1;
+    }
+
+
+    .world-date {
+
+        margin-top:
+            7px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .world-offset {
+
+        position:
+            absolute;
+
+        right:
+            18px;
+
+        bottom:
+            16px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    /* ======================================================
+       Alarms
+       ====================================================== */
+
+    .alarm-list {
+
+        display:
+            grid;
+
+        gap:
+            10px;
+    }
+
+
+    .alarm-row {
+
+        min-height:
+            86px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        padding:
+            12px 16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .alarm-row.selected {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .alarm-time {
+
+        font-size:
+            31px;
+
+        font-weight:
+            400;
+    }
+
+
+    .alarm-meta {
+
+        margin-top:
+            4px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Switch
+       ====================================================== */
+
+    .clock-switch {
+
+        position:
+            relative;
+
+        width:
+            44px;
+
+        height:
+            26px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border);
+    }
+
+
+    .clock-switch.enabled {
+
+        background:
+            var(--primary);
+    }
+
+
+    .clock-switch-thumb {
+
+        position:
+            absolute;
+
+        top:
+            3px;
+
+        left:
+            3px;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        border-radius:
+            50%;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    .clock-switch.enabled
+    .clock-switch-thumb {
+
+        left:
+            21px;
+    }
+
+
+    /* ======================================================
+       Stopwatch
+       ====================================================== */
+
+    .stopwatch-layout {
+
+        min-height:
+            100%;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+    }
+
+
+    .stopwatch-display {
+
+        margin-top:
+            45px;
+
+        font-size:
+            68px;
+
+        font-weight:
+            300;
+
+        font-variant-numeric:
+            tabular-nums;
+    }
+
+
+    .stopwatch-centiseconds {
+
+        font-size:
+            28px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .stopwatch-actions {
+
+        display:
+            flex;
+
+        gap:
+            14px;
+
+        margin-top:
+            32px;
+    }
+
+
+    .clock-round-button {
+
+        width:
+            62px;
+
+        height:
+            62px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    .clock-round-button.primary {
+
+        width:
+            72px;
+
+        height:
+            72px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .laps {
+
+        width:
+            min(
+                620px,
+                100%
+            );
+
+        margin-top:
+            36px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .lap-row {
+
+        min-height:
+            52px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            80px
+            1fr
+            1fr;
+
+        align-items:
+            center;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            11px;
+    }
+
+
+    .lap-number {
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .lap-time {
+
+        font-variant-numeric:
+            tabular-nums;
+
+        font-weight:
+            700;
+    }
+
+
+    .lap-total {
+
+        text-align:
+            right;
+
+        color:
+            var(--text-secondary);
+
+        font-variant-numeric:
+            tabular-nums;
+    }
+
+
+    /* ======================================================
+       Timer
+       ====================================================== */
+
+    .timer-layout {
+
+        min-height:
+            100%;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+    }
+
+
+    .timer-ring {
+
+        position:
+            relative;
+
+        width:
+            300px;
+
+        height:
+            300px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            50%;
+
+        background:
+            conic-gradient(
+                var(--primary)
+                calc(
+                    var(--progress)
+                    * 1%
+                ),
+                var(--surface-variant)
+                0
+            );
+    }
+
+
+    .timer-ring::before {
+
+        content:
+            "";
+
+        position:
+            absolute;
+
+        inset:
+            15px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+    }
+
+
+    .timer-time {
+
+        position:
+            relative;
+
+        z-index:
+            2;
+
+        font-size:
+            52px;
+
+        font-weight:
+            300;
+
+        font-variant-numeric:
+            tabular-nums;
+    }
+
+
+    .timer-label {
+
+        position:
+            relative;
+
+        z-index:
+            2;
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .timer-center {
+
+        position:
+            relative;
+
+        z-index:
+            2;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+    }
+
+
+    .timer-actions {
+
+        display:
+            flex;
+
+        gap:
+            14px;
+
+        margin-top:
+            30px;
+    }
+
+
+    /* ======================================================
+       Empty Timer
+       ====================================================== */
+
+    .timer-inputs {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                110px
+            );
+
+        gap:
+            14px;
+
+        margin-bottom:
+            28px;
+    }
+
+
+    .timer-input {
+
+        min-height:
+            92px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .timer-input-value {
+
+        font-size:
+            31px;
+
+        font-weight:
+            400;
+    }
+
+
+    .timer-input-label {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+
+        text-transform:
+            uppercase;
+    }
+
+
+    /* ======================================================
+       Floating Add
+       ====================================================== */
+
+    .floating-add {
+
+        position:
+            absolute;
+
+        right:
+            24px;
+
+        bottom:
+            22px;
+
+        width:
+            52px;
+
+        height:
+            52px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        box-shadow:
+            var(--popup-shadow);
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .dialog-backdrop {
+
+        position:
+            absolute;
+
+        z-index:
+            500;
+
+        inset:
+            0;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.44
+            );
+    }
+
+
+    .clock-dialog {
+
+        width:
+            min(
+                470px,
+                calc(
+                    100%
+                    -
+                    48px
+                )
+            );
+
+        max-height:
+            82%;
+
+        overflow:
+            auto;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--window-shadow);
+    }
+
+
+    .dialog-title {
+
+        padding:
+            20px
+            22px
+            8px;
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-content {
+
+        padding:
+            8px
+            22px
+            18px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        padding:
+            10px
+            18px
+            18px;
+    }
+
+
+    .dialog-button {
+
+        min-height:
+            38px;
+
+        padding:
+            0 16px;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+
+        font-weight:
+            600;
+    }
+
+
+    .dialog-button.primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Clock Search
+       ====================================================== */
+
+    .clock-search {
+
+        height:
+            40px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            0 11px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+
+        margin-bottom:
+            12px;
+    }
+
+
+    .clock-search input {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .location-result {
+
+        min-height:
+            58px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            34px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        padding:
+            7px 6px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .location-city {
+
+        font-weight:
+            700;
+
+        font-size:
+            12px;
+    }
+
+
+    .location-country {
+
+        margin-top:
+            2px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Alarm Form
+       ====================================================== */
+
+    .alarm-time-picker {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            10px;
+
+        margin:
+            12px 0 24px;
+    }
+
+
+    .time-picker-field {
+
+        width:
+            92px;
+
+        height:
+            76px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            32px;
+
+        font-weight:
+            400;
+    }
+
+
+    .time-colon {
+
+        font-size:
+            30px;
+    }
+
+
+    .alarm-form-row {
+
+        min-height:
+            52px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            32px
+            minmax(
+                0,
+                1fr
+            );
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .alarm-form-label {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .alarm-form-value {
+
+        margin-top:
+            2px;
+
+        font-size:
+            12px;
+    }
+
+
+    /* ======================================================
+       Alarm Ringing
+       ====================================================== */
+
+    .alarm-ringing {
+
+        position:
+            absolute;
+
+        z-index:
+            600;
+
+        inset:
+            0;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+    }
+
+
+    .alarm-ringing-icon {
+
+        width:
+            110px;
+
+        height:
+            110px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--primary);
+
+        font-size:
+            58px;
+    }
+
+
+    .ringing-time {
+
+        margin-top:
+            22px;
+
+        font-size:
+            58px;
+
+        font-weight:
+            300;
+    }
+
+
+    .ringing-label {
+
+        margin-top:
+            7px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            16px;
+    }
+
+
+    .ringing-actions {
+
+        display:
+            flex;
+
+        gap:
+            16px;
+
+        margin-top:
+            34px;
+    }
+
+
+    .ringing-button {
+
+        min-width:
+            120px;
+
+        min-height:
+            46px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+
+        font-weight:
+            700;
+    }
+
+
+    .ringing-button.primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    @media (
+        max-width: 1100px
+    ) {
+
+        .clocks-window {
+
+            left:
+                9%;
+
+            width:
+                84%;
+        }
+
+
+        .world-grid {
+
+            grid-template-columns:
+                1fr;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<div
+    class="clocks-desktop"
+    data-state="{{ clocks.state }}"
+>
+
+
+    <!-- =====================================================
+         Top Panel
+         ===================================================== -->
+
+    <header
+        class="clocks-top-panel"
+        data-class="status_bar"
+        data-semantic="ubuntu_top_panel"
+    >
+
+        <div class="panel-left">
+
+            <button
+                data-class="button"
+                data-semantic="activities"
+            >
+                Activities
+            </button>
+
+            <span>
+                Clocks
+            </span>
+
+        </div>
+
+
+        <div
+            class="panel-center"
+            data-class="system_text"
+            data-semantic="date_time"
+        >
+            {{ system.date_text }}
+            {{ system.time_text }}
+        </div>
+
+
+        <div class="panel-right">
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="wifi"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    {% if system.wifi.connected %}
+                    wifi
+                    {% else %}
+                    wifi_off
+                    {% endif %}
+                </span>
+            </span>
+
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="audio"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    volume_up
+                </span>
+            </span>
+
+
+            {% if system.battery.available %}
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="battery"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    battery_full
+                </span>
+            </span>
+
+            {% endif %}
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         Dock
+         ===================================================== -->
+
+    <nav
+        class="clocks-dock"
+        data-class="navigation_bar"
+        data-semantic="ubuntu_dock"
+    >
+
+        {% for icon, semantic, active in [
+            ("language", "firefox", false),
+            ("folder", "files", false),
+            ("terminal", "terminal", false),
+            ("schedule", "clocks", true),
+            ("settings", "settings", false)
+        ] %}
+
+        <button
+            class="
+                dock-button
+                {% if active %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="dock_{{ semantic }}"
+        >
+
+            {% if active %}
+
+            <span
+                class="dock-dot"
+                data-class="selection_indicator"
+                data-semantic="running_{{ semantic }}"
+            >
+            </span>
+
+            {% endif %}
+
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                style="
+                    font-size:29px;
+                "
+            >
+                {{ icon }}
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+
+    <!-- =====================================================
+         Main Window
+         ===================================================== -->
+
+    <section
+        class="clocks-window"
+        data-class="section"
+        data-semantic="clocks_window"
+    >
+
+
+        <!-- Header -->
+
+        <header
+            class="clocks-header"
+            data-class="app_bar"
+            data-semantic="clocks_header"
+        >
+
+            <div>
+            </div>
+
+
+            <div class="header-title">
+                Clocks
+            </div>
+
+
+            <div class="header-right">
+
+                {% if clocks.active_tab in [
+                    "world",
+                    "alarms"
+                ] %}
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="add"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        add
+                    </span>
+                </button>
+
+                {% endif %}
+
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="menu"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        menu
+                    </span>
+                </button>
+
+
+                <button
+                    class="window-control"
+                    data-class="button"
+                    data-semantic="minimize"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        remove
+                    </span>
+                </button>
+
+
+                <button
+                    class="window-control"
+                    data-class="button"
+                    data-semantic="maximize"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        crop_square
+                    </span>
+                </button>
+
+
+                <button
+                    class="
+                        window-control
+                        close
+                    "
+                    data-class="button"
+                    data-semantic="close"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        close
+                    </span>
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- Tabs -->
+
+        <nav
+            class="clocks-tabs"
+            data-class="toolbar"
+            data-semantic="clock_tabs"
+        >
+
+            {% for icon, label, semantic in [
+                ("public", "World", "world"),
+                ("alarm", "Alarms", "alarms"),
+                ("timer", "Stopwatch", "stopwatch"),
+                ("hourglass_bottom", "Timer", "timer")
+            ] %}
+
+            <button
+                class="
+                    clock-tab
+
+                    {% if
+                        clocks.active_tab
+                        ==
+                        semantic
+                    %}
+                    active
+                    {% endif %}
+                "
+                data-class="tab"
+                data-semantic="{{ semantic }}_tab"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    {{ icon }}
+                </span>
+
+
+                {{ label }}
+
+
+                {% if
+                    clocks.active_tab
+                    ==
+                    semantic
+                %}
+
+                <span
+                    data-class="selection_indicator"
+                    data-semantic="active_clock_tab"
+                    style="
+                        position:absolute;
+                        bottom:3px;
+                        width:18px;
+                        height:3px;
+                        border-radius:999px;
+                        background:currentColor;
+                    "
+                >
+                </span>
+
+                {% endif %}
+
+            </button>
+
+            {% endfor %}
+
+        </nav>
+
+
+        <!-- =================================================
+             Content
+             ================================================= -->
+
+        <main class="clocks-content">
+
+
+            <!-- =============================================
+                 World Clocks
+                 ============================================= -->
+
+            {% if clocks.active_tab == "world" %}
+
+            <section>
+
+                <div class="world-grid">
+
+                    {% for clock in clocks.world_clocks %}
+
+                    <article
+                        class="
+                            world-card
+                            {% if clock.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="world_clock_{{ loop.index }}"
+                    >
+
+                        <div class="world-card-top">
+
+                            <div>
+
+                                <div class="world-city">
+                                    {{ clock.city }}
+                                </div>
+
+                                <div class="world-country">
+                                    {{ clock.country }}
+                                </div>
+
+                            </div>
+
+
+                            <span
+                                class="world-period"
+                                data-class="badge"
+                                data-semantic="day_period_{{ loop.index }}"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    style="
+                                        font-size:13px;
+                                    "
+                                >
+                                    {% if clock.day_period == "Day" %}
+                                    light_mode
+                                    {% else %}
+                                    dark_mode
+                                    {% endif %}
+                                </span>
+
+                                {{ clock.day_period }}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="world-time">
+                            {{ clock.time_text }}
+                        </div>
+
+
+                        <div class="world-date">
+                            {{ clock.date_text }}
+                        </div>
+
+
+                        <div class="world-offset">
+                            {{ clock.offset_text }}
+                        </div>
+
+
+                        {% if clock.selected %}
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="selection_indicator"
+                            data-semantic="selected_world_clock"
+                            style="
+                                position:absolute;
+                                right:14px;
+                                top:55px;
+                            "
+                        >
+                            check_circle
+                        </span>
+
+                        {% endif %}
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 Alarms
+                 ============================================= -->
+
+            {% elif clocks.active_tab == "alarms" %}
+
+            <section class="alarm-list">
+
+                {% for alarm in clocks.alarms %}
+
+                <article
+                    class="
+                        alarm-row
+                        {% if alarm.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="list_item"
+                    data-semantic="alarm_{{ loop.index }}"
+                >
+
+                    <div>
+
+                        <div class="alarm-time">
+                            {{ alarm.time }}
+                        </div>
+
+
+                        <div class="alarm-meta">
+
+                            <span>
+                                {{ alarm.label }}
+                            </span>
+
+                            <span>
+                                ·
+                            </span>
+
+                            <span>
+                                {{ alarm.days }}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            clock-switch
+                            {% if alarm.enabled %}
+                            enabled
+                            {% endif %}
+                        "
+                        data-class="switch"
+                        data-semantic="alarm_switch_{{ loop.index }}"
+                    >
+
+                        <span class="clock-switch-thumb">
+                        </span>
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+
+            <!-- =============================================
+                 Stopwatch
+                 ============================================= -->
+
+            {% elif clocks.active_tab == "stopwatch" %}
+
+            <section
+                class="stopwatch-layout"
+                data-semantic="stopwatch_content"
+            >
+
+                <div class="stopwatch-display">
+
+                    {{ "%02d" | format(
+                        clocks.stopwatch_minutes
+                    ) }}
+
+                    :
+
+                    {{ "%02d" | format(
+                        clocks.stopwatch_seconds
+                    ) }}
+
+                    <span class="stopwatch-centiseconds">
+
+                        .{{ "%02d" | format(
+                            clocks.stopwatch_centiseconds
+                        ) }}
+
+                    </span>
+
+                </div>
+
+
+                <div class="stopwatch-actions">
+
+                    {% if clocks.state == "stopwatch_idle" %}
+
+                    <button
+                        class="
+                            clock-round-button
+                            primary
+                        "
+                        data-class="button"
+                        data-semantic="start_stopwatch"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            play_arrow
+                        </span>
+
+                    </button>
+
+
+                    {% else %}
+
+                    <button
+                        class="clock-round-button"
+                        data-class="button"
+                        data-semantic="lap"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            flag
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="
+                            clock-round-button
+                            primary
+                        "
+                        data-class="button"
+                        data-semantic="pause_stopwatch"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            pause
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="clock-round-button"
+                        data-class="button"
+                        data-semantic="reset_stopwatch"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            replay
+                        </span>
+
+                    </button>
+
+                    {% endif %}
+
+                </div>
+
+
+                {% if clocks.state == "stopwatch_laps" %}
+
+                <div class="laps">
+
+                    {% for lap in clocks.laps %}
+
+                    <div
+                        class="lap-row"
+                        data-class="list_item"
+                        data-semantic="lap_{{ loop.index }}"
+                    >
+
+                        <span class="lap-number">
+                            Lap {{ lap.number }}
+                        </span>
+
+
+                        <span class="lap-time">
+                            {{ lap.lap_time }}
+                        </span>
+
+
+                        <span class="lap-total">
+                            {{ lap.total_time }}
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+            </section>
+
+
+            <!-- =============================================
+                 Timer
+                 ============================================= -->
+
+            {% elif clocks.active_tab == "timer" %}
+
+            <section
+                class="timer-layout"
+                data-semantic="timer_content"
+            >
+
+
+                {% if clocks.state == "timer_idle" %}
+
+                <div class="timer-inputs">
+
+                    <div
+                        class="timer-input"
+                        data-class="input_field"
+                        data-semantic="timer_hours"
+                    >
+
+                        <span class="timer-input-value">
+                            00
+                        </span>
+
+                        <span class="timer-input-label">
+                            Hours
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="timer-input"
+                        data-class="input_field"
+                        data-semantic="timer_minutes"
+                    >
+
+                        <span class="timer-input-value">
+                            05
+                        </span>
+
+                        <span class="timer-input-label">
+                            Minutes
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="timer-input"
+                        data-class="input_field"
+                        data-semantic="timer_seconds"
+                    >
+
+                        <span class="timer-input-value">
+                            00
+                        </span>
+
+                        <span class="timer-input-label">
+                            Seconds
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    class="
+                        clock-round-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="start_timer"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        play_arrow
+                    </span>
+                </button>
+
+
+                {% else %}
+
+                <div
+                    class="timer-ring"
+                    data-class="progress_bar"
+                    data-semantic="timer_progress"
+                    style="
+                        --progress:
+                            {{ clocks.timer.progress }};
+                    "
+                >
+
+                    <div class="timer-center">
+
+                        <div class="timer-time">
+
+                            {% if clocks.timer.hours > 0 %}
+
+                            {{ "%02d" | format(
+                                clocks.timer.hours
+                            ) }}:
+
+                            {% endif %}
+
+                            {{ "%02d" | format(
+                                clocks.timer.minutes
+                            ) }}:
+
+                            {{ "%02d" | format(
+                                clocks.timer.seconds
+                            ) }}
+
+                        </div>
+
+
+                        <div class="timer-label">
+
+                            {% if clocks.timer_finished %}
+                            Finished
+                            {% elif clocks.timer_paused %}
+                            Paused
+                            {% else %}
+                            Remaining
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="timer-actions">
+
+
+                    {% if clocks.timer_finished %}
+
+                    <button
+                        class="
+                            clock-round-button
+                            primary
+                        "
+                        data-class="button"
+                        data-semantic="restart_timer"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            replay
+                        </span>
+
+                    </button>
+
+
+                    {% elif clocks.timer_paused %}
+
+                    <button
+                        class="clock-round-button"
+                        data-class="button"
+                        data-semantic="reset_timer"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            replay
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="
+                            clock-round-button
+                            primary
+                        "
+                        data-class="button"
+                        data-semantic="resume_timer"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            play_arrow
+                        </span>
+
+                    </button>
+
+
+                    {% else %}
+
+                    <button
+                        class="clock-round-button"
+                        data-class="button"
+                        data-semantic="reset_timer"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            replay
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="
+                            clock-round-button
+                            primary
+                        "
+                        data-class="button"
+                        data-semantic="pause_timer"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            pause
+                        </span>
+
+                    </button>
+
+                    {% endif %}
+
+                </div>
+
+                {% endif %}
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+
+        <!-- =================================================
+             Floating Add
+             ================================================= -->
+
+        {% if clocks.active_tab in [
+            "world",
+            "alarms"
+        ] %}
+
+        <button
+            class="floating-add"
+            data-class="button"
+            data-semantic="floating_add"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                add
+            </span>
+
+        </button>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- =====================================================
+         Add World Clock
+         ===================================================== -->
+
+    {% if clocks.state == "add_world_clock" %}
+
+    <div
+        class="dialog-backdrop"
+        data-occluder="true"
+    >
+
+        <section
+            class="clock-dialog"
+            data-class="dialog"
+            data-semantic="add_world_clock_dialog"
+        >
+
+            <div class="dialog-title">
+                Add World Clock
+            </div>
+
+
+            <div class="dialog-content">
+
+                <div
+                    class="clock-search"
+                    data-class="search_bar"
+                    data-semantic="city_search"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        search
+                    </span>
+
+
+                    <input
+                        value="{{ clocks.location_query }}"
+                        placeholder="Search for a city"
+                    >
+
+                </div>
+
+
+                {% for city in clocks.location_results %}
+
+                <div
+                    class="location-result"
+                    data-class="list_item"
+                    data-semantic="city_result_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        location_on
+                    </span>
+
+
+                    <div>
+
+                        <div class="location-city">
+                            {{ city.city }}
+                        </div>
+
+                        <div class="location-country">
+                            {{ city.country }}
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="page-badge"
+                        data-class="badge"
+                    >
+                        {{ city.offset }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="dialog-button"
+                    data-class="button"
+                    data-semantic="cancel_add_clock"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Add / Edit Alarm
+         ===================================================== -->
+
+    {% if clocks.state in [
+        "add_alarm",
+        "edit_alarm"
+    ] %}
+
+    <div
+        class="dialog-backdrop"
+        data-occluder="true"
+    >
+
+        <section
+            class="clock-dialog"
+            data-class="dialog"
+            data-semantic="alarm_editor_dialog"
+        >
+
+            <div class="dialog-title">
+
+                {% if clocks.state == "add_alarm" %}
+                New Alarm
+                {% else %}
+                Edit Alarm
+                {% endif %}
+
+            </div>
+
+
+            <div class="dialog-content">
+
+
+                {% set hour =
+                    clocks.alarm_form.time.split(":")[0]
+                %}
+
+                {% set minute =
+                    clocks.alarm_form.time.split(":")[1]
+                %}
+
+
+                <div class="alarm-time-picker">
+
+                    <div
+                        class="time-picker-field"
+                        data-class="input_field"
+                        data-semantic="alarm_hour"
+                    >
+                        {{ hour }}
+                    </div>
+
+
+                    <span class="time-colon">
+                        :
+                    </span>
+
+
+                    <div
+                        class="time-picker-field"
+                        data-class="input_field"
+                        data-semantic="alarm_minute"
+                    >
+                        {{ minute }}
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="alarm-form-row"
+                    data-class="list_item"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        label
+                    </span>
+
+
+                    <div>
+
+                        <div class="alarm-form-label">
+                            Label
+                        </div>
+
+                        <div
+                            class="alarm-form-value"
+                            data-class="input_field"
+                            data-semantic="alarm_label"
+                        >
+                            {{ clocks.alarm_form.label }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="alarm-form-row"
+                    data-class="list_item"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        repeat
+                    </span>
+
+
+                    <div>
+
+                        <div class="alarm-form-label">
+                            Repeat
+                        </div>
+
+                        <div class="alarm-form-value">
+                            {{ clocks.alarm_form.days }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="alarm-form-row"
+                    data-class="list_item"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        notifications
+                    </span>
+
+
+                    <div>
+
+                        <div class="alarm-form-label">
+                            Enabled
+                        </div>
+
+                        <div class="alarm-form-value">
+                            Alarm active
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            clock-switch
+                            enabled
+                        "
+                        data-class="switch"
+                        data-semantic="alarm_enabled_switch"
+                        style="
+                            justify-self:end;
+                        "
+                    >
+                        <span class="clock-switch-thumb">
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="dialog-button"
+                    data-class="button"
+                    data-semantic="cancel_alarm"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="
+                        dialog-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="save_alarm"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Alarm Ringing
+         ===================================================== -->
+
+    {% if
+        clocks.state == "alarm_ringing"
+        and
+        clocks.selected_alarm
+    %}
+
+    <section
+        class="alarm-ringing"
+        data-class="dialog"
+        data-semantic="alarm_ringing"
+        data-occluder="true"
+    >
+
+        <span
+            class="
+                material-symbols-rounded
+                alarm-ringing-icon
+            "
+            data-class="icon"
+        >
+            alarm
+        </span>
+
+
+        <div class="ringing-time">
+            {{ clocks.selected_alarm.time }}
+        </div>
+
+
+        <div class="ringing-label">
+            {{ clocks.selected_alarm.label }}
+        </div>
+
+
+        <div class="ringing-actions">
+
+            <button
+                class="ringing-button"
+                data-class="button"
+                data-semantic="snooze_alarm"
+            >
+                Snooze
+            </button>
+
+
+            <button
+                class="
+                    ringing-button
+                    primary
+                "
+                data-class="button"
+                data-semantic="dismiss_alarm"
+            >
+                Stop
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+
+{% endblock %}

@@ -1,0 +1,2219 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Ubuntu Screenshot
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    .capture-desktop {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        overflow:
+            hidden;
+
+        background:
+            linear-gradient(
+                135deg,
+                #493248,
+                #2D3142
+            );
+    }
+
+
+    /* ======================================================
+       Top Panel
+       ====================================================== */
+
+    .capture-top-panel {
+
+        position:
+            absolute;
+
+        z-index:
+            120;
+
+        inset:
+            0 0 auto 0;
+
+        height:
+            var(--panel-height);
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            auto
+            1fr;
+
+        align-items:
+            center;
+
+        padding:
+            0 10px;
+
+        background:
+            rgba(
+                20,
+                20,
+                22,
+                0.96
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size:
+            13px;
+    }
+
+
+    .panel-left {
+
+        justify-self:
+            start;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+    }
+
+
+    .panel-center {
+
+        justify-self:
+            center;
+
+        font-weight:
+            600;
+    }
+
+
+    .panel-right {
+
+        justify-self:
+            end;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .panel-system-item {
+
+        width:
+            26px;
+
+        height:
+            26px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .panel-system-icon {
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        font-size:
+            18px;
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Dock
+       ====================================================== */
+
+    .capture-dock {
+
+        position:
+            absolute;
+
+        z-index:
+            90;
+
+        top:
+            50%;
+
+        left:
+            10px;
+
+        transform:
+            translateY(-50%);
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            6px;
+
+        padding:
+            8px;
+
+        border-radius:
+            14px;
+
+        background:
+            rgba(
+                30,
+                30,
+                32,
+                0.90
+            );
+    }
+
+
+    .dock-button {
+
+        width:
+            var(--dock-item-size);
+
+        height:
+            var(--dock-item-size);
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            10px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Fake Desktop Windows
+       ====================================================== */
+
+    .desktop-window {
+
+        position:
+            absolute;
+
+        z-index:
+            10;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.18
+            );
+
+        border-radius:
+            12px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            var(--window-shadow);
+    }
+
+
+    .desktop-window-header {
+
+        height:
+            42px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            0 12px;
+
+        background:
+            var(--surface-variant);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .desktop-window-content {
+
+        height:
+            calc(
+                100%
+                -
+                42px
+            );
+
+        padding:
+            14px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .fake-row {
+
+        height:
+            28px;
+
+        margin-bottom:
+            8px;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    /* ======================================================
+       Dim Overlay
+       ====================================================== */
+
+    .capture-dim {
+
+        position:
+            absolute;
+
+        z-index:
+            150;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.42
+            );
+    }
+
+
+    /* ======================================================
+       Selection Area
+       ====================================================== */
+
+    .capture-selection {
+
+        position:
+            absolute;
+
+        z-index:
+            170;
+
+        border:
+            2px solid
+            #FFFFFF;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.05
+            );
+
+        box-shadow:
+            0 0 0 9999px
+            rgba(
+                0,
+                0,
+                0,
+                0.48
+            );
+    }
+
+
+    .selection-handle {
+
+        position:
+            absolute;
+
+        width:
+            14px;
+
+        height:
+            14px;
+
+        border:
+            2px solid
+            #FFFFFF;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+    }
+
+
+    .selection-handle.tl {
+
+        left:
+            -8px;
+
+        top:
+            -8px;
+    }
+
+
+    .selection-handle.tr {
+
+        right:
+            -8px;
+
+        top:
+            -8px;
+    }
+
+
+    .selection-handle.bl {
+
+        left:
+            -8px;
+
+        bottom:
+            -8px;
+    }
+
+
+    .selection-handle.br {
+
+        right:
+            -8px;
+
+        bottom:
+            -8px;
+    }
+
+
+    .selection-size {
+
+        position:
+            absolute;
+
+        left:
+            50%;
+
+        bottom:
+            -34px;
+
+        transform:
+            translateX(-50%);
+
+        padding:
+            5px 8px;
+
+        border-radius:
+            6px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.75
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size:
+            10px;
+
+        white-space:
+            nowrap;
+    }
+
+
+    /* ======================================================
+       Window Selection
+       ====================================================== */
+
+    .selected-window-outline {
+
+        position:
+            absolute;
+
+        z-index:
+            175;
+
+        pointer-events:
+            none;
+
+        border:
+            4px solid
+            var(--primary);
+
+        border-radius:
+            12px;
+
+        box-shadow:
+            0 0 0 9999px
+            rgba(
+                0,
+                0,
+                0,
+                0.40
+            );
+    }
+
+
+    /* ======================================================
+       Capture Toolbar
+       ====================================================== */
+
+    .capture-toolbar {
+
+        position:
+            absolute;
+
+        z-index:
+            220;
+
+        left:
+            50%;
+
+        bottom:
+            34px;
+
+        transform:
+            translateX(-50%);
+
+        min-height:
+            68px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            9px 12px;
+
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.18
+            );
+
+        border-radius:
+            16px;
+
+        background:
+            rgba(
+                34,
+                32,
+                36,
+                0.96
+            );
+
+        color:
+            #FFFFFF;
+
+        box-shadow:
+            0 10px 35px
+            rgba(
+                0,
+                0,
+                0,
+                0.36
+            );
+    }
+
+
+    .mode-group {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        padding:
+            4px;
+
+        border-radius:
+            10px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.06
+            );
+    }
+
+
+    .mode-button {
+
+        position:
+            relative;
+
+        min-width:
+            66px;
+
+        height:
+            44px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            2px;
+
+        border-radius:
+            8px;
+
+        color:
+            #D5CFD8;
+
+        font-size:
+            9px;
+    }
+
+
+    .mode-button.active {
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.16
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .toolbar-divider {
+
+        width:
+            1px;
+
+        height:
+            42px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.18
+            );
+    }
+
+
+    .capture-action {
+
+        width:
+            48px;
+
+        height:
+            48px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .capture-action.record {
+
+        background:
+            #E01B24;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .capture-toolbar-button {
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            8px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Popup
+       ====================================================== */
+
+    .capture-popup {
+
+        position:
+            absolute;
+
+        z-index:
+            300;
+
+        width:
+            250px;
+
+        padding:
+            7px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--popup-shadow);
+    }
+
+
+    .delay-popup {
+
+        left:
+            50%;
+
+        bottom:
+            112px;
+
+        transform:
+            translateX(85px);
+    }
+
+
+    .options-popup {
+
+        left:
+            50%;
+
+        bottom:
+            112px;
+
+        transform:
+            translateX(-115px);
+    }
+
+
+    .popup-row {
+
+        min-height:
+            42px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            0 10px;
+
+        border-radius:
+            7px;
+
+        font-size:
+            12px;
+    }
+
+
+    .popup-row.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Switch
+       ====================================================== */
+
+    .capture-switch {
+
+        position:
+            relative;
+
+        width:
+            38px;
+
+        height:
+            22px;
+
+        margin-left:
+            auto;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border);
+    }
+
+
+    .capture-switch.enabled {
+
+        background:
+            var(--primary);
+    }
+
+
+    .capture-switch-thumb {
+
+        position:
+            absolute;
+
+        top:
+            3px;
+
+        left:
+            3px;
+
+        width:
+            16px;
+
+        height:
+            16px;
+
+        border-radius:
+            50%;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    .capture-switch.enabled
+    .capture-switch-thumb {
+
+        left:
+            19px;
+    }
+
+
+    /* ======================================================
+       Countdown
+       ====================================================== */
+
+    .countdown {
+
+        position:
+            absolute;
+
+        z-index:
+            400;
+
+        left:
+            50%;
+
+        top:
+            50%;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        width:
+            120px;
+
+        height:
+            120px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.78
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size:
+            54px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Recording Indicator
+       ====================================================== */
+
+    .recording-indicator {
+
+        position:
+            absolute;
+
+        z-index:
+            260;
+
+        top:
+            50px;
+
+        left:
+            50%;
+
+        transform:
+            translateX(-50%);
+
+        min-height:
+            38px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            999px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.75
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .recording-dot {
+
+        width:
+            10px;
+
+        height:
+            10px;
+
+        border-radius:
+            50%;
+
+        background:
+            #E01B24;
+    }
+
+
+    /* ======================================================
+       Preview
+       ====================================================== */
+
+    .preview-card {
+
+        position:
+            absolute;
+
+        z-index:
+            360;
+
+        right:
+            24px;
+
+        bottom:
+            24px;
+
+        width:
+            310px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--popup-shadow);
+    }
+
+
+    .preview-image {
+
+        width:
+            100%;
+
+        height:
+            170px;
+
+        object-fit:
+            cover;
+    }
+
+
+    .preview-content {
+
+        padding:
+            12px;
+    }
+
+
+    .preview-title {
+
+        font-weight:
+            700;
+
+        font-size:
+            12px;
+    }
+
+
+    .preview-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            6px;
+
+        margin-top:
+            10px;
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .dialog-backdrop {
+
+        position:
+            absolute;
+
+        z-index:
+            500;
+
+        inset:
+            0;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.45
+            );
+    }
+
+
+    .capture-dialog {
+
+        width:
+            430px;
+
+        max-width:
+            calc(
+                100%
+                -
+                48px
+            );
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--window-shadow);
+    }
+
+
+    .dialog-title {
+
+        padding:
+            20px
+            22px
+            8px;
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-content {
+
+        padding:
+            8px
+            22px
+            18px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .dialog-field {
+
+        min-height:
+            40px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        margin-top:
+            12px;
+
+        padding:
+            0 11px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        padding:
+            10px
+            18px
+            18px;
+    }
+
+
+    .dialog-button {
+
+        min-height:
+            38px;
+
+        padding:
+            0 16px;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+
+        font-weight:
+            600;
+    }
+
+
+    .dialog-button.primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<div
+    class="capture-desktop"
+    data-state="{{ screenshot.state }}"
+>
+
+
+    <!-- =====================================================
+         Top Panel
+         ===================================================== -->
+
+    <header
+        class="capture-top-panel"
+        data-class="status_bar"
+        data-semantic="ubuntu_top_panel"
+    >
+
+        <div class="panel-left">
+
+            <button
+                data-class="button"
+                data-semantic="activities"
+            >
+                Activities
+            </button>
+
+            <span>
+                Screenshot
+            </span>
+
+        </div>
+
+
+        <div
+            class="panel-center"
+            data-class="system_text"
+            data-semantic="date_time"
+        >
+            {{ system.date_text }}
+            {{ system.time_text }}
+        </div>
+
+
+        <div class="panel-right">
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="wifi"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    {% if system.wifi.connected %}
+                    wifi
+                    {% else %}
+                    wifi_off
+                    {% endif %}
+                </span>
+            </span>
+
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="audio"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    volume_up
+                </span>
+            </span>
+
+
+            {% if system.battery.available %}
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="battery"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    battery_full
+                </span>
+            </span>
+
+            {% endif %}
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         Dock
+         ===================================================== -->
+
+    <nav
+        class="capture-dock"
+        data-class="navigation_bar"
+        data-semantic="ubuntu_dock"
+    >
+
+        {% for icon, semantic in [
+            ("language", "firefox"),
+            ("folder", "files"),
+            ("terminal", "terminal"),
+            ("edit_note", "text_editor"),
+            ("settings", "settings")
+        ] %}
+
+        <button
+            class="dock-button"
+            data-class="button"
+            data-semantic="dock_{{ semantic }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                style="
+                    font-size:29px;
+                "
+            >
+                {{ icon }}
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+
+    <!-- =====================================================
+         Fake Desktop Windows
+
+         These provide realistic background context but are
+         intentionally NOT annotated as sections, preventing
+         background big-component label flooding.
+         ===================================================== -->
+
+    {% for window in screenshot.windows %}
+
+    <div
+        class="desktop-window"
+        style="
+            left:
+                {{ window.x }}%;
+
+            top:
+                {{ window.y }}%;
+
+            width:
+                {{ window.width }}%;
+
+            height:
+                {{ window.height }}%;
+        "
+    >
+
+        <div class="desktop-window-header">
+
+            <span class="material-symbols-rounded">
+                {{ window.icon }}
+            </span>
+
+            <strong>
+                {{ window.title }}
+            </strong>
+
+        </div>
+
+
+        <div class="desktop-window-content">
+
+            {% for _ in range(8) %}
+
+            <div
+                class="fake-row"
+                style="
+                    width:
+                        {{ range(55, 100) | random }}%;
+                "
+            >
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+
+    <!-- =====================================================
+         Screen Capture Dim
+         ===================================================== -->
+
+    {% if screenshot.mode == "screen" %}
+
+    <div class="capture-dim">
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Area Capture
+         ===================================================== -->
+
+    {% if screenshot.mode == "area" %}
+
+    <div
+        class="capture-selection"
+        data-semantic="capture_selection"
+        style="
+            left:
+                {{ screenshot.selection.x }}%;
+
+            top:
+                {{ screenshot.selection.y }}%;
+
+            width:
+                {{ screenshot.selection.width }}%;
+
+            height:
+                {{ screenshot.selection.height }}%;
+        "
+    >
+
+        {% for position in [
+            "tl",
+            "tr",
+            "bl",
+            "br"
+        ] %}
+
+        <span
+            class="
+                selection-handle
+                {{ position }}
+            "
+            data-class="selection_indicator"
+            data-semantic="selection_handle_{{ position }}"
+        >
+        </span>
+
+        {% endfor %}
+
+
+        <span
+            class="selection-size"
+            data-class="badge"
+            data-semantic="selection_size"
+        >
+            {{ screenshot.selection.width * 18 }}
+            ×
+            {{ screenshot.selection.height * 10 }}
+        </span>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Window Capture
+         ===================================================== -->
+
+    {% if screenshot.mode == "window" %}
+
+        {% for window in screenshot.windows %}
+
+            {% if window.selected %}
+
+            <div
+                class="selected-window-outline"
+                data-semantic="selected_window"
+                style="
+                    left:
+                        {{ window.x }}%;
+
+                    top:
+                        {{ window.y }}%;
+
+                    width:
+                        {{ window.width }}%;
+
+                    height:
+                        {{ window.height }}%;
+                "
+            >
+            </div>
+
+            {% endif %}
+
+        {% endfor %}
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Main Capture Toolbar
+         ===================================================== -->
+
+    {% if screenshot.state not in [
+        "capture_preview",
+        "save_dialog"
+    ] %}
+
+    <nav
+        class="capture-toolbar"
+        data-class="toolbar"
+        data-semantic="screenshot_toolbar"
+    >
+
+        <div
+            class="mode-group"
+            data-semantic="capture_modes"
+        >
+
+            {% for mode in screenshot.capture_modes %}
+
+            <button
+                class="
+                    mode-button
+
+                    {% if
+                        screenshot.mode
+                        ==
+                        mode.semantic
+                    %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="capture_mode_{{ mode.semantic }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    {{ mode.icon }}
+                </span>
+
+
+                {{ mode.name }}
+
+
+                {% if
+                    screenshot.mode
+                    ==
+                    mode.semantic
+                %}
+
+                <span
+                    data-class="selection_indicator"
+                    data-semantic="active_capture_mode"
+                    style="
+                        position:absolute;
+                        right:5px;
+                        top:5px;
+                        width:6px;
+                        height:6px;
+                        border-radius:50%;
+                        background:currentColor;
+                    "
+                >
+                </span>
+
+                {% endif %}
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+
+        <div class="toolbar-divider">
+        </div>
+
+
+        <button
+            class="capture-toolbar-button"
+            data-class="button"
+            data-semantic="capture_options"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                tune
+            </span>
+
+        </button>
+
+
+        <button
+            class="capture-toolbar-button"
+            data-class="button"
+            data-semantic="capture_delay"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                timer
+            </span>
+
+        </button>
+
+
+        <div class="toolbar-divider">
+        </div>
+
+
+        {% if screenshot.recording %}
+
+        <button
+            class="
+                capture-action
+                record
+            "
+            data-class="button"
+            data-semantic="start_recording"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                fiber_manual_record
+            </span>
+
+        </button>
+
+        {% else %}
+
+        <button
+            class="capture-action"
+            data-class="button"
+            data-semantic="take_screenshot"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                photo_camera
+            </span>
+
+        </button>
+
+        {% endif %}
+
+    </nav>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Delay Popup
+         ===================================================== -->
+
+    {% if screenshot.state == "delay_menu" %}
+
+    <section
+        class="
+            capture-popup
+            delay-popup
+        "
+        data-class="card"
+        data-semantic="delay_menu"
+        data-occluder="true"
+    >
+
+        {% for delay in [
+            0,
+            3,
+            5,
+            10
+        ] %}
+
+        <div
+            class="
+                popup-row
+
+                {% if screenshot.delay == delay %}
+                selected
+                {% endif %}
+            "
+            data-class="list_item"
+            data-semantic="delay_{{ delay }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                timer
+            </span>
+
+
+            {% if delay == 0 %}
+            No delay
+            {% else %}
+            {{ delay }} seconds
+            {% endif %}
+
+
+            {% if screenshot.delay == delay %}
+
+            <span
+                class="material-symbols-rounded"
+                data-class="selection_indicator"
+                style="
+                    margin-left:auto;
+                "
+            >
+                check
+            </span>
+
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Options Popup
+         ===================================================== -->
+
+    {% if screenshot.state == "options_open" %}
+
+    <section
+        class="
+            capture-popup
+            options-popup
+        "
+        data-class="card"
+        data-semantic="capture_options_menu"
+        data-occluder="true"
+    >
+
+        <div
+            class="popup-row"
+            data-class="list_item"
+            data-semantic="include_pointer"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                mouse
+            </span>
+
+            Include Pointer
+
+
+            <div
+                class="
+                    capture-switch
+                    {% if screenshot.include_pointer %}
+                    enabled
+                    {% endif %}
+                "
+                data-class="switch"
+                data-semantic="pointer_switch"
+            >
+                <span class="capture-switch-thumb">
+                </span>
+            </div>
+
+        </div>
+
+
+        <div
+            class="popup-row"
+            data-class="list_item"
+            data-semantic="include_border"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                crop_square
+            </span>
+
+            Include Window Border
+
+
+            <div
+                class="
+                    capture-switch
+                    {% if screenshot.include_border %}
+                    enabled
+                    {% endif %}
+                "
+                data-class="switch"
+                data-semantic="border_switch"
+            >
+                <span class="capture-switch-thumb">
+                </span>
+            </div>
+
+        </div>
+
+
+        {% if screenshot.recording %}
+
+        <div
+            class="popup-row"
+            data-class="list_item"
+            data-semantic="record_audio"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                mic
+            </span>
+
+            Record Audio
+
+
+            <div
+                class="
+                    capture-switch
+                    {% if screenshot.record_audio %}
+                    enabled
+                    {% endif %}
+                "
+                data-class="switch"
+                data-semantic="audio_switch"
+            >
+                <span class="capture-switch-thumb">
+                </span>
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Countdown
+         ===================================================== -->
+
+    {% if screenshot.state == "capture_countdown" %}
+
+    <div
+        class="countdown"
+        data-class="badge"
+        data-semantic="capture_countdown"
+        data-occluder="true"
+    >
+        {{ screenshot.countdown }}
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Active Recording
+         ===================================================== -->
+
+    {% if screenshot.state == "recording_active" %}
+
+    <div
+        class="recording-indicator"
+        data-class="card"
+        data-semantic="recording_indicator"
+    >
+
+        <span
+            class="recording-dot"
+            data-class="selection_indicator"
+            data-semantic="recording_active"
+        >
+        </span>
+
+
+        <span
+            data-class="timestamp"
+            data-semantic="recording_time"
+        >
+            {{ screenshot.recording_seconds // 60 }}:
+            {{ "%02d" | format(
+                screenshot.recording_seconds % 60
+            ) }}
+        </span>
+
+
+        <button
+            data-class="button"
+            data-semantic="stop_recording"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                stop
+            </span>
+
+        </button>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Preview
+         ===================================================== -->
+
+    {% if screenshot.state == "capture_preview" %}
+
+    <article
+        class="preview-card"
+        data-class="card"
+        data-semantic="capture_preview"
+        data-occluder="true"
+    >
+
+        {% if screenshot.preview_image %}
+
+        <img
+            class="preview-image"
+            src="{{ screenshot.preview_image }}"
+            data-class="image"
+            data-semantic="screenshot_preview_image"
+        >
+
+        {% endif %}
+
+
+        <div class="preview-content">
+
+            <div class="preview-title">
+                Screenshot captured
+            </div>
+
+
+            <div
+                style="
+                    margin-top:3px;
+                    color:var(--text-secondary);
+                    font-size:10px;
+                "
+            >
+                {{ screenshot.filename }}
+            </div>
+
+
+            <div class="preview-actions">
+
+                <button
+                    class="dialog-button"
+                    data-class="button"
+                    data-semantic="copy_screenshot"
+                >
+                    Copy
+                </button>
+
+
+                <button
+                    class="
+                        dialog-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="save_screenshot"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </div>
+
+    </article>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Save Dialog
+         ===================================================== -->
+
+    {% if screenshot.state == "save_dialog" %}
+
+    <div
+        class="dialog-backdrop"
+        data-occluder="true"
+    >
+
+        <section
+            class="capture-dialog"
+            data-class="dialog"
+            data-semantic="save_screenshot_dialog"
+        >
+
+            <div class="dialog-title">
+                Save Screenshot
+            </div>
+
+
+            <div class="dialog-content">
+
+                Save the captured image.
+
+
+                <div
+                    class="dialog-field"
+                    data-class="input_field"
+                    data-semantic="screenshot_filename"
+                >
+                    {{ screenshot.filename }}
+                </div>
+
+
+                <div
+                    class="dialog-field"
+                    data-class="input_field"
+                    data-semantic="screenshot_location"
+                >
+                    Pictures / Screenshots
+                </div>
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="dialog-button"
+                    data-class="button"
+                    data-semantic="cancel_save"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="
+                        dialog-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="confirm_save"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+{% endblock %}

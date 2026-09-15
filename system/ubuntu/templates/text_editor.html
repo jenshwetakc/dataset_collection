@@ -1,0 +1,2366 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Ubuntu Text Editor
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    .editor-desktop {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        overflow:
+            hidden;
+
+        background:
+            linear-gradient(
+                135deg,
+                var(--primary-container),
+                var(--background)
+            );
+    }
+
+
+    /* ======================================================
+       Top Panel
+       ====================================================== */
+
+    .editor-top-panel {
+
+        position:
+            absolute;
+
+        z-index:
+            100;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        height:
+            var(--panel-height);
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            auto
+            1fr;
+
+        align-items:
+            center;
+
+        padding:
+            0 10px;
+
+        background:
+            rgba(
+                20,
+                20,
+                22,
+                0.96
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size:
+            13px;
+    }
+
+
+    .panel-left {
+
+        justify-self:
+            start;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+    }
+
+
+    .panel-center {
+
+        justify-self:
+            center;
+
+        font-weight:
+            600;
+    }
+
+
+    .panel-right {
+
+        justify-self:
+            end;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .panel-system-item {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            26px;
+
+        height:
+            26px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            6px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .panel-system-icon {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        font-size:
+            18px;
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Dock
+       ====================================================== */
+
+    .editor-dock {
+
+        position:
+            absolute;
+
+        z-index:
+            80;
+
+        top:
+            50%;
+
+        left:
+            10px;
+
+        transform:
+            translateY(-50%);
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        width:
+            var(--dock-width);
+
+        padding:
+            8px;
+
+        border-radius:
+            14px;
+
+        background:
+            rgba(
+                30,
+                30,
+                32,
+                0.90
+            );
+
+        box-shadow:
+            var(--popup-shadow);
+    }
+
+
+    .dock-button {
+
+        position:
+            relative;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            var(--dock-item-size);
+
+        height:
+            var(--dock-item-size);
+
+        border-radius:
+            10px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .dock-button.active {
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.18
+            );
+    }
+
+
+    .dock-icon {
+
+        font-size:
+            29px;
+    }
+
+
+    .dock-dot {
+
+        position:
+            absolute;
+
+        left:
+            -5px;
+
+        width:
+            4px;
+
+        height:
+            4px;
+
+        border-radius:
+            50%;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Editor Window
+       ====================================================== */
+
+    .editor-window {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        left:
+            13%;
+
+        top:
+            9%;
+
+        width:
+            78%;
+
+        height:
+            84%;
+
+        min-width:
+            720px;
+
+        min-height:
+            500px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--window-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--window-shadow);
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .editor-header {
+
+        flex:
+            0 0
+            50px;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            0 10px;
+
+        background:
+            var(--surface-variant);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .header-left,
+    .header-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+    }
+
+
+    .header-title {
+
+        justify-self:
+            center;
+
+        font-size:
+            15px;
+
+        font-weight:
+            700;
+    }
+
+
+    .header-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--icon);
+    }
+
+
+    .window-control {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            29px;
+
+        height:
+            29px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .window-control.close {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    /* ======================================================
+       Tabs
+       ====================================================== */
+
+    .editor-tabs {
+
+        flex:
+            0 0
+            42px;
+
+        display:
+            flex;
+
+        align-items:
+            stretch;
+
+        overflow:
+            hidden;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .editor-tab {
+
+        position:
+            relative;
+
+        min-width:
+            140px;
+
+        max-width:
+            220px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            0 12px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .editor-tab.active {
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .tab-name {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    .modified-dot {
+
+        width:
+            7px;
+
+        height:
+            7px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+    }
+
+
+    .tab-indicator {
+
+        position:
+            absolute;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        height:
+            2px;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Search Toolbar
+       ====================================================== */
+
+    .editor-search-toolbar {
+
+        flex:
+            0 0 auto;
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        padding:
+            7px 10px;
+
+        background:
+            var(--surface-variant);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .editor-search-box {
+
+        width:
+            300px;
+
+        height:
+            36px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .editor-search-box input {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .replace-box {
+
+        width:
+            240px;
+    }
+
+
+    /* ======================================================
+       Editor Body
+       ====================================================== */
+
+    .editor-body {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface);
+    }
+
+
+    .editor-body.split {
+
+        grid-template-columns:
+            1fr
+            1fr;
+    }
+
+
+    .editor-pane {
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            auto;
+
+        padding:
+            18px 0;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-family:
+            "Ubuntu Mono",
+            "DejaVu Sans Mono",
+            monospace;
+
+        font-size:
+            14px;
+
+        line-height:
+            1.55;
+    }
+
+
+    .editor-body.split
+    .editor-pane:first-child {
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    /* ======================================================
+       Line
+       ====================================================== */
+
+    .editor-line {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            54px
+            minmax(
+                0,
+                1fr
+            );
+
+        min-height:
+            23px;
+
+        padding:
+            0 18px
+            0 0;
+    }
+
+
+    .line-number {
+
+        padding-right:
+            14px;
+
+        color:
+            var(--text-disabled);
+
+        text-align:
+            right;
+
+        user-select:
+            none;
+    }
+
+
+    .line-content {
+
+        min-width:
+            0;
+
+        white-space:
+            pre-wrap;
+
+        overflow-wrap:
+            anywhere;
+    }
+
+
+    /* ======================================================
+       Empty Document
+       ====================================================== */
+
+    .empty-editor {
+
+        height:
+            100%;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .empty-editor-icon {
+
+        font-size:
+            70px;
+
+        margin-bottom:
+            16px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .empty-title {
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .empty-description {
+
+        margin-top:
+            6px;
+
+        font-size:
+            13px;
+    }
+
+
+    /* ======================================================
+       Status Bar
+       ====================================================== */
+
+    .editor-status {
+
+        flex:
+            0 0
+            30px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            18px;
+
+        padding:
+            0 12px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Popup
+       ====================================================== */
+
+    .editor-popup {
+
+        position:
+            absolute;
+
+        z-index:
+            300;
+
+        width:
+            270px;
+
+        padding:
+            7px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--popup-shadow);
+    }
+
+
+    .document-menu {
+
+        top:
+            13%;
+
+        right:
+            10%;
+    }
+
+
+    .recent-menu {
+
+        top:
+            18%;
+
+        left:
+            16%;
+
+        width:
+            320px;
+    }
+
+
+    .popup-row {
+
+        min-height:
+            40px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            0 10px;
+
+        border-radius:
+            7px;
+    }
+
+
+    .recent-meta {
+
+        margin-left:
+            auto;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .editor-dialog-backdrop {
+
+        position:
+            absolute;
+
+        z-index:
+            500;
+
+        inset:
+            0;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.42
+            );
+    }
+
+
+    .editor-dialog {
+
+        width:
+            min(
+                480px,
+                calc(
+                    100%
+                    -
+                    48px
+                )
+            );
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--window-shadow);
+    }
+
+
+    .dialog-title {
+
+        padding:
+            20px 22px 8px;
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-content {
+
+        padding:
+            8px 22px 18px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .dialog-field {
+
+        height:
+            40px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        margin-top:
+            12px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        padding:
+            10px 18px 18px;
+    }
+
+
+    .dialog-button {
+
+        min-height:
+            38px;
+
+        padding:
+            0 16px;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+
+        font-weight:
+            600;
+    }
+
+
+    .dialog-button.primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .dialog-button.danger {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    /* ======================================================
+       Open File List
+       ====================================================== */
+
+    .open-file-list {
+
+        max-height:
+            280px;
+
+        overflow:
+            auto;
+
+        margin-top:
+            12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+    }
+
+
+    .open-file-row {
+
+        min-height:
+            46px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            0 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .open-file-row:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .open-file-modified {
+
+        margin-left:
+            auto;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    @media (
+        max-width: 1100px
+    ) {
+
+        .editor-window {
+
+            left:
+                9%;
+
+            width:
+                86%;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<div
+    class="editor-desktop"
+    data-state="{{ editor.state }}"
+>
+
+
+    <!-- =====================================================
+         Top Panel
+         ===================================================== -->
+
+    <header
+        class="editor-top-panel"
+        data-class="status_bar"
+        data-semantic="ubuntu_top_panel"
+    >
+
+        <div class="panel-left">
+
+            <button
+                data-class="button"
+                data-semantic="activities"
+            >
+                Activities
+            </button>
+
+            <span>
+                Text Editor
+            </span>
+
+        </div>
+
+
+        <div
+            class="panel-center"
+            data-class="system_text"
+            data-semantic="date_time"
+        >
+            {{ system.date_text }}
+            {{ system.time_text }}
+        </div>
+
+
+        <div class="panel-right">
+
+
+            {% if system.bluetooth.enabled %}
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="bluetooth"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    bluetooth
+                </span>
+
+            </span>
+
+            {% endif %}
+
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="audio"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    {% if system.audio.muted %}
+                    volume_off
+                    {% else %}
+                    volume_up
+                    {% endif %}
+                </span>
+
+            </span>
+
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="wifi"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    {% if system.wifi.connected %}
+                    wifi
+                    {% else %}
+                    wifi_off
+                    {% endif %}
+                </span>
+
+            </span>
+
+
+            {% if system.battery.available %}
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="battery"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    {% if system.battery.charging %}
+                    battery_charging_full
+                    {% else %}
+                    battery_full
+                    {% endif %}
+                </span>
+
+            </span>
+
+            {% endif %}
+
+
+            <span
+                class="panel-system-item"
+                data-class="system_icon"
+                data-semantic="system_menu"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        panel-system-icon
+                    "
+                >
+                    keyboard_arrow_down
+                </span>
+
+            </span>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         Dock
+         ===================================================== -->
+
+    <nav
+        class="editor-dock"
+        data-class="navigation_bar"
+        data-semantic="ubuntu_dock"
+    >
+
+        {% for icon, semantic, active in [
+            ("language", "firefox", false),
+            ("folder", "files", false),
+            ("terminal", "terminal", false),
+            ("edit_note", "text_editor", true),
+            ("settings", "settings", false)
+        ] %}
+
+        <button
+            class="
+                dock-button
+                {% if active %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="dock_{{ semantic }}"
+        >
+
+            {% if active %}
+
+            <span
+                class="dock-dot"
+                data-class="selection_indicator"
+                data-semantic="running_{{ semantic }}"
+            >
+            </span>
+
+            {% endif %}
+
+
+            <span
+                class="
+                    material-symbols-rounded
+                    dock-icon
+                "
+                data-class="icon"
+                data-semantic="dock_icon_{{ semantic }}"
+            >
+                {{ icon }}
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+
+    <!-- =====================================================
+         Editor Window
+         ===================================================== -->
+
+    <section
+        class="editor-window"
+        data-class="section"
+        data-semantic="text_editor_window"
+    >
+
+
+        <!-- =================================================
+             Header
+             ================================================= -->
+
+        <header
+            class="editor-header"
+            data-class="app_bar"
+            data-semantic="text_editor_header"
+        >
+
+            <div class="header-left">
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="new_document"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        note_add
+                    </span>
+                </button>
+
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="open_document"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        folder_open
+                    </span>
+                </button>
+
+            </div>
+
+
+            <div class="header-title">
+                {{ editor.active_tab.name }}
+            </div>
+
+
+            <div class="header-right">
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="save_document"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        save
+                    </span>
+                </button>
+
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="find"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        search
+                    </span>
+                </button>
+
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="document_menu"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        menu
+                    </span>
+                </button>
+
+
+                <button
+                    class="window-control"
+                    data-class="button"
+                    data-semantic="minimize"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        remove
+                    </span>
+                </button>
+
+
+                <button
+                    class="window-control"
+                    data-class="button"
+                    data-semantic="maximize"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        crop_square
+                    </span>
+                </button>
+
+
+                <button
+                    class="
+                        window-control
+                        close
+                    "
+                    data-class="button"
+                    data-semantic="close"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        close
+                    </span>
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             Tabs
+             ================================================= -->
+
+        <nav
+            class="editor-tabs"
+            data-class="toolbar"
+            data-semantic="document_tabs"
+        >
+
+            {% for tab in editor.tabs %}
+
+            <div
+                class="
+                    editor-tab
+                    {% if tab.active %}
+                    active
+                    {% endif %}
+                "
+                data-class="tab"
+                data-semantic="document_tab_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    style="
+                        font-size:17px;
+                    "
+                >
+                    description
+                </span>
+
+
+                <span class="tab-name">
+                    {{ tab.name }}
+                </span>
+
+
+                {% if tab.modified %}
+
+                <span
+                    class="modified-dot"
+                    data-class="selection_indicator"
+                    data-semantic="unsaved_{{ loop.index }}"
+                >
+                </span>
+
+                {% endif %}
+
+
+                <button
+                    data-class="button"
+                    data-semantic="close_tab_{{ loop.index }}"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        style="
+                            font-size:16px;
+                        "
+                    >
+                        close
+                    </span>
+                </button>
+
+
+                {% if tab.active %}
+
+                <span
+                    class="tab-indicator"
+                    data-class="selection_indicator"
+                    data-semantic="active_document"
+                >
+                </span>
+
+                {% endif %}
+
+            </div>
+
+            {% endfor %}
+
+        </nav>
+
+
+        <!-- =================================================
+             Find
+             ================================================= -->
+
+        {% if editor.state in [
+            "find_open",
+            "replace_open"
+        ] %}
+
+        <div
+            class="editor-search-toolbar"
+            data-class="toolbar"
+            data-semantic="find_toolbar"
+        >
+
+            <div
+                class="editor-search-box"
+                data-class="search_bar"
+                data-semantic="find_input"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    search
+                </span>
+
+
+                <input
+                    value="{{ editor.find_query }}"
+                    placeholder="Find"
+                >
+
+
+                <button
+                    data-class="button"
+                    data-semantic="find_previous"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        keyboard_arrow_up
+                    </span>
+                </button>
+
+
+                <button
+                    data-class="button"
+                    data-semantic="find_next"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        keyboard_arrow_down
+                    </span>
+                </button>
+
+            </div>
+
+
+            {% if editor.state == "replace_open" %}
+
+            <div
+                class="
+                    editor-search-box
+                    replace-box
+                "
+                data-class="input_field"
+                data-semantic="replace_input"
+            >
+
+                <input
+                    value="{{ editor.replace_value }}"
+                    placeholder="Replace with"
+                >
+
+            </div>
+
+
+            <button
+                class="header-button"
+                data-class="button"
+                data-semantic="replace"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    find_replace
+                </span>
+            </button>
+
+            {% endif %}
+
+
+            <button
+                class="header-button"
+                data-class="button"
+                data-semantic="close_find"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- =================================================
+             Body
+             ================================================= -->
+
+        <div
+            class="
+                editor-body
+                {% if editor.state == "split_view" %}
+                split
+                {% endif %}
+            "
+        >
+
+
+            <!-- =============================================
+                 Empty
+                 ============================================= -->
+
+            {% if editor.state == "empty_document" %}
+
+            <div class="empty-editor">
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        empty-editor-icon
+                    "
+                    data-class="icon"
+                    data-semantic="empty_document_icon"
+                >
+                    edit_note
+                </span>
+
+
+                <div class="empty-title">
+                    Start Writing
+                </div>
+
+
+                <div class="empty-description">
+                    Create a new document or open an existing file.
+                </div>
+
+            </div>
+
+
+            {% else %}
+
+
+            <!-- =============================================
+                 Primary Pane
+                 ============================================= -->
+
+            <div
+                class="editor-pane"
+                data-class="section"
+                data-semantic="editor_primary_pane"
+            >
+
+                {% for line in editor.document_lines %}
+
+                <div class="editor-line">
+
+                    <span class="line-number">
+                        {{ loop.index }}
+                    </span>
+
+
+                    <span
+                        class="line-content"
+                        data-class="text"
+                        data-semantic="editor_line_{{ loop.index }}"
+                    >
+                        {{ line }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- =============================================
+                 Split Pane
+                 ============================================= -->
+
+            {% if editor.state == "split_view" %}
+
+            <div
+                class="editor-pane"
+                data-class="section"
+                data-semantic="editor_secondary_pane"
+            >
+
+                {% for line in editor.split_lines %}
+
+                <div class="editor-line">
+
+                    <span class="line-number">
+                        {{ loop.index }}
+                    </span>
+
+
+                    <span
+                        class="line-content"
+                        data-class="text"
+                        data-semantic="split_line_{{ loop.index }}"
+                    >
+                        {{ line }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- =================================================
+             Status Bar
+             ================================================= -->
+
+        <footer
+            class="editor-status"
+            data-class="toolbar"
+            data-semantic="editor_status_bar"
+        >
+
+            <span>
+                Ln 1, Col 1
+            </span>
+
+            <span>
+                UTF-8
+            </span>
+
+            <span>
+                Plain Text
+            </span>
+
+            <span style="margin-left:auto;">
+                Spaces: 4
+            </span>
+
+        </footer>
+
+    </section>
+
+
+    <!-- =====================================================
+         Recent Files Menu
+         ===================================================== -->
+
+    {% if editor.state == "recent_files_menu" %}
+
+    <section
+        class="
+            editor-popup
+            recent-menu
+        "
+        data-class="card"
+        data-semantic="recent_files_menu"
+        data-occluder="true"
+    >
+
+        {% for entry in editor.recent_files %}
+
+        <div
+            class="popup-row"
+            data-class="list_item"
+            data-semantic="recent_file_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                {{ entry.icon }}
+            </span>
+
+            <span>
+                {{ entry.name }}
+            </span>
+
+            <span class="recent-meta">
+                {{ entry.location }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Document Menu
+         ===================================================== -->
+
+    {% if editor.state == "document_menu_open" %}
+
+    <section
+        class="
+            editor-popup
+            document-menu
+        "
+        data-class="card"
+        data-semantic="document_menu_popup"
+        data-occluder="true"
+    >
+
+        {% for entry in editor.document_menu_entries %}
+
+        <div
+            class="popup-row"
+            data-class="list_item"
+            data-semantic="document_action_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                {{ entry.icon }}
+            </span>
+
+            <span>
+                {{ entry.label }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Save As Dialog
+         ===================================================== -->
+
+    {% if editor.state == "save_as_dialog" %}
+
+    <div
+        class="editor-dialog-backdrop"
+        data-occluder="true"
+    >
+
+        <section
+            class="editor-dialog"
+            data-class="dialog"
+            data-semantic="save_as_dialog"
+        >
+
+            <div class="dialog-title">
+                Save Document
+            </div>
+
+
+            <div class="dialog-content">
+
+                Save the document with a new name.
+
+
+                <div
+                    class="dialog-field"
+                    data-class="input_field"
+                    data-semantic="save_name_input"
+                >
+                    {{ editor.save_name }}
+                </div>
+
+
+                <div
+                    class="dialog-field"
+                    data-class="input_field"
+                    data-semantic="save_location"
+                >
+                    {{ editor.save_location }}
+                </div>
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="dialog-button"
+                    data-class="button"
+                    data-semantic="cancel_save"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="
+                        dialog-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="confirm_save"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Open File Dialog
+         ===================================================== -->
+
+    {% if editor.state == "open_file_dialog" %}
+
+    <div
+        class="editor-dialog-backdrop"
+        data-occluder="true"
+    >
+
+        <section
+            class="editor-dialog"
+            data-class="dialog"
+            data-semantic="open_file_dialog"
+        >
+
+            <div class="dialog-title">
+                Open File
+            </div>
+
+
+            <div class="dialog-content">
+
+                Choose a document.
+
+
+                <div class="open-file-list">
+
+                    {% for entry in editor.open_files %}
+
+                    <div
+                        class="open-file-row"
+                        data-class="list_item"
+                        data-semantic="open_file_{{ loop.index }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            {{ entry.icon }}
+                        </span>
+
+
+                        <span>
+                            {{ entry.name }}
+                        </span>
+
+
+                        <span class="open-file-modified">
+                            {{ entry.modified }}
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="dialog-button"
+                    data-class="button"
+                    data-semantic="cancel_open"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="
+                        dialog-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="confirm_open"
+                >
+                    Open
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Unsaved Changes Dialog
+         ===================================================== -->
+
+    {% if editor.state == "close_unsaved_dialog" %}
+
+    <div
+        class="editor-dialog-backdrop"
+        data-occluder="true"
+    >
+
+        <section
+            class="editor-dialog"
+            data-class="dialog"
+            data-semantic="unsaved_changes_dialog"
+        >
+
+            <div class="dialog-title">
+                Save Changes?
+            </div>
+
+
+            <div class="dialog-content">
+
+                Changes to
+                "{{ editor.active_tab.name }}"
+                will be lost if you close the document
+                without saving.
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="
+                        dialog-button
+                        danger
+                    "
+                    data-class="button"
+                    data-semantic="discard_changes"
+                >
+                    Discard
+                </button>
+
+
+                <button
+                    class="dialog-button"
+                    data-class="button"
+                    data-semantic="cancel_close"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="
+                        dialog-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="save_changes"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+{% endblock %}
