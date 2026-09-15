@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Status Viewer</title>
+
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded"
+        rel="stylesheet"
+    >
+
+
+<style>
+
+    * {
+        box-sizing: border-box;
+    }
+
+
+    html,
+    body {
+
+        width: 100%;
+        height: 100%;
+
+        margin: 0;
+        padding: 0;
+
+        overflow: hidden;
+    }
+
+
+    body {
+
+        font-family:
+            "Roboto",
+            Arial,
+            sans-serif;
+
+        background:
+            #111;
+
+        color:
+            white;
+    }
+
+
+    button,
+    input {
+        font: inherit;
+    }
+
+
+    img {
+
+        user-select: none;
+
+        -webkit-user-drag: none;
+    }
+
+
+    :root {
+
+        --surface:
+            {{ theme.semantic.surface }};
+
+        --on-surface:
+            {{ theme.semantic.on_surface }};
+
+        --surface-variant:
+            {{ theme.semantic.surface_variant }};
+
+        --on-surface-variant:
+            {{ theme.semantic.on_surface_variant }};
+
+        --primary:
+            {{ theme.semantic.primary }};
+
+        --on-primary:
+            {{ theme.semantic.on_primary }};
+
+        --border-subtle:
+            {{ theme.semantic.border_subtle }};
+    }
+
+
+    /* =====================================================
+       Main Viewer
+       ===================================================== */
+
+    .status-viewer {
+
+        position: relative;
+
+        width: 100vw;
+        height: 100vh;
+
+        overflow: hidden;
+
+        background:
+            #111;
+    }
+
+
+    /* =====================================================
+       Media
+       ===================================================== */
+
+    .status-media-layer {
+
+        position: absolute;
+
+        inset: 0;
+
+        overflow: hidden;
+
+        background:
+            #111;
+    }
+
+
+    .status-image,
+    .status-video-frame {
+
+        width: 100%;
+        height: 100%;
+
+        display: block;
+
+        object-fit: cover;
+
+        background:
+            #111;
+    }
+
+
+    /* =====================================================
+       Dark Overlays
+       ===================================================== */
+
+    .top-gradient {
+
+        position: absolute;
+
+        z-index: 4;
+
+        top: 0;
+        left: 0;
+        right: 0;
+
+        height: 180px;
+
+        pointer-events: none;
+
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.68
+                ),
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0
+                )
+            );
+    }
+
+
+    .bottom-gradient {
+
+        position: absolute;
+
+        z-index: 4;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        height: 220px;
+
+        pointer-events: none;
+
+        background:
+            linear-gradient(
+                to top,
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.78
+                ),
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0
+                )
+            );
+    }
+
+
+    /* =====================================================
+       Progress
+       ===================================================== */
+
+    .progress-container {
+
+        position: absolute;
+
+        z-index: 20;
+
+        top:
+            clamp(
+                10px,
+                2vh,
+                18px
+            );
+
+        left:
+            clamp(
+                8px,
+                3vw,
+                18px
+            );
+
+        right:
+            clamp(
+                8px,
+                3vw,
+                18px
+            );
+
+        display: flex;
+
+        gap: 4px;
+    }
+
+
+    .progress-track {
+
+        position: relative;
+
+        flex: 1;
+
+        height: 3px;
+
+        overflow: hidden;
+
+        border-radius: 2px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.35
+            );
+    }
+
+
+    .progress-fill {
+
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        bottom: 0;
+
+        border-radius: inherit;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.95
+            );
+    }
+
+
+    /* =====================================================
+       Header
+       ===================================================== */
+
+    .status-header {
+
+        position: absolute;
+
+        z-index: 21;
+
+        top:
+            clamp(
+                24px,
+                5vh,
+                42px
+            );
+
+        left:
+            clamp(
+                8px,
+                3vw,
+                18px
+            );
+
+        right:
+            clamp(
+                8px,
+                3vw,
+                18px
+            );
+
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+    }
+
+
+    .header-button {
+
+        width: 38px;
+        height: 38px;
+
+        padding: 0;
+
+        flex-shrink: 0;
+
+        border: none;
+
+        border-radius: 50%;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.34
+            );
+
+        color:
+            white;
+    }
+
+
+    .header-button-target {
+
+        width: 32px;
+        height: 32px;
+
+        border-radius: 50%;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+
+    .owner-avatar {
+
+        width: 40px;
+        height: 40px;
+
+        flex-shrink: 0;
+
+        border-radius: 50%;
+
+        object-fit: cover;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .owner-content {
+
+        flex: 1;
+
+        min-width: 0;
+    }
+
+
+    .owner-name {
+
+        min-width: 0;
+    }
+
+
+    .owner-name-text {
+
+        display: inline-block;
+
+        width: fit-content;
+        max-width: 100%;
+
+        font-size: 15px;
+        font-weight: 600;
+
+        white-space: nowrap;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        color:
+            white;
+    }
+
+
+    .owner-time {
+
+        display: inline-block;
+
+        width: fit-content;
+
+        margin-top: 2px;
+
+        font-size: 11px;
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.82
+            );
+    }
+
+
+    /* =====================================================
+       Video State
+       ===================================================== */
+
+    .video-state {
+
+        position: absolute;
+
+        z-index: 12;
+
+        top:
+            clamp(
+                92px,
+                15vh,
+                125px
+            );
+
+        right:
+            clamp(
+                12px,
+                4vw,
+                22px
+            );
+
+        display: flex;
+        align-items: center;
+
+        gap: 6px;
+    }
+
+
+    .video-state-pill {
+
+        min-height: 32px;
+
+        padding:
+            0
+            10px;
+
+        border-radius: 18px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        gap: 5px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.52
+            );
+
+        color:
+            white;
+    }
+
+
+    .video-state-pill
+    .material-symbols-rounded {
+
+        font-size: 17px;
+    }
+
+
+    .video-state-text {
+
+        display: inline-block;
+
+        width: fit-content;
+
+        font-size: 11px;
+    }
+
+
+    /* =====================================================
+       Caption
+       ===================================================== */
+
+    .status-caption {
+
+        position: absolute;
+
+        z-index: 15;
+
+        left:
+            clamp(
+                20px,
+                6vw,
+                50px
+            );
+
+        right:
+            clamp(
+                20px,
+                6vw,
+                50px
+            );
+
+        bottom:
+            clamp(
+                100px,
+                15vh,
+                138px
+            );
+
+        padding:
+            8px
+            12px;
+
+        border-radius: 12px;
+
+        text-align: center;
+
+        color:
+            white;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.42
+            );
+    }
+
+
+    .status-caption-text {
+
+        display: inline;
+
+        font-size:
+            clamp(
+                14px,
+                3.5vw,
+                18px
+            );
+
+        line-height: 1.45;
+    }
+
+
+    /* =====================================================
+       Bottom Controls
+       ===================================================== */
+
+    .bottom-controls {
+
+        position: absolute;
+
+        z-index: 22;
+
+        left:
+            clamp(
+                10px,
+                3vw,
+                22px
+            );
+
+        right:
+            clamp(
+                10px,
+                3vw,
+                22px
+            );
+
+        bottom:
+            clamp(
+                14px,
+                3vh,
+                28px
+            );
+
+        display: flex;
+        align-items: center;
+
+        gap: 8px;
+    }
+
+
+    .reply-bar {
+
+        flex: 1;
+
+        min-width: 0;
+        min-height: 46px;
+
+        padding:
+            0
+            14px;
+
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.45
+            );
+
+        border-radius: 24px;
+
+        display: flex;
+        align-items: center;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.34
+            );
+
+        backdrop-filter:
+            blur(
+                12px
+            );
+    }
+
+
+    .reply-input {
+
+        width: 100%;
+
+        border: none;
+        outline: none;
+
+        padding: 0;
+
+        background:
+            transparent;
+
+        color:
+            white;
+
+        font-size: 14px;
+    }
+
+
+    .reply-input::placeholder {
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.75
+            );
+    }
+
+
+    .bottom-button {
+
+        width: 46px;
+        height: 46px;
+
+        padding: 0;
+
+        flex-shrink: 0;
+
+        border: none;
+
+        border-radius: 50%;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.42
+            );
+
+        color:
+            white;
+
+        backdrop-filter:
+            blur(
+                12px
+            );
+    }
+
+
+    .bottom-button-target {
+
+        width: 40px;
+        height: 40px;
+
+        border-radius: 50%;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+
+    .bottom-button.active {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* =====================================================
+       Reaction Panel
+       ===================================================== */
+
+    .reaction-panel {
+
+        position: absolute;
+
+        z-index: 30;
+
+        left: 50%;
+
+        bottom:
+            clamp(
+                78px,
+                11vh,
+                105px
+            );
+
+        transform:
+            translateX(-50%);
+
+        display: flex;
+        align-items: center;
+
+        gap:
+            clamp(
+                8px,
+                2vw,
+                14px
+            );
+
+        padding:
+            10px
+            14px;
+
+        border-radius: 28px;
+
+        background:
+            rgba(
+                20,
+                20,
+                20,
+                0.82
+            );
+
+        backdrop-filter:
+            blur(
+                18px
+            );
+    }
+
+
+    .reaction-button {
+
+        min-width: 34px;
+        min-height: 34px;
+
+        border: none;
+
+        padding: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background:
+            transparent;
+    }
+
+
+    .reaction-emoji-text {
+
+        display: inline-block;
+
+        width: fit-content;
+
+        font-size:
+            clamp(
+                22px,
+                6vw,
+                30px
+            );
+    }
+
+
+    /* =====================================================
+       Material Icons
+       ===================================================== */
+
+    .material-symbols-rounded {
+
+        display: inline-block;
+
+        width: fit-content;
+        height: fit-content;
+
+        font-size: 23px;
+
+        font-variation-settings:
+            "FILL" 0,
+            "wght" 400,
+            "GRAD" 0,
+            "opsz" 24;
+    }
+
+
+    /* =====================================================
+       Desktop
+       ===================================================== */
+
+    @media (
+        min-width: 900px
+    ) {
+
+        .status-media-layer {
+
+            display: flex;
+            justify-content: center;
+
+            background:
+                #0b0b0b;
+        }
+
+
+        .status-image,
+        .status-video-frame {
+
+            width:
+                min(
+                    65vw,
+                    850px
+                );
+
+            object-fit: contain;
+        }
+
+
+        .status-header,
+        .progress-container,
+        .bottom-controls {
+
+            max-width: 850px;
+
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+
+        .status-header {
+
+            left:
+                calc(
+                    50% - 425px
+                );
+
+            right:
+                calc(
+                    50% - 425px
+                );
+        }
+
+
+        .progress-container {
+
+            left:
+                calc(
+                    50% - 425px
+                );
+
+            right:
+                calc(
+                    50% - 425px
+                );
+        }
+
+
+        .bottom-controls {
+
+            left:
+                calc(
+                    50% - 425px
+                );
+
+            right:
+                calc(
+                    50% - 425px
+                );
+        }
+
+
+        .status-caption {
+
+            max-width: 680px;
+
+            left: 50%;
+            right: auto;
+
+            transform:
+                translateX(-50%);
+        }
+    }
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div
+    class="status-viewer"
+    data-page="status_viewer"
+    data-media-type="{{ status_viewer.current.media_type }}"
+>
+
+
+    <!-- ==================================================
+         Media
+         ================================================== -->
+
+    <div class="status-media-layer">
+
+
+        {% if status_viewer.current.media_type == "video" %}
+
+
+        <img
+            class="status-video-frame"
+            src="{{ status_viewer.current.media }}"
+            alt=""
+            data-class="video"
+            data-semantic="status_video"
+        >
+
+
+        {% else %}
+
+
+        <img
+            class="status-image"
+            src="{{ status_viewer.current.media }}"
+            alt=""
+            data-class="image"
+            data-semantic="status_image"
+        >
+
+
+        {% endif %}
+
+
+    </div>
+
+
+    <div class="top-gradient"></div>
+
+    <div class="bottom-gradient"></div>
+
+
+    <!-- ==================================================
+         Progress
+         ================================================== -->
+
+    <div
+        class="progress-container"
+        data-semantic="status_progress_group"
+    >
+
+
+        {% for segment in status_viewer.segments %}
+
+
+        {% set index = loop.index0 %}
+
+
+        <div
+            class="progress-track"
+            data-class="progress_bar"
+            data-semantic="status_progress_segment"
+        >
+
+
+            {% if index < status_viewer.current_index %}
+
+
+            <div
+                class="progress-fill"
+                style="width: 100%;"
+                data-semantic="completed_progress"
+            ></div>
+
+
+            {% elif index == status_viewer.current_index %}
+
+
+            <div
+                class="progress-fill"
+                style="width: {{ status_viewer.current_progress * 100 }}%;"
+                data-semantic="current_progress"
+            ></div>
+
+
+            {% else %}
+
+
+            <div
+                class="progress-fill"
+                style="width: 0%;"
+                data-semantic="future_progress"
+            ></div>
+
+
+            {% endif %}
+
+
+        </div>
+
+
+        {% endfor %}
+
+
+    </div>
+
+
+    <!-- ==================================================
+         Header
+         ================================================== -->
+
+    <header
+        class="status-header"
+        data-class="app_bar"
+        data-semantic="status_viewer_app_bar"
+    >
+
+
+        {% if status_viewer.show_back_button %}
+
+
+        <button
+            class="header-button"
+            data-semantic="status_back_control"
+        >
+
+
+            <span
+                class="header-button-target"
+                data-class="button"
+                data-semantic="status_back_button"
+            >
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="status_back_icon"
+                >
+                    arrow_back
+                </span>
+
+
+            </span>
+
+
+        </button>
+
+
+        {% endif %}
+
+
+        {% if status_viewer.owner.avatar %}
+
+
+        <img
+            class="owner-avatar"
+            src="{{ status_viewer.owner.avatar }}"
+            alt=""
+            data-class="avatar"
+            data-semantic="status_owner_avatar"
+        >
+
+
+        {% else %}
+
+
+        <div
+            class="owner-avatar"
+            data-class="avatar"
+            data-semantic="status_owner_avatar"
+        ></div>
+
+
+        {% endif %}
+
+
+        <div class="owner-content">
+
+
+            <div class="owner-name">
+
+
+                <span
+                    class="owner-name-text"
+                    data-class="text"
+                    data-semantic="status_owner_name"
+                >
+                    {{ status_viewer.owner.name }}
+                </span>
+
+
+            </div>
+
+
+            <span
+                class="owner-time"
+                data-class="timestamp"
+                data-semantic="status_time"
+            >
+                {{ status_viewer.current.time }}
+            </span>
+
+
+        </div>
+
+
+        {% if status_viewer.show_overflow %}
+
+
+        <button
+            class="header-button"
+            data-semantic="status_overflow_control"
+        >
+
+
+            <span
+                class="header-button-target"
+                data-class="button"
+                data-semantic="status_overflow_button"
+            >
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="status_overflow_icon"
+                >
+                    more_vert
+                </span>
+
+
+            </span>
+
+
+        </button>
+
+
+        {% endif %}
+
+
+    </header>
+
+
+    <!-- ==================================================
+         Video State
+         ================================================== -->
+
+    {% if status_viewer.current.media_type == "video" %}
+
+
+    <div class="video-state">
+
+
+        {% if status_viewer.current.video_muted %}
+
+
+        <div
+            class="video-state-pill"
+            data-semantic="status_video_muted"
+        >
+
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="status_video_muted_icon"
+            >
+                volume_off
+            </span>
+
+
+            <span
+                class="video-state-text"
+                data-class="text"
+                data-semantic="status_video_muted_text"
+            >
+                Muted
+            </span>
+
+
+        </div>
+
+
+        {% endif %}
+
+
+        {% if status_viewer.current.video_paused %}
+
+
+        <div
+            class="video-state-pill"
+            data-semantic="status_video_paused"
+        >
+
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="status_video_paused_icon"
+            >
+                pause
+            </span>
+
+
+            <span
+                class="video-state-text"
+                data-class="text"
+                data-semantic="status_video_paused_text"
+            >
+                Paused
+            </span>
+
+
+        </div>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Caption
+         ================================================== -->
+
+    {% if status_viewer.current.caption %}
+
+
+    <div class="status-caption">
+
+
+        <span
+            class="status-caption-text"
+            data-class="text"
+            data-semantic="status_caption"
+        >
+            {{ status_viewer.current.caption }}
+        </span>
+
+
+    </div>
+
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Reaction Panel
+         ================================================== -->
+
+    {% if status_viewer.reaction_panel_open %}
+
+
+    <div
+        class="reaction-panel"
+        data-class="toolbar"
+        data-semantic="status_reaction_toolbar"
+    >
+
+
+        {% for reaction in status_viewer.reactions %}
+
+
+        <button
+            class="reaction-button"
+            data-class="button"
+            data-semantic="status_reaction_button"
+        >
+
+
+            <span
+                class="reaction-emoji-text"
+                data-class="text"
+                data-semantic="status_reaction_emoji"
+            >
+                {{ reaction }}
+            </span>
+
+
+        </button>
+
+
+        {% endfor %}
+
+
+    </div>
+
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Bottom Controls
+         ================================================== -->
+
+    <div
+        class="bottom-controls"
+        data-class="toolbar"
+        data-semantic="status_bottom_controls"
+    >
+
+
+        {% if status_viewer.show_reply %}
+
+
+        <div
+            class="reply-bar"
+            data-semantic="status_reply_container"
+        >
+
+
+            <input
+                class="reply-input"
+                type="text"
+                value="{{ status_viewer.reply_text }}"
+                placeholder="{{ status_viewer.reply_placeholder }}"
+                readonly
+                data-class="input_field"
+                data-semantic="status_reply_input"
+            >
+
+
+        </div>
+
+
+        {% endif %}
+
+
+        {% if status_viewer.show_reaction_button %}
+
+
+        <button
+            class="bottom-button{% if status_viewer.liked %} active{% endif %}"
+            data-semantic="status_like_control"
+        >
+
+
+            <span
+                class="bottom-button-target"
+                data-class="button"
+                data-semantic="status_like_button"
+            >
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="{% if status_viewer.liked %}status_liked_icon{% else %}status_like_icon{% endif %}"
+                >
+
+                    {% if status_viewer.liked %}
+                        favorite
+                    {% else %}
+                        favorite_border
+                    {% endif %}
+
+                </span>
+
+
+            </span>
+
+
+        </button>
+
+
+        {% endif %}
+
+
+        {% if status_viewer.reply_typed %}
+
+
+        <button
+            class="bottom-button active"
+            data-semantic="status_send_reply_control"
+        >
+
+
+            <span
+                class="bottom-button-target"
+                data-class="button"
+                data-semantic="status_send_reply_button"
+            >
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="status_send_reply_icon"
+                >
+                    send
+                </span>
+
+
+            </span>
+
+
+        </button>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+</html>
