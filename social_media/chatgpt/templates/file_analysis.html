@@ -1,0 +1,2300 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+ChatGPT File Analysis
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .file-page {
+
+        display:
+            flex;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .file-sidebar {
+
+        position:
+            fixed;
+
+        inset:
+            0 auto 0 0;
+
+        z-index:
+            110;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            var(--sidebar-width);
+
+        padding:
+            10px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            46px;
+
+        margin-bottom:
+            9px;
+    }
+
+
+    .sidebar-brand {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            4px 8px;
+
+        font-size:
+            15px;
+
+        font-weight:
+            700;
+    }
+
+
+    .brand-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .sidebar-small-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        border-radius:
+            var(--medium-radius);
+    }
+
+
+    .sidebar-actions {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            3px;
+    }
+
+
+    .sidebar-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        width:
+            100%;
+
+        min-height:
+            40px;
+
+        padding:
+            7px 10px;
+
+        border-radius:
+            var(--medium-radius);
+
+        font-size:
+            14px;
+
+        text-align:
+            left;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .sidebar-action
+    .material-symbols-rounded {
+
+        font-size:
+            20px;
+    }
+
+
+    /* ======================================================
+       History
+       ====================================================== */
+
+    .file-history {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        margin-top:
+            18px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .history-group {
+
+        margin-bottom:
+            17px;
+    }
+
+
+    .history-label {
+
+        padding:
+            4px 10px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .history-item {
+
+        min-height:
+            38px;
+
+        padding:
+            8px 10px;
+
+        margin-bottom:
+            2px;
+
+        border-radius:
+            var(--medium-radius);
+
+        font-size:
+            13px;
+    }
+
+
+    .history-item.active {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    /* ======================================================
+       Profile
+       ====================================================== */
+
+    .sidebar-profile {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        min-height:
+            50px;
+
+        padding:
+            8px;
+    }
+
+
+    .profile-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .profile-name {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .file-main {
+
+        width:
+            calc(
+                100%
+                - var(--sidebar-width)
+            );
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .file-header {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            90;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            56px;
+
+        padding:
+            8px 14px;
+
+        background:
+            var(--background);
+    }
+
+
+    .header-left,
+    .header-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+    }
+
+
+    .mobile-menu {
+
+        display:
+            none;
+    }
+
+
+    .model-selector {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        min-height:
+            38px;
+
+        padding:
+            6px 9px;
+
+        border-radius:
+            var(--medium-radius);
+
+        font-size:
+            15px;
+
+        font-weight:
+            650;
+    }
+
+
+    .header-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            var(--medium-radius);
+    }
+
+
+    /* ======================================================
+       Main Content
+       ====================================================== */
+
+    .file-content {
+
+        width:
+            100%;
+
+        padding:
+            34px
+            var(--page-gap)
+            210px;
+    }
+
+
+    .file-inner {
+
+        width:
+            min(
+                100%,
+                var(--conversation-max-width)
+            );
+
+        margin-inline:
+            auto;
+    }
+
+
+    /* ======================================================
+       User Message
+       ====================================================== */
+
+    .user-message-row {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        margin-bottom:
+            24px;
+    }
+
+
+    .user-message {
+
+        max-width:
+            74%;
+
+        padding:
+            11px 15px;
+
+        border-radius:
+            22px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        line-height:
+            22px;
+    }
+
+
+    /* ======================================================
+       Uploaded Files
+       ====================================================== */
+
+    .uploaded-files {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+        gap:
+            10px;
+
+        margin-bottom:
+            28px;
+    }
+
+
+    .file-card {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        gap:
+            11px;
+
+        min-width:
+            0;
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .file-type-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            11px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    .file-type-icon
+    .material-symbols-rounded {
+
+        font-size:
+            22px;
+    }
+
+
+    .file-info {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .file-title-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        margin-bottom:
+            3px;
+    }
+
+
+    .file-name {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+
+        font-size:
+            12px;
+
+        font-weight:
+            650;
+    }
+
+
+    .file-status {
+
+        flex:
+            0 0 auto;
+
+        padding:
+            3px 6px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            8px;
+
+        font-weight:
+            700;
+    }
+
+
+    .file-meta {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        margin-bottom:
+            8px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .file-progress-track {
+
+        width:
+            100%;
+
+        height:
+            5px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .file-progress-value {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    .file-remove {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            7px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Assistant Message
+       ====================================================== */
+
+    .assistant-message {
+
+        margin-bottom:
+            24px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .assistant-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        margin-bottom:
+            10px;
+    }
+
+
+    .assistant-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+    }
+
+
+    .assistant-name {
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .assistant-copy {
+
+        font-size:
+            15px;
+
+        line-height:
+            1.65;
+    }
+
+
+    /* ======================================================
+       Analysis Actions
+       ====================================================== */
+
+    .analysis-section {
+
+        margin-top:
+            30px;
+    }
+
+
+    .analysis-heading {
+
+        margin-bottom:
+            12px;
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .analysis-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+        gap:
+            9px;
+    }
+
+
+    .analysis-card {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        gap:
+            10px;
+
+        min-height:
+            76px;
+
+        padding:
+            11px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+
+        text-align:
+            left;
+    }
+
+
+    .analysis-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    .analysis-icon
+    .material-symbols-rounded {
+
+        font-size:
+            19px;
+    }
+
+
+    .analysis-copy {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .analysis-title {
+
+        margin-bottom:
+            3px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .analysis-prompt {
+
+        font-size:
+            10px;
+
+        line-height:
+            15px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Assistant Toolbar
+       ====================================================== */
+
+    .assistant-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            2px;
+
+        margin-top:
+            10px;
+    }
+
+
+    .assistant-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            7px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .assistant-action
+    .material-symbols-rounded {
+
+        font-size:
+            18px;
+    }
+
+
+    /* ======================================================
+       Composer
+       ====================================================== */
+
+    .composer-region {
+
+        position:
+            fixed;
+
+        left:
+            var(--sidebar-width);
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            130;
+
+        display:
+            flex;
+
+        justify-content:
+            center;
+
+        padding:
+            20px
+            var(--page-gap)
+            16px;
+
+        background:
+            linear-gradient(
+                to bottom,
+                transparent,
+                var(--background) 25%,
+                var(--background)
+            );
+    }
+
+
+    .composer-stack {
+
+        width:
+            min(
+                100%,
+                var(--composer-max-width)
+            );
+    }
+
+
+    .file-composer {
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            25px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .composer-input {
+
+        width:
+            100%;
+
+        min-height:
+            38px;
+
+        padding:
+            3px 6px 8px;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+    }
+
+
+    .composer-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+    }
+
+
+    .composer-side {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+    }
+
+
+    .composer-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            50%;
+    }
+
+
+    .composer-button.send {
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+    }
+
+
+    .composer-button
+    .material-symbols-rounded {
+
+        font-size:
+            20px;
+    }
+
+
+    .composer-note {
+
+        padding-top:
+            6px;
+
+        text-align:
+            center;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .file-sidebar {
+
+            width:
+                var(--sidebar-collapsed-width);
+
+            padding:
+                8px;
+        }
+
+
+        .sidebar-brand-label,
+        .sidebar-action-label,
+        .file-history,
+        .profile-name {
+
+            display:
+                none;
+        }
+
+
+        .sidebar-header,
+        .sidebar-action,
+        .sidebar-profile {
+
+            justify-content:
+                center;
+        }
+
+
+        .sidebar-brand {
+
+            padding:
+                0;
+        }
+
+
+        .sidebar-action {
+
+            width:
+                44px;
+
+            height:
+                44px;
+
+            padding:
+                0;
+        }
+
+
+        .file-main {
+
+            width:
+                calc(
+                    100%
+                    - var(--sidebar-collapsed-width)
+                );
+
+            margin-left:
+                var(--sidebar-collapsed-width);
+        }
+
+
+        .composer-region {
+
+            left:
+                var(--sidebar-collapsed-width);
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .file-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .file-main {
+
+            width:
+                100%;
+
+            margin-left:
+                0;
+        }
+
+
+        .mobile-menu {
+
+            display:
+                flex;
+        }
+
+
+        .file-header {
+
+            padding:
+                7px 10px;
+        }
+
+
+        .file-content {
+
+            padding:
+                20px
+                12px
+                180px;
+        }
+
+
+        .user-message {
+
+            max-width:
+                88%;
+
+            font-size:
+                14px;
+        }
+
+
+        .uploaded-files {
+
+            grid-template-columns:
+                1fr;
+
+            gap:
+                7px;
+        }
+
+
+        .file-card {
+
+            padding:
+                10px;
+        }
+
+
+        .analysis-grid {
+
+            grid-template-columns:
+                1fr;
+
+            gap:
+                7px;
+        }
+
+
+        .assistant-copy {
+
+            font-size:
+                14px;
+        }
+
+
+        .composer-region {
+
+            left:
+                0;
+
+            padding:
+                10px;
+        }
+
+
+        .composer-note {
+
+            font-size:
+                9px;
+        }
+    }
+
+
+    /* ======================================================
+       Very Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .file-content {
+
+            padding:
+                16px
+                9px
+                170px;
+        }
+
+
+        .user-message {
+
+            max-width:
+                92%;
+        }
+
+
+        .file-type-icon {
+
+            width:
+                36px;
+
+            height:
+                36px;
+        }
+
+
+        .analysis-card {
+
+            min-height:
+                68px;
+
+            padding:
+                9px;
+        }
+
+
+        .header-right .share-button {
+
+            display:
+                none;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="file-page">
+
+
+    <!-- ==================================================
+         Sidebar
+         ================================================== -->
+
+    <aside
+        class="file-sidebar"
+        data-class="navigation_bar"
+        data-semantic="conversation_sidebar"
+    >
+
+        <div class="sidebar-header">
+
+            <div class="sidebar-brand">
+
+                <span
+                    class="brand-icon"
+                    data-class="icon"
+                    data-semantic="chatgpt_brand"
+                >
+                    AI
+                </span>
+
+
+                <span class="sidebar-brand-label">
+                    ChatGPT
+                </span>
+
+            </div>
+
+
+            <button
+                class="sidebar-small-button"
+                data-class="button"
+                data-semantic="collapse_sidebar"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="collapse_sidebar_icon"
+                >
+                    side_navigation
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <!-- ==============================================
+             Sidebar Actions
+             ============================================== -->
+
+        <div class="sidebar-actions">
+
+            <button
+                class="sidebar-action"
+                data-class="button"
+                data-semantic="new_chat"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="new_chat_icon"
+                >
+                    edit_square
+                </span>
+
+                <span class="sidebar-action-label">
+                    New chat
+                </span>
+
+            </button>
+
+
+            <button
+                class="sidebar-action"
+                data-class="button"
+                data-semantic="search_chats"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_chats_icon"
+                >
+                    search
+                </span>
+
+                <span class="sidebar-action-label">
+                    Search chats
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <!-- ==============================================
+             History
+             ============================================== -->
+
+        <div
+            class="file-history"
+            data-class="section"
+            data-semantic="conversation_history"
+        >
+
+            {% for group in file_page.history_sections %}
+
+            <section
+                class="history-group"
+                data-class="section"
+                data-semantic="history_group"
+            >
+
+                <div class="history-label">
+                    {{ group.label }}
+                </div>
+
+
+                {% for item in group["items"] %}
+
+                <div
+                    class="
+                        history-item
+                        {% if item.active %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="list_item"
+                    data-semantic="history_item"
+                >
+
+                    <div class="truncate">
+                        {{ item.title }}
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </section>
+
+            {% endfor %}
+
+        </div>
+
+
+        <!-- ==============================================
+             Profile
+             ============================================== -->
+
+        <div
+            class="sidebar-profile"
+            data-class="list_item"
+            data-semantic="user_profile"
+        >
+
+            <span
+                class="profile-avatar"
+                data-class="avatar"
+                data-semantic="user_avatar"
+            >
+                {{ file_page.user.initials }}
+            </span>
+
+
+            <span
+                class="
+                    profile-name
+                    truncate
+                "
+            >
+                {{ file_page.user.name }}
+            </span>
+
+        </div>
+
+    </aside>
+
+
+    <!-- ==================================================
+         Main
+         ================================================== -->
+
+    <main class="file-main">
+
+
+        <!-- ==============================================
+             Header
+             ============================================== -->
+
+        <header
+            class="file-header"
+            data-class="app_bar"
+            data-semantic="conversation_header"
+            data-occluder="true"
+        >
+
+            <div class="header-left">
+
+
+                <button
+                    class="
+                        header-button
+                        mobile-menu
+                    "
+                    data-class="button"
+                    data-semantic="open_sidebar"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="open_sidebar_icon"
+                    >
+                        menu
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="model-selector"
+                    data-class="button"
+                    data-semantic="model_selector"
+                >
+
+                    {{ file_page.model.name }}
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="model_selector_icon"
+                    >
+                        keyboard_arrow_down
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <div class="header-right">
+
+                <button
+                    class="
+                        header-button
+                        share-button
+                    "
+                    data-class="button"
+                    data-semantic="share_conversation"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="share_icon"
+                    >
+                        ios_share
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="header-button"
+                    data-class="button"
+                    data-semantic="conversation_menu"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="conversation_menu_icon"
+                    >
+                        more_horiz
+                    </span>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- ==============================================
+             Content
+             ============================================== -->
+
+        <section
+            class="file-content"
+            data-class="section"
+            data-semantic="file_analysis_content"
+        >
+
+            <div class="file-inner">
+
+
+                <!-- ======================================
+                     User Message
+                     ====================================== -->
+
+                <div class="user-message-row">
+
+                    <div
+                        class="user-message"
+                        data-class="message_bubble"
+                        data-semantic="user_message"
+                    >
+                        Please help me analyze these files.
+                    </div>
+
+                </div>
+
+
+                <!-- ======================================
+                     Uploaded Files
+                     ====================================== -->
+
+                <div
+                    class="uploaded-files"
+                    data-class="section"
+                    data-semantic="uploaded_files"
+                >
+
+                    {% for file in file_page.files %}
+
+                    <article
+                        class="file-card"
+                        data-class="media_item"
+                        data-semantic="uploaded_file"
+                    >
+
+
+                        <!-- ==============================
+                             File Type
+                             ============================== -->
+
+                        <div class="file-type-icon">
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="file_type_icon"
+                            >
+                                {{ file.icon }}
+                            </span>
+
+                        </div>
+
+
+                        <!-- ==============================
+                             Information
+                             ============================== -->
+
+                        <div class="file-info">
+
+                            <div class="file-title-row">
+
+                                <div
+                                    class="
+                                        file-name
+                                        truncate
+                                    "
+                                >
+                                    {{ file.name }}
+                                </div>
+
+
+                                {% if file.complete %}
+
+                                <span
+                                    class="file-status"
+                                    data-class="badge"
+                                    data-semantic="file_ready"
+                                >
+                                    Ready
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="file-meta">
+
+                                <span>
+                                    {{ file.type_label }}
+                                </span>
+
+                                <span>
+                                    •
+                                </span>
+
+                                <span>
+                                    {{ file.size }}
+                                </span>
+
+                                {% if not file.complete %}
+
+                                <span>
+                                    •
+                                </span>
+
+                                <span>
+                                    {{ file.progress }}%
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- ==========================
+                                 Progress Bar
+                                 ========================== -->
+
+                            {% if not file.complete %}
+
+                            <div
+                                class="file-progress-track"
+                                data-class="progress_bar"
+                                data-semantic="file_upload_progress"
+                            >
+
+                                <div
+                                    class="file-progress-value"
+                                    style="
+                                        width:
+                                            {{ file.progress }}%;
+                                    "
+                                >
+                                </div>
+
+                            </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- ==============================
+                             Remove
+                             ============================== -->
+
+                        <button
+                            class="file-remove"
+                            data-class="button"
+                            data-semantic="remove_uploaded_file"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="remove_file_icon"
+                            >
+                                close
+                            </span>
+
+                        </button>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- ======================================
+                     Assistant
+                     ====================================== -->
+
+                <article
+                    class="assistant-message"
+                    data-class="message_bubble"
+                    data-semantic="assistant_message"
+                >
+
+                    <div class="assistant-header">
+
+                        <span
+                            class="assistant-avatar"
+                            data-class="avatar"
+                            data-semantic="assistant_avatar"
+                        >
+                            AI
+                        </span>
+
+
+                        <span class="assistant-name">
+                            ChatGPT
+                        </span>
+
+                    </div>
+
+
+                    <div class="assistant-copy">
+                        {{ file_page.assistant_message }}
+                    </div>
+
+
+                    <!-- ==================================
+                         Assistant Actions
+                         ================================== -->
+
+                    <div
+                        class="assistant-toolbar"
+                        data-class="toolbar"
+                        data-semantic="assistant_actions"
+                    >
+
+                        <button
+                            class="assistant-action"
+                            data-class="button"
+                            data-semantic="copy_response"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="copy_response_icon"
+                            >
+                                content_copy
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="assistant-action"
+                            data-class="button"
+                            data-semantic="like_response"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="like_icon"
+                            >
+                                thumb_up
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="assistant-action"
+                            data-class="button"
+                            data-semantic="regenerate_response"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="regenerate_icon"
+                            >
+                                refresh
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </article>
+
+
+                <!-- ======================================
+                     Analysis Actions
+                     ====================================== -->
+
+                <section
+                    class="analysis-section"
+                    data-class="section"
+                    data-semantic="analysis_suggestions"
+                >
+
+                    <div class="analysis-heading">
+                        Try asking
+                    </div>
+
+
+                    <div class="analysis-grid">
+
+                        {% for action in file_page.analysis_actions %}
+
+                        <button
+                            class="analysis-card"
+                            data-class="card"
+                            data-semantic="analysis_suggestion"
+                        >
+
+                            <span class="analysis-icon">
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="analysis_action_icon"
+                                >
+                                    {{ action.icon }}
+                                </span>
+
+                            </span>
+
+
+                            <span class="analysis-copy">
+
+                                <span class="analysis-title">
+                                    {{ action.title }}
+                                </span>
+
+
+                                <span
+                                    class="
+                                        analysis-prompt
+                                        line-clamp-2
+                                    "
+                                >
+                                    {{ action.prompt }}
+                                </span>
+
+                            </span>
+
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==============================================
+             Composer
+             ============================================== -->
+
+        <div
+            class="composer-region"
+            data-occluder="true"
+        >
+
+            <div class="composer-stack">
+
+                <div
+                    class="file-composer"
+                    data-class="section"
+                    data-semantic="message_composer"
+                >
+
+                    <input
+                        class="composer-input"
+                        type="text"
+                        placeholder="{{ file_page.composer.placeholder }}"
+                        data-class="input_field"
+                        data-semantic="message_input"
+                    >
+
+
+                    <div class="composer-toolbar">
+
+                        <div class="composer-side">
+
+                            <button
+                                class="composer-button"
+                                data-class="button"
+                                data-semantic="attach_more_files"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="attach_file_icon"
+                                >
+                                    add
+                                </span>
+
+                            </button>
+
+
+                            {% if file_page.composer.show_web %}
+
+                            <button
+                                class="composer-button"
+                                data-class="button"
+                                data-semantic="web_search"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="web_search_icon"
+                                >
+                                    language
+                                </span>
+
+                            </button>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="composer-side">
+
+                            {% if file_page.composer.show_voice %}
+
+                            <button
+                                class="composer-button"
+                                data-class="button"
+                                data-semantic="voice_input"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="voice_input_icon"
+                                >
+                                    mic
+                                </span>
+
+                            </button>
+
+                            {% endif %}
+
+
+                            <button
+                                class="
+                                    composer-button
+                                    send
+                                "
+                                data-class="button"
+                                data-semantic="send_message"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="send_message_icon"
+                                >
+                                    arrow_upward
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="composer-note">
+                    ChatGPT can make mistakes. Check important information.
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+{% endblock %}

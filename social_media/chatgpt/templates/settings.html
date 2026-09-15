@@ -1,0 +1,2120 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+ChatGPT Settings
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page Root
+       ====================================================== */
+
+    .settings-page {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Background Application Wrapper
+
+       IMPORTANT:
+       This remains visually rendered, but the renderer
+       skips annotations for all descendants because of:
+
+           data-annotation-skip="true"
+       ====================================================== */
+
+    .background-application {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+    }
+
+
+    /* ======================================================
+       Background Sidebar
+       ====================================================== */
+
+    .background-sidebar {
+
+        position:
+            fixed;
+
+        inset:
+            0 auto 0 0;
+
+        z-index:
+            20;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            var(--sidebar-width);
+
+        padding:
+            10px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .background-sidebar-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            46px;
+    }
+
+
+    .background-brand {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        font-size:
+            15px;
+
+        font-weight:
+            700;
+    }
+
+
+    .background-brand-mark {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .background-sidebar-actions {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            3px;
+
+        margin-top:
+            14px;
+    }
+
+
+    .background-sidebar-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            40px;
+
+        padding:
+            7px 10px;
+
+        border-radius:
+            var(--medium-radius);
+
+        font-size:
+            14px;
+    }
+
+
+    .background-sidebar-action
+    .material-symbols-rounded {
+
+        font-size:
+            20px;
+    }
+
+
+    .background-history {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        margin-top:
+            16px;
+
+        overflow:
+            hidden;
+    }
+
+
+    .background-history-section {
+
+        margin-bottom:
+            16px;
+    }
+
+
+    .background-history-label {
+
+        padding:
+            4px 10px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .background-history-row {
+
+        min-height:
+            38px;
+
+        margin-bottom:
+            2px;
+
+        padding:
+            8px 10px;
+
+        border-radius:
+            var(--medium-radius);
+
+        font-size:
+            13px;
+    }
+
+
+    .background-history-row.active {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    /* ======================================================
+       Background Main
+       ====================================================== */
+
+    .background-main {
+
+        width:
+            calc(
+                100%
+                - var(--sidebar-width)
+            );
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+    }
+
+
+    .background-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            56px;
+
+        padding:
+            8px 14px;
+    }
+
+
+    .background-model {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        min-height:
+            38px;
+
+        font-size:
+            15px;
+
+        font-weight:
+            600;
+    }
+
+
+    .background-main-content {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            calc(
+                100vh
+                - 56px
+            );
+
+        padding:
+            40px;
+    }
+
+
+    .background-empty {
+
+        max-width:
+            620px;
+
+        text-align:
+            center;
+    }
+
+
+    .background-empty h1 {
+
+        margin-bottom:
+            14px;
+
+        font-size:
+            30px;
+
+        font-weight:
+            600;
+    }
+
+
+    .background-empty p {
+
+        color:
+            var(--text-secondary);
+
+        line-height:
+            1.6;
+    }
+
+
+    /* ======================================================
+       Backdrop
+       ====================================================== */
+
+    .settings-backdrop {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            200;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.38
+            );
+    }
+
+
+    /* ======================================================
+       Dialog Position
+       ====================================================== */
+
+    .settings-layer {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            220;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        padding:
+            24px;
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Settings Dialog
+       ====================================================== */
+
+    .settings-dialog {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            200px
+            minmax(
+                0,
+                1fr
+            );
+
+        width:
+            min(
+                900px,
+                calc(
+                    100vw
+                    - 48px
+                )
+            );
+
+        height:
+            min(
+                680px,
+                calc(
+                    100vh
+                    - 48px
+                )
+            );
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            18px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 18px 60px
+            rgba(
+                0,
+                0,
+                0,
+                0.24
+            );
+
+        pointer-events:
+            auto;
+    }
+
+
+    /* ======================================================
+       Settings Navigation
+       ====================================================== */
+
+    .settings-nav {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        min-width:
+            0;
+
+        padding:
+            16px 10px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .settings-nav-title {
+
+        padding:
+            6px 10px 14px;
+
+        font-size:
+            17px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .settings-tabs {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            3px;
+    }
+
+
+    .settings-tab {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        width:
+            100%;
+
+        min-height:
+            42px;
+
+        padding:
+            8px 10px;
+
+        border-radius:
+            var(--medium-radius);
+
+        color:
+            var(--text-primary);
+
+        text-align:
+            left;
+
+        font-size:
+            13px;
+    }
+
+
+    .settings-tab.selected {
+
+        background:
+            var(--surface-variant);
+
+        font-weight:
+            650;
+    }
+
+
+    .settings-tab-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            22px;
+
+        height:
+            22px;
+
+        flex:
+            0 0 auto;
+
+        font-size:
+            20px;
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Selected Tab Indicator
+       ====================================================== */
+
+    .tab-selection-indicator {
+
+        position:
+            absolute;
+
+        left:
+            3px;
+
+        top:
+            9px;
+
+        bottom:
+            9px;
+
+        width:
+            3px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Settings Main Panel
+       ====================================================== */
+
+    .settings-panel {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+    }
+
+
+    .settings-panel-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            62px;
+
+        padding:
+            10px 18px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .settings-panel-title {
+
+        font-size:
+            17px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .settings-close {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        border-radius:
+            9px;
+    }
+
+
+    .settings-close
+    .material-symbols-rounded {
+
+        font-size:
+            21px;
+    }
+
+
+    .settings-scroll {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow-y:
+            auto;
+
+        padding:
+            4px 18px 24px;
+    }
+
+
+    /* ======================================================
+       Account Card
+       ====================================================== */
+
+    .account-card {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            76px;
+
+        margin:
+            16px 0;
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .account-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .account-copy {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .account-name {
+
+        margin-bottom:
+            3px;
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .account-email {
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .account-badge {
+
+        padding:
+            4px 7px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Setting Rows
+       ====================================================== */
+
+    .settings-list {
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .setting-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            18px;
+
+        min-height:
+            74px;
+
+        padding:
+            12px 4px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .setting-copy {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .setting-title {
+
+        margin-bottom:
+            4px;
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .setting-description {
+
+        max-width:
+            520px;
+
+        font-size:
+            11px;
+
+        line-height:
+            16px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .setting-control {
+
+        flex:
+            0 0 auto;
+    }
+
+
+    /* ======================================================
+       Switch
+       ====================================================== */
+
+    .switch-control {
+
+        position:
+            relative;
+
+        width:
+            42px;
+
+        height:
+            24px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+
+        border:
+            1px solid
+            var(--border);
+    }
+
+
+    .switch-control.enabled {
+
+        background:
+            var(--primary);
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .switch-thumb {
+
+        position:
+            absolute;
+
+        top:
+            3px;
+
+        left:
+            3px;
+
+        width:
+            16px;
+
+        height:
+            16px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+    }
+
+
+    .switch-control.enabled
+    .switch-thumb {
+
+        left:
+            21px;
+
+        background:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Select
+       ====================================================== */
+
+    .select-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        min-height:
+            34px;
+
+        max-width:
+            150px;
+
+        padding:
+            6px 9px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            9px;
+
+        background:
+            var(--background);
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .select-control
+    .material-symbols-rounded {
+
+        font-size:
+            17px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    /* ======================================================
+       Action Button
+       ====================================================== */
+
+    .setting-action {
+
+        min-height:
+            34px;
+
+        padding:
+            7px 11px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            9px;
+
+        background:
+            var(--background);
+
+        font-size:
+            11px;
+
+        font-weight:
+            600;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .setting-action.destructive {
+
+        border-color:
+            var(--error);
+
+        color:
+            var(--error);
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .background-sidebar {
+
+            width:
+                var(--sidebar-collapsed-width);
+        }
+
+
+        .background-brand-label,
+        .background-sidebar-action-label,
+        .background-history {
+
+            display:
+                none;
+        }
+
+
+        .background-sidebar-header,
+        .background-sidebar-action {
+
+            justify-content:
+                center;
+        }
+
+
+        .background-sidebar-action {
+
+            width:
+                44px;
+
+            padding:
+                0;
+        }
+
+
+        .background-main {
+
+            width:
+                calc(
+                    100%
+                    - var(--sidebar-collapsed-width)
+                );
+
+            margin-left:
+                var(--sidebar-collapsed-width);
+        }
+
+
+        .settings-dialog {
+
+            grid-template-columns:
+                180px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            width:
+                calc(
+                    100vw
+                    - 40px
+                );
+
+            height:
+                calc(
+                    100vh
+                    - 70px
+                );
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .background-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .background-main {
+
+            width:
+                100%;
+
+            margin-left:
+                0;
+        }
+
+
+        .settings-layer {
+
+            align-items:
+                flex-end;
+
+            padding:
+                0;
+        }
+
+
+        .settings-dialog {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            width:
+                100%;
+
+            height:
+                min(
+                    88vh,
+                    760px
+                );
+
+            border-right:
+                none;
+
+            border-bottom:
+                none;
+
+            border-left:
+                none;
+
+            border-radius:
+                22px
+                22px
+                0
+                0;
+        }
+
+
+        .settings-nav {
+
+            flex:
+                0 0 auto;
+
+            padding:
+                12px 12px 8px;
+
+            border-right:
+                none;
+
+            border-bottom:
+                1px solid
+                var(--border-subtle);
+        }
+
+
+        .settings-nav-title {
+
+            padding:
+                2px 4px 10px;
+
+            font-size:
+                16px;
+        }
+
+
+        .settings-tabs {
+
+            flex-direction:
+                row;
+
+            gap:
+                6px;
+
+            overflow:
+                hidden;
+        }
+
+
+        .settings-tab {
+
+            justify-content:
+                center;
+
+            min-width:
+                42px;
+
+            width:
+                42px;
+
+            height:
+                42px;
+
+            padding:
+                0;
+        }
+
+
+        .settings-tab-label {
+
+            display:
+                none;
+        }
+
+
+        .tab-selection-indicator {
+
+            left:
+                10px;
+
+            right:
+                10px;
+
+            top:
+                auto;
+
+            bottom:
+                2px;
+
+            width:
+                auto;
+
+            height:
+                3px;
+        }
+
+
+        .settings-panel-header {
+
+            min-height:
+                56px;
+
+            padding:
+                8px 14px;
+        }
+
+
+        .settings-scroll {
+
+            padding:
+                2px
+                14px
+                24px;
+        }
+
+
+        .account-card {
+
+            margin:
+                12px
+                0;
+        }
+
+
+        .setting-row {
+
+            min-height:
+                72px;
+
+            gap:
+                10px;
+        }
+
+
+        .setting-description {
+
+            max-width:
+                none;
+        }
+    }
+
+
+    /* ======================================================
+       Very Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .settings-dialog {
+
+            height:
+                90vh;
+        }
+
+
+        .settings-tabs {
+
+            justify-content:
+                space-between;
+        }
+
+
+        .settings-tab {
+
+            width:
+                38px;
+
+            min-width:
+                38px;
+
+            height:
+                38px;
+        }
+
+
+        .account-email {
+
+            max-width:
+                145px;
+        }
+
+
+        .setting-row {
+
+            padding:
+                10px 2px;
+        }
+
+
+        .setting-description {
+
+            font-size:
+                10px;
+
+            line-height:
+                14px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="settings-page">
+
+
+    <!-- ==================================================
+         Background Application
+         ==================================================
+
+         IMPORTANT:
+
+         The application remains visible behind the modal,
+         but none of its data-class descendants will be
+         extracted by the renderer.
+
+         This requires the shared renderer to support:
+
+             data-annotation-skip="true"
+         ================================================== -->
+
+    <div
+        class="background-application"
+        data-annotation-skip="true"
+    >
+
+
+        <!-- ==============================================
+             Background Sidebar
+             ============================================== -->
+
+        <aside
+            class="background-sidebar"
+            data-class="navigation_bar"
+            data-semantic="conversation_sidebar"
+        >
+
+            <div class="background-sidebar-header">
+
+                <div class="background-brand">
+
+                    <span
+                        class="background-brand-mark"
+                        data-class="icon"
+                        data-semantic="chatgpt_brand"
+                    >
+                        AI
+                    </span>
+
+
+                    <span class="background-brand-label">
+                        ChatGPT
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="background-sidebar-actions">
+
+
+                <button
+                    class="background-sidebar-action"
+                    data-class="button"
+                    data-semantic="new_chat"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="new_chat_icon"
+                    >
+                        edit_square
+                    </span>
+
+
+                    <span class="background-sidebar-action-label">
+                        New chat
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="background-sidebar-action"
+                    data-class="button"
+                    data-semantic="search_chats"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="search_icon"
+                    >
+                        search
+                    </span>
+
+
+                    <span class="background-sidebar-action-label">
+                        Search chats
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <!-- ==========================================
+                 Background History
+                 ========================================== -->
+
+            <div
+                class="background-history"
+                data-class="section"
+                data-semantic="conversation_history"
+            >
+
+                {% for section in settings.history_sections %}
+
+                <section
+                    class="background-history-section"
+                    data-class="section"
+                    data-semantic="history_section"
+                >
+
+                    <div class="background-history-label">
+                        {{ section.label }}
+                    </div>
+
+
+                    {% for item in section["items"] %}
+
+                    <div
+                        class="
+                            background-history-row
+                            {% if item.active %}
+                            active
+                            {% endif %}
+                        "
+                        data-class="list_item"
+                        data-semantic="history_item"
+                    >
+
+                        <div class="truncate">
+                            {{ item.title }}
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </section>
+
+                {% endfor %}
+
+            </div>
+
+        </aside>
+
+
+        <!-- ==============================================
+             Background Main
+             ============================================== -->
+
+        <main class="background-main">
+
+
+            <!-- ==========================================
+                 Background Header
+                 ========================================== -->
+
+            <header
+                class="background-header"
+                data-class="app_bar"
+                data-semantic="chat_header"
+            >
+
+                <button
+                    class="background-model"
+                    data-class="button"
+                    data-semantic="model_selector"
+                >
+
+                    {{ settings.model.name }}
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="model_selector_icon"
+                    >
+                        keyboard_arrow_down
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="user_menu"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="user_menu_icon"
+                    >
+                        account_circle
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <!-- ==========================================
+                 Background Content
+                 ========================================== -->
+
+            <div class="background-main-content">
+
+                <div class="background-empty">
+
+                    <h1>
+                        What can I help with?
+                    </h1>
+
+
+                    <p>
+                        Start a conversation,
+                        upload a file,
+                        search the web,
+                        or explore your tools.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- ==================================================
+         Dim Backdrop
+
+         No data-class because the backdrop itself should
+         not be part of the annotation dataset.
+         ================================================== -->
+
+    <div
+        class="settings-backdrop"
+        data-semantic="settings_backdrop"
+    >
+    </div>
+
+
+    <!-- ==================================================
+         Foreground Settings Layer
+         ================================================== -->
+
+    <div class="settings-layer">
+
+
+        <!-- ==================================================
+             Settings Dialog / Mobile Bottom Sheet
+
+             Desktop / Tablet:
+                 dialog
+
+             Mobile:
+                 bottom_sheet
+
+             Everything inside this element remains annotated.
+             ================================================== -->
+
+        <section
+            class="settings-dialog"
+
+            data-class="{% if viewport.width < 768 %}bottom_sheet{% else %}dialog{% endif %}"
+
+            data-semantic="settings_dialog"
+
+            data-occluder="true"
+        >
+
+
+            <!-- ==========================================
+                 Settings Navigation
+                 ========================================== -->
+
+            <nav
+                class="settings-nav"
+                data-class="navigation_bar"
+                data-semantic="settings_navigation"
+            >
+
+                <div class="settings-nav-title">
+                    Settings
+                </div>
+
+
+                <div class="settings-tabs">
+
+                    {% for tab in settings.tabs %}
+
+                    <button
+                        class="
+                            settings-tab
+                            {% if tab.id == settings.active_tab %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="tab"
+                        data-semantic="settings_tab_{{ tab.id }}"
+                    >
+
+
+                        <!-- ==============================
+                             Tab Icon
+                             ============================== -->
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                settings-tab-icon
+                            "
+                            data-class="icon"
+                            data-semantic="settings_tab_icon_{{ tab.id }}"
+                        >
+                            {{ tab.icon }}
+                        </span>
+
+
+                        <!-- ==============================
+                             Tab Label
+                             ============================== -->
+
+                        <span class="settings-tab-label">
+                            {{ tab.label }}
+                        </span>
+
+
+                        <!-- ==============================
+                             Selected Indicator
+                             ============================== -->
+
+                        {% if tab.id == settings.active_tab %}
+
+                        <span
+                            class="tab-selection-indicator"
+                            data-class="selection_indicator"
+                            data-semantic="selected_settings_tab"
+                        >
+                        </span>
+
+                        {% endif %}
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+            </nav>
+
+
+            <!-- ==========================================
+                 Settings Main Panel
+                 ========================================== -->
+
+            <div class="settings-panel">
+
+
+                <!-- ======================================
+                     Settings Header
+                     ====================================== -->
+
+                <header
+                    class="settings-panel-header"
+                    data-class="toolbar"
+                    data-semantic="settings_header"
+                >
+
+                    <div class="settings-panel-title">
+                        {{ settings.active_tab_label }}
+                    </div>
+
+
+                    <button
+                        class="settings-close"
+                        data-class="button"
+                        data-semantic="close_settings"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="close_settings_icon"
+                        >
+                            close
+                        </span>
+
+                    </button>
+
+                </header>
+
+
+                <!-- ======================================
+                     Settings Scroll Content
+                     ====================================== -->
+
+                <div class="settings-scroll">
+
+
+                    <!-- ==================================
+                         Account Summary
+                         ================================== -->
+
+                    <div
+                        class="account-card"
+                        data-class="card"
+                        data-semantic="account_summary"
+                    >
+
+
+                        <!-- ==============================
+                             Avatar
+                             ============================== -->
+
+                        <div
+                            class="account-avatar"
+                            data-class="avatar"
+                            data-semantic="account_avatar"
+                        >
+                            {{ settings.user.initials }}
+                        </div>
+
+
+                        <!-- ==============================
+                             User Information
+                             ============================== -->
+
+                        <div class="account-copy">
+
+                            <div class="account-name truncate">
+                                {{ settings.user.name }}
+                            </div>
+
+
+                            <div class="account-email truncate">
+                                {{ settings.user.email }}
+                            </div>
+
+                        </div>
+
+
+                        <!-- ==============================
+                             Subscription Badge
+                             ============================== -->
+
+                        <span
+                            class="account-badge"
+                            data-class="badge"
+                            data-semantic="account_plan"
+                        >
+                            Plus
+                        </span>
+
+                    </div>
+
+
+                    <!-- ==================================
+                         Settings List
+                         ================================== -->
+
+                    <div
+                        class="settings-list"
+                        data-class="section"
+                        data-semantic="{{ settings.active_tab }}_settings"
+                    >
+
+                        {% for row in settings.rows %}
+
+
+                        <!-- ==============================
+                             Setting Row
+                             ============================== -->
+
+                        <div
+                            class="setting-row"
+                            data-class="list_item"
+                            data-semantic="{{ row.semantic }}"
+                        >
+
+
+                            <!-- ==========================
+                                 Setting Information
+                                 ========================== -->
+
+                            <div class="setting-copy">
+
+                                <div class="setting-title">
+                                    {{ row.title }}
+                                </div>
+
+
+                                <div class="setting-description">
+                                    {{ row.description }}
+                                </div>
+
+                            </div>
+
+
+                            <!-- ==========================
+                                 Setting Control
+                                 ========================== -->
+
+                            <div class="setting-control">
+
+
+                                <!-- ======================
+                                     Toggle
+                                     ====================== -->
+
+                                {% if row.type == "toggle" %}
+
+                                <button
+                                    class="
+                                        switch-control
+                                        {% if row.value %}
+                                        enabled
+                                        {% endif %}
+                                    "
+                                    data-class="switch"
+                                    data-semantic="{{ row.semantic }}_switch"
+                                >
+
+                                    <span class="switch-thumb">
+                                    </span>
+
+                                </button>
+
+
+                                <!-- ======================
+                                     Select Control
+                                     ====================== -->
+
+                                {% elif row.type == "select" %}
+
+                                <button
+                                    class="select-control"
+                                    data-class="button"
+                                    data-semantic="{{ row.semantic }}_select"
+                                >
+
+                                    <span class="truncate">
+                                        {{ row.value }}
+                                    </span>
+
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="{{ row.semantic }}_chevron"
+                                    >
+                                        keyboard_arrow_down
+                                    </span>
+
+                                </button>
+
+
+                                <!-- ======================
+                                     Action
+                                     ====================== -->
+
+                                {% elif row.type == "action" %}
+
+                                <button
+                                    class="
+                                        setting-action
+                                        {% if row.destructive %}
+                                        destructive
+                                        {% endif %}
+                                    "
+                                    data-class="button"
+                                    data-semantic="{{ row.semantic }}_action"
+                                >
+                                    {{ row.action_label }}
+                                </button>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</div>
+
+{% endblock %}
+

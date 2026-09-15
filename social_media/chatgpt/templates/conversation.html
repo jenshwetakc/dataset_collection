@@ -1,0 +1,2203 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+ChatGPT Conversation
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .conversation-layout {
+
+        display:
+            flex;
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .conversation-sidebar {
+
+        position:
+            fixed;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            120;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            var(--sidebar-width);
+
+        padding:
+            10px;
+
+        background:
+            var(--surface);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sidebar-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        height:
+            46px;
+
+        margin-bottom:
+            8px;
+    }
+
+
+    .sidebar-logo {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            5px 8px;
+
+        font-size:
+            15px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-logo-mark {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .sidebar-actions {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            3px;
+
+        margin-bottom:
+            16px;
+    }
+
+
+    .sidebar-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        width:
+            100%;
+
+        min-height:
+            40px;
+
+        padding:
+            7px 10px;
+
+        border-radius:
+            var(--medium-radius);
+
+        font-size:
+            14px;
+
+        text-align:
+            left;
+    }
+
+
+    .sidebar-button .material-symbols-rounded {
+
+        font-size:
+            20px;
+    }
+
+
+    .history-container {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    .history-group {
+
+        margin-bottom:
+            16px;
+    }
+
+
+    .history-group-label {
+
+        padding:
+            5px 10px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .history-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            38px;
+
+        padding:
+            7px 10px;
+
+        margin-bottom:
+            2px;
+
+        border-radius:
+            var(--medium-radius);
+
+        font-size:
+            13px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .history-item.active {
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .sidebar-profile {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            48px;
+
+        padding:
+            7px;
+
+        margin-top:
+            8px;
+    }
+
+
+    .sidebar-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            32px;
+
+        height:
+            32px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sidebar-profile-name {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Main Area
+       ====================================================== */
+
+    .conversation-main {
+
+        width:
+            calc(
+                100%
+                - var(--sidebar-width)
+            );
+
+        min-height:
+            100vh;
+
+        margin-left:
+            var(--sidebar-width);
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .conversation-header {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            100;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            56px;
+
+        padding:
+            8px 14px;
+
+        background:
+            var(--background);
+    }
+
+
+    .conversation-header-left,
+    .conversation-header-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+    }
+
+
+    .mobile-sidebar-trigger {
+
+        display:
+            none;
+    }
+
+
+    .model-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        min-height:
+            38px;
+
+        padding:
+            6px 9px;
+
+        border-radius:
+            var(--medium-radius);
+
+        font-size:
+            15px;
+
+        font-weight:
+            600;
+    }
+
+
+    .model-button .material-symbols-rounded {
+
+        font-size:
+            18px;
+    }
+
+
+    .header-icon-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            var(--medium-radius);
+    }
+
+
+    /* ======================================================
+       Conversation Content
+       ====================================================== */
+
+    .messages-region {
+
+        width:
+            100%;
+
+        padding:
+            28px
+            var(--page-gap)
+            210px;
+    }
+
+
+    .messages-inner {
+
+        width:
+            min(
+                100%,
+                var(--conversation-max-width)
+            );
+
+        margin-inline:
+            auto;
+    }
+
+
+    /* ======================================================
+       Message
+       ====================================================== */
+
+    .message-row {
+
+        width:
+            100%;
+
+        margin-bottom:
+            32px;
+    }
+
+
+    .message-row.user {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+    }
+
+
+    .message-user-bubble {
+
+        max-width:
+            min(
+                78%,
+                620px
+            );
+
+        padding:
+            12px 16px;
+
+        border-radius:
+            22px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        line-height:
+            23px;
+    }
+
+
+    .user-message-wrapper {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            flex-end;
+
+        max-width:
+            100%;
+    }
+
+
+    .user-message-meta {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        padding:
+            5px 6px 0;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Assistant
+       ====================================================== */
+
+    .assistant-message {
+
+        width:
+            100%;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        line-height:
+            1.65;
+    }
+
+
+    .assistant-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        margin-bottom:
+            12px;
+    }
+
+
+    .assistant-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .assistant-name {
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .assistant-block {
+
+        margin-bottom:
+            16px;
+    }
+
+
+    .assistant-paragraph {
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       List
+       ====================================================== */
+
+    .assistant-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            9px;
+
+        padding-left:
+            8px;
+    }
+
+
+    .assistant-list-item {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        gap:
+            10px;
+    }
+
+
+    .list-marker {
+
+        width:
+            6px;
+
+        height:
+            6px;
+
+        flex:
+            0 0 auto;
+
+        margin-top:
+            9px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Code
+       ====================================================== */
+
+    .code-card {
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .code-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            38px;
+
+        padding:
+            6px 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .code-language {
+
+        font-size:
+            11px;
+
+        font-weight:
+            600;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .copy-code-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        min-height:
+            28px;
+
+        padding:
+            4px 7px;
+
+        border-radius:
+            7px;
+
+        font-size:
+            11px;
+    }
+
+
+    .copy-code-button .material-symbols-rounded {
+
+        font-size:
+            16px;
+    }
+
+
+    .code-content {
+
+        overflow:
+            hidden;
+
+        padding:
+            14px;
+
+        font-family:
+            "Courier New",
+            monospace;
+
+        font-size:
+            12px;
+
+        line-height:
+            1.55;
+
+        white-space:
+            pre-wrap;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Sources
+       ====================================================== */
+
+    .sources-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+        gap:
+            8px;
+    }
+
+
+    .source-card {
+
+        min-width:
+            0;
+
+        padding:
+            10px 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .source-number {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            20px;
+
+        height:
+            20px;
+
+        margin-bottom:
+            8px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    .source-title {
+
+        margin-bottom:
+            3px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .source-domain {
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Assistant Actions
+       ====================================================== */
+
+    .assistant-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            2px;
+
+        margin-top:
+            10px;
+    }
+
+
+    .assistant-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            7px;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .assistant-action .material-symbols-rounded {
+
+        font-size:
+            18px;
+    }
+
+
+    /* ======================================================
+       Composer
+       ====================================================== */
+
+    .conversation-composer-region {
+
+        position:
+            fixed;
+
+        left:
+            var(--sidebar-width);
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        z-index:
+            150;
+
+        display:
+            flex;
+
+        justify-content:
+            center;
+
+        padding:
+            20px
+            var(--page-gap)
+            16px;
+
+        background:
+            linear-gradient(
+                to bottom,
+                transparent,
+                var(--background) 28%,
+                var(--background)
+            );
+    }
+
+
+    .conversation-composer-stack {
+
+        width:
+            min(
+                100%,
+                var(--composer-max-width)
+            );
+    }
+
+
+    .conversation-composer {
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            25px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .conversation-input {
+
+        width:
+            100%;
+
+        min-height:
+            38px;
+
+        padding:
+            3px 6px 8px;
+
+        border:
+            none;
+
+        background:
+            transparent;
+
+        font-size:
+            15px;
+    }
+
+
+    .composer-bottom {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+    }
+
+
+    .composer-left,
+    .composer-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+    }
+
+
+    .composer-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+    }
+
+
+    .composer-button .material-symbols-rounded {
+
+        font-size:
+            20px;
+    }
+
+
+    .send-button {
+
+        background:
+            var(--text-primary);
+
+        color:
+            var(--background);
+    }
+
+
+    .conversation-disclaimer {
+
+        padding-top:
+            6px;
+
+        text-align:
+            center;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .conversation-sidebar {
+
+            width:
+                var(--sidebar-collapsed-width);
+
+            padding:
+                8px;
+        }
+
+
+        .sidebar-logo-label,
+        .sidebar-button-label,
+        .history-container,
+        .sidebar-profile-name {
+
+            display:
+                none;
+        }
+
+
+        .sidebar-header {
+
+            justify-content:
+                center;
+        }
+
+
+        .sidebar-logo {
+
+            padding:
+                0;
+        }
+
+
+        .sidebar-actions {
+
+            align-items:
+                center;
+        }
+
+
+        .sidebar-button {
+
+            justify-content:
+                center;
+
+            width:
+                44px;
+
+            height:
+                44px;
+
+            padding:
+                0;
+        }
+
+
+        .sidebar-profile {
+
+            justify-content:
+                center;
+        }
+
+
+        .conversation-main {
+
+            width:
+                calc(
+                    100%
+                    - var(--sidebar-collapsed-width)
+                );
+
+            margin-left:
+                var(--sidebar-collapsed-width);
+        }
+
+
+        .conversation-composer-region {
+
+            left:
+                var(--sidebar-collapsed-width);
+        }
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .conversation-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .conversation-main {
+
+            width:
+                100%;
+
+            margin-left:
+                0;
+        }
+
+
+        .mobile-sidebar-trigger {
+
+            display:
+                flex;
+        }
+
+
+        .conversation-header {
+
+            padding:
+                7px 9px;
+        }
+
+
+        .messages-region {
+
+            padding:
+                18px
+                14px
+                180px;
+        }
+
+
+        .message-row {
+
+            margin-bottom:
+                28px;
+        }
+
+
+        .message-user-bubble {
+
+            max-width:
+                88%;
+
+            padding:
+                10px 14px;
+
+            font-size:
+                14px;
+
+            line-height:
+                21px;
+        }
+
+
+        .assistant-message {
+
+            font-size:
+                14px;
+
+            line-height:
+                1.6;
+        }
+
+
+        .sources-grid {
+
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .conversation-composer-region {
+
+            left:
+                0;
+
+            padding:
+                10px;
+        }
+
+
+        .conversation-composer {
+
+            padding:
+                10px;
+
+            border-radius:
+                22px;
+        }
+
+
+        .conversation-disclaimer {
+
+            font-size:
+                9px;
+        }
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .messages-region {
+
+            padding:
+                14px
+                10px
+                170px;
+        }
+
+
+        .message-user-bubble {
+
+            max-width:
+                92%;
+        }
+
+
+        .code-content {
+
+            padding:
+                11px;
+
+            font-size:
+                10px;
+        }
+
+
+        .conversation-header-right .share-control {
+
+            display:
+                none;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="conversation-layout">
+
+
+    <!-- ==================================================
+         Sidebar
+         ================================================== -->
+
+    <aside
+        class="conversation-sidebar"
+        data-class="navigation_bar"
+        data-semantic="conversation_sidebar"
+    >
+
+        <div class="sidebar-header">
+
+            <div class="sidebar-logo">
+
+                <div
+                    class="sidebar-logo-mark"
+                    data-class="icon"
+                    data-semantic="chatgpt_brand"
+                >
+                    AI
+                </div>
+
+                <span class="sidebar-logo-label">
+                    ChatGPT
+                </span>
+
+            </div>
+
+
+            <button
+                class="header-icon-button"
+                data-class="button"
+                data-semantic="collapse_sidebar"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="collapse_sidebar_icon"
+                >
+                    side_navigation
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div class="sidebar-actions">
+
+            <button
+                class="sidebar-button"
+                data-class="button"
+                data-semantic="new_chat"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="new_chat_icon"
+                >
+                    edit_square
+                </span>
+
+                <span class="sidebar-button-label">
+                    New chat
+                </span>
+
+            </button>
+
+
+            <button
+                class="sidebar-button"
+                data-class="button"
+                data-semantic="search_chats"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_icon"
+                >
+                    search
+                </span>
+
+                <span class="sidebar-button-label">
+                    Search chats
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div
+            class="history-container"
+            data-class="section"
+            data-semantic="conversation_history"
+        >
+
+            {% for section in conversation.history_sections %}
+
+            <div
+                class="history-group"
+                data-class="section"
+                data-semantic="history_group"
+            >
+
+                <div class="history-group-label">
+                    {{ section.label }}
+                </div>
+
+
+                {% for item in section["items"] %}
+
+                <div
+                    class="
+                        history-item
+                        {% if item.active %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="list_item"
+                    data-semantic="history_item"
+                >
+                    <span class="truncate">
+                        {{ item.title }}
+                    </span>
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+
+        <div
+            class="sidebar-profile"
+            data-class="list_item"
+            data-semantic="user_profile"
+        >
+
+            <div
+                class="sidebar-avatar"
+                data-class="avatar"
+                data-semantic="user_avatar"
+            >
+                {{ conversation.user.initials }}
+            </div>
+
+            <div class="sidebar-profile-name truncate">
+                {{ conversation.user.name }}
+            </div>
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="profile_menu_icon"
+            >
+                more_horiz
+            </span>
+
+        </div>
+
+    </aside>
+
+
+    <!-- ==================================================
+         Main
+         ================================================== -->
+
+    <main class="conversation-main">
+
+
+        <!-- ==============================================
+             Header
+             ============================================== -->
+
+        <header
+            class="conversation-header"
+            data-class="app_bar"
+            data-semantic="conversation_header"
+            data-occluder="true"
+        >
+
+            <div class="conversation-header-left">
+
+                <button
+                    class="
+                        header-icon-button
+                        mobile-sidebar-trigger
+                    "
+                    data-class="button"
+                    data-semantic="open_sidebar"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="open_sidebar_icon"
+                    >
+                        menu
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="model-button"
+                    data-class="button"
+                    data-semantic="model_selector"
+                >
+
+                    {{ conversation.model.name }}
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="model_selector_icon"
+                    >
+                        keyboard_arrow_down
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <div class="conversation-header-right">
+
+                <button
+                    class="
+                        header-icon-button
+                        share-control
+                    "
+                    data-class="button"
+                    data-semantic="share_conversation"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="share_icon"
+                    >
+                        ios_share
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="header-icon-button"
+                    data-class="button"
+                    data-semantic="conversation_menu"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="conversation_menu_icon"
+                    >
+                        more_horiz
+                    </span>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- ==============================================
+             Messages
+             ============================================== -->
+
+        <section
+            class="messages-region"
+            data-class="section"
+            data-semantic="conversation_messages"
+        >
+
+            <div class="messages-inner">
+
+
+                {% for message in conversation.messages %}
+
+
+                    {% if message.role == "user" %}
+
+                    <div
+                        class="
+                            message-row
+                            user
+                        "
+                    >
+
+                        <div class="user-message-wrapper">
+
+                            <div
+                                class="message-user-bubble"
+                                data-class="message_bubble"
+                                data-semantic="user_message"
+                            >
+                                {{ message.content }}
+                            </div>
+
+
+                            <div class="user-message-meta">
+
+                                <span
+                                    data-class="timestamp"
+                                    data-semantic="user_message_timestamp"
+                                >
+                                    {{ message.timestamp }}
+                                </span>
+
+
+                                {% if message.show_edit %}
+
+                                <button
+                                    class="assistant-action"
+                                    data-class="button"
+                                    data-semantic="edit_user_message"
+                                >
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="edit_message_icon"
+                                    >
+                                        edit
+                                    </span>
+
+                                </button>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    {% else %}
+
+
+                    <div class="message-row">
+
+                        <article
+                            class="assistant-message"
+                            data-class="message_bubble"
+                            data-semantic="assistant_message"
+                        >
+
+                            <div class="assistant-header">
+
+                                <div
+                                    class="assistant-avatar"
+                                    data-class="avatar"
+                                    data-semantic="assistant_avatar"
+                                >
+                                    AI
+                                </div>
+
+                                <span class="assistant-name">
+                                    ChatGPT
+                                </span>
+
+                            </div>
+
+
+                            {% for block in message.blocks %}
+
+
+                                {% if block.type == "paragraph" %}
+
+                                <p
+                                    class="
+                                        assistant-block
+                                        assistant-paragraph
+                                    "
+                                >
+                                    {{ block.text }}
+                                </p>
+
+
+                                {% elif block.type == "list" %}
+
+                                <div
+                                    class="
+                                        assistant-block
+                                        assistant-list
+                                    "
+                                >
+
+                                    {% for item in block["items"] %}
+
+                                    <div
+                                        class="assistant-list-item"
+                                        data-class="list_item"
+                                        data-semantic="assistant_list_item"
+                                    >
+
+                                        <span class="list-marker"></span>
+
+                                        <span>
+                                            {{ item }}
+                                        </span>
+
+                                    </div>
+
+                                    {% endfor %}
+
+                                </div>
+
+
+                                {% elif block.type == "code" %}
+
+                                <div
+                                    class="
+                                        assistant-block
+                                        code-card
+                                    "
+                                    data-class="card"
+                                    data-semantic="code_block"
+                                >
+
+                                    <div
+                                        class="code-header"
+                                        data-class="toolbar"
+                                        data-semantic="code_toolbar"
+                                    >
+
+                                        <span class="code-language">
+                                            {{ block.language }}
+                                        </span>
+
+
+                                        {% if block.show_copy %}
+
+                                        <button
+                                            class="copy-code-button"
+                                            data-class="button"
+                                            data-semantic="copy_code"
+                                        >
+
+                                            <span
+                                                class="material-symbols-rounded"
+                                                data-class="icon"
+                                                data-semantic="copy_code_icon"
+                                            >
+                                                content_copy
+                                            </span>
+
+                                            Copy
+
+                                        </button>
+
+                                        {% endif %}
+
+                                    </div>
+
+
+                                    <pre class="code-content">{{ block.code }}</pre>
+
+                                </div>
+
+
+                                {% elif block.type == "sources" %}
+
+                                <div class="assistant-block">
+
+                                    <div class="sources-grid">
+
+                                        {% for source in block.sources %}
+
+                                        <div
+                                            class="source-card"
+                                            data-class="card"
+                                            data-semantic="source_card"
+                                        >
+
+                                            <div class="source-number">
+                                                {{ loop.index }}
+                                            </div>
+
+                                            <div
+                                                class="
+                                                    source-title
+                                                    line-clamp-2
+                                                "
+                                            >
+                                                {{ source.title }}
+                                            </div>
+
+                                            <div
+                                                class="
+                                                    source-domain
+                                                    truncate
+                                                "
+                                            >
+                                                {{ source.domain }}
+                                            </div>
+
+                                        </div>
+
+                                        {% endfor %}
+
+                                    </div>
+
+                                </div>
+
+                                {% endif %}
+
+
+                            {% endfor %}
+
+
+                            {% if message.show_actions %}
+
+                            <div
+                                class="assistant-actions"
+                                data-class="toolbar"
+                                data-semantic="assistant_actions"
+                            >
+
+                                <button
+                                    class="assistant-action"
+                                    data-class="button"
+                                    data-semantic="copy_response"
+                                >
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="copy_response_icon"
+                                    >
+                                        content_copy
+                                    </span>
+
+                                </button>
+
+
+                                <button
+                                    class="assistant-action"
+                                    data-class="button"
+                                    data-semantic="like_response"
+                                >
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="like_response_icon"
+                                    >
+                                        thumb_up
+                                    </span>
+
+                                </button>
+
+
+                                <button
+                                    class="assistant-action"
+                                    data-class="button"
+                                    data-semantic="dislike_response"
+                                >
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="dislike_response_icon"
+                                    >
+                                        thumb_down
+                                    </span>
+
+                                </button>
+
+
+                                <button
+                                    class="assistant-action"
+                                    data-class="button"
+                                    data-semantic="regenerate_response"
+                                >
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="regenerate_icon"
+                                    >
+                                        refresh
+                                    </span>
+
+                                </button>
+
+                            </div>
+
+                            {% endif %}
+
+                        </article>
+
+                    </div>
+
+                    {% endif %}
+
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+
+        <!-- ==============================================
+             Composer
+             ============================================== -->
+
+        <div
+            class="conversation-composer-region"
+            data-occluder="true"
+        >
+
+            <div class="conversation-composer-stack">
+
+                <div
+                    class="conversation-composer"
+                    data-class="section"
+                    data-semantic="message_composer"
+                >
+
+                    <input
+                        class="conversation-input"
+                        type="text"
+                        placeholder="{{ conversation.composer.placeholder }}"
+                        data-class="input_field"
+                        data-semantic="message_input"
+                    >
+
+
+                    <div class="composer-bottom">
+
+                        <div class="composer-left">
+
+                            <button
+                                class="composer-button"
+                                data-class="button"
+                                data-semantic="attach_file"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="attach_file_icon"
+                                >
+                                    add
+                                </span>
+
+                            </button>
+
+
+                            {% if conversation.composer.show_tools %}
+
+                            <button
+                                class="composer-button"
+                                data-class="button"
+                                data-semantic="tools"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="tools_icon"
+                                >
+                                    tune
+                                </span>
+
+                            </button>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="composer-right">
+
+                            {% if conversation.composer.show_voice %}
+
+                            <button
+                                class="composer-button"
+                                data-class="button"
+                                data-semantic="voice_input"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="voice_input_icon"
+                                >
+                                    mic
+                                </span>
+
+                            </button>
+
+                            {% endif %}
+
+
+                            <button
+                                class="
+                                    composer-button
+                                    send-button
+                                "
+                                data-class="button"
+                                data-semantic="send_message"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="send_message_icon"
+                                >
+                                    arrow_upward
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="conversation-disclaimer">
+                    ChatGPT can make mistakes. Check important information.
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+{% endblock %}
