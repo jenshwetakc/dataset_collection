@@ -1,0 +1,1681 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Paint
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Window
+       ====================================================== */
+
+    .paint-window {
+
+        top:
+            3%;
+
+        left:
+            4%;
+
+        width:
+            92vw;
+
+        height:
+            91vh;
+    }
+
+
+    /* ======================================================
+       Paint Body
+       ====================================================== */
+
+    .paint-body {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        height:
+            100%;
+
+        min-height:
+            0;
+    }
+
+
+    /* ======================================================
+       Ribbon
+       ====================================================== */
+
+    .paint-ribbon {
+
+        display:
+            flex;
+
+        align-items:
+            stretch;
+
+        min-height:
+            102px;
+
+        padding:
+            8px 10px;
+
+        gap:
+            10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .paint-group {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        padding:
+            0 10px;
+
+        gap:
+            5px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .paint-group:last-child {
+
+        border-right:
+            none;
+    }
+
+
+    .paint-tool {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            52px;
+
+        height:
+            66px;
+
+        padding:
+            5px;
+
+        gap:
+            4px;
+
+        border-radius:
+            6px;
+
+        font-size:
+            9px;
+    }
+
+
+    .paint-tool.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Shapes
+       ====================================================== */
+
+    .paint-shapes {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                30px
+            );
+
+        gap:
+            3px;
+    }
+
+
+    .paint-shape-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            4px;
+    }
+
+
+    /* ======================================================
+       Colors
+       ====================================================== */
+
+    .paint-colors {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                6,
+                26px
+            );
+
+        gap:
+            4px;
+    }
+
+
+    .paint-color {
+
+        width:
+            26px;
+
+        height:
+            26px;
+
+        border:
+            2px solid
+            var(--border-subtle);
+
+        border-radius:
+            4px;
+    }
+
+
+    .paint-current-colors {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            5px;
+
+        margin-right:
+            5px;
+    }
+
+
+    .current-color {
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border:
+            2px solid
+            var(--border);
+    }
+
+
+    /* ======================================================
+       Workspace
+       ====================================================== */
+
+    .paint-workspace {
+
+        position:
+            relative;
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            auto;
+
+        padding:
+            30px;
+
+        background:
+            #C9C9C9;
+    }
+
+
+    .paint-canvas {
+
+        position:
+            relative;
+
+        width:
+            min(
+                900px,
+                78vw
+            );
+
+        height:
+            min(
+                620px,
+                68vh
+            );
+
+        margin:
+            0 auto;
+
+        overflow:
+            hidden;
+
+        background:
+            #FFFFFF;
+
+        box-shadow:
+            0 2px 9px
+            rgba(
+                0,
+                0,
+                0,
+                .2
+            );
+    }
+
+
+    .paint-canvas-image {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            contain;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Drawing Marks
+       ====================================================== */
+
+    .paint-stroke {
+
+        position:
+            absolute;
+
+        border-radius:
+            999px;
+    }
+
+
+    .paint-mark-shape {
+
+        position:
+            absolute;
+
+        border:
+            5px solid;
+
+        background:
+            transparent;
+    }
+
+
+    .paint-mark-shape.circle {
+
+        border-radius:
+            50%;
+    }
+
+
+    .paint-text-box {
+
+        position:
+            absolute;
+
+        min-width:
+            220px;
+
+        min-height:
+            54px;
+
+        padding:
+            8px;
+
+        border:
+            1px dashed
+            #222222;
+
+        font-family:
+            "Segoe UI",
+            sans-serif;
+
+        font-size:
+            28px;
+    }
+
+
+    /* ======================================================
+       Selection / Crop
+       ====================================================== */
+
+    .paint-selection {
+
+        position:
+            absolute;
+
+        border:
+            1px dashed
+            #000000;
+
+        outline:
+            1px dashed
+            #FFFFFF;
+
+        outline-offset:
+            -2px;
+    }
+
+
+    .paint-selection-handle {
+
+        position:
+            absolute;
+
+        width:
+            8px;
+
+        height:
+            8px;
+
+        border:
+            1px solid
+            #333333;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    .paint-selection-handle.br {
+
+        right:
+            -4px;
+
+        bottom:
+            -4px;
+    }
+
+
+    .paint-selection-handle.tl {
+
+        left:
+            -4px;
+
+        top:
+            -4px;
+    }
+
+
+    .crop-shade {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                .35
+            );
+
+        pointer-events:
+            none;
+    }
+
+
+    .crop-box {
+
+        position:
+            absolute;
+
+        border:
+            2px solid
+            #FFFFFF;
+
+        box-shadow:
+            0 0 0
+            9999px
+            rgba(
+                0,
+                0,
+                0,
+                .35
+            );
+    }
+
+
+    /* ======================================================
+       Status Bar
+       ====================================================== */
+
+    .paint-status {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            30px;
+
+        padding:
+            0 12px;
+
+        gap:
+            18px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .paint-status-spacer {
+
+        flex:
+            1;
+    }
+
+
+    .paint-zoom {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            200px;
+
+        gap:
+            8px;
+    }
+
+
+    .paint-zoom-track {
+
+        flex:
+            1;
+
+        height:
+            5px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .paint-zoom-fill {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .paint-dialog {
+
+        width:
+            470px;
+
+        padding:
+            22px;
+    }
+
+
+    .paint-dialog-title {
+
+        font-size:
+            19px;
+
+        font-weight:
+            600;
+    }
+
+
+    .paint-dialog-content {
+
+        margin-top:
+            18px;
+    }
+
+
+    .paint-field {
+
+        margin-top:
+            12px;
+    }
+
+
+    .paint-field-label {
+
+        margin-bottom:
+            6px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .paint-field-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr 1fr;
+
+        gap:
+            10px;
+    }
+
+
+    .paint-dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        margin-top:
+            22px;
+
+        gap:
+            8px;
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block desktop_content %}
+
+<section
+    class="
+        windows-window
+        paint-window
+    "
+    data-class="section"
+    data-semantic="paint_window"
+
+    {% if paint["state"] in [
+        "resize_dialog",
+        "save_dialog",
+        "unsaved_close_dialog"
+    ] %}
+    data-annotation-skip="true"
+    {% endif %}
+>
+
+    <!-- ====================================================
+         Title Bar
+         ==================================================== -->
+
+    <header
+        class="windows-titlebar"
+        data-class="app_bar"
+        data-semantic="paint_titlebar"
+    >
+
+        <div
+            class="windows-titlebar-left"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                palette
+            </span>
+
+
+            <span
+                class="windows-title"
+                data-class="text"
+            >
+                Paint
+            </span>
+
+        </div>
+
+
+        <div
+            class="windows-window-controls"
+        >
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    minimize
+                </span>
+            </button>
+
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    crop_square
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    window-control
+                    close
+                "
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <div
+        class="
+            windows-window-body
+            paint-body
+        "
+    >
+
+        <!-- =================================================
+             Ribbon
+             ================================================= -->
+
+        <div
+            class="paint-ribbon"
+            data-class="toolbar"
+            data-semantic="paint_ribbon"
+        >
+
+            <!-- Tools -->
+
+            <div
+                class="paint-group"
+            >
+
+                {% for tool in paint["tools"] %}
+
+                <button
+                    class="
+                        paint-tool
+
+                        {% if
+                            tool["id"]
+                            ==
+                            paint["active_tool"]
+                        %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="paint_tool_{{ tool['id'] }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {{ tool["icon"] }}
+                    </span>
+
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ tool["label"] }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- Shapes -->
+
+            <div
+                class="paint-group"
+            >
+
+                <div
+                    class="paint-shapes"
+                >
+
+                    {% for shape in paint["shapes"] %}
+
+                    <button
+                        class="paint-shape-button"
+                        data-class="button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            {{ shape }}
+                        </span>
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+
+            <!-- Colors -->
+
+            <div
+                class="paint-group"
+            >
+
+                <div
+                    class="paint-current-colors"
+                >
+
+                    <div
+                        class="current-color"
+                        style="
+                            background:
+                            {{ paint['primary_color'] }};
+                        "
+                        data-class="selection_indicator"
+                    >
+                    </div>
+
+
+                    <div
+                        class="current-color"
+                        style="
+                            background:
+                            {{ paint['secondary_color'] }};
+                        "
+                        data-class="selection_indicator"
+                    >
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="paint-colors"
+                >
+
+                    {% for color in paint["palette"] %}
+
+                    <button
+                        class="paint-color"
+                        style="
+                            background:
+                            {{ color }};
+                        "
+                        data-class="button"
+                        data-semantic="paint_color_{{ loop.index }}"
+                    >
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             Workspace
+             ================================================= -->
+
+        <main
+            class="paint-workspace"
+            data-class="section"
+            data-semantic="paint_workspace"
+        >
+
+            <section
+                class="paint-canvas"
+                data-class="card"
+                data-semantic="paint_canvas"
+            >
+
+                {% if paint["canvas"]["image"] %}
+
+                <img
+                    class="paint-canvas-image"
+                    src="{{ paint['canvas']['image'] }}"
+                    alt=""
+                    data-class="image"
+                >
+
+                {% endif %}
+
+
+                <!-- Drawing / text / shape marks -->
+
+                {% for mark in paint["canvas"]["marks"] %}
+
+                    {% if mark["type"] == "stroke" %}
+
+                    <div
+                        class="paint-stroke"
+                        style="
+                            left:
+                            {{ mark['x'] }}px;
+
+                            top:
+                            {{ mark['y'] }}px;
+
+                            width:
+                            {{ mark['width'] }}px;
+
+                            height:
+                            {{ mark['height'] }}px;
+
+                            transform:
+                            rotate(
+                                {{ mark['rotation'] }}deg
+                            );
+
+                            background:
+                            {{ mark['color'] }};
+                        "
+                        data-class="selection_indicator"
+                    >
+                    </div>
+
+
+                    {% elif mark["type"] == "shape" %}
+
+                    <div
+                        class="
+                            paint-mark-shape
+                            {{ mark["shape"] }}
+                        "
+                        style="
+                            left:
+                            {{ mark['x'] }}px;
+
+                            top:
+                            {{ mark['y'] }}px;
+
+                            width:
+                            {{ mark['width'] }}px;
+
+                            height:
+                            {{ mark['height'] }}px;
+
+                            border-color:
+                            {{ mark['color'] }};
+                        "
+                        data-class="selection_indicator"
+                    >
+                    </div>
+
+
+                    {% elif mark["type"] == "text" %}
+
+                    <div
+                        class="paint-text-box"
+                        style="
+                            left:
+                            {{ mark['x'] }}px;
+
+                            top:
+                            {{ mark['y'] }}px;
+
+                            color:
+                            {{ mark['color'] }};
+                        "
+                        data-class="input_field"
+                    >
+                        {{ mark["text"] }}
+                    </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+
+                <!-- Selection -->
+
+                {% if paint["state"] == "selection" %}
+
+                <div
+                    class="paint-selection"
+                    style="
+                        left:
+                        {{ paint['selection']['x'] }}px;
+
+                        top:
+                        {{ paint['selection']['y'] }}px;
+
+                        width:
+                        {{ paint['selection']['width'] }}px;
+
+                        height:
+                        {{ paint['selection']['height'] }}px;
+                    "
+                    data-class="selection_indicator"
+                >
+
+                    <span
+                        class="
+                            paint-selection-handle
+                            tl
+                        "
+                    >
+                    </span>
+
+
+                    <span
+                        class="
+                            paint-selection-handle
+                            br
+                        "
+                    >
+                    </span>
+
+                </div>
+
+                {% endif %}
+
+
+                <!-- Crop -->
+
+                {% if paint["state"] == "crop" %}
+
+                <div
+                    class="crop-box"
+                    style="
+                        left:
+                        {{ paint['crop']['x'] }}px;
+
+                        top:
+                        {{ paint['crop']['y'] }}px;
+
+                        width:
+                        {{ paint['crop']['width'] }}px;
+
+                        height:
+                        {{ paint['crop']['height'] }}px;
+                    "
+                    data-class="selection_indicator"
+                >
+                </div>
+
+                {% endif %}
+
+
+                <!-- Color Picker -->
+
+                {% if paint["state"] == "color_picker" %}
+
+                <div
+                    style="
+                        position:absolute;
+                        left:48%;
+                        top:42%;
+                        width:26px;
+                        height:26px;
+                        border:2px solid #FFFFFF;
+                        box-shadow:0 0 0 1px #000000;
+                        border-radius:50%;
+                    "
+                    data-class="selection_indicator"
+                >
+                </div>
+
+                {% endif %}
+
+
+                <!-- Eraser -->
+
+                {% if paint["state"] == "eraser" %}
+
+                <div
+                    style="
+                        position:absolute;
+                        left:46%;
+                        top:40%;
+                        width:44px;
+                        height:44px;
+                        border:2px solid #111111;
+                        background:#FFFFFF;
+                    "
+                    data-class="selection_indicator"
+                >
+                </div>
+
+                {% endif %}
+
+            </section>
+
+        </main>
+
+
+        <!-- =================================================
+             Status Bar
+             ================================================= -->
+
+        <footer
+            class="paint-status"
+            data-class="toolbar"
+            data-semantic="paint_status_bar"
+        >
+
+            <span
+                data-class="system_text"
+            >
+                {{ paint["canvas"]["width"] }}
+                ×
+                {{ paint["canvas"]["height"] }}px
+            </span>
+
+
+            <span
+                data-class="system_text"
+            >
+                32-bit
+            </span>
+
+
+            <div
+                class="paint-status-spacer"
+            >
+            </div>
+
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                style="
+                    font-size: 16px;
+                "
+            >
+                zoom_out
+            </span>
+
+
+            <div
+                class="paint-zoom"
+            >
+
+                <div
+                    class="paint-zoom-track"
+                    data-class="slider"
+                >
+
+                    <div
+                        class="paint-zoom-fill"
+                        style="
+                            width:
+                            {{ [
+                                paint["canvas"]["zoom"] / 2,
+                                100
+                            ] | min }}%;
+                        "
+                    >
+                    </div>
+
+                </div>
+
+
+                <span
+                    data-class="system_text"
+                >
+                    {{ paint["canvas"]["zoom"] }}%
+                </span>
+
+            </div>
+
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                style="
+                    font-size: 16px;
+                "
+            >
+                zoom_in
+            </span>
+
+        </footer>
+
+    </div>
+
+</section>
+
+{% endblock %}
+
+
+{% block modal_content %}
+
+<!-- ========================================================
+     Resize Dialog
+     ======================================================== -->
+
+{% if paint["state"] == "resize_dialog" %}
+
+<div
+    class="windows-modal-layer"
+>
+
+    <div
+        class="windows-modal-backdrop"
+        data-annotation-skip="true"
+    >
+    </div>
+
+
+    <section
+        class="
+            windows-dialog
+            paint-dialog
+        "
+        data-class="dialog"
+        data-semantic="paint_resize_dialog"
+        data-occluder="true"
+    >
+
+        <div
+            class="paint-dialog-title"
+            data-class="text"
+        >
+            Resize and skew
+        </div>
+
+
+        <div
+            class="paint-dialog-content"
+        >
+
+            <div
+                class="paint-field-row"
+            >
+
+                <div
+                    class="paint-field"
+                >
+
+                    <div
+                        class="paint-field-label"
+                        data-class="text"
+                    >
+                        Horizontal
+                    </div>
+
+
+                    <div
+                        class="windows-input"
+                        data-class="input_field"
+                    >
+
+                        <input
+                            readonly
+                            value="{{ paint['resize']['width'] }}"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="paint-field"
+                >
+
+                    <div
+                        class="paint-field-label"
+                        data-class="text"
+                    >
+                        Vertical
+                    </div>
+
+
+                    <div
+                        class="windows-input"
+                        data-class="input_field"
+                    >
+
+                        <input
+                            readonly
+                            value="{{ paint['resize']['height'] }}"
+                        >
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <label
+                class="windows-list-item"
+                style="
+                    margin-top: 12px;
+                "
+            >
+
+                <input
+                    type="checkbox"
+
+                    {% if paint["resize"]["maintain_aspect"] %}
+                    checked
+                    {% endif %}
+
+                    data-class="checkbox"
+                >
+
+                <span
+                    data-class="text"
+                >
+                    Maintain aspect ratio
+                </span>
+
+            </label>
+
+        </div>
+
+
+        <div
+            class="paint-dialog-actions"
+        >
+
+            <button
+                class="windows-button"
+                data-class="button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    windows-button
+                    primary
+                "
+                data-class="button"
+            >
+                OK
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endif %}
+
+
+<!-- ========================================================
+     Save Dialog
+     ======================================================== -->
+
+{% if paint["state"] == "save_dialog" %}
+
+<div
+    class="windows-modal-layer"
+>
+
+    <div
+        class="windows-modal-backdrop"
+        data-annotation-skip="true"
+    >
+    </div>
+
+
+    <section
+        class="
+            windows-dialog
+            paint-dialog
+        "
+        data-class="dialog"
+        data-semantic="paint_save_dialog"
+        data-occluder="true"
+    >
+
+        <div
+            class="paint-dialog-title"
+            data-class="text"
+        >
+            Save as
+        </div>
+
+
+        <div
+            class="paint-dialog-content"
+        >
+
+            <div
+                class="paint-field"
+            >
+
+                <div
+                    class="paint-field-label"
+                    data-class="text"
+                >
+                    File name
+                </div>
+
+
+                <div
+                    class="windows-input"
+                    data-class="input_field"
+                >
+
+                    <input
+                        readonly
+                        value="{{ paint['save']['filename'] }}"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="paint-field"
+            >
+
+                <div
+                    class="paint-field-label"
+                    data-class="text"
+                >
+                    Location
+                </div>
+
+
+                <button
+                    class="windows-input"
+                    data-class="button"
+                    style="
+                        width:100%;
+                        justify-content:space-between;
+                    "
+                >
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ paint["save"]["folder"] }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        expand_more
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <div
+                class="paint-field"
+            >
+
+                <div
+                    class="paint-field-label"
+                    data-class="text"
+                >
+                    File type
+                </div>
+
+
+                <button
+                    class="windows-input"
+                    data-class="button"
+                    style="
+                        width:100%;
+                        justify-content:space-between;
+                    "
+                >
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ paint["save"]["format"] }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        expand_more
+                    </span>
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="paint-dialog-actions"
+        >
+
+            <button
+                class="windows-button"
+                data-class="button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    windows-button
+                    primary
+                "
+                data-class="button"
+            >
+                Save
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endif %}
+
+
+<!-- ========================================================
+     Unsaved Close Dialog
+     ======================================================== -->
+
+{% if paint["state"] == "unsaved_close_dialog" %}
+
+<div
+    class="windows-modal-layer"
+>
+
+    <div
+        class="windows-modal-backdrop"
+        data-annotation-skip="true"
+    >
+    </div>
+
+
+    <section
+        class="
+            windows-dialog
+            paint-dialog
+        "
+        data-class="dialog"
+        data-semantic="paint_unsaved_dialog"
+        data-occluder="true"
+    >
+
+        <div
+            class="paint-dialog-title"
+            data-class="text"
+        >
+            Save changes to your picture?
+        </div>
+
+
+        <div
+            class="paint-dialog-content"
+            data-class="text"
+        >
+            If you don't save, your changes will be lost.
+        </div>
+
+
+        <div
+            class="paint-dialog-actions"
+        >
+
+            <button
+                class="windows-button"
+                data-class="button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="windows-button"
+                data-class="button"
+            >
+                Don't save
+            </button>
+
+
+            <button
+                class="
+                    windows-button
+                    primary
+                "
+                data-class="button"
+            >
+                Save
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

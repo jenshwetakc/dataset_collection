@@ -1,0 +1,1600 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Calculator
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Window
+       ====================================================== */
+
+    .calculator-window {
+
+        top:
+            7%;
+
+        left:
+            50%;
+
+        transform:
+            translateX(-50%);
+
+        width:
+            390px;
+
+        height:
+            650px;
+    }
+
+
+    .calculator-window.wide {
+
+        width:
+            720px;
+    }
+
+
+    .calculator-window.converter {
+
+        width:
+            500px;
+
+        height:
+            610px;
+    }
+
+
+    /* ======================================================
+       Body
+       ====================================================== */
+
+    .calculator-body {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        height:
+            100%;
+
+        padding:
+            12px;
+
+        gap:
+            10px;
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .calculator-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            42px;
+
+        gap:
+            8px;
+    }
+
+
+    .calculator-mode-title {
+
+        flex:
+            1;
+
+        font-size:
+            18px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Display
+       ====================================================== */
+
+    .calculator-display {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        justify-content:
+            flex-end;
+
+        min-height:
+            120px;
+
+        padding:
+            12px;
+
+        text-align:
+            right;
+    }
+
+
+    .calculator-expression {
+
+        min-height:
+            24px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .calculator-value {
+
+        margin-top:
+            8px;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+
+        font-size:
+            42px;
+
+        font-weight:
+            500;
+    }
+
+
+    .calculator-value.error {
+
+        white-space:
+            normal;
+
+        font-size:
+            23px;
+
+        line-height:
+            1.4;
+    }
+
+
+    /* ======================================================
+       Memory Bar
+       ====================================================== */
+
+    .calculator-memory-bar {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                5,
+                1fr
+            );
+
+        gap:
+            4px;
+    }
+
+
+    .memory-button {
+
+        height:
+            32px;
+
+        border-radius:
+            5px;
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Keypad
+       ====================================================== */
+
+    .calculator-keypad {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                1fr
+            );
+
+        flex:
+            1;
+
+        gap:
+            5px;
+    }
+
+
+    .calculator-keypad.scientific {
+
+        grid-template-columns:
+            repeat(
+                5,
+                1fr
+            );
+    }
+
+
+    .calculator-keypad.programmer {
+
+        grid-template-columns:
+            repeat(
+                5,
+                1fr
+            );
+    }
+
+
+    .calculator-key {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            0;
+
+        min-height:
+            46px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        font-weight:
+            500;
+    }
+
+
+    .calculator-key.number {
+
+        background:
+            var(--surface);
+    }
+
+
+    .calculator-key.operator {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .calculator-key.equals {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Split Layout
+       ====================================================== */
+
+    .calculator-split {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            )
+            270px;
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        gap:
+            10px;
+    }
+
+
+    .calculator-side-panel {
+
+        overflow-y:
+            auto;
+
+        padding:
+            10px;
+
+        border-left:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .side-panel-title {
+
+        margin-bottom:
+            12px;
+
+        font-size:
+            15px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       History
+       ====================================================== */
+
+    .history-item {
+
+        padding:
+            10px;
+
+        margin-bottom:
+            6px;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+
+        text-align:
+            right;
+    }
+
+
+    .history-expression {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .history-result {
+
+        margin-top:
+            4px;
+
+        font-size:
+            17px;
+
+        font-weight:
+            550;
+    }
+
+
+    /* ======================================================
+       Programmer
+       ====================================================== */
+
+    .programmer-bases {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            65px
+            1fr;
+
+        margin-bottom:
+            10px;
+
+        gap:
+            4px;
+
+        font-size:
+            11px;
+    }
+
+
+    .programmer-base-label {
+
+        color:
+            var(--primary);
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Converter
+       ====================================================== */
+
+    .converter-panel {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            12px;
+    }
+
+
+    .converter-box {
+
+        padding:
+            16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            9px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .converter-label {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .converter-value {
+
+        margin-top:
+            8px;
+
+        font-size:
+            28px;
+
+        font-weight:
+            550;
+    }
+
+
+    .converter-unit {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        margin-top:
+            8px;
+
+        font-size:
+            12px;
+    }
+
+
+    .converter-switch {
+
+        align-self:
+            center;
+    }
+
+
+    /* ======================================================
+       Date Calculation
+       ====================================================== */
+
+    .date-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            1fr;
+
+        gap:
+            12px;
+    }
+
+
+    .date-card {
+
+        padding:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .date-result {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            140px;
+
+        margin-top:
+            16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            9px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        text-align:
+            center;
+    }
+
+
+    .date-result-number {
+
+        font-size:
+            42px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 1366px
+    ) {
+
+        .calculator-window {
+
+            top:
+                3%;
+
+            height:
+                min(
+                    680px,
+                    88vh
+                );
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block desktop_content %}
+
+<section
+    class="
+        windows-window
+        calculator-window
+
+        {% if calculator["state"] in [
+            "history",
+            "memory",
+            "programmer"
+        ] %}
+        wide
+        {% endif %}
+
+        {% if calculator["state"] in [
+            "currency_converter",
+            "unit_converter",
+            "date_calculation"
+        ] %}
+        converter
+        {% endif %}
+    "
+    data-class="section"
+    data-semantic="calculator_window"
+>
+
+    <!-- ====================================================
+         Title Bar
+         ==================================================== -->
+
+    <header
+        class="windows-titlebar"
+        data-class="app_bar"
+        data-semantic="calculator_titlebar"
+    >
+
+        <div
+            class="windows-titlebar-left"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                calculate
+            </span>
+
+
+            <span
+                class="windows-title"
+                data-class="text"
+            >
+                Calculator
+            </span>
+
+        </div>
+
+
+        <div
+            class="windows-window-controls"
+        >
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    minimize
+                </span>
+            </button>
+
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    crop_square
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    window-control
+                    close
+                "
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <div
+        class="
+            windows-window-body
+            calculator-body
+        "
+    >
+
+        <!-- =================================================
+             Header
+             ================================================= -->
+
+        <div
+            class="calculator-header"
+        >
+
+            <button
+                class="windows-icon-button"
+                data-class="button"
+                data-semantic="calculator_menu"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    menu
+                </span>
+
+            </button>
+
+
+            <div
+                class="calculator-mode-title"
+                data-class="text"
+            >
+
+                {% if calculator["state"] == "scientific" %}
+                    Scientific
+
+                {% elif calculator["state"] == "programmer" %}
+                    Programmer
+
+                {% elif calculator["state"] == "currency_converter" %}
+                    Currency
+
+                {% elif calculator["state"] == "unit_converter" %}
+                    {{ calculator["unit"]["type"] }}
+
+                {% elif calculator["state"] == "date_calculation" %}
+                    Date calculation
+
+                {% else %}
+                    Standard
+                {% endif %}
+
+            </div>
+
+
+            {% if calculator["state"] not in [
+                "currency_converter",
+                "unit_converter",
+                "date_calculation"
+            ] %}
+
+            <button
+                class="windows-icon-button"
+                data-class="button"
+                data-semantic="calculator_history_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    history
+                </span>
+
+            </button>
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- =================================================
+             Currency Converter
+             ================================================= -->
+
+        {% if calculator["state"] == "currency_converter" %}
+
+        <section
+            class="converter-panel"
+            data-semantic="currency_converter"
+        >
+
+            <div
+                class="converter-box"
+                data-class="card"
+            >
+
+                <div
+                    class="converter-label"
+                    data-class="text"
+                >
+                    From
+                </div>
+
+
+                <div
+                    class="converter-value"
+                    data-class="system_text"
+                >
+                    {{ calculator["currency"]["amount"] }}
+                </div>
+
+
+                <button
+                    class="converter-unit"
+                    data-class="button"
+                >
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ calculator["currency"]["from"] }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        expand_more
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <button
+                class="
+                    windows-icon-button
+                    converter-switch
+                "
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    swap_vert
+                </span>
+            </button>
+
+
+            <div
+                class="converter-box"
+                data-class="card"
+            >
+
+                <div
+                    class="converter-label"
+                    data-class="text"
+                >
+                    To
+                </div>
+
+
+                <div
+                    class="converter-value"
+                    data-class="system_text"
+                >
+                    {{ calculator["currency"]["converted"] }}
+                </div>
+
+
+                <button
+                    class="converter-unit"
+                    data-class="button"
+                >
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ calculator["currency"]["to"] }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        expand_more
+                    </span>
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             Unit Converter
+             ================================================= -->
+
+        {% elif calculator["state"] == "unit_converter" %}
+
+        <section
+            class="converter-panel"
+            data-semantic="unit_converter"
+        >
+
+            <div
+                class="converter-box"
+                data-class="card"
+            >
+
+                <div
+                    class="converter-label"
+                    data-class="text"
+                >
+                    From
+                </div>
+
+
+                <div
+                    class="converter-value"
+                    data-class="system_text"
+                >
+                    {{ calculator["unit"]["value"] }}
+                </div>
+
+
+                <button
+                    class="converter-unit"
+                    data-class="button"
+                >
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ calculator["unit"]["from"] }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        expand_more
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <button
+                class="
+                    windows-icon-button
+                    converter-switch
+                "
+                data-class="button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    swap_vert
+                </span>
+
+            </button>
+
+
+            <div
+                class="converter-box"
+                data-class="card"
+            >
+
+                <div
+                    class="converter-label"
+                    data-class="text"
+                >
+                    To
+                </div>
+
+
+                <div
+                    class="converter-value"
+                    data-class="system_text"
+                >
+                    {{ calculator["unit"]["converted"] }}
+                </div>
+
+
+                <button
+                    class="converter-unit"
+                    data-class="button"
+                >
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ calculator["unit"]["to"] }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        expand_more
+                    </span>
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             Date Calculation
+             ================================================= -->
+
+        {% elif calculator["state"] == "date_calculation" %}
+
+        <section
+            data-semantic="date_calculation"
+        >
+
+            <div
+                class="date-row"
+            >
+
+                <div
+                    class="date-card"
+                    data-class="card"
+                >
+
+                    <div
+                        class="converter-label"
+                        data-class="text"
+                    >
+                        From
+                    </div>
+
+
+                    <div
+                        data-class="timestamp"
+                        style="
+                            margin-top: 8px;
+                            font-size: 17px;
+                        "
+                    >
+                        {{ calculator["date"]["from"] }}
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="date-card"
+                    data-class="card"
+                >
+
+                    <div
+                        class="converter-label"
+                        data-class="text"
+                    >
+                        To
+                    </div>
+
+
+                    <div
+                        data-class="timestamp"
+                        style="
+                            margin-top: 8px;
+                            font-size: 17px;
+                        "
+                    >
+                        {{ calculator["date"]["to"] }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="date-result"
+                data-class="card"
+            >
+
+                <div>
+
+                    <div
+                        class="date-result-number"
+                        data-class="system_text"
+                    >
+                        {{ calculator["date"]["difference"] }}
+                    </div>
+
+
+                    <div
+                        data-class="text"
+                    >
+                        days difference
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             Normal Calculator
+             ================================================= -->
+
+        {% else %}
+
+        <div
+            class="calculator-display"
+        >
+
+            <div
+                class="calculator-expression"
+                data-class="system_text"
+            >
+                {{ calculator["expression"] }}
+            </div>
+
+
+            <div
+                class="
+                    calculator-value
+
+                    {% if calculator["state"] == "division_by_zero" %}
+                    error
+                    {% endif %}
+                "
+                data-class="system_text"
+                data-semantic="calculator_display"
+            >
+                {{ calculator["display"] }}
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             Memory Row
+             ================================================= -->
+
+        <div
+            class="calculator-memory-bar"
+        >
+
+            {% for item in [
+                "MC",
+                "MR",
+                "M+",
+                "M−",
+                "MS"
+            ] %}
+
+            <button
+                class="memory-button"
+                data-class="button"
+            >
+                {{ item }}
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+
+        <!-- =================================================
+             History / Memory Split
+             ================================================= -->
+
+        {% if calculator["state"] in [
+            "history",
+            "memory"
+        ] %}
+
+        <div
+            class="calculator-split"
+        >
+
+            <div
+                class="calculator-keypad"
+            >
+
+                {% for key in calculator["standard_keys"] %}
+
+                <button
+                    class="
+                        calculator-key
+                        {{ key["type"] }}
+                    "
+                    data-class="button"
+                >
+
+                    {% if key["icon"] is defined %}
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {{ key["icon"] }}
+                    </span>
+
+                    {% else %}
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ key["label"] }}
+                    </span>
+
+                    {% endif %}
+
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+
+            <aside
+                class="calculator-side-panel"
+                data-class="section"
+            >
+
+                {% if calculator["state"] == "history" %}
+
+                <div
+                    class="side-panel-title"
+                    data-class="text"
+                >
+                    History
+                </div>
+
+
+                {% for item in calculator["history"] %}
+
+                <div
+                    class="history-item"
+                    data-class="list_item"
+                >
+
+                    <div
+                        class="history-expression"
+                        data-class="system_text"
+                    >
+                        {{ item["expression"] }}
+                    </div>
+
+
+                    <div
+                        class="history-result"
+                        data-class="system_text"
+                    >
+                        {{ item["result"] }}
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+
+                {% else %}
+
+                <div
+                    class="side-panel-title"
+                    data-class="text"
+                >
+                    Memory
+                </div>
+
+
+                {% for item in calculator["memory"] %}
+
+                <div
+                    class="history-item"
+                    data-class="list_item"
+                >
+
+                    <div
+                        class="history-result"
+                        data-class="system_text"
+                    >
+                        {{ item }}
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+                {% endif %}
+
+            </aside>
+
+        </div>
+
+
+        <!-- =================================================
+             Scientific
+             ================================================= -->
+
+        {% elif calculator["state"] == "scientific" %}
+
+        <div
+            class="
+                calculator-keypad
+                scientific
+            "
+        >
+
+            {% for key in calculator["scientific_keys"] %}
+
+            <button
+                class="
+                    calculator-key
+
+                    {% if key in [
+                        "0",
+                        "1",
+                        "2",
+                        "3",
+                        "4",
+                        "5",
+                        "6",
+                        "7",
+                        "8",
+                        "9",
+                        "."
+                    ] %}
+                    number
+
+                    {% elif key == "=" %}
+                    equals
+
+                    {% else %}
+                    operator
+                    {% endif %}
+                "
+                data-class="button"
+            >
+                <span
+                    data-class="text"
+                >
+                    {{ key }}
+                </span>
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+
+        <!-- =================================================
+             Programmer
+             ================================================= -->
+
+        {% elif calculator["state"] == "programmer" %}
+
+        <div
+            class="programmer-bases"
+        >
+
+            <span
+                class="programmer-base-label"
+                data-class="text"
+            >
+                HEX
+            </span>
+
+            <span
+                data-class="system_text"
+            >
+                0000 03E8
+            </span>
+
+
+            <span
+                class="programmer-base-label"
+                data-class="text"
+            >
+                DEC
+            </span>
+
+            <span
+                data-class="system_text"
+            >
+                1000
+            </span>
+
+
+            <span
+                class="programmer-base-label"
+                data-class="text"
+            >
+                OCT
+            </span>
+
+            <span
+                data-class="system_text"
+            >
+                1750
+            </span>
+
+
+            <span
+                class="programmer-base-label"
+                data-class="text"
+            >
+                BIN
+            </span>
+
+            <span
+                data-class="system_text"
+            >
+                0011 1110 1000
+            </span>
+
+        </div>
+
+
+        <div
+            class="
+                calculator-keypad
+                programmer
+            "
+        >
+
+            {% for key in calculator["programmer_keys"] %}
+
+            <button
+                class="
+                    calculator-key
+
+                    {% if key in [
+                        "0",
+                        "1",
+                        "2",
+                        "3",
+                        "4",
+                        "5",
+                        "6",
+                        "7",
+                        "8",
+                        "9",
+                        "A",
+                        "B",
+                        "C",
+                        "D",
+                        "E",
+                        "F"
+                    ] %}
+                    number
+
+                    {% elif key == "=" %}
+                    equals
+
+                    {% else %}
+                    operator
+                    {% endif %}
+                "
+                data-class="button"
+            >
+                <span
+                    data-class="text"
+                >
+                    {{ key }}
+                </span>
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+
+        <!-- =================================================
+             Standard
+             ================================================= -->
+
+        {% else %}
+
+        <div
+            class="calculator-keypad"
+        >
+
+            {% for key in calculator["standard_keys"] %}
+
+            <button
+                class="
+                    calculator-key
+                    {{ key["type"] }}
+                "
+                data-class="button"
+                data-semantic="calculator_key_{{ loop.index }}"
+            >
+
+                {% if key["icon"] is defined %}
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    {{ key["icon"] }}
+                </span>
+
+                {% else %}
+
+                <span
+                    data-class="text"
+                >
+                    {{ key["label"] }}
+                </span>
+
+                {% endif %}
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+{% endblock %}

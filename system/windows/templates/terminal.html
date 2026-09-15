@@ -1,0 +1,1430 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Windows Terminal
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Window
+       ====================================================== */
+
+    .terminal-window {
+
+        top:
+            6%;
+
+        left:
+            8%;
+
+        width:
+            min(
+                1180px,
+                84vw
+            );
+
+        height:
+            min(
+                760px,
+                82vh
+            );
+
+        background:
+            #101010;
+
+        border-color:
+            #333333;
+    }
+
+
+    /* ======================================================
+       Terminal Titlebar
+       ====================================================== */
+
+    .terminal-titlebar {
+
+        display:
+            flex;
+
+        align-items:
+            stretch;
+
+        min-height:
+            42px;
+
+        background:
+            #1B1B1B;
+
+        color:
+            #FFFFFF;
+
+        border-bottom:
+            1px solid
+            #333333;
+    }
+
+
+    .terminal-tabs {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        min-width:
+            0;
+
+        flex:
+            1;
+
+        padding-left:
+            8px;
+
+        gap:
+            2px;
+    }
+
+
+    .terminal-tab {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            130px;
+
+        max-width:
+            220px;
+
+        height:
+            34px;
+
+        padding:
+            0 10px;
+
+        gap:
+            7px;
+
+        border-radius:
+            7px 7px 0 0;
+
+        color:
+            #D8D8D8;
+
+        font-size:
+            11px;
+    }
+
+
+    .terminal-tab.active {
+
+        background:
+            #101010;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .terminal-tab-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+
+    .terminal-title-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        padding:
+            0 4px;
+
+        gap:
+            2px;
+    }
+
+
+    .terminal-title-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            5px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .terminal-window-controls {
+
+        display:
+            flex;
+
+        align-self:
+            stretch;
+    }
+
+
+    .terminal-window-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            46px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Terminal Body
+       ====================================================== */
+
+    .terminal-body {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        height:
+            100%;
+
+        min-height:
+            0;
+
+        background:
+            #101010;
+
+        color:
+            #F3F3F3;
+    }
+
+
+    .terminal-content {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow-y:
+            auto;
+
+        padding:
+            14px
+            16px
+            24px;
+
+        font-family:
+            "Cascadia Mono",
+            "Consolas",
+            monospace;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.55;
+
+        user-select:
+            text;
+    }
+
+
+    /* ======================================================
+       Terminal Lines
+       ====================================================== */
+
+    .terminal-line {
+
+        min-height:
+            20px;
+
+        white-space:
+            pre-wrap;
+
+        overflow-wrap:
+            anywhere;
+    }
+
+
+    .terminal-line.prompt {
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .terminal-line.output {
+
+        color:
+            #D2D2D2;
+    }
+
+
+    .terminal-line.error {
+
+        color:
+            #FF8A80;
+    }
+
+
+    /* ======================================================
+       Cursor
+       ====================================================== */
+
+    .terminal-cursor {
+
+        display:
+            inline-block;
+
+        width:
+            8px;
+
+        height:
+            16px;
+
+        margin-left:
+            2px;
+
+        vertical-align:
+            -2px;
+
+        background:
+            #FFFFFF;
+
+        animation:
+            terminal-blink
+            1s
+            steps(
+                1
+            )
+            infinite;
+    }
+
+
+    @keyframes terminal-blink {
+
+        50% {
+
+            opacity:
+                0;
+        }
+    }
+
+
+    /* ======================================================
+       Progress
+       ====================================================== */
+
+    .terminal-progress-area {
+
+        margin:
+            12px 0;
+    }
+
+
+    .terminal-progress-bar {
+
+        width:
+            100%;
+
+        max-width:
+            520px;
+
+        height:
+            8px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            #303030;
+    }
+
+
+    .terminal-progress-fill {
+
+        height:
+            100%;
+
+        background:
+            #5FA8FF;
+    }
+
+
+    /* ======================================================
+       Split Pane
+       ====================================================== */
+
+    .terminal-split {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            1fr;
+
+        flex:
+            1;
+
+        min-height:
+            0;
+    }
+
+
+    .terminal-pane {
+
+        position:
+            relative;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow-y:
+            auto;
+
+        padding:
+            14px 16px;
+
+        font-family:
+            "Cascadia Mono",
+            "Consolas",
+            monospace;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.55;
+    }
+
+
+    .terminal-pane + .terminal-pane {
+
+        border-left:
+            1px solid
+            #3A3A3A;
+    }
+
+
+    .terminal-pane-label {
+
+        position:
+            absolute;
+
+        top:
+            8px;
+
+        right:
+            8px;
+
+        padding:
+            3px 7px;
+
+        border-radius:
+            5px;
+
+        background:
+            #2B2B2B;
+
+        color:
+            #BEBEBE;
+
+        font-size:
+            9px;
+
+        font-family:
+            "Segoe UI",
+            sans-serif;
+    }
+
+
+    /* ======================================================
+       Search Bar
+       ====================================================== */
+
+    .terminal-search {
+
+        position:
+            absolute;
+
+        z-index:
+            200;
+
+        top:
+            10px;
+
+        right:
+            12px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            310px;
+
+        min-height:
+            38px;
+
+        padding:
+            0 8px;
+
+        gap:
+            6px;
+
+        border:
+            1px solid
+            #444444;
+
+        border-radius:
+            7px;
+
+        background:
+            #242424;
+
+        color:
+            #FFFFFF;
+
+        box-shadow:
+            0 6px 20px
+            rgba(
+                0,
+                0,
+                0,
+                .4
+            );
+    }
+
+
+    .terminal-search input {
+
+        flex:
+            1;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Side History
+       ====================================================== */
+
+    .terminal-history-panel {
+
+        position:
+            absolute;
+
+        z-index:
+            150;
+
+        top:
+            8px;
+
+        right:
+            8px;
+
+        bottom:
+            8px;
+
+        width:
+            300px;
+
+        padding:
+            12px;
+
+        overflow-y:
+            auto;
+
+        border:
+            1px solid
+            #3C3C3C;
+
+        border-radius:
+            8px;
+
+        background:
+            #1E1E1E;
+
+        color:
+            #FFFFFF;
+
+        box-shadow:
+            0 10px 30px
+            rgba(
+                0,
+                0,
+                0,
+                .45
+            );
+    }
+
+
+    .terminal-history-title {
+
+        margin-bottom:
+            10px;
+
+        font-size:
+            14px;
+
+        font-family:
+            "Segoe UI",
+            sans-serif;
+
+        font-weight:
+            600;
+    }
+
+
+    .terminal-history-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            36px;
+
+        padding:
+            0 8px;
+
+        margin-bottom:
+            3px;
+
+        border-radius:
+            5px;
+
+        color:
+            #DADADA;
+
+        font-family:
+            "Cascadia Mono",
+            "Consolas",
+            monospace;
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Settings Menu
+       ====================================================== */
+
+    .terminal-menu {
+
+        top:
+            45px;
+
+        left:
+            230px;
+
+        width:
+            230px;
+
+        border-color:
+            #444444;
+
+        background:
+            #222222;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .terminal-menu .windows-menu-item {
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Connection Lost
+       ====================================================== */
+
+    .connection-banner {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            48px;
+
+        padding:
+            8px
+            14px;
+
+        gap:
+            10px;
+
+        background:
+            #5A1E1E;
+
+        color:
+            #FFFFFF;
+
+        font-family:
+            "Segoe UI",
+            sans-serif;
+    }
+
+
+    .connection-banner-content {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 1366px
+    ) {
+
+        .terminal-window {
+
+            top:
+                3%;
+
+            left:
+                4%;
+
+            width:
+                92vw;
+
+            height:
+                88vh;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block desktop_content %}
+
+<section
+    class="
+        windows-window
+        terminal-window
+    "
+    data-class="section"
+    data-semantic="terminal_window"
+>
+
+    <!-- ====================================================
+         Tab / Title Bar
+         ==================================================== -->
+
+    <header
+        class="terminal-titlebar"
+        data-class="app_bar"
+        data-semantic="terminal_titlebar"
+    >
+
+        <div
+            class="terminal-tabs"
+        >
+
+            {% for tab in terminal["tabs"] %}
+
+            <button
+                class="
+                    terminal-tab
+
+                    {% if tab["active"] %}
+                    active
+                    {% endif %}
+                "
+                data-class="tab"
+                data-semantic="terminal_tab_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    style="
+                        font-size: 16px;
+                    "
+                >
+                    {{ tab["icon"] }}
+                </span>
+
+
+                <span
+                    class="terminal-tab-title"
+                    data-class="text"
+                >
+                    {{ tab["label"] }}
+                </span>
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    style="
+                        font-size: 14px;
+                    "
+                >
+                    close
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+
+        <div
+            class="terminal-title-actions"
+        >
+
+            <button
+                class="terminal-title-button"
+                data-class="button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    add
+                </span>
+
+            </button>
+
+
+            <button
+                class="terminal-title-button"
+                data-class="button"
+                data-semantic="terminal_dropdown_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    keyboard_arrow_down
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div
+            class="terminal-window-controls"
+        >
+
+            <button
+                class="terminal-window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    minimize
+                </span>
+            </button>
+
+
+            <button
+                class="terminal-window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    crop_square
+                </span>
+            </button>
+
+
+            <button
+                class="terminal-window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ====================================================
+         Body
+         ==================================================== -->
+
+    <div
+        class="terminal-body"
+    >
+
+
+        <!-- =================================================
+             Connection Lost
+             ================================================= -->
+
+        {% if terminal["state"] == "connection_lost" %}
+
+        <div
+            class="connection-banner"
+            data-class="toolbar"
+            data-semantic="terminal_connection_error"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="system_icon"
+            >
+                cloud_off
+            </span>
+
+
+            <div
+                class="connection-banner-content"
+            >
+
+                <div
+                    data-class="text"
+                    style="
+                        font-size: 12px;
+                        font-weight: 600;
+                    "
+                >
+                    Connection lost
+                </div>
+
+
+                <div
+                    data-class="system_text"
+                    style="
+                        margin-top: 2px;
+                        font-size: 10px;
+                        opacity: .85;
+                    "
+                >
+                    The remote host stopped responding.
+                </div>
+
+            </div>
+
+
+            <button
+                class="windows-button"
+                data-class="button"
+                style="
+                    background: #FFFFFF;
+                    color: #202020;
+                "
+            >
+                Reconnect
+            </button>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- =================================================
+             Split Pane
+             ================================================= -->
+
+        {% if terminal["state"] == "split_pane" %}
+
+        <div
+            class="terminal-split"
+            data-class="section"
+            data-semantic="terminal_split_panes"
+        >
+
+            <section
+                class="terminal-pane"
+                data-class="section"
+                data-semantic="terminal_left_pane"
+            >
+
+                <span
+                    class="terminal-pane-label"
+                    data-class="system_text"
+                >
+                    {{ terminal["split"]["left_profile"]["label"] }}
+                </span>
+
+
+                {% set left_profile =
+                    terminal["split"]["left_profile"]
+                %}
+
+
+                <div
+                    class="
+                        terminal-line
+                        prompt
+                    "
+                    data-class="system_text"
+                >
+                    {{ left_profile["prompt"] }}
+                    dir
+                </div>
+
+
+                <div
+                    class="
+                        terminal-line
+                        output
+                    "
+                    data-class="system_text"
+                >
+                    Desktop
+                </div>
+
+                <div
+                    class="
+                        terminal-line
+                        output
+                    "
+                    data-class="system_text"
+                >
+                    Documents
+                </div>
+
+                <div
+                    class="
+                        terminal-line
+                        output
+                    "
+                    data-class="system_text"
+                >
+                    Downloads
+                </div>
+
+
+                <div
+                    class="
+                        terminal-line
+                        prompt
+                    "
+                    data-class="system_text"
+                >
+                    {{ left_profile["prompt"] }}
+
+                    <span
+                        class="terminal-cursor"
+                    >
+                    </span>
+                </div>
+
+            </section>
+
+
+            <section
+                class="terminal-pane"
+                data-class="section"
+                data-semantic="terminal_right_pane"
+            >
+
+                <span
+                    class="terminal-pane-label"
+                    data-class="system_text"
+                >
+                    {{ terminal["split"]["right_profile"]["label"] }}
+                </span>
+
+
+                {% set right_profile =
+                    terminal["split"]["right_profile"]
+                %}
+
+
+                <div
+                    class="
+                        terminal-line
+                        prompt
+                    "
+                    data-class="system_text"
+                >
+                    {{ right_profile["prompt"] }}
+                    python --version
+                </div>
+
+
+                <div
+                    class="
+                        terminal-line
+                        output
+                    "
+                    data-class="system_text"
+                >
+                    Python 3.12.4
+                </div>
+
+
+                <div
+                    class="
+                        terminal-line
+                        prompt
+                    "
+                    data-class="system_text"
+                >
+                    {{ right_profile["prompt"] }}
+
+                    <span
+                        class="terminal-cursor"
+                    >
+                    </span>
+                </div>
+
+            </section>
+
+        </div>
+
+
+        <!-- =================================================
+             Standard Terminal
+             ================================================= -->
+
+        {% else %}
+
+        <div
+            class="terminal-content"
+            data-semantic="terminal_content"
+        >
+
+            {% for line in terminal["lines"] %}
+
+            <div
+                class="
+                    terminal-line
+                    {{ line["type"] }}
+                "
+                data-class="system_text"
+                data-semantic="terminal_line_{{ loop.index }}"
+            >
+                {{ line["text"] }}
+            </div>
+
+            {% endfor %}
+
+
+            {% if terminal["state"] == "command_running" %}
+
+            <div
+                class="terminal-progress-area"
+            >
+
+                <div
+                    class="terminal-progress-bar"
+                    data-class="progress_bar"
+                    data-semantic="terminal_command_progress"
+                >
+
+                    <div
+                        class="terminal-progress-fill"
+                        style="
+                            width:
+                            {{ terminal['progress'] }}%;
+                        "
+                    >
+                    </div>
+
+                </div>
+
+
+                <div
+                    data-class="system_text"
+                    style="
+                        margin-top: 6px;
+                        color: #CFCFCF;
+                    "
+                >
+                    Epoch progress:
+                    {{ terminal["progress"] }}%
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+            {% if terminal["state"] not in [
+                "command_error",
+                "connection_lost"
+            ] %}
+
+            <span
+                class="terminal-cursor"
+                data-class="selection_indicator"
+                data-semantic="terminal_cursor"
+            >
+            </span>
+
+            {% endif %}
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- =================================================
+             Search
+             ================================================= -->
+
+        {% if terminal["state"] == "search" %}
+
+        <div
+            class="terminal-search"
+            data-class="search_bar"
+            data-semantic="terminal_search"
+            data-occluder="true"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                search
+            </span>
+
+
+            <input
+                readonly
+                value="{{ terminal['search_query'] }}"
+                data-class="input_field"
+            >
+
+
+            <span
+                data-class="system_text"
+                style="
+                    font-size: 10px;
+                    color: #BBBBBB;
+                "
+            >
+                1 / 4
+            </span>
+
+
+            <button
+                class="terminal-title-button"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    keyboard_arrow_up
+                </span>
+            </button>
+
+
+            <button
+                class="terminal-title-button"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    keyboard_arrow_down
+                </span>
+            </button>
+
+
+            <button
+                class="terminal-title-button"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- =================================================
+             History
+             ================================================= -->
+
+        {% if terminal["state"] == "history" %}
+
+        <aside
+            class="terminal-history-panel"
+            data-class="dialog"
+            data-semantic="terminal_history"
+            data-occluder="true"
+        >
+
+            <div
+                class="terminal-history-title"
+                data-class="text"
+            >
+                Command history
+            </div>
+
+
+            {% for command in terminal["history"] %}
+
+            <button
+                class="terminal-history-item"
+                data-class="list_item"
+                data-semantic="history_command_{{ loop.index }}"
+            >
+                {{ command }}
+            </button>
+
+            {% endfor %}
+
+        </aside>
+
+        {% endif %}
+
+
+        <!-- =================================================
+             Settings Menu
+             ================================================= -->
+
+        {% if terminal["state"] == "settings_menu" %}
+
+        <div
+            class="
+                windows-popup
+                terminal-menu
+            "
+            data-class="dialog"
+            data-semantic="terminal_settings_menu"
+            data-occluder="true"
+        >
+
+            {% for item in terminal["settings_menu"] %}
+
+            <button
+                class="windows-menu-item"
+                data-class="button"
+                data-semantic="terminal_menu_item_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    {{ item["icon"] }}
+                </span>
+
+
+                <span
+                    data-class="text"
+                >
+                    {{ item["label"] }}
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+{% endblock %}

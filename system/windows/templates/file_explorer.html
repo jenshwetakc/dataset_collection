@@ -1,0 +1,2071 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+File Explorer
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Window Position
+       ====================================================== */
+
+    .explorer-window {
+
+        top:
+            6%;
+
+        left:
+            8%;
+
+        width:
+            min(
+                1180px,
+                84vw
+            );
+
+        height:
+            min(
+                760px,
+                82vh
+            );
+    }
+
+
+    /* ======================================================
+       Main Layout
+       ====================================================== */
+
+    .explorer-shell {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .explorer-body {
+
+        display:
+            flex;
+
+        flex:
+            1 1 auto;
+
+        min-height:
+            0;
+    }
+
+
+    /* ======================================================
+       Command Bar
+       ====================================================== */
+
+    .explorer-command-bar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            46px;
+
+        padding:
+            0 10px;
+
+        gap:
+            4px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .command-divider {
+
+        width:
+            1px;
+
+        height:
+            22px;
+
+        margin:
+            0 4px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    /* ======================================================
+       Navigation / Address Row
+       ====================================================== */
+
+    .explorer-navigation-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(
+                220px,
+                1fr
+            )
+            minmax(
+                180px,
+                280px
+            );
+
+        align-items:
+            center;
+
+        min-height:
+            46px;
+
+        padding:
+            5px 10px;
+
+        gap:
+            8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .explorer-nav-buttons {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+    }
+
+
+    .explorer-address {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        height:
+            34px;
+
+        padding:
+            0 9px;
+
+        gap:
+            4px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            5px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .breadcrumb {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        gap:
+            2px;
+    }
+
+
+    .breadcrumb-part {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        height:
+            26px;
+
+        padding:
+            0 5px;
+
+        border-radius:
+            4px;
+
+        font-size:
+            12px;
+    }
+
+
+    .explorer-search {
+
+        height:
+            34px;
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .explorer-sidebar {
+
+        flex:
+            0 0
+            var(--windows-navigation-width);
+
+        width:
+            var(--windows-navigation-width);
+
+        min-width:
+            180px;
+
+        padding:
+            8px;
+
+        overflow-y:
+            auto;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .explorer-sidebar-heading {
+
+        padding:
+            10px
+            8px
+            5px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            650;
+    }
+
+
+    .explorer-sidebar-item {
+
+        min-height:
+            34px;
+
+        font-size:
+            12px;
+    }
+
+
+    /* ======================================================
+       Content
+       ====================================================== */
+
+    .explorer-content {
+
+        position:
+            relative;
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        padding:
+            16px;
+
+        overflow:
+            auto;
+
+        background:
+            var(--windows-window-bg);
+    }
+
+
+    .explorer-heading {
+
+        margin-bottom:
+            14px;
+
+        font-size:
+            18px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Grid View
+       ====================================================== */
+
+    .explorer-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(
+                    120px,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+    }
+
+
+    .explorer-grid-item {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            0;
+
+        height:
+            112px;
+
+        padding:
+            10px;
+
+        gap:
+            8px;
+
+        border-radius:
+            6px;
+    }
+
+
+    .explorer-grid-item.selected {
+
+        background:
+            var(--windows-selected-bg);
+    }
+
+
+    .explorer-grid-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            48px;
+
+        height:
+            48px;
+
+        color:
+            var(--icon);
+    }
+
+
+    .explorer-grid-name {
+
+        max-width:
+            100%;
+
+        overflow:
+            hidden;
+
+        text-align:
+            center;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+
+        font-size:
+            12px;
+    }
+
+
+    /* ======================================================
+       Details View
+       ====================================================== */
+
+    .details-table {
+
+        width:
+            100%;
+
+        border-collapse:
+            collapse;
+
+        table-layout:
+            fixed;
+
+        font-size:
+            12px;
+    }
+
+
+    .details-table th {
+
+        height:
+            32px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-secondary);
+
+        text-align:
+            left;
+
+        font-weight:
+            500;
+    }
+
+
+    .details-table td {
+
+        height:
+            38px;
+
+        padding:
+            0 8px;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .details-row {
+
+        border-radius:
+            5px;
+    }
+
+
+    .details-row.selected {
+
+        background:
+            var(--windows-selected-bg);
+    }
+
+
+    .details-name-cell {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        height:
+            38px;
+
+        gap:
+            8px;
+    }
+
+
+    .details-icon {
+
+        flex:
+            0 0 auto;
+
+        width:
+            22px;
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Rename
+       ====================================================== */
+
+    .rename-input {
+
+        width:
+            min(
+                240px,
+                100%
+            );
+
+        height:
+            26px;
+
+        padding:
+            0 5px;
+
+        border:
+            2px solid
+            var(--primary);
+
+        border-radius:
+            3px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Empty
+       ====================================================== */
+
+    .explorer-empty {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        height:
+            100%;
+
+        min-height:
+            300px;
+
+        gap:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .empty-icon {
+
+        font-size:
+            54px;
+    }
+
+
+    /* ======================================================
+       Status Bar
+       ====================================================== */
+
+    .explorer-status-bar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            30px;
+
+        padding:
+            0 12px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Context Menu
+       ====================================================== */
+
+    .explorer-context-menu {
+
+        top:
+            42%;
+
+        left:
+            52%;
+
+        width:
+            240px;
+    }
+
+
+    /* ======================================================
+       Copy Dialog
+       ====================================================== */
+
+    .copy-dialog {
+
+        width:
+            470px;
+
+        padding:
+            22px;
+    }
+
+
+    .copy-title {
+
+        margin-bottom:
+            8px;
+
+        font-size:
+            18px;
+
+        font-weight:
+            600;
+    }
+
+
+    .copy-description {
+
+        margin-bottom:
+            18px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .copy-progress-track {
+
+        width:
+            100%;
+
+        height:
+            6px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .copy-progress-value {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    .copy-details {
+
+        display:
+            flex;
+
+        justify-content:
+            space-between;
+
+        margin-top:
+            10px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .dialog-buttons {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        margin-top:
+            22px;
+
+        gap:
+            8px;
+    }
+
+
+    /* ======================================================
+       Properties Dialog
+       ====================================================== */
+
+    .properties-dialog {
+
+        width:
+            440px;
+    }
+
+
+    .properties-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        padding:
+            20px;
+
+        gap:
+            14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .properties-file-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            48px;
+
+        height:
+            48px;
+
+        font-size:
+            38px;
+
+        color:
+            var(--icon);
+    }
+
+
+    .properties-body {
+
+        padding:
+            18px 20px;
+    }
+
+
+    .property-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            105px
+            1fr;
+
+        min-height:
+            30px;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        font-size:
+            12px;
+    }
+
+
+    .property-label {
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .property-divider {
+
+        height:
+            1px;
+
+        margin:
+            10px 0;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .properties-options {
+
+        display:
+            flex;
+
+        gap:
+            18px;
+
+        margin-top:
+            10px;
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 1366px
+    ) {
+
+        .explorer-window {
+
+            top:
+                3%;
+
+            left:
+                4%;
+
+            width:
+                92vw;
+
+            height:
+                88vh;
+        }
+
+
+        .explorer-navigation-row {
+
+            grid-template-columns:
+                auto
+                1fr
+                220px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block desktop_content %}
+
+
+<!-- ========================================================
+     File Explorer Window
+     ======================================================== -->
+
+<section
+    class="
+        windows-window
+        explorer-window
+
+        {% if file_explorer.window_mode == "maximized" %}
+        maximized
+        {% endif %}
+    "
+    data-class="section"
+    data-semantic="file_explorer_window"
+
+    {% if file_explorer.state == "properties_dialog" %}
+    data-annotation-skip="true"
+    {% endif %}
+>
+
+
+    <!-- ====================================================
+         Title Bar
+         ==================================================== -->
+
+    <header
+        class="windows-titlebar"
+        data-class="app_bar"
+        data-semantic="file_explorer_titlebar"
+    >
+
+        <div
+            class="windows-titlebar-left"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    windows-titlebar-app-icon
+                "
+                data-class="icon"
+                data-semantic="explorer_app_icon"
+            >
+                folder
+            </span>
+
+
+            <span
+                class="windows-title"
+                data-class="text"
+                data-semantic="explorer_window_title"
+            >
+                File Explorer
+            </span>
+
+        </div>
+
+
+        <div
+            class="windows-window-controls"
+        >
+
+            <button
+                class="window-control"
+                data-class="button"
+                data-semantic="window_minimize"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    minimize
+                </span>
+            </button>
+
+
+            <button
+                class="window-control"
+                data-class="button"
+                data-semantic="window_maximize"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    crop_square
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    window-control
+                    close
+                "
+                data-class="button"
+                data-semantic="window_close"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <div
+        class="
+            windows-window-body
+            explorer-shell
+        "
+    >
+
+
+        <!-- =================================================
+             Command Bar
+             ================================================= -->
+
+        <div
+            class="explorer-command-bar"
+            data-class="toolbar"
+            data-semantic="explorer_command_bar"
+        >
+
+            {% for command in [
+                ["add", "New"],
+                ["content_cut", "Cut"],
+                ["content_copy", "Copy"],
+                ["content_paste", "Paste"],
+                ["edit", "Rename"],
+                ["share", "Share"],
+                ["delete", "Delete"]
+            ] %}
+
+            <button
+                class="toolbar-button"
+                data-class="button"
+                data-semantic="command_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    {{ command[0] }}
+                </span>
+
+                {% if loop.index == 1 %}
+
+                <span
+                    data-class="text"
+                >
+                    {{ command[1] }}
+                </span>
+
+                {% endif %}
+
+            </button>
+
+            {% if loop.index in [1, 4] %}
+
+            <span
+                class="command-divider"
+            >
+            </span>
+
+            {% endif %}
+
+            {% endfor %}
+
+
+            <div
+                style="
+                    margin-left: auto;
+                    display: flex;
+                    gap: 4px;
+                "
+            >
+
+                <button
+                    class="toolbar-button"
+                    data-class="button"
+                    data-semantic="sort_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        sort
+                    </span>
+
+                    <span
+                        data-class="text"
+                    >
+                        Sort
+                    </span>
+                </button>
+
+
+                <button
+                    class="toolbar-button"
+                    data-class="button"
+                    data-semantic="view_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        view_module
+                    </span>
+
+                    <span
+                        data-class="text"
+                    >
+                        View
+                    </span>
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             Address / Search
+             ================================================= -->
+
+        <div
+            class="explorer-navigation-row"
+            data-class="toolbar"
+            data-semantic="explorer_navigation_bar"
+        >
+
+            <div
+                class="explorer-nav-buttons"
+            >
+
+                {% for icon in [
+                    "arrow_back",
+                    "arrow_forward",
+                    "arrow_upward",
+                    "refresh"
+                ] %}
+
+                <button
+                    class="windows-icon-button"
+                    data-class="button"
+                    data-semantic="navigation_button_{{ loop.index }}"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {{ icon }}
+                    </span>
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+
+            <div
+                class="explorer-address"
+                data-class="input_field"
+                data-semantic="explorer_address_bar"
+            >
+
+                <div
+                    class="breadcrumb"
+                >
+
+                    {% for part in file_explorer.breadcrumbs %}
+
+                    <button
+                        class="breadcrumb-part"
+                        data-class="button"
+                        data-semantic="breadcrumb_{{ loop.index }}"
+                    >
+                        <span
+                            data-class="text"
+                        >
+                            {{ part["name"] }}
+                        </span>
+                    </button>
+
+
+                    {% if not loop.last %}
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        chevron_right
+                    </span>
+
+                    {% endif %}
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="
+                    windows-search-bar
+                    explorer-search
+                "
+                data-class="search_bar"
+                data-semantic="explorer_search"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    search
+                </span>
+
+
+                <input
+                    readonly
+                    value="{{ file_explorer.search.query }}"
+                    placeholder="Search {{ file_explorer.location['name'] }}"
+                    data-class="input_field"
+                    data-semantic="explorer_search_input"
+                >
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             Explorer Body
+             ================================================= -->
+
+        <div
+            class="explorer-body"
+        >
+
+
+            <!-- =============================================
+                 Sidebar
+                 ============================================= -->
+
+            <aside
+                class="explorer-sidebar"
+                data-class="section"
+                data-semantic="explorer_sidebar"
+            >
+
+                <div
+                    class="explorer-sidebar-heading"
+                    data-class="text"
+                >
+                    Quick access
+                </div>
+
+
+                {% for item in file_explorer.sidebar["quick_access"] %}
+
+                <button
+                    class="
+                        windows-list-item
+                        explorer-sidebar-item
+                    "
+                    data-class="navigation_item"
+                    data-semantic="quick_access_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {{ item["icon"] }}
+                    </span>
+
+                    <span
+                        class="truncate"
+                        data-class="text"
+                    >
+                        {{ item["name"] }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+
+                <div
+                    class="explorer-sidebar-heading"
+                    data-class="text"
+                >
+                    This PC
+                </div>
+
+
+                {% for item in file_explorer.sidebar["locations"] %}
+
+                <button
+                    class="
+                        windows-list-item
+                        explorer-sidebar-item
+
+                        {% if
+                            item['name']
+                            ==
+                            file_explorer.location['name']
+                        %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="navigation_item"
+                    data-semantic="location_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {{ item["icon"] }}
+                    </span>
+
+                    <span
+                        class="truncate"
+                        data-class="text"
+                    >
+                        {{ item["name"] }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </aside>
+
+
+            <!-- =============================================
+                 Main Content
+                 ============================================= -->
+
+            <section
+                class="explorer-content"
+                data-class="section"
+                data-semantic="explorer_content"
+            >
+
+                <h2
+                    class="explorer-heading"
+                    data-class="text"
+                    data-semantic="explorer_location_title"
+                >
+                    {% if file_explorer.state == "search_results" %}
+                        Search results for
+                        "{{ file_explorer.search.query }}"
+                    {% else %}
+                        {{ file_explorer.location["name"] }}
+                    {% endif %}
+                </h2>
+
+
+                <!-- =========================================
+                     Empty Folder
+                     ========================================= -->
+
+                {% if file_explorer.state == "empty_folder" %}
+
+                <div
+                    class="explorer-empty"
+                    data-semantic="empty_folder_state"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            empty-icon
+                        "
+                        data-class="icon"
+                        data-semantic="empty_folder_icon"
+                    >
+                        folder_open
+                    </span>
+
+                    <div
+                        data-class="text"
+                        data-semantic="empty_folder_text"
+                    >
+                        This folder is empty
+                    </div>
+
+                </div>
+
+
+                <!-- =========================================
+                     Details
+                     ========================================= -->
+
+                {% elif file_explorer.view_mode == "details" %}
+
+                <table
+                    class="details-table"
+                >
+
+                    <thead>
+
+                    <tr>
+
+                        <th
+                            style="width: 40%;"
+                            data-class="text"
+                        >
+                            Name
+                        </th>
+
+                        <th
+                            style="width: 24%;"
+                            data-class="text"
+                        >
+                            Date modified
+                        </th>
+
+                        <th
+                            style="width: 24%;"
+                            data-class="text"
+                        >
+                            Type
+                        </th>
+
+                        <th
+                            style="width: 12%;"
+                            data-class="text"
+                        >
+                            Size
+                        </th>
+
+                    </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                    {% for item in file_explorer["items"] %}
+
+                    <tr
+                        class="
+                            details-row
+                            {% if item['selected'] %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="list_item"
+                        data-semantic="file_row_{{ loop.index }}"
+                    >
+
+                        <td>
+
+                            <div
+                                class="details-name-cell"
+                            >
+
+                                <span
+                                    class="
+                                        material-symbols-rounded
+                                        details-icon
+                                    "
+                                    data-class="icon"
+                                    data-semantic="file_icon_{{ loop.index }}"
+                                >
+                                    {{ item["icon"] }}
+                                </span>
+
+
+                                {% if item["renaming"] %}
+
+                                <input
+                                    class="rename-input"
+                                    value="{{ item['name'] }}"
+                                    readonly
+                                    data-class="input_field"
+                                    data-semantic="rename_input"
+                                >
+
+                                {% else %}
+
+                                <span
+                                    class="truncate"
+                                    data-class="text"
+                                    data-semantic="file_name_{{ loop.index }}"
+                                >
+                                    {{ item["name"] }}
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+                        </td>
+
+
+                        <td
+                            data-class="timestamp"
+                            data-semantic="file_modified_{{ loop.index }}"
+                        >
+                            {{ item["modified"] }}
+                        </td>
+
+
+                        <td
+                            data-class="text"
+                        >
+                            {{ item["type"] }}
+                        </td>
+
+
+                        <td
+                            data-class="text"
+                        >
+                            {{ item["size"] }}
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+
+                <!-- =========================================
+                     Grid
+                     ========================================= -->
+
+                {% else %}
+
+                <div
+                    class="explorer-grid"
+                >
+
+                    {% for item in file_explorer["items"] %}
+
+                    <button
+                        class="
+                            explorer-grid-item
+
+                            {% if item['selected'] %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="file_grid_item_{{ loop.index }}"
+                    >
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                explorer-grid-icon
+                            "
+                            data-class="icon"
+                            data-semantic="grid_file_icon_{{ loop.index }}"
+                        >
+                            {{ item["icon"] }}
+                        </span>
+
+
+                        <span
+                            class="explorer-grid-name"
+                            data-class="text"
+                            data-semantic="grid_file_name_{{ loop.index }}"
+                        >
+                            {{ item["name"] }}
+                        </span>
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+            </section>
+
+        </div>
+
+
+        <!-- =================================================
+             Status Bar
+             ================================================= -->
+
+        <footer
+            class="explorer-status-bar"
+            data-class="toolbar"
+            data-semantic="explorer_status_bar"
+        >
+
+            <span
+                data-class="system_text"
+            >
+                {{ file_explorer["items"] | length }}
+                items
+            </span>
+
+
+            {% if file_explorer.state == "multi_select" %}
+
+            <span
+                data-class="system_text"
+            >
+                {{ file_explorer.selected_indices | length }}
+                items selected
+            </span>
+
+            {% endif %}
+
+        </footer>
+
+    </div>
+
+</section>
+
+{% endblock %}
+
+
+{% block overlay_content %}
+
+
+<!-- ========================================================
+     File Context Menu
+     ======================================================== -->
+
+{% if file_explorer.state == "context_menu" %}
+
+<div
+    class="
+        windows-popup
+        explorer-context-menu
+    "
+    data-class="dialog"
+    data-semantic="file_context_menu"
+    data-occluder="true"
+>
+
+    {% for item in file_explorer.context_menu %}
+
+        {% if item["divider"] is defined
+              and item["divider"] %}
+
+        <div
+            class="windows-menu-divider"
+        >
+        </div>
+
+        {% else %}
+
+        <button
+            class="windows-menu-item"
+            data-class="button"
+            data-semantic="file_context_action_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                {{ item["icon"] }}
+            </span>
+
+            <span
+                data-class="text"
+            >
+                {{ item["label"] }}
+            </span>
+
+        </button>
+
+        {% endif %}
+
+    {% endfor %}
+
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block modal_content %}
+
+
+<!-- ========================================================
+     Copy Progress
+     ======================================================== -->
+
+{% if
+    file_explorer.state == "copy_progress"
+    and file_explorer.copy_progress
+%}
+
+<div
+    class="windows-modal-layer"
+>
+
+    <section
+        class="
+            windows-dialog
+            copy-dialog
+        "
+        data-class="dialog"
+        data-semantic="copy_progress_dialog"
+        data-occluder="true"
+    >
+
+        <div
+            class="copy-title"
+            data-class="text"
+        >
+            Copying
+            {{ file_explorer.copy_progress["total_items"] }}
+            items
+        </div>
+
+
+        <div
+            class="copy-description"
+            data-class="text"
+        >
+            From
+            {{ file_explorer.copy_progress["source"] }}
+            to
+            {{ file_explorer.copy_progress["destination"] }}
+        </div>
+
+
+        <div
+            class="copy-progress-track"
+            data-class="progress_bar"
+            data-semantic="copy_progress"
+        >
+
+            <div
+                class="copy-progress-value"
+                style="
+                    width:
+                    {{ file_explorer.copy_progress['progress'] }}%;
+                "
+            >
+            </div>
+
+        </div>
+
+
+        <div
+            class="copy-details"
+        >
+
+            <span
+                data-class="system_text"
+            >
+                {{ file_explorer.copy_progress["progress"] }}%
+            </span>
+
+            <span
+                data-class="system_text"
+            >
+                {{ file_explorer.copy_progress["speed"] }}
+            </span>
+
+        </div>
+
+
+        <div
+            class="dialog-buttons"
+        >
+
+            <button
+                class="windows-button"
+                data-class="button"
+                data-semantic="copy_pause"
+            >
+                Pause
+            </button>
+
+            <button
+                class="windows-button"
+                data-class="button"
+                data-semantic="copy_cancel"
+            >
+                Cancel
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endif %}
+
+
+<!-- ========================================================
+     Properties Dialog
+     ======================================================== -->
+
+{% if
+    file_explorer.state == "properties_dialog"
+    and file_explorer.properties
+%}
+
+<div
+    class="windows-modal-layer"
+>
+
+    <div
+        class="windows-modal-backdrop"
+        data-annotation-skip="true"
+    >
+    </div>
+
+
+    <section
+        class="
+            windows-dialog
+            properties-dialog
+        "
+        data-class="dialog"
+        data-semantic="file_properties_dialog"
+        data-occluder="true"
+    >
+
+        <div
+            class="properties-header"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    properties-file-icon
+                "
+                data-class="icon"
+            >
+                {{ file_explorer.properties["icon"] }}
+            </span>
+
+
+            <div>
+
+                <div
+                    data-class="text"
+                    style="
+                        font-size: 16px;
+                        font-weight: 600;
+                    "
+                >
+                    {{ file_explorer.properties["name"] }}
+                </div>
+
+                <div
+                    data-class="text"
+                    style="
+                        margin-top: 4px;
+                        font-size: 11px;
+                        color: var(--text-secondary);
+                    "
+                >
+                    Properties
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="properties-body"
+        >
+
+            {% for row in [
+                ["Type of file", file_explorer.properties["type"]],
+                ["Location", file_explorer.properties["location"]],
+                ["Size", file_explorer.properties["size"]],
+                ["Created", file_explorer.properties["created"]],
+                ["Modified", file_explorer.properties["modified"]]
+            ] %}
+
+            <div
+                class="property-row"
+            >
+
+                <span
+                    class="property-label"
+                    data-class="text"
+                >
+                    {{ row[0] }}
+                </span>
+
+                <span
+                    class="truncate"
+                    data-class="text"
+                >
+                    {{ row[1] }}
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+
+            <div
+                class="property-divider"
+            >
+            </div>
+
+
+            <div
+                class="properties-options"
+            >
+
+                <label
+                    style="
+                        display: flex;
+                        gap: 6px;
+                        align-items: center;
+                    "
+                >
+
+                    <input
+                        type="checkbox"
+                        {% if file_explorer.properties["read_only"] %}
+                        checked
+                        {% endif %}
+                        data-class="checkbox"
+                        data-semantic="read_only_checkbox"
+                    >
+
+                    <span
+                        data-class="text"
+                    >
+                        Read-only
+                    </span>
+
+                </label>
+
+
+                <label
+                    style="
+                        display: flex;
+                        gap: 6px;
+                        align-items: center;
+                    "
+                >
+
+                    <input
+                        type="checkbox"
+                        {% if file_explorer.properties["hidden"] %}
+                        checked
+                        {% endif %}
+                        data-class="checkbox"
+                        data-semantic="hidden_checkbox"
+                    >
+
+                    <span
+                        data-class="text"
+                    >
+                        Hidden
+                    </span>
+
+                </label>
+
+            </div>
+
+
+            <div
+                class="dialog-buttons"
+            >
+
+                <button
+                    class="
+                        windows-button
+                        primary
+                    "
+                    data-class="button"
+                    data-semantic="properties_ok"
+                >
+                    OK
+                </button>
+
+
+                <button
+                    class="windows-button"
+                    data-class="button"
+                    data-semantic="properties_cancel"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="windows-button"
+                    data-class="button"
+                    data-semantic="properties_apply"
+                >
+                    Apply
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

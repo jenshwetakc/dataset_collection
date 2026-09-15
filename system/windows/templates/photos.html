@@ -1,0 +1,2455 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Photos
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Window
+       ====================================================== */
+
+    .photos-window {
+
+        top:
+            4%;
+
+        left:
+            6%;
+
+        width:
+            min(
+                1320px,
+                90vw
+            );
+
+        height:
+            min(
+                840px,
+                88vh
+            );
+    }
+
+
+    /* ======================================================
+       Shell
+       ====================================================== */
+
+    .photos-shell {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            210px
+            minmax(
+                0,
+                1fr
+            );
+
+        height:
+            100%;
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .photos-sidebar {
+
+        padding:
+            12px
+            10px;
+
+        overflow-y:
+            auto;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .photos-brand {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            48px;
+
+        padding:
+            0
+            10px;
+
+        gap:
+            9px;
+
+        font-size:
+            15px;
+
+        font-weight:
+            650;
+    }
+
+
+    .photos-nav {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        margin-top:
+            8px;
+
+        gap:
+            3px;
+    }
+
+
+    .photos-nav-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            42px;
+
+        padding:
+            0
+            10px;
+
+        gap:
+            10px;
+
+        border-radius:
+            6px;
+
+        font-size:
+            12px;
+    }
+
+
+    .photos-nav-item.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .photos-content {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       Top Toolbar
+       ====================================================== */
+
+    .photos-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            56px;
+
+        padding:
+            8px
+            16px;
+
+        gap:
+            8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .photos-search {
+
+        flex:
+            1;
+
+        max-width:
+            520px;
+
+        margin-right:
+            auto;
+    }
+
+
+    /* ======================================================
+       Content Scroll
+       ====================================================== */
+
+    .photos-scroll {
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow-y:
+            auto;
+
+        padding:
+            20px;
+    }
+
+
+    .photos-heading {
+
+        font-size:
+            24px;
+
+        font-weight:
+            600;
+    }
+
+
+    .photos-subheading {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    /* ======================================================
+       Photo Grid
+       ====================================================== */
+
+    .photo-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(
+                    155px,
+                    1fr
+                )
+            );
+
+        gap:
+            8px;
+
+        margin-top:
+            18px;
+    }
+
+
+    .photo-item {
+
+        position:
+            relative;
+
+        aspect-ratio:
+            1;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .photo-item.selected {
+
+        outline:
+            3px solid
+            var(--primary);
+
+        outline-offset:
+            -3px;
+    }
+
+
+    .photo-image {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .photo-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        background:
+            linear-gradient(
+                135deg,
+                var(--primary-container),
+                var(--surface-variant)
+            );
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .photo-overlay {
+
+        position:
+            absolute;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        display:
+            flex;
+
+        justify-content:
+            space-between;
+
+        align-items:
+            flex-end;
+
+        min-height:
+            45px;
+
+        padding:
+            8px;
+
+        background:
+            linear-gradient(
+                transparent,
+                rgba(
+                    0,
+                    0,
+                    0,
+                    .60
+                )
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .photo-favorite {
+
+        position:
+            absolute;
+
+        top:
+            6px;
+
+        right:
+            6px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                .48
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .photo-selection {
+
+        position:
+            absolute;
+
+        top:
+            6px;
+
+        left:
+            6px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Album Grid
+       ====================================================== */
+
+    .album-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(
+                    230px,
+                    1fr
+                )
+            );
+
+        gap:
+            14px;
+
+        margin-top:
+            18px;
+    }
+
+
+    .album-card {
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .album-cover {
+
+        height:
+            145px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .album-cover img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .album-info {
+
+        padding:
+            12px;
+    }
+
+
+    .album-title {
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .album-count {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Viewer
+       ====================================================== */
+
+    .photo-viewer {
+
+        position:
+            absolute;
+
+        inset:
+            var(--windows-titlebar-height)
+            0
+            0
+            0;
+
+        z-index:
+            200;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        background:
+            #111111;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .viewer-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            52px;
+
+        padding:
+            8px
+            12px;
+
+        gap:
+            6px;
+
+        background:
+            rgba(
+                22,
+                22,
+                22,
+                .96
+            );
+    }
+
+
+    .viewer-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        margin-left:
+            8px;
+
+        font-size:
+            12px;
+    }
+
+
+    .viewer-stage {
+
+        position:
+            relative;
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        overflow:
+            hidden;
+
+        background:
+            #080808;
+    }
+
+
+    .viewer-stage img {
+
+        max-width:
+            90%;
+
+        max-height:
+            88%;
+
+        object-fit:
+            contain;
+
+        box-shadow:
+            0 12px 40px
+            rgba(
+                0,
+                0,
+                0,
+                .45
+            );
+    }
+
+
+    .viewer-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            65%;
+
+        height:
+            65%;
+
+        background:
+            #222222;
+    }
+
+
+    .viewer-nav {
+
+        position:
+            absolute;
+
+        top:
+            50%;
+
+        transform:
+            translateY(-50%);
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            58px;
+
+        border-radius:
+            6px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                .44
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .viewer-nav.left {
+
+        left:
+            14px;
+    }
+
+
+    .viewer-nav.right {
+
+        right:
+            14px;
+    }
+
+
+    /* ======================================================
+       Edit
+       ====================================================== */
+
+    .edit-shell {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            )
+            300px;
+
+        height:
+            100%;
+    }
+
+
+    .edit-stage {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        overflow:
+            hidden;
+
+        background:
+            #111111;
+    }
+
+
+    .edit-stage img {
+
+        max-width:
+            88%;
+
+        max-height:
+            84%;
+
+        object-fit:
+            contain;
+    }
+
+
+    .edit-panel {
+
+        padding:
+            18px;
+
+        overflow-y:
+            auto;
+
+        border-left:
+            1px solid
+            #333333;
+
+        background:
+            #1B1B1B;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .edit-title {
+
+        font-size:
+            18px;
+
+        font-weight:
+            600;
+    }
+
+
+    .edit-control {
+
+        margin-top:
+            22px;
+    }
+
+
+    .edit-label {
+
+        display:
+            flex;
+
+        justify-content:
+            space-between;
+
+        margin-bottom:
+            8px;
+
+        font-size:
+            12px;
+    }
+
+
+    .edit-slider {
+
+        height:
+            6px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            #444444;
+    }
+
+
+    .edit-slider-fill {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Slideshow
+       ====================================================== */
+
+    .slideshow-overlay {
+
+        position:
+            absolute;
+
+        inset:
+            var(--windows-titlebar-height)
+            0
+            0;
+
+        z-index:
+            300;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        background:
+            #000000;
+    }
+
+
+    .slideshow-overlay img {
+
+        max-width:
+            100%;
+
+        max-height:
+            100%;
+
+        object-fit:
+            contain;
+    }
+
+
+    .slideshow-controls {
+
+        position:
+            absolute;
+
+        left:
+            50%;
+
+        bottom:
+            24px;
+
+        transform:
+            translateX(-50%);
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            8px
+            12px;
+
+        border-radius:
+            999px;
+
+        background:
+            rgba(
+                20,
+                20,
+                20,
+                .75
+            );
+    }
+
+
+    /* ======================================================
+       Empty
+       ====================================================== */
+
+    .photos-empty {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            440px;
+
+        text-align:
+            center;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .photos-empty-icon {
+
+        margin-bottom:
+            14px;
+
+        font-size:
+            58px;
+    }
+
+
+    /* ======================================================
+       Delete Dialog
+       ====================================================== */
+
+    .delete-photo-dialog {
+
+        width:
+            430px;
+
+        padding:
+            22px;
+    }
+
+
+    .delete-dialog-title {
+
+        font-size:
+            19px;
+
+        font-weight:
+            600;
+    }
+
+
+    .delete-dialog-text {
+
+        margin-top:
+            12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+    }
+
+
+    .delete-dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        margin-top:
+            22px;
+
+        gap:
+            8px;
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 1366px
+    ) {
+
+        .photos-window {
+
+            top:
+                2%;
+
+            left:
+                3%;
+
+            width:
+                94vw;
+
+            height:
+                91vh;
+        }
+
+
+        .photos-shell {
+
+            grid-template-columns:
+                185px
+                minmax(
+                    0,
+                    1fr
+                );
+        }
+
+
+        .edit-shell {
+
+            grid-template-columns:
+                minmax(
+                    0,
+                    1fr
+                )
+                260px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block desktop_content %}
+
+<section
+    class="
+        windows-window
+        photos-window
+    "
+    data-class="section"
+    data-semantic="photos_window"
+
+    {% if photos["state"] == "delete_dialog" %}
+    data-annotation-skip="true"
+    {% endif %}
+>
+
+    <!-- ====================================================
+         Title Bar
+         ==================================================== -->
+
+    <header
+        class="windows-titlebar"
+        data-class="app_bar"
+        data-semantic="photos_titlebar"
+    >
+
+        <div
+            class="windows-titlebar-left"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                photo_library
+            </span>
+
+
+            <span
+                class="windows-title"
+                data-class="text"
+            >
+                Photos
+            </span>
+
+        </div>
+
+
+        <div
+            class="windows-window-controls"
+        >
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    minimize
+                </span>
+            </button>
+
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    crop_square
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    window-control
+                    close
+                "
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ====================================================
+         Standard Library Shell
+         ==================================================== -->
+
+    {% if photos["state"] not in [
+        "photo_viewer",
+        "edit",
+        "slideshow"
+    ] %}
+
+    <div
+        class="
+            windows-window-body
+            photos-shell
+        "
+    >
+
+        <!-- =================================================
+             Sidebar
+             ================================================= -->
+
+        <aside
+            class="photos-sidebar"
+            data-class="section"
+            data-semantic="photos_sidebar"
+        >
+
+            <div
+                class="photos-brand"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="logo"
+                >
+                    photo_library
+                </span>
+
+                <span
+                    data-class="text"
+                >
+                    Photos
+                </span>
+
+            </div>
+
+
+            <nav
+                class="photos-nav"
+            >
+
+                {% for item in photos["navigation"] %}
+
+                {% set selected =
+                    (
+                        photos["state"]
+                        == item["id"]
+                    )
+                    or
+                    (
+                        photos["state"] in [
+                            "photo_selected",
+                            "multi_select",
+                            "search",
+                            "delete_dialog",
+                            "empty"
+                        ]
+                        and
+                        item["id"] == "gallery"
+                    )
+                    or
+                    (
+                        photos["state"] == "album"
+                        and
+                        item["id"] == "albums"
+                    )
+                %}
+
+                <button
+                    class="
+                        photos-nav-item
+
+                        {% if selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="navigation_item"
+                    data-semantic="photos_nav_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {{ item["icon"] }}
+                    </span>
+
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ item["label"] }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </nav>
+
+        </aside>
+
+
+        <!-- =================================================
+             Main
+             ================================================= -->
+
+        <main
+            class="photos-content"
+        >
+
+            <!-- =============================================
+                 Toolbar
+                 ============================================= -->
+
+            <div
+                class="photos-toolbar"
+                data-class="toolbar"
+                data-semantic="photos_toolbar"
+            >
+
+                {% if photos["state"] == "multi_select" %}
+
+                <span
+                    data-class="system_text"
+                    style="
+                        font-size: 13px;
+                        font-weight: 600;
+                    "
+                >
+                    {{ photos["selected_count"] }}
+                    selected
+                </span>
+
+
+                <button
+                    class="windows-icon-button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        share
+                    </span>
+                </button>
+
+
+                <button
+                    class="windows-icon-button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        delete
+                    </span>
+                </button>
+
+
+                <button
+                    class="windows-icon-button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        close
+                    </span>
+                </button>
+
+
+                {% else %}
+
+                <div
+                    class="
+                        windows-search-bar
+                        photos-search
+                    "
+                    data-class="search_bar"
+                    data-semantic="photos_search"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        search
+                    </span>
+
+
+                    <input
+                        readonly
+                        value="{{ photos['search_query'] }}"
+                        placeholder="Search photos"
+                        data-class="input_field"
+                    >
+
+                </div>
+
+
+                <button
+                    class="windows-button"
+                    data-class="button"
+                >
+                    Import
+                </button>
+
+
+                <button
+                    class="windows-icon-button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        more_horiz
+                    </span>
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- =============================================
+                 Scroll
+                 ============================================= -->
+
+            <div
+                class="photos-scroll"
+            >
+
+
+                <!-- =========================================
+                     Empty
+                     ========================================= -->
+
+                {% if photos["state"] == "empty" %}
+
+                <div
+                    class="photos-empty"
+                >
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            photos-empty-icon
+                        "
+                        data-class="icon"
+                    >
+                        photo_library
+                    </span>
+
+
+                    <div
+                        data-class="text"
+                        style="
+                            font-size: 17px;
+                            font-weight: 600;
+                        "
+                    >
+                        No photos yet
+                    </div>
+
+
+                    <div
+                        data-class="text"
+                        style="
+                            margin-top: 6px;
+                            font-size: 12px;
+                        "
+                    >
+                        Import photos or add a folder to get started.
+                    </div>
+
+
+                    <button
+                        class="
+                            windows-button
+                            primary
+                        "
+                        data-class="button"
+                        style="
+                            margin-top: 18px;
+                        "
+                    >
+                        Import photos
+                    </button>
+
+                </div>
+
+
+                <!-- =========================================
+                     Albums
+                     ========================================= -->
+
+                {% elif photos["state"] == "album" %}
+
+                <h1
+                    class="photos-heading"
+                    data-class="text"
+                >
+                    Albums
+                </h1>
+
+
+                <div
+                    class="photos-subheading"
+                    data-class="text"
+                >
+                    Your photo collections
+                </div>
+
+
+                <div
+                    class="album-grid"
+                >
+
+                    {% for album in photos["albums"] %}
+
+                    <article
+                        class="album-card"
+                        data-class="card"
+                        data-semantic="album_{{ loop.index }}"
+                    >
+
+                        <div
+                            class="album-cover"
+                        >
+
+                            {% if album["cover"] %}
+
+                            <img
+                                src="{{ album['cover'] }}"
+                                alt=""
+                                data-class="image"
+                            >
+
+                            {% else %}
+
+                            <div
+                                class="photo-placeholder"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    {{ album["icon"] }}
+                                </span>
+                            </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div
+                            class="album-info"
+                        >
+
+                            <div
+                                class="album-title"
+                                data-class="text"
+                            >
+                                {{ album["name"] }}
+                            </div>
+
+
+                            <div
+                                class="album-count"
+                                data-class="system_text"
+                            >
+                                {{ album["count"] }}
+                                items
+                            </div>
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- =========================================
+                     Search
+                     ========================================= -->
+
+                {% elif photos["state"] == "search" %}
+
+                <h1
+                    class="photos-heading"
+                    data-class="text"
+                >
+                    Search results
+                </h1>
+
+
+                <div
+                    class="photos-subheading"
+                    data-class="text"
+                >
+                    Results for
+                    "{{ photos["search_query"] }}"
+                </div>
+
+
+                <div
+                    class="photo-grid"
+                >
+
+                    {% for photo in photos["search_results"] %}
+
+                    <article
+                        class="photo-item"
+                        data-class="card"
+                    >
+
+                        {% if photo["src"] %}
+
+                        <img
+                            class="photo-image"
+                            src="{{ photo['src'] }}"
+                            alt=""
+                            data-class="image"
+                        >
+
+                        {% else %}
+
+                        <div
+                            class="photo-placeholder"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                image
+                            </span>
+                        </div>
+
+                        {% endif %}
+
+
+                        <div
+                            class="photo-overlay"
+                        >
+
+                            <span
+                                data-class="text"
+                                style="
+                                    font-size: 10px;
+                                "
+                            >
+                                {{ photo["name"] }}
+                            </span>
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- =========================================
+                     Favorites
+                     ========================================= -->
+
+                {% elif photos["state"] == "favorites" %}
+
+                <h1
+                    class="photos-heading"
+                    data-class="text"
+                >
+                    Favorites
+                </h1>
+
+
+                <div
+                    class="photo-grid"
+                >
+
+                    {% for photo in photos["favorites"] %}
+
+                    <article
+                        class="photo-item"
+                        data-class="card"
+                    >
+
+                        {% if photo["src"] %}
+
+                        <img
+                            class="photo-image"
+                            src="{{ photo['src'] }}"
+                            alt=""
+                            data-class="image"
+                        >
+
+                        {% else %}
+
+                        <div
+                            class="photo-placeholder"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                image
+                            </span>
+                        </div>
+
+                        {% endif %}
+
+
+                        <span
+                            class="photo-favorite"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                favorite
+                            </span>
+                        </span>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- =========================================
+                     Imports
+                     ========================================= -->
+
+                {% elif photos["state"] == "imports" %}
+
+                <h1
+                    class="photos-heading"
+                    data-class="text"
+                >
+                    Imports
+                </h1>
+
+
+                <div
+                    class="photos-subheading"
+                    data-class="text"
+                >
+                    Recently imported photos
+                </div>
+
+
+                <div
+                    class="photo-grid"
+                >
+
+                    {% for photo in photos["imports"] %}
+
+                    <article
+                        class="photo-item"
+                        data-class="card"
+                    >
+
+                        {% if photo["src"] %}
+
+                        <img
+                            class="photo-image"
+                            src="{{ photo['src'] }}"
+                            alt=""
+                            data-class="image"
+                        >
+
+                        {% else %}
+
+                        <div
+                            class="photo-placeholder"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                image
+                            </span>
+                        </div>
+
+                        {% endif %}
+
+
+                        <div
+                            class="photo-overlay"
+                        >
+                            <span
+                                data-class="timestamp"
+                                style="
+                                    font-size: 10px;
+                                "
+                            >
+                                {{ photo["date"] }}
+                            </span>
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- =========================================
+                     Gallery / Selected / Multi Select
+                     ========================================= -->
+
+                {% else %}
+
+                <h1
+                    class="photos-heading"
+                    data-class="text"
+                >
+                    Gallery
+                </h1>
+
+
+                <div
+                    class="photos-subheading"
+                    data-class="text"
+                >
+                    Recent photos
+                </div>
+
+
+                <div
+                    class="photo-grid"
+                >
+
+                    {% for photo in photos["photos"] %}
+
+                    <article
+                        class="
+                            photo-item
+
+                            {% if photo["selected"] %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="photo_{{ loop.index }}"
+                    >
+
+                        {% if photo["src"] %}
+
+                        <img
+                            class="photo-image"
+                            src="{{ photo['src'] }}"
+                            alt=""
+                            data-class="image"
+                        >
+
+                        {% else %}
+
+                        <div
+                            class="photo-placeholder"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                image
+                            </span>
+                        </div>
+
+                        {% endif %}
+
+
+                        {% if photo["favorite"] %}
+
+                        <span
+                            class="photo-favorite"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                favorite
+                            </span>
+                        </span>
+
+                        {% endif %}
+
+
+                        {% if photo["selected"] %}
+
+                        <span
+                            class="photo-selection"
+                            data-class="selection_indicator"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                style="
+                                    font-size: 16px;
+                                "
+                            >
+                                check
+                            </span>
+                        </span>
+
+                        {% endif %}
+
+
+                        <div
+                            class="photo-overlay"
+                        >
+
+                            <span
+                                data-class="timestamp"
+                                style="
+                                    font-size: 10px;
+                                "
+                            >
+                                {{ photo["date"] }}
+                            </span>
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </main>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ====================================================
+         Photo Viewer
+         ==================================================== -->
+
+    {% if
+        photos["state"]
+        == "photo_viewer"
+        and
+        photos["selected_photo"]
+    %}
+
+    <section
+        class="photo-viewer"
+        data-class="section"
+        data-semantic="photo_viewer"
+    >
+
+        <header
+            class="viewer-toolbar"
+            data-class="toolbar"
+        >
+
+            <button
+                class="windows-icon-button"
+                data-class="button"
+                style="
+                    color: #FFFFFF;
+                "
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    arrow_back
+                </span>
+            </button>
+
+
+            <div
+                class="viewer-title"
+                data-class="text"
+            >
+                {{ photos["selected_photo"]["name"] }}
+            </div>
+
+
+            {% for icon in [
+                "favorite_border",
+                "edit",
+                "rotate_right",
+                "delete",
+                "more_horiz"
+            ] %}
+
+            <button
+                class="windows-icon-button"
+                data-class="button"
+                style="
+                    color: #FFFFFF;
+                "
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    {{ icon }}
+                </span>
+            </button>
+
+            {% endfor %}
+
+        </header>
+
+
+        <div
+            class="viewer-stage"
+        >
+
+            {% if photos["selected_photo"]["src"] %}
+
+            <img
+                src="{{ photos['selected_photo']['src'] }}"
+                alt=""
+                data-class="image"
+            >
+
+            {% else %}
+
+            <div
+                class="viewer-placeholder"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    style="
+                        font-size: 82px;
+                    "
+                >
+                    image
+                </span>
+            </div>
+
+            {% endif %}
+
+
+            <button
+                class="
+                    viewer-nav
+                    left
+                "
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    chevron_left
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    viewer-nav
+                    right
+                "
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    chevron_right
+                </span>
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ====================================================
+         Edit
+         ==================================================== -->
+
+    {% if
+        photos["state"]
+        == "edit"
+        and
+        photos["selected_photo"]
+    %}
+
+    <section
+        class="photo-viewer"
+        data-class="section"
+        data-semantic="photo_editor"
+    >
+
+        <header
+            class="viewer-toolbar"
+            data-class="toolbar"
+        >
+
+            <button
+                class="windows-button"
+                data-class="button"
+                style="
+                    color: #FFFFFF;
+                    background: #2A2A2A;
+                "
+            >
+                Cancel
+            </button>
+
+
+            <div
+                class="viewer-title"
+                data-class="text"
+            >
+                Edit photo
+            </div>
+
+
+            <button
+                class="
+                    windows-button
+                    primary
+                "
+                data-class="button"
+            >
+                Save
+            </button>
+
+        </header>
+
+
+        <div
+            class="edit-shell"
+        >
+
+            <div
+                class="edit-stage"
+            >
+
+                {% if photos["selected_photo"]["src"] %}
+
+                <img
+                    src="{{ photos['selected_photo']['src'] }}"
+                    alt=""
+                    data-class="image"
+                    style="
+                        transform:
+                        rotate(
+                            {{ photos["edit"]["rotation"] }}deg
+                        );
+                    "
+                >
+
+                {% endif %}
+
+            </div>
+
+
+            <aside
+                class="edit-panel"
+                data-class="section"
+            >
+
+                <div
+                    class="edit-title"
+                    data-class="text"
+                >
+                    Adjustments
+                </div>
+
+
+                {% for row in [
+                    ["Brightness", photos["edit"]["brightness"]],
+                    ["Contrast", photos["edit"]["contrast"]],
+                    ["Saturation", photos["edit"]["saturation"]]
+                ] %}
+
+                <div
+                    class="edit-control"
+                >
+
+                    <div
+                        class="edit-label"
+                    >
+
+                        <span
+                            data-class="text"
+                        >
+                            {{ row[0] }}
+                        </span>
+
+
+                        <span
+                            data-class="system_text"
+                        >
+                            {{ row[1] }}
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="edit-slider"
+                        data-class="slider"
+                    >
+
+                        <div
+                            class="edit-slider-fill"
+                            style="
+                                width:
+                                {{ row[1] }}%;
+                            "
+                        >
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </aside>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ====================================================
+         Slideshow
+         ==================================================== -->
+
+    {% if
+        photos["state"]
+        == "slideshow"
+        and
+        photos["selected_photo"]
+    %}
+
+    <section
+        class="slideshow-overlay"
+        data-class="section"
+        data-semantic="photo_slideshow"
+    >
+
+        {% if photos["selected_photo"]["src"] %}
+
+        <img
+            src="{{ photos['selected_photo']['src'] }}"
+            alt=""
+            data-class="image"
+        >
+
+        {% endif %}
+
+
+        <div
+            class="slideshow-controls"
+            data-class="toolbar"
+        >
+
+            {% for icon in [
+                "skip_previous",
+                "pause",
+                "skip_next",
+                "close"
+            ] %}
+
+            <button
+                class="windows-icon-button"
+                data-class="button"
+                style="
+                    color: #FFFFFF;
+                "
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    {{ icon }}
+                </span>
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</section>
+
+{% endblock %}
+
+
+{% block modal_content %}
+
+{% if
+    photos["state"]
+    == "delete_dialog"
+    and
+    photos["selected_photo"]
+%}
+
+<div
+    class="windows-modal-layer"
+>
+
+    <div
+        class="windows-modal-backdrop"
+        data-annotation-skip="true"
+    >
+    </div>
+
+
+    <section
+        class="
+            windows-dialog
+            delete-photo-dialog
+        "
+        data-class="dialog"
+        data-semantic="delete_photo_dialog"
+        data-occluder="true"
+    >
+
+        <div
+            class="delete-dialog-title"
+            data-class="text"
+        >
+            Delete this photo?
+        </div>
+
+
+        <div
+            class="delete-dialog-text"
+            data-class="text"
+        >
+            {{ photos["selected_photo"]["name"] }}
+            will be moved to the Recycle Bin.
+        </div>
+
+
+        <div
+            class="delete-dialog-actions"
+        >
+
+            <button
+                class="windows-button"
+                data-class="button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    windows-button
+                    primary
+                "
+                data-class="button"
+                data-semantic="confirm_delete_photo"
+            >
+                Delete
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

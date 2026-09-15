@@ -1,0 +1,940 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Windows Desktop
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Desktop Icons
+       ====================================================== */
+
+    .desktop-icons {
+
+        position:
+            absolute;
+
+        top:
+            10px;
+
+        left:
+            8px;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        flex-wrap:
+            wrap;
+
+        align-content:
+            flex-start;
+
+        height:
+            calc(
+                100%
+                - 20px
+            );
+
+        gap:
+            4px;
+    }
+
+
+    /* ======================================================
+       Example Window
+       ====================================================== */
+
+    .desktop-app-window {
+
+        width:
+            min(
+                760px,
+                65vw
+            );
+
+        height:
+            min(
+                540px,
+                70vh
+            );
+
+        top:
+            8%;
+
+        left:
+            18%;
+    }
+
+
+    .desktop-app-window.second {
+
+        top:
+            18%;
+
+        left:
+            35%;
+
+        width:
+            min(
+                620px,
+                50vw
+            );
+
+        height:
+            min(
+                460px,
+                62vh
+            );
+    }
+
+
+    /* ======================================================
+       Snapped
+       ====================================================== */
+
+    .desktop-app-window.snap-left {
+
+        top:
+            0;
+
+        bottom:
+            0;
+
+        left:
+            0;
+
+        width:
+            50%;
+
+        height:
+            100%;
+
+        border-radius:
+            0;
+    }
+
+
+    .desktop-app-window.snap-right {
+
+        top:
+            0;
+
+        bottom:
+            0;
+
+        right:
+            0;
+
+        left:
+            auto;
+
+        width:
+            50%;
+
+        height:
+            100%;
+
+        border-radius:
+            0;
+    }
+
+
+    /* ======================================================
+       Placeholder Content
+       ====================================================== */
+
+    .window-placeholder {
+
+        display:
+            flex;
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .window-sidebar {
+
+        width:
+            210px;
+
+        padding:
+            12px;
+
+        background:
+            var(--surface-variant);
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .window-main {
+
+        flex:
+            1;
+
+        padding:
+            18px;
+    }
+
+
+    .window-card-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(
+                    120px,
+                    1fr
+                )
+            );
+
+        gap:
+            12px;
+    }
+
+
+    .window-file-card {
+
+        min-height:
+            90px;
+
+        padding:
+            12px;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    /* ======================================================
+       Context Menu
+       ====================================================== */
+
+    .desktop-context-menu {
+
+        left:
+            26%;
+
+        top:
+            28%;
+
+        width:
+            240px;
+    }
+
+
+    /* ======================================================
+       Notification Toast
+       ====================================================== */
+
+    .desktop-notification {
+
+        position:
+            absolute;
+
+        z-index:
+            3800;
+
+        right:
+            18px;
+
+        bottom:
+            calc(
+                var(--windows-taskbar-height)
+                + 14px
+            );
+
+        width:
+            360px;
+
+        min-height:
+            100px;
+
+        padding:
+            14px;
+
+        display:
+            flex;
+
+        gap:
+            12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            var(--windows-shadow-medium);
+    }
+
+
+    .notification-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .notification-content {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    .notification-title {
+
+        margin-bottom:
+            4px;
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .notification-message {
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block desktop_content %}
+
+
+<!-- ========================================================
+     Desktop Icons
+     ======================================================== -->
+
+<div
+    class="desktop-icons"
+>
+
+    {% for icon in desktop.icons %}
+
+    <button
+        class="
+            desktop-icon
+            {% if icon.selected %}
+            selected
+            {% endif %}
+        "
+        data-class="navigation_item"
+        data-semantic="desktop_icon_{{ loop.index }}"
+    >
+
+        <span
+            class="
+                material-symbols-rounded
+                desktop-icon-graphic
+            "
+            data-class="icon"
+            data-semantic="desktop_icon_graphic_{{ loop.index }}"
+        >
+            {{ icon.icon }}
+        </span>
+
+
+        <span
+            class="desktop-icon-label"
+            data-class="text"
+            data-semantic="desktop_icon_label_{{ loop.index }}"
+        >
+            {{ icon.name }}
+        </span>
+
+    </button>
+
+    {% endfor %}
+
+</div>
+
+
+
+<!-- ========================================================
+     Windows
+     ======================================================== -->
+
+{% if desktop.state == "open_window" %}
+
+{% set window = desktop.windows[0] %}
+
+<section
+    class="
+        windows-window
+        desktop-app-window
+    "
+    data-class="section"
+    data-semantic="desktop_application_window"
+>
+
+    <header
+        class="windows-titlebar"
+        data-class="app_bar"
+        data-semantic="window_titlebar"
+    >
+
+        <div
+            class="windows-titlebar-left"
+        >
+
+            <span
+                class="
+                    material-symbols-rounded
+                    windows-titlebar-app-icon
+                "
+                data-class="icon"
+                data-semantic="window_app_icon"
+            >
+                {{ window.icon }}
+            </span>
+
+
+            <span
+                class="windows-title"
+                data-class="text"
+                data-semantic="window_title"
+            >
+                {{ window.title }}
+            </span>
+
+        </div>
+
+
+        <div
+            class="windows-window-controls"
+        >
+
+            <button
+                class="window-control"
+                data-class="button"
+                data-semantic="window_minimize"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    minimize
+                </span>
+            </button>
+
+
+            <button
+                class="window-control"
+                data-class="button"
+                data-semantic="window_maximize"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    crop_square
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    window-control
+                    close
+                "
+                data-class="button"
+                data-semantic="window_close"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <div
+        class="windows-window-body"
+    >
+
+        <div
+            class="window-placeholder"
+        >
+
+            <aside
+                class="window-sidebar"
+                data-class="section"
+                data-semantic="window_sidebar"
+            >
+
+                {% for item in [
+                    "Home",
+                    "Desktop",
+                    "Documents",
+                    "Downloads"
+                ] %}
+
+                <div
+                    class="windows-list-item"
+                    data-class="list_item"
+                    data-semantic="sidebar_item_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        folder
+                    </span>
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ item }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </aside>
+
+
+            <section
+                class="window-main"
+                data-class="section"
+                data-semantic="window_content"
+            >
+
+                <div
+                    class="window-card-grid"
+                >
+
+                    {% for item in [
+                        "Documents",
+                        "Pictures",
+                        "Projects",
+                        "Downloads",
+                        "Work",
+                        "Archive"
+                    ] %}
+
+                    <div
+                        class="window-file-card"
+                        data-class="card"
+                        data-semantic="file_card_{{ loop.index }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            folder
+                        </span>
+
+                        <div
+                            data-class="text"
+                        >
+                            {{ item }}
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+
+
+<!-- ========================================================
+     Multiple Windows
+     ======================================================== -->
+
+{% if desktop.state == "multiple_windows" %}
+
+{% for window in desktop.windows %}
+
+<section
+    class="
+        windows-window
+        desktop-app-window
+        {% if loop.index == 2 %}
+        second
+        {% endif %}
+    "
+    data-class="section"
+    data-semantic="desktop_window_{{ loop.index }}"
+    {% if loop.index == 2 %}
+    data-occluder="true"
+    {% endif %}
+>
+
+    <header
+        class="windows-titlebar"
+        data-class="app_bar"
+        data-semantic="window_titlebar_{{ loop.index }}"
+    >
+
+        <div
+            class="windows-titlebar-left"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                {{ window.icon }}
+            </span>
+
+            <span
+                class="windows-title"
+                data-class="text"
+            >
+                {{ window.title }}
+            </span>
+
+        </div>
+
+
+        <div
+            class="windows-window-controls"
+        >
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    minimize
+                </span>
+            </button>
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    crop_square
+                </span>
+            </button>
+
+            <button
+                class="
+                    window-control
+                    close
+                "
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <div
+        class="windows-window-body"
+        data-class="section"
+        data-semantic="window_body_{{ loop.index }}"
+    >
+    </div>
+
+</section>
+
+{% endfor %}
+
+{% endif %}
+
+
+
+<!-- ========================================================
+     Snapped Windows
+     ======================================================== -->
+
+{% if desktop.state == "snapped_windows" %}
+
+{% for window in desktop.windows %}
+
+<section
+    class="
+        windows-window
+        desktop-app-window
+        {% if loop.index == 1 %}
+        snap-left
+        {% else %}
+        snap-right
+        {% endif %}
+    "
+    data-class="section"
+    data-semantic="snapped_window_{{ loop.index }}"
+>
+
+    <header
+        class="windows-titlebar"
+        data-class="app_bar"
+    >
+
+        <div
+            class="windows-titlebar-left"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                {{ window.icon }}
+            </span>
+
+            <span
+                class="windows-title"
+                data-class="text"
+            >
+                {{ window.title }}
+            </span>
+
+        </div>
+
+    </header>
+
+
+    <div
+        class="windows-window-body"
+        data-class="section"
+        data-semantic="snapped_window_content_{{ loop.index }}"
+    >
+    </div>
+
+</section>
+
+{% endfor %}
+
+{% endif %}
+
+
+{% endblock %}
+
+
+
+{% block overlay_content %}
+
+
+<!-- ========================================================
+     Context Menu
+     ======================================================== -->
+
+{% if desktop.state == "context_menu" %}
+
+<div
+    class="
+        windows-popup
+        desktop-context-menu
+    "
+    data-class="dialog"
+    data-semantic="desktop_context_menu"
+    data-occluder="true"
+>
+
+    {% for item in desktop.context_menu %}
+
+        {% if item.divider is defined
+              and item.divider %}
+
+        <div
+            class="windows-menu-divider"
+        >
+        </div>
+
+        {% else %}
+
+        <button
+            class="windows-menu-item"
+            data-class="button"
+            data-semantic="context_menu_item_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="context_menu_icon_{{ loop.index }}"
+            >
+                {{ item.icon }}
+            </span>
+
+            <span
+                data-class="text"
+            >
+                {{ item.label }}
+            </span>
+
+        </button>
+
+        {% endif %}
+
+    {% endfor %}
+
+</div>
+
+{% endif %}
+
+
+
+<!-- ========================================================
+     Notification
+     ======================================================== -->
+
+{% if desktop.state == "notification"
+      and desktop.notification %}
+
+<div
+    class="desktop-notification"
+    data-class="card"
+    data-semantic="notification_toast"
+    data-occluder="true"
+>
+
+    <div
+        class="notification-icon"
+    >
+
+        <span
+            class="material-symbols-rounded"
+            data-class="system_icon"
+            data-semantic="notification_icon"
+        >
+            {{ desktop.notification.icon }}
+        </span>
+
+    </div>
+
+
+    <div
+        class="notification-content"
+    >
+
+        <div
+            class="notification-title"
+            data-class="text"
+            data-semantic="notification_title"
+        >
+            {{ desktop.notification.title }}
+        </div>
+
+
+        <div
+            class="notification-message"
+            data-class="text"
+            data-semantic="notification_message"
+        >
+            {{ desktop.notification.message }}
+        </div>
+
+    </div>
+
+
+    <button
+        class="windows-icon-button"
+        data-class="button"
+        data-semantic="notification_close"
+    >
+
+        <span
+            class="material-symbols-rounded"
+            data-class="icon"
+        >
+            close
+        </span>
+
+    </button>
+
+</div>
+
+{% endif %}
+
+
+{% endblock %}

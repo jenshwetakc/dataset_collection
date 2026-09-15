@@ -1,0 +1,1541 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Windows Lock Screen
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Hide Taskbar
+       ====================================================== */
+
+    .windows-taskbar {
+
+        display:
+            none;
+    }
+
+
+    .windows-desktop-content {
+
+        bottom:
+            0;
+    }
+
+
+    /* ======================================================
+       Lock Surface
+       ====================================================== */
+
+    .lock-screen {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        z-index:
+            100;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .lock-screen::before {
+
+        content:
+            "";
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.08
+                ),
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.18
+                )
+            );
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Lock Clock
+       ====================================================== */
+
+    .lock-clock {
+
+        position:
+            absolute;
+
+        left:
+            7%;
+
+        bottom:
+            12%;
+
+        z-index:
+            2;
+    }
+
+
+    .lock-time {
+
+        font-size:
+            clamp(
+                64px,
+                8vw,
+                122px
+            );
+
+        line-height:
+            0.95;
+
+        font-weight:
+            300;
+
+        letter-spacing:
+            -3px;
+
+        text-shadow:
+            0 2px 12px
+            rgba(
+                0,
+                0,
+                0,
+                0.35
+            );
+    }
+
+
+    .lock-date {
+
+        margin-top:
+            18px;
+
+        font-size:
+            clamp(
+                18px,
+                2vw,
+                30px
+            );
+
+        font-weight:
+            400;
+
+        text-shadow:
+            0 2px 8px
+            rgba(
+                0,
+                0,
+                0,
+                0.4
+            );
+    }
+
+
+    /* ======================================================
+       Lock Status Cards
+       ====================================================== */
+
+    .lock-status-area {
+
+        position:
+            absolute;
+
+        right:
+            6%;
+
+        bottom:
+            10%;
+
+        z-index:
+            2;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        width:
+            300px;
+    }
+
+
+    .lock-status-card {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            60px;
+
+        padding:
+            10px 14px;
+
+        gap:
+            12px;
+
+        border-radius:
+            10px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.28
+            );
+
+        backdrop-filter:
+            blur(
+                14px
+            );
+
+        -webkit-backdrop-filter:
+            blur(
+                14px
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .lock-status-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        flex:
+            0 0 auto;
+    }
+
+
+    .lock-status-title {
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+    }
+
+
+    .lock-status-message {
+
+        margin-top:
+            2px;
+
+        font-size:
+            11px;
+
+        opacity:
+            0.86;
+    }
+
+
+    /* ======================================================
+       Sign-in Overlay
+       ====================================================== */
+
+    .signin-layer {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        z-index:
+            500;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.36
+            );
+
+        backdrop-filter:
+            blur(
+                18px
+            );
+
+        -webkit-backdrop-filter:
+            blur(
+                18px
+            );
+    }
+
+
+    .signin-panel {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        width:
+            min(
+                460px,
+                calc(
+                    100vw
+                    - 40px
+                )
+            );
+
+        color:
+            #FFFFFF;
+
+        text-align:
+            center;
+    }
+
+
+    /* ======================================================
+       Avatar
+       ====================================================== */
+
+    .signin-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            128px;
+
+        height:
+            128px;
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.92
+            );
+
+        color:
+            #333333;
+
+        font-size:
+            48px;
+
+        font-weight:
+            500;
+
+        box-shadow:
+            0 8px 28px
+            rgba(
+                0,
+                0,
+                0,
+                0.25
+            );
+    }
+
+
+    .signin-name {
+
+        margin-top:
+            18px;
+
+        font-size:
+            28px;
+
+        font-weight:
+            400;
+
+        text-shadow:
+            0 2px 10px
+            rgba(
+                0,
+                0,
+                0,
+                0.4
+            );
+    }
+
+
+    /* ======================================================
+       Sign-in Form
+       ====================================================== */
+
+    .signin-form {
+
+        width:
+            min(
+                100%,
+                320px
+            );
+
+        margin-top:
+            24px;
+    }
+
+
+    .signin-input {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        height:
+            42px;
+
+        padding:
+            0 8px
+            0 12px;
+
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.45
+            );
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.88
+            );
+
+        color:
+            #202020;
+    }
+
+
+    .signin-input input {
+
+        flex:
+            1;
+
+        color:
+            #202020;
+    }
+
+
+    .signin-submit {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        color:
+            #333333;
+    }
+
+
+    /* ======================================================
+       PIN
+       ====================================================== */
+
+    .pin-dots {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            14px;
+
+        height:
+            42px;
+    }
+
+
+    .pin-dot {
+
+        width:
+            11px;
+
+        height:
+            11px;
+
+        border-radius:
+            50%;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    .signin-error {
+
+        margin-top:
+            12px;
+
+        font-size:
+            12px;
+
+        color:
+            #FFFFFF;
+
+        text-shadow:
+            0 1px 5px
+            rgba(
+                0,
+                0,
+                0,
+                0.7
+            );
+    }
+
+
+    /* ======================================================
+       User Switcher
+       ====================================================== */
+
+    .user-switcher {
+
+        position:
+            absolute;
+
+        left:
+            32px;
+
+        bottom:
+            34px;
+
+        z-index:
+            700;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            6px;
+
+        width:
+            270px;
+    }
+
+
+    .user-switcher-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            58px;
+
+        padding:
+            8px;
+
+        gap:
+            10px;
+
+        border-radius:
+            7px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .user-switcher-item.selected {
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.2
+            );
+    }
+
+
+    .user-small-avatar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.9
+            );
+
+        color:
+            #333333;
+
+        font-size:
+            15px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Bottom-right Actions
+       ====================================================== */
+
+    .signin-actions {
+
+        position:
+            absolute;
+
+        right:
+            28px;
+
+        bottom:
+            24px;
+
+        z-index:
+            800;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    .signin-action-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        border-radius:
+            6px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Floating Menus
+       ====================================================== */
+
+    .signin-menu {
+
+        position:
+            absolute;
+
+        right:
+            24px;
+
+        bottom:
+            78px;
+
+        z-index:
+            1000;
+
+        width:
+            280px;
+
+        padding:
+            6px;
+
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.16
+            );
+
+        border-radius:
+            10px;
+
+        background:
+            rgba(
+                32,
+                32,
+                32,
+                0.92
+            );
+
+        backdrop-filter:
+            blur(
+                18px
+            );
+
+        -webkit-backdrop-filter:
+            blur(
+                18px
+            );
+
+        color:
+            #FFFFFF;
+
+        box-shadow:
+            0 12px 36px
+            rgba(
+                0,
+                0,
+                0,
+                0.4
+            );
+    }
+
+
+    .signin-menu-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-height:
+            42px;
+
+        padding:
+            0 10px;
+
+        gap:
+            10px;
+
+        border-radius:
+            6px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Networks
+       ====================================================== */
+
+    .signin-network-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            56px;
+
+        padding:
+            7px 9px;
+
+        gap:
+            10px;
+
+        border-radius:
+            6px;
+    }
+
+
+    .signin-network-item.connected {
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.16
+            );
+    }
+
+
+    .signin-network-content {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+    }
+
+
+    /* ======================================================
+       Signing In
+       ====================================================== */
+
+    .signin-spinner {
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        margin-top:
+            24px;
+
+        border:
+            3px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.28
+            );
+
+        border-top-color:
+            #FFFFFF;
+
+        border-radius:
+            50%;
+
+        animation:
+            signin-spin
+            1s
+            linear
+            infinite;
+    }
+
+
+    @keyframes signin-spin {
+
+        to {
+
+            transform:
+                rotate(
+                    360deg
+                );
+        }
+    }
+
+
+    .signin-message {
+
+        margin-top:
+            14px;
+
+        font-size:
+            14px;
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block desktop_content %}
+
+
+<!-- ========================================================
+     Lock Screen
+     ======================================================== -->
+
+<div
+    class="lock-screen"
+    data-semantic="windows_lock_screen"
+>
+
+
+    {% if lock_screen["state"] == "lock_screen" %}
+
+    <section
+        class="lock-clock"
+        data-semantic="lock_clock_area"
+    >
+
+        <div
+            class="lock-time"
+            data-class="system_text"
+            data-semantic="lock_time"
+        >
+            {{ system["time_text"] }}
+        </div>
+
+
+        <div
+            class="lock-date"
+            data-class="timestamp"
+            data-semantic="lock_date"
+        >
+            {{ system["date_text"] }}
+        </div>
+
+    </section>
+
+
+    <section
+        class="lock-status-area"
+        data-semantic="lock_status_area"
+    >
+
+        {% for item in lock_screen["lock_messages"] %}
+
+        <article
+            class="lock-status-card"
+            data-class="card"
+            data-semantic="lock_status_{{ loop.index }}"
+        >
+
+            <div
+                class="lock-status-icon"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="system_icon"
+                >
+                    {{ item["icon"] }}
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <div
+                    class="lock-status-title"
+                    data-class="system_text"
+                >
+                    {{ item["title"] }}
+                </div>
+
+
+                <div
+                    class="lock-status-message"
+                    data-class="text"
+                >
+                    {{ item["message"] }}
+                </div>
+
+            </div>
+
+        </article>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ====================================================
+         Sign-in Screens
+         ==================================================== -->
+
+    {% if lock_screen["state"] != "lock_screen" %}
+
+    <div
+        class="signin-layer"
+    >
+
+        <section
+            class="signin-panel"
+            data-semantic="signin_panel"
+        >
+
+            <div
+                class="signin-avatar"
+                data-class="avatar"
+                data-semantic="signin_avatar"
+            >
+                {{ lock_screen["active_user"]["initial"] }}
+            </div>
+
+
+            <div
+                class="signin-name"
+                data-class="text"
+                data-semantic="signin_username"
+            >
+                {{ lock_screen["active_user"]["name"] }}
+            </div>
+
+
+            <!-- =============================================
+                 Password
+                 ============================================= -->
+
+            {% if lock_screen["state"] == "password" %}
+
+            <div
+                class="signin-form"
+            >
+
+                <div
+                    class="signin-input"
+                    data-class="input_field"
+                    data-semantic="password_input"
+                >
+
+                    <input
+                        readonly
+                        value=""
+                        placeholder="Password"
+                    >
+
+
+                    <button
+                        class="signin-submit"
+                        data-class="button"
+                        data-semantic="password_submit"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            arrow_forward
+                        </span>
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 PIN / Wrong PIN
+                 ============================================= -->
+
+            {% elif lock_screen["state"] in [
+                "pin",
+                "wrong_pin"
+            ] %}
+
+            <div
+                class="signin-form"
+            >
+
+                <div
+                    class="signin-input"
+                    data-class="input_field"
+                    data-semantic="pin_input"
+                >
+
+                    <div
+                        class="pin-dots"
+                    >
+
+                        {% for _ in range(lock_screen["pin_length"]) %}
+
+                        <span
+                            class="pin-dot"
+                            data-class="selection_indicator"
+                            data-semantic="pin_dot_{{ loop.index }}"
+                        >
+                        </span>
+
+                        {% endfor %}
+
+                    </div>
+
+
+                    <button
+                        class="signin-submit"
+                        data-class="button"
+                        data-semantic="pin_submit"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            arrow_forward
+                        </span>
+                    </button>
+
+                </div>
+
+
+                {% if lock_screen["state"] == "wrong_pin" %}
+
+                <div
+                    class="signin-error"
+                    data-class="text"
+                    data-semantic="pin_error"
+                >
+                    {{ lock_screen["wrong_message"] }}
+                </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- =============================================
+                 Signing In
+                 ============================================= -->
+
+            {% elif lock_screen["state"] == "signing_in" %}
+
+            <div
+                class="signin-spinner"
+                data-class="progress_bar"
+                data-semantic="signin_progress"
+            >
+            </div>
+
+
+            <div
+                class="signin-message"
+                data-class="system_text"
+            >
+                {{ lock_screen["sign_in_message"] }}
+            </div>
+
+            {% endif %}
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ====================================================
+         User Switcher
+         ==================================================== -->
+
+    {% if lock_screen["state"] == "user_switcher" %}
+
+    <section
+        class="user-switcher"
+        data-semantic="user_switcher"
+    >
+
+        {% for user in lock_screen["users"] %}
+
+        <button
+            class="
+                user-switcher-item
+
+                {% if
+                    user["name"]
+                    ==
+                    lock_screen["active_user"]["name"]
+                %}
+                selected
+                {% endif %}
+            "
+            data-class="list_item"
+            data-semantic="signin_user_{{ loop.index }}"
+        >
+
+            <span
+                class="user-small-avatar"
+                data-class="avatar"
+            >
+                {{ user["initial"] }}
+            </span>
+
+
+            <div
+                style="
+                    min-width: 0;
+                    text-align: left;
+                "
+            >
+
+                <div
+                    data-class="text"
+                >
+                    {{ user["name"] }}
+                </div>
+
+
+                <div
+                    data-class="system_text"
+                    style="
+                        margin-top: 2px;
+                        font-size: 10px;
+                        opacity: .8;
+                    "
+                >
+                    {{ user["account_type"] }}
+                </div>
+
+            </div>
+
+        </button>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ====================================================
+         System Actions
+         ==================================================== -->
+
+    {% if lock_screen["state"] != "lock_screen" %}
+
+    <div
+        class="signin-actions"
+    >
+
+        <button
+            class="signin-action-button"
+            data-class="button"
+            data-semantic="signin_network_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="system_icon"
+            >
+                {% if system["wifi"]["connected"] %}
+                    wifi
+                {% else %}
+                    wifi_off
+                {% endif %}
+            </span>
+        </button>
+
+
+        <button
+            class="signin-action-button"
+            data-class="button"
+            data-semantic="signin_accessibility_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="system_icon"
+            >
+                accessibility_new
+            </span>
+        </button>
+
+
+        <button
+            class="signin-action-button"
+            data-class="button"
+            data-semantic="signin_power_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="system_icon"
+            >
+                power_settings_new
+            </span>
+        </button>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ====================================================
+         Accessibility Menu
+         ==================================================== -->
+
+    {% if lock_screen["state"] == "accessibility_menu" %}
+
+    <section
+        class="signin-menu"
+        data-class="dialog"
+        data-semantic="signin_accessibility_menu"
+        data-occluder="true"
+    >
+
+        {% for item in lock_screen["accessibility_items"] %}
+
+        <button
+            class="signin-menu-item"
+            data-class="button"
+            data-semantic="accessibility_item_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="system_icon"
+            >
+                {{ item["icon"] }}
+            </span>
+
+            <span
+                data-class="text"
+            >
+                {{ item["label"] }}
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ====================================================
+         Network Panel
+         ==================================================== -->
+
+    {% if lock_screen["state"] == "network_panel" %}
+
+    <section
+        class="signin-menu"
+        data-class="dialog"
+        data-semantic="signin_network_panel"
+        data-occluder="true"
+    >
+
+        <div
+            data-class="text"
+            style="
+                padding: 8px 10px 12px;
+                font-size: 15px;
+                font-weight: 600;
+            "
+        >
+            Networks
+        </div>
+
+
+        {% for network in lock_screen["networks"] %}
+
+        <button
+            class="
+                signin-network-item
+
+                {% if network["connected"] %}
+                connected
+                {% endif %}
+            "
+            data-class="list_item"
+            data-semantic="signin_network_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="system_icon"
+            >
+
+                {% if network["strength"] == 1 %}
+                    wifi_1_bar
+                {% elif network["strength"] == 2 %}
+                    wifi_2_bar
+                {% else %}
+                    wifi
+                {% endif %}
+
+            </span>
+
+
+            <div
+                class="signin-network-content"
+            >
+
+                <div
+                    data-class="text"
+                >
+                    {{ network["name"] }}
+                </div>
+
+
+                <div
+                    data-class="system_text"
+                    style="
+                        margin-top: 2px;
+                        font-size: 10px;
+                        opacity: .8;
+                    "
+                >
+                    {% if network["connected"] %}
+                        Connected
+                    {% elif network["secured"] %}
+                        Secured
+                    {% else %}
+                        Open
+                    {% endif %}
+                </div>
+
+            </div>
+
+
+            {% if network["secured"] %}
+
+            <span
+                class="material-symbols-rounded"
+                data-class="system_icon"
+            >
+                lock
+            </span>
+
+            {% endif %}
+
+        </button>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ====================================================
+         Power Menu
+         ==================================================== -->
+
+    {% if lock_screen["state"] == "power_menu" %}
+
+    <section
+        class="signin-menu"
+        data-class="dialog"
+        data-semantic="signin_power_menu"
+        data-occluder="true"
+        style="
+            width: 220px;
+        "
+    >
+
+        {% for item in lock_screen["power_items"] %}
+
+        <button
+            class="signin-menu-item"
+            data-class="button"
+            data-semantic="power_item_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="system_icon"
+            >
+                {{ item["icon"] }}
+            </span>
+
+            <span
+                data-class="text"
+            >
+                {{ item["label"] }}
+            </span>
+
+        </button>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

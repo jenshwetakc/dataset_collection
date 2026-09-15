@@ -1,0 +1,1553 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Notepad
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Window
+       ====================================================== */
+
+    .notepad-window {
+
+        top:
+            5%;
+
+        left:
+            7%;
+
+        width:
+            min(
+                1180px,
+                86vw
+            );
+
+        height:
+            min(
+                780px,
+                84vh
+            );
+    }
+
+
+    /* ======================================================
+       Tabs
+       ====================================================== */
+
+    .notepad-tabs {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        min-height:
+            42px;
+
+        padding:
+            5px
+            8px
+            0;
+
+        gap:
+            3px;
+
+        background:
+            var(--surface-variant);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .notepad-tab {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            130px;
+
+        max-width:
+            210px;
+
+        height:
+            36px;
+
+        padding:
+            0 10px;
+
+        gap:
+            7px;
+
+        border-radius:
+            7px
+            7px
+            0
+            0;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .notepad-tab.active {
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .notepad-tab-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    /* ======================================================
+       Toolbar
+       ====================================================== */
+
+    .notepad-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            42px;
+
+        padding:
+            0 8px;
+
+        gap:
+            4px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .notepad-menu-button {
+
+        min-height:
+            32px;
+
+        padding:
+            0 9px;
+
+        border-radius:
+            5px;
+
+        font-size:
+            12px;
+    }
+
+
+    /* ======================================================
+       Editor
+       ====================================================== */
+
+    .notepad-body {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        height:
+            100%;
+
+        min-height:
+            0;
+    }
+
+
+    .notepad-editor {
+
+        position:
+            relative;
+
+        flex:
+            1;
+
+        min-height:
+            0;
+
+        overflow:
+            auto;
+
+        padding:
+            18px
+            20px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-family:
+            "Consolas",
+            "Cascadia Mono",
+            monospace;
+
+        font-size:
+            calc(
+                14px
+                *
+                var(
+                    --notepad-zoom,
+                    1
+                )
+            );
+
+        line-height:
+            1.55;
+
+        user-select:
+            text;
+    }
+
+
+    .notepad-editor.no-wrap {
+
+        white-space:
+            pre;
+    }
+
+
+    .notepad-editor.wrap {
+
+        white-space:
+            pre-wrap;
+
+        overflow-wrap:
+            anywhere;
+    }
+
+
+    .notepad-line {
+
+        min-height:
+            22px;
+    }
+
+
+    .notepad-cursor {
+
+        display:
+            inline-block;
+
+        width:
+            1px;
+
+        height:
+            17px;
+
+        margin-left:
+            1px;
+
+        vertical-align:
+            -3px;
+
+        background:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Find / Replace
+       ====================================================== */
+
+    .notepad-find {
+
+        position:
+            absolute;
+
+        z-index:
+            300;
+
+        top:
+            12px;
+
+        right:
+            18px;
+
+        width:
+            370px;
+
+        padding:
+            8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            var(--windows-shadow-medium);
+    }
+
+
+    .find-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    .find-row + .find-row {
+
+        margin-top:
+            6px;
+    }
+
+
+    .find-input {
+
+        flex:
+            1;
+
+        min-height:
+            34px;
+    }
+
+
+    /* ======================================================
+       Status Bar
+       ====================================================== */
+
+    .notepad-status {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-end;
+
+        min-height:
+            28px;
+
+        padding:
+            0 12px;
+
+        gap:
+            18px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Settings
+       ====================================================== */
+
+    .notepad-settings {
+
+        padding:
+            24px;
+
+        overflow-y:
+            auto;
+    }
+
+
+    .notepad-settings-title {
+
+        font-size:
+            24px;
+
+        font-weight:
+            600;
+
+        margin-bottom:
+            20px;
+    }
+
+
+    .settings-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            68px;
+
+        padding:
+            12px;
+
+        margin-bottom:
+            8px;
+
+        gap:
+            12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .settings-row-content {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+    }
+
+
+    .settings-label {
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .settings-value {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Encoding Menu
+       ====================================================== */
+
+    .encoding-menu {
+
+        right:
+            16px;
+
+        bottom:
+            34px;
+
+        width:
+            220px;
+    }
+
+
+    /* ======================================================
+       Save As
+       ====================================================== */
+
+    .save-as-panel {
+
+        padding:
+            24px;
+
+        overflow-y:
+            auto;
+    }
+
+
+    .save-as-title {
+
+        font-size:
+            23px;
+
+        font-weight:
+            600;
+    }
+
+
+    .save-folder-card {
+
+        margin-top:
+            18px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .save-field {
+
+        margin-top:
+            16px;
+    }
+
+
+    .save-field-label {
+
+        margin-bottom:
+            6px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .notepad-unsaved-dialog {
+
+        width:
+            470px;
+
+        padding:
+            22px;
+    }
+
+
+    .unsaved-title {
+
+        font-size:
+            19px;
+
+        font-weight:
+            600;
+    }
+
+
+    .unsaved-text {
+
+        margin-top:
+            12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+    }
+
+
+    .unsaved-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        margin-top:
+            22px;
+
+        gap:
+            8px;
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 1366px
+    ) {
+
+        .notepad-window {
+
+            top:
+                2%;
+
+            left:
+                3%;
+
+            width:
+                94vw;
+
+            height:
+                91vh;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block desktop_content %}
+
+<section
+    class="
+        windows-window
+        notepad-window
+    "
+    data-class="section"
+    data-semantic="notepad_window"
+
+    {% if notepad["state"] == "close_unsaved_dialog" %}
+    data-annotation-skip="true"
+    {% endif %}
+>
+
+    <!-- ====================================================
+         Titlebar
+         ==================================================== -->
+
+    <header
+        class="windows-titlebar"
+        data-class="app_bar"
+        data-semantic="notepad_titlebar"
+    >
+
+        <div
+            class="windows-titlebar-left"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                description
+            </span>
+
+
+            <span
+                class="windows-title"
+                data-class="text"
+            >
+                {% if notepad["document"]["unsaved"] %}
+                *
+                {% endif %}
+
+                {{ notepad["document"]["name"] }}
+                - Notepad
+            </span>
+
+        </div>
+
+
+        <div
+            class="windows-window-controls"
+        >
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    minimize
+                </span>
+            </button>
+
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    crop_square
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    window-control
+                    close
+                "
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ====================================================
+         Settings
+         ==================================================== -->
+
+    {% if notepad["state"] == "settings" %}
+
+    <main
+        class="
+            windows-window-body
+            notepad-settings
+        "
+        data-class="section"
+        data-semantic="notepad_settings"
+    >
+
+        <div
+            class="notepad-settings-title"
+            data-class="text"
+        >
+            Settings
+        </div>
+
+
+        <div
+            class="settings-row"
+            data-class="list_item"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                dark_mode
+            </span>
+
+
+            <div
+                class="settings-row-content"
+            >
+
+                <div
+                    class="settings-label"
+                    data-class="text"
+                >
+                    App theme
+                </div>
+
+
+                <div
+                    class="settings-value"
+                    data-class="system_text"
+                >
+                    {{ notepad["settings"]["theme"] }}
+                </div>
+
+            </div>
+
+
+            <button
+                class="windows-icon-button"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    expand_more
+                </span>
+            </button>
+
+        </div>
+
+
+        <div
+            class="settings-row"
+            data-class="list_item"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                text_fields
+            </span>
+
+
+            <div
+                class="settings-row-content"
+            >
+
+                <div
+                    class="settings-label"
+                    data-class="text"
+                >
+                    Font
+                </div>
+
+
+                <div
+                    class="settings-value"
+                    data-class="system_text"
+                >
+                    {{ notepad["settings"]["font"] }}
+                    ·
+                    {{ notepad["settings"]["font_size"] }} pt
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="settings-row"
+            data-class="list_item"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                wrap_text
+            </span>
+
+
+            <div
+                class="settings-row-content"
+            >
+
+                <div
+                    class="settings-label"
+                    data-class="text"
+                >
+                    Word wrap
+                </div>
+
+
+                <div
+                    class="settings-value"
+                    data-class="text"
+                >
+                    Wrap long lines inside the editor
+                </div>
+
+            </div>
+
+
+            <div
+                class="
+                    security-toggle
+
+                    {% if notepad["settings"]["word_wrap"] %}
+                    enabled
+                    {% endif %}
+                "
+                data-class="switch"
+            >
+                <span
+                    class="security-toggle-thumb"
+                >
+                </span>
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- ====================================================
+         Save As
+         ==================================================== -->
+
+    {% elif notepad["state"] == "save_as" %}
+
+    <main
+        class="
+            windows-window-body
+            save-as-panel
+        "
+        data-class="section"
+        data-semantic="notepad_save_as"
+    >
+
+        <div
+            class="save-as-title"
+            data-class="text"
+        >
+            Save As
+        </div>
+
+
+        <div
+            class="save-folder-card"
+            data-class="card"
+        >
+
+            <div
+                data-class="text"
+                style="
+                    font-size: 12px;
+                    font-weight: 600;
+                "
+            >
+                Save location
+            </div>
+
+
+            <div
+                data-class="system_text"
+                style="
+                    margin-top: 5px;
+                    color: var(--text-secondary);
+                "
+            >
+                {{ notepad["save_as"]["folder"] }}
+            </div>
+
+        </div>
+
+
+        <div
+            class="save-field"
+        >
+
+            <div
+                class="save-field-label"
+                data-class="text"
+            >
+                File name
+            </div>
+
+
+            <div
+                class="windows-input"
+                data-class="input_field"
+            >
+
+                <input
+                    readonly
+                    value="{{ notepad['save_as']['filename'] }}"
+                >
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="save-field"
+        >
+
+            <div
+                class="save-field-label"
+                data-class="text"
+            >
+                Encoding
+            </div>
+
+
+            <button
+                class="windows-input"
+                data-class="button"
+                style="
+                    width: 260px;
+                    justify-content: space-between;
+                "
+            >
+
+                <span
+                    data-class="system_text"
+                >
+                    {{ notepad["encoding"] }}
+                </span>
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    expand_more
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div
+            style="
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 24px;
+                gap: 8px;
+            "
+        >
+
+            <button
+                class="windows-button"
+                data-class="button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    windows-button
+                    primary
+                "
+                data-class="button"
+            >
+                Save
+            </button>
+
+        </div>
+
+    </main>
+
+
+    <!-- ====================================================
+         Main Notepad
+         ==================================================== -->
+
+    {% else %}
+
+    <div
+        class="
+            windows-window-body
+            notepad-body
+        "
+    >
+
+        <!-- Tabs -->
+
+        <div
+            class="notepad-tabs"
+        >
+
+            {% for tab in notepad["tabs"] %}
+
+            <button
+                class="
+                    notepad-tab
+
+                    {% if tab["active"] %}
+                    active
+                    {% endif %}
+                "
+                data-class="tab"
+                data-semantic="notepad_tab_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    style="
+                        font-size: 15px;
+                    "
+                >
+                    description
+                </span>
+
+
+                <span
+                    class="notepad-tab-title"
+                    data-class="text"
+                >
+                    {% if tab["unsaved"] %}
+                    *
+                    {% endif %}
+
+                    {{ tab["name"] }}
+                </span>
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    style="
+                        font-size: 14px;
+                    "
+                >
+                    close
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+
+            <button
+                class="windows-icon-button"
+                data-class="button"
+                data-semantic="new_notepad_tab"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    add
+                </span>
+            </button>
+
+        </div>
+
+
+        <!-- Menu Bar -->
+
+        <div
+            class="notepad-toolbar"
+            data-class="toolbar"
+            data-semantic="notepad_toolbar"
+        >
+
+            {% for label in [
+                "File",
+                "Edit",
+                "View"
+            ] %}
+
+            <button
+                class="notepad-menu-button"
+                data-class="button"
+            >
+                {{ label }}
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+
+        <!-- Editor -->
+
+        <main
+            class="
+                notepad-editor
+
+                {% if notepad["word_wrap"] %}
+                wrap
+                {% else %}
+                no-wrap
+                {% endif %}
+            "
+            style="
+                --notepad-zoom:
+                {{ notepad["zoom"] / 100 }};
+            "
+            data-semantic="notepad_editor"
+        >
+
+            {% if notepad["document"]["content"] %}
+
+                {% for line in notepad["document"]["content"] %}
+
+                <div
+                    class="notepad-line"
+                    data-class="text"
+                    data-semantic="notepad_line_{{ loop.index }}"
+                >
+                    {{ line }}
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <span
+                    class="notepad-cursor"
+                    data-class="selection_indicator"
+                >
+                </span>
+
+            {% endif %}
+
+
+            <!-- Find -->
+
+            {% if notepad["state"] in [
+                "find",
+                "replace"
+            ] %}
+
+            <section
+                class="notepad-find"
+                data-class="dialog"
+                data-semantic="notepad_find"
+                data-occluder="true"
+            >
+
+                <div
+                    class="find-row"
+                >
+
+                    <div
+                        class="
+                            windows-input
+                            find-input
+                        "
+                        data-class="input_field"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            search
+                        </span>
+
+
+                        <input
+                            readonly
+                            value="{{ notepad['search_query'] }}"
+                        >
+
+                    </div>
+
+
+                    <button
+                        class="windows-icon-button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            keyboard_arrow_up
+                        </span>
+                    </button>
+
+
+                    <button
+                        class="windows-icon-button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            keyboard_arrow_down
+                        </span>
+                    </button>
+
+
+                    <button
+                        class="windows-icon-button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            close
+                        </span>
+                    </button>
+
+                </div>
+
+
+                {% if notepad["state"] == "replace" %}
+
+                <div
+                    class="find-row"
+                >
+
+                    <div
+                        class="
+                            windows-input
+                            find-input
+                        "
+                        data-class="input_field"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            find_replace
+                        </span>
+
+
+                        <input
+                            readonly
+                            value="{{ notepad['replace_text'] }}"
+                        >
+
+                    </div>
+
+
+                    <button
+                        class="windows-button"
+                        data-class="button"
+                    >
+                        Replace
+                    </button>
+
+                </div>
+
+                {% endif %}
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+
+        <!-- Status Bar -->
+
+        <footer
+            class="notepad-status"
+            data-class="toolbar"
+            data-semantic="notepad_status_bar"
+        >
+
+            <span
+                data-class="system_text"
+            >
+                Ln {{ notepad["line"] }},
+                Col {{ notepad["column"] }}
+            </span>
+
+
+            <span
+                data-class="system_text"
+            >
+                {{ notepad["zoom"] }}%
+            </span>
+
+
+            <span
+                data-class="system_text"
+            >
+                Windows (CRLF)
+            </span>
+
+
+            <button
+                data-class="button"
+                style="
+                    font-size: 10px;
+                    color: var(--text-secondary);
+                "
+            >
+                {{ notepad["encoding"] }}
+            </button>
+
+        </footer>
+
+
+        <!-- Encoding Menu -->
+
+        {% if notepad["state"] == "encoding_menu" %}
+
+        <div
+            class="
+                windows-popup
+                encoding-menu
+            "
+            data-class="dialog"
+            data-semantic="encoding_menu"
+            data-occluder="true"
+        >
+
+            {% for encoding in notepad["available_encodings"] %}
+
+            <button
+                class="windows-menu-item"
+                data-class="button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="selection_indicator"
+                    style="
+                        font-size: 16px;
+                    "
+                >
+
+                    {% if encoding == notepad["encoding"] %}
+                    check
+                    {% endif %}
+
+                </span>
+
+
+                <span
+                    data-class="text"
+                >
+                    {{ encoding }}
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+{% endblock %}
+
+
+{% block modal_content %}
+
+{% if notepad["state"] == "close_unsaved_dialog" %}
+
+<div
+    class="windows-modal-layer"
+>
+
+    <div
+        class="windows-modal-backdrop"
+        data-annotation-skip="true"
+    >
+    </div>
+
+
+    <section
+        class="
+            windows-dialog
+            notepad-unsaved-dialog
+        "
+        data-class="dialog"
+        data-semantic="notepad_unsaved_dialog"
+        data-occluder="true"
+    >
+
+        <div
+            class="unsaved-title"
+            data-class="text"
+        >
+            Save changes to
+            {{ notepad["document"]["name"] }}?
+        </div>
+
+
+        <div
+            class="unsaved-text"
+            data-class="text"
+        >
+            Your changes will be lost if you don't save them.
+        </div>
+
+
+        <div
+            class="unsaved-actions"
+        >
+
+            <button
+                class="windows-button"
+                data-class="button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="windows-button"
+                data-class="button"
+            >
+                Don't save
+            </button>
+
+
+            <button
+                class="
+                    windows-button
+                    primary
+                "
+                data-class="button"
+            >
+                Save
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

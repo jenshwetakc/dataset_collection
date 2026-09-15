@@ -1,0 +1,1729 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Task Manager
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Window
+       ====================================================== */
+
+    .task-manager-window {
+
+        top:
+            5%;
+
+        left:
+            8%;
+
+        width:
+            min(
+                1240px,
+                86vw
+            );
+
+        height:
+            min(
+                800px,
+                84vh
+            );
+    }
+
+
+    /* ======================================================
+       Main Layout
+       ====================================================== */
+
+    .task-manager-shell {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            220px
+            minmax(
+                0,
+                1fr
+            );
+
+        height:
+            100%;
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .task-sidebar {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        min-width:
+            0;
+
+        padding:
+            10px;
+
+        gap:
+            3px;
+
+        overflow-y:
+            auto;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .task-sidebar-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            40px;
+
+        padding:
+            0 10px;
+
+        gap:
+            10px;
+
+        border-radius:
+            6px;
+
+        font-size:
+            12px;
+    }
+
+
+    .task-sidebar-item.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Content
+       ====================================================== */
+
+    .task-content {
+
+        min-width:
+            0;
+
+        overflow:
+            auto;
+
+        padding:
+            22px;
+    }
+
+
+    .task-heading-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        margin-bottom:
+            18px;
+    }
+
+
+    .task-heading {
+
+        font-size:
+            24px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Table
+       ====================================================== */
+
+    .task-table {
+
+        width:
+            100%;
+
+        border-collapse:
+            collapse;
+
+        table-layout:
+            fixed;
+
+        font-size:
+            12px;
+    }
+
+
+    .task-table th {
+
+        height:
+            36px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-secondary);
+
+        text-align:
+            left;
+
+        font-weight:
+            500;
+    }
+
+
+    .task-table td {
+
+        height:
+            42px;
+
+        padding:
+            0 8px;
+
+        overflow:
+            hidden;
+
+        text-overflow:
+            ellipsis;
+
+        white-space:
+            nowrap;
+    }
+
+
+    .task-row.selected {
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .process-name {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+
+        gap:
+            8px;
+    }
+
+
+    .process-icon {
+
+        flex:
+            0 0 auto;
+
+        width:
+            24px;
+    }
+
+
+    /* ======================================================
+       Usage Cells
+       ====================================================== */
+
+    .usage-cell {
+
+        position:
+            relative;
+
+        isolation:
+            isolate;
+    }
+
+
+    .usage-cell::before {
+
+        content:
+            "";
+
+        position:
+            absolute;
+
+        z-index:
+            -1;
+
+        inset:
+            3px;
+
+        width:
+            var(
+                --usage,
+                0%
+            );
+
+        border-radius:
+            3px;
+
+        background:
+            var(--primary-container);
+
+        opacity:
+            .65;
+    }
+
+
+    /* ======================================================
+       Performance
+       ====================================================== */
+
+    .performance-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            180px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            20px;
+
+        min-height:
+            560px;
+    }
+
+
+    .performance-nav {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            7px;
+    }
+
+
+    .performance-card {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            72px;
+
+        padding:
+            10px;
+
+        gap:
+            10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .performance-card.selected {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .performance-card-content {
+
+        min-width:
+            0;
+    }
+
+
+    .performance-card-label {
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+    }
+
+
+    .performance-card-value {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Graph
+       ====================================================== */
+
+    .performance-main {
+
+        min-width:
+            0;
+    }
+
+
+    .performance-header {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        justify-content:
+            space-between;
+
+        margin-bottom:
+            18px;
+    }
+
+
+    .performance-title {
+
+        font-size:
+            26px;
+
+        font-weight:
+            500;
+    }
+
+
+    .performance-big-value {
+
+        font-size:
+            30px;
+
+        font-weight:
+            300;
+    }
+
+
+    .performance-chart {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        width:
+            100%;
+
+        height:
+            330px;
+
+        padding:
+            12px;
+
+        gap:
+            3px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .performance-bar {
+
+        flex:
+            1;
+
+        min-width:
+            2px;
+
+        background:
+            var(--primary);
+
+        opacity:
+            .72;
+    }
+
+
+    .performance-details {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                1fr
+            );
+
+        margin-top:
+            18px;
+
+        gap:
+            10px;
+    }
+
+
+    .performance-detail {
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .performance-detail-label {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .performance-detail-value {
+
+        margin-top:
+            4px;
+
+        font-size:
+            17px;
+
+        font-weight:
+            500;
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .end-task-dialog {
+
+        width:
+            430px;
+
+        padding:
+            22px;
+    }
+
+
+    .dialog-title {
+
+        font-size:
+            18px;
+
+        font-weight:
+            600;
+    }
+
+
+    .dialog-message {
+
+        margin-top:
+            12px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+    }
+
+
+    .dialog-buttons {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        margin-top:
+            22px;
+
+        gap:
+            8px;
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 1366px
+    ) {
+
+        .task-manager-window {
+
+            top:
+                2%;
+
+            left:
+                3%;
+
+            width:
+                94vw;
+
+            height:
+                90vh;
+        }
+
+
+        .task-manager-shell {
+
+            grid-template-columns:
+                190px
+                minmax(
+                    0,
+                    1fr
+                );
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block desktop_content %}
+
+<section
+    class="
+        windows-window
+        task-manager-window
+    "
+    data-class="section"
+    data-semantic="task_manager_window"
+
+    {% if task_manager["state"] == "end_task_dialog" %}
+    data-annotation-skip="true"
+    {% endif %}
+>
+
+    <!-- ====================================================
+         Titlebar
+         ==================================================== -->
+
+    <header
+        class="windows-titlebar"
+        data-class="app_bar"
+        data-semantic="task_manager_titlebar"
+    >
+
+        <div
+            class="windows-titlebar-left"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                monitoring
+            </span>
+
+
+            <span
+                class="windows-title"
+                data-class="text"
+            >
+                Task Manager
+            </span>
+
+        </div>
+
+
+        <div
+            class="windows-window-controls"
+        >
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    minimize
+                </span>
+            </button>
+
+
+            <button
+                class="window-control"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    crop_square
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    window-control
+                    close
+                "
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <div
+        class="
+            windows-window-body
+            task-manager-shell
+        "
+    >
+
+        <!-- =================================================
+             Sidebar
+             ================================================= -->
+
+        <aside
+            class="task-sidebar"
+            data-class="section"
+            data-semantic="task_manager_sidebar"
+        >
+
+            {% for item in task_manager["navigation"] %}
+
+            {% set is_selected =
+                (
+                    task_manager["state"] == item["id"]
+                )
+                or
+                (
+                    task_manager["state"].startswith("performance_")
+                    and
+                    item["id"] == "performance"
+                )
+                or
+                (
+                    task_manager["state"] == "end_task_dialog"
+                    and
+                    item["id"] == "processes"
+                )
+            %}
+
+            <button
+                class="
+                    task-sidebar-item
+
+                    {% if is_selected %}
+                    selected
+                    {% endif %}
+                "
+                data-class="navigation_item"
+                data-semantic="task_nav_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    {{ item["icon"] }}
+                </span>
+
+
+                <span
+                    data-class="text"
+                >
+                    {{ item["label"] }}
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </aside>
+
+
+        <!-- =================================================
+             Content
+             ================================================= -->
+
+        <main
+            class="task-content"
+            data-class="section"
+            data-semantic="task_manager_content"
+        >
+
+
+            <!-- =============================================
+                 Processes
+                 ============================================= -->
+
+            {% if task_manager["state"] in [
+                "processes",
+                "end_task_dialog"
+            ] %}
+
+            <div
+                class="task-heading-row"
+            >
+
+                <h1
+                    class="task-heading"
+                    data-class="text"
+                >
+                    Processes
+                </h1>
+
+
+                <button
+                    class="windows-button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        stop_circle
+                    </span>
+
+                    End task
+                </button>
+
+            </div>
+
+
+            <table
+                class="task-table"
+            >
+
+                <thead>
+
+                <tr>
+
+                    <th
+                        style="
+                            width: 36%;
+                        "
+                        data-class="text"
+                    >
+                        Name
+                    </th>
+
+                    <th
+                        style="
+                            width: 12%;
+                        "
+                        data-class="text"
+                    >
+                        CPU
+                    </th>
+
+                    <th
+                        style="
+                            width: 18%;
+                        "
+                        data-class="text"
+                    >
+                        Memory
+                    </th>
+
+                    <th
+                        style="
+                            width: 15%;
+                        "
+                        data-class="text"
+                    >
+                        Disk
+                    </th>
+
+                    <th
+                        style="
+                            width: 15%;
+                        "
+                        data-class="text"
+                    >
+                        Network
+                    </th>
+
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for process in task_manager["processes"] %}
+
+                <tr
+                    class="
+                        task-row
+
+                        {% if process["selected"] %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="list_item"
+                    data-semantic="process_{{ loop.index }}"
+                >
+
+                    <td>
+
+                        <div
+                            class="process-name"
+                        >
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    process-icon
+                                "
+                                data-class="icon"
+                            >
+                                {{ process["icon"] }}
+                            </span>
+
+
+                            <span
+                                class="truncate"
+                                data-class="text"
+                            >
+                                {{ process["name"] }}
+                            </span>
+
+                        </div>
+
+                    </td>
+
+
+                    <td
+                        class="usage-cell"
+                        style="
+                            --usage:
+                            {{ process['cpu'] }}%;
+                        "
+                        data-class="system_text"
+                    >
+                        {{ process["cpu"] }}%
+                    </td>
+
+
+                    <td
+                        class="usage-cell"
+                        style="
+                            --usage:
+                            {{ [
+                                process["memory"] / 16,
+                                100
+                            ] | min }}%;
+                        "
+                        data-class="system_text"
+                    >
+                        {{ process["memory"] }}
+                        MB
+                    </td>
+
+
+                    <td
+                        class="usage-cell"
+                        style="
+                            --usage:
+                            {{ process['disk'] * 10 }}%;
+                        "
+                        data-class="system_text"
+                    >
+                        {{ process["disk"] }}
+                        MB/s
+                    </td>
+
+
+                    <td
+                        class="usage-cell"
+                        style="
+                            --usage:
+                            {{ process['network'] * 20 }}%;
+                        "
+                        data-class="system_text"
+                    >
+                        {{ process["network"] }}
+                        Mbps
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+
+            <!-- =============================================
+                 Performance
+                 ============================================= -->
+
+            {% elif task_manager["state"].startswith("performance_") %}
+
+            {% set current =
+                task_manager["performance"][
+                    task_manager["performance_type"]
+                ]
+            %}
+
+            <div
+                class="performance-layout"
+            >
+
+                <div
+                    class="performance-nav"
+                >
+
+                    {% for perf_id in [
+                        "cpu",
+                        "memory",
+                        "disk",
+                        "gpu"
+                    ] %}
+
+                    {% set perf =
+                        task_manager["performance"][
+                            perf_id
+                        ]
+                    %}
+
+                    <button
+                        class="
+                            performance-card
+
+                            {% if
+                                perf_id
+                                ==
+                                task_manager["performance_type"]
+                            %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="performance_{{ perf_id }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            {% if perf_id == "cpu" %}
+                                memory
+                            {% elif perf_id == "memory" %}
+                                developer_board
+                            {% elif perf_id == "disk" %}
+                                hard_drive
+                            {% else %}
+                                monitoring
+                            {% endif %}
+                        </span>
+
+
+                        <div
+                            class="performance-card-content"
+                        >
+
+                            <div
+                                class="performance-card-label"
+                                data-class="text"
+                            >
+                                {{ perf["label"] }}
+                            </div>
+
+
+                            <div
+                                class="performance-card-value"
+                                data-class="system_text"
+                            >
+                                {{ perf["value"] }}%
+                                ·
+                                {{ perf["subtitle"] }}
+                            </div>
+
+                        </div>
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <section
+                    class="performance-main"
+                    data-class="section"
+                >
+
+                    <div
+                        class="performance-header"
+                    >
+
+                        <div>
+
+                            <div
+                                class="performance-title"
+                                data-class="text"
+                            >
+                                {{ current["label"] }}
+                            </div>
+
+                            <div
+                                class="settings-card-subtitle"
+                                data-class="text"
+                            >
+                                {{ current["subtitle"] }}
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="performance-big-value"
+                            data-class="system_text"
+                        >
+                            {{ current["value"] }}%
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="performance-chart"
+                        data-class="card"
+                        data-semantic="performance_chart"
+                    >
+
+                        {% for point in current["points"] %}
+
+                        <div
+                            class="performance-bar"
+                            style="
+                                height:
+                                {{ point }}%;
+                            "
+                            data-class="progress_bar"
+                        >
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+
+                    <div
+                        class="performance-details"
+                    >
+
+                        <div
+                            class="performance-detail"
+                            data-class="card"
+                        >
+
+                            <div
+                                class="performance-detail-label"
+                                data-class="text"
+                            >
+                                Utilization
+                            </div>
+
+                            <div
+                                class="performance-detail-value"
+                                data-class="system_text"
+                            >
+                                {{ current["value"] }}%
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="performance-detail"
+                            data-class="card"
+                        >
+
+                            <div
+                                class="performance-detail-label"
+                                data-class="text"
+                            >
+                                Processes
+                            </div>
+
+                            <div
+                                class="performance-detail-value"
+                                data-class="system_text"
+                            >
+                                {{ task_manager["processes"] | length }}
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="performance-detail"
+                            data-class="card"
+                        >
+
+                            <div
+                                class="performance-detail-label"
+                                data-class="text"
+                            >
+                                Uptime
+                            </div>
+
+                            <div
+                                class="performance-detail-value"
+                                data-class="system_text"
+                            >
+                                1:04:38:22
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+
+            <!-- =============================================
+                 Startup Apps
+                 ============================================= -->
+
+            {% elif task_manager["state"] == "startup_apps" %}
+
+            <div
+                class="task-heading-row"
+            >
+
+                <h1
+                    class="task-heading"
+                    data-class="text"
+                >
+                    Startup apps
+                </h1>
+
+            </div>
+
+
+            <table
+                class="task-table"
+            >
+
+                <thead>
+
+                <tr>
+                    <th data-class="text">
+                        Name
+                    </th>
+
+                    <th data-class="text">
+                        Publisher
+                    </th>
+
+                    <th data-class="text">
+                        Status
+                    </th>
+
+                    <th data-class="text">
+                        Startup impact
+                    </th>
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for app in task_manager["startup_apps"] %}
+
+                <tr
+                    data-class="list_item"
+                >
+
+                    <td>
+
+                        <div
+                            class="process-name"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                {{ app["icon"] }}
+                            </span>
+
+                            <span
+                                data-class="text"
+                            >
+                                {{ app["name"] }}
+                            </span>
+
+                        </div>
+
+                    </td>
+
+                    <td data-class="text">
+                        {{ app["publisher"] }}
+                    </td>
+
+                    <td data-class="system_text">
+                        {{ app["status"] }}
+                    </td>
+
+                    <td data-class="system_text">
+                        {{ app["impact"] }}
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+
+            <!-- =============================================
+                 Users
+                 ============================================= -->
+
+            {% elif task_manager["state"] == "users" %}
+
+            <div
+                class="task-heading-row"
+            >
+                <h1
+                    class="task-heading"
+                    data-class="text"
+                >
+                    Users
+                </h1>
+            </div>
+
+
+            <table
+                class="task-table"
+            >
+
+                <thead>
+
+                <tr>
+                    <th data-class="text">
+                        User
+                    </th>
+
+                    <th data-class="text">
+                        Status
+                    </th>
+
+                    <th data-class="text">
+                        CPU
+                    </th>
+
+                    <th data-class="text">
+                        Memory
+                    </th>
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for user in task_manager["users"] %}
+
+                <tr
+                    data-class="list_item"
+                >
+
+                    <td>
+                        <div
+                            class="process-name"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="avatar"
+                            >
+                                account_circle
+                            </span>
+
+                            <span
+                                data-class="text"
+                            >
+                                {{ user["name"] }}
+                            </span>
+                        </div>
+                    </td>
+
+                    <td data-class="system_text">
+                        {{ user["status"] }}
+                    </td>
+
+                    <td data-class="system_text">
+                        {{ user["cpu"] }}%
+                    </td>
+
+                    <td data-class="system_text">
+                        {{ user["memory"] }} MB
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+
+            <!-- =============================================
+                 Services
+                 ============================================= -->
+
+            {% elif task_manager["state"] == "services" %}
+
+            <div
+                class="task-heading-row"
+            >
+                <h1
+                    class="task-heading"
+                    data-class="text"
+                >
+                    Services
+                </h1>
+            </div>
+
+
+            <table
+                class="task-table"
+            >
+
+                <thead>
+
+                <tr>
+                    <th data-class="text">
+                        Name
+                    </th>
+
+                    <th data-class="text">
+                        PID
+                    </th>
+
+                    <th data-class="text">
+                        Description
+                    </th>
+
+                    <th data-class="text">
+                        Status
+                    </th>
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for service in task_manager["services"] %}
+
+                <tr
+                    data-class="list_item"
+                >
+
+                    <td data-class="text">
+                        {{ service["name"] }}
+                    </td>
+
+                    <td data-class="system_text">
+                        {{ service["pid"] }}
+                    </td>
+
+                    <td data-class="text">
+                        {{ service["description"] }}
+                    </td>
+
+                    <td data-class="system_text">
+                        {{ service["status"] }}
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+
+            <!-- =============================================
+                 App History / Details
+                 ============================================= -->
+
+            {% else %}
+
+            <div
+                class="task-heading-row"
+            >
+
+                <h1
+                    class="task-heading"
+                    data-class="text"
+                >
+                    {% if task_manager["state"] == "app_history" %}
+                        App history
+                    {% else %}
+                        Details
+                    {% endif %}
+                </h1>
+
+            </div>
+
+
+            <table
+                class="task-table"
+            >
+
+                <thead>
+
+                <tr>
+
+                    <th data-class="text">
+                        Name
+                    </th>
+
+                    <th data-class="text">
+                        PID
+                    </th>
+
+                    <th data-class="text">
+                        CPU
+                    </th>
+
+                    <th data-class="text">
+                        Memory
+                    </th>
+
+                    <th data-class="text">
+                        Status
+                    </th>
+
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for process in task_manager["processes"] %}
+
+                <tr
+                    data-class="list_item"
+                >
+
+                    <td data-class="text">
+                        {{ process["name"] }}
+                    </td>
+
+                    <td data-class="system_text">
+                        {{ 1000 + loop.index * 413 }}
+                    </td>
+
+                    <td data-class="system_text">
+                        {{ process["cpu"] }}%
+                    </td>
+
+                    <td data-class="system_text">
+                        {{ process["memory"] }} MB
+                    </td>
+
+                    <td data-class="system_text">
+                        Running
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+</section>
+
+{% endblock %}
+
+
+{% block modal_content %}
+
+{% if
+    task_manager["state"] == "end_task_dialog"
+    and
+    task_manager["selected_process"]
+%}
+
+<div
+    class="windows-modal-layer"
+>
+
+    <div
+        class="windows-modal-backdrop"
+        data-annotation-skip="true"
+    >
+    </div>
+
+
+    <section
+        class="
+            windows-dialog
+            end-task-dialog
+        "
+        data-class="dialog"
+        data-semantic="end_task_dialog"
+        data-occluder="true"
+    >
+
+        <div
+            class="dialog-title"
+            data-class="text"
+        >
+            End task?
+        </div>
+
+
+        <div
+            class="dialog-message"
+            data-class="text"
+        >
+            Ending
+            {{ task_manager["selected_process"]["name"] }}
+            may cause unsaved data to be lost.
+        </div>
+
+
+        <div
+            class="dialog-buttons"
+        >
+
+            <button
+                class="windows-button"
+                data-class="button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    windows-button
+                    primary
+                "
+                data-class="button"
+                data-semantic="confirm_end_task"
+            >
+                End task
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endif %}
+
+{% endblock %}
