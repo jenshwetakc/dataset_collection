@@ -1,0 +1,2190 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Android File Picker
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* =====================================================
+       Root
+       ===================================================== */
+
+    .file-picker-screen {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                -
+                var(--status-bar-height)
+                -
+                var(--system-navigation-height)
+            );
+
+        background:
+            var(--background);
+
+        color:
+            var(--on-background);
+    }
+
+
+    /* =====================================================
+       App Bar
+       ===================================================== */
+
+    .file-picker-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            30;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            100%;
+
+        min-height:
+            64px;
+
+        padding:
+            0 8px;
+
+        gap:
+            4px;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .file-picker-icon-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            48px;
+
+        height:
+            48px;
+
+        border:
+            none;
+
+        border-radius:
+            50%;
+
+        background:
+            transparent;
+
+        color:
+            var(--icon);
+
+        cursor:
+            pointer;
+    }
+
+
+    .file-picker-icon-button iconify-icon {
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        font-size:
+            24px;
+    }
+
+
+    .file-picker-app-title {
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+
+        padding:
+            0 8px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            20px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* =====================================================
+       Search
+       ===================================================== */
+
+    .file-picker-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+
+        height:
+            48px;
+
+        margin:
+            0 6px;
+
+        padding:
+            0 14px;
+
+        gap:
+            10px;
+
+        border-radius:
+            24px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+    }
+
+
+    .file-picker-search iconify-icon {
+
+        flex:
+            0 0 auto;
+
+        width:
+            21px;
+
+        height:
+            21px;
+
+        font-size:
+            21px;
+    }
+
+
+    .file-picker-search input {
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+
+        width:
+            100%;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font:
+            inherit;
+
+        font-size:
+            15px;
+    }
+
+
+    /* =====================================================
+       Toolbar
+       ===================================================== */
+
+    .file-picker-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-height:
+            52px;
+
+        padding:
+            4px 16px;
+
+        gap:
+            8px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .file-picker-location-chip,
+    .file-picker-filter-chip {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        min-height:
+            34px;
+
+        padding:
+            0 12px;
+
+        gap:
+            6px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            17px;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font:
+            inherit;
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+
+        cursor:
+            pointer;
+    }
+
+
+    .file-picker-toolbar-spacer {
+
+        flex:
+            1 1 auto;
+    }
+
+
+    /* =====================================================
+       Content
+       ===================================================== */
+
+    .file-picker-content {
+
+        position:
+            relative;
+
+        flex:
+            1 1 auto;
+
+        width:
+            100%;
+
+        padding:
+            14px 16px 28px;
+    }
+
+
+    /* =====================================================
+       Section Title
+       ===================================================== */
+
+    .file-section-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            34px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+    }
+
+
+    /* =====================================================
+       GRID
+       ===================================================== */
+
+    .file-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            12px;
+    }
+
+
+    .file-grid-item {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        padding:
+            0;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            18px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        text-align:
+            left;
+
+        cursor:
+            pointer;
+    }
+
+
+    .file-grid-item.is-selected {
+
+        border:
+            2px solid
+            var(--primary);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .file-grid-preview {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        aspect-ratio:
+            1.35;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    .file-grid-preview img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .file-grid-preview iconify-icon {
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        font-size:
+            42px;
+    }
+
+
+    .file-grid-info {
+
+        min-width:
+            0;
+
+        padding:
+            10px 11px 12px;
+    }
+
+
+    .file-grid-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .file-grid-item.is-selected
+    .file-grid-name {
+
+        color:
+            inherit;
+    }
+
+
+    .file-grid-meta {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .file-grid-item.is-selected
+    .file-grid-meta {
+
+        color:
+            inherit;
+
+        opacity:
+            0.72;
+    }
+
+
+    /* =====================================================
+       LIST
+       ===================================================== */
+
+    .file-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+    }
+
+
+    .file-list-item {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-height:
+            68px;
+
+        padding:
+            8px 6px;
+
+        gap:
+            12px;
+
+        border:
+            none;
+
+        border-radius:
+            16px;
+
+        background:
+            transparent;
+
+        color:
+            var(--on-background);
+
+        text-align:
+            left;
+
+        cursor:
+            pointer;
+    }
+
+
+    .file-list-item.is-selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .file-list-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            46px;
+
+        height:
+            46px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    .file-list-icon img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .file-list-icon iconify-icon {
+
+        width:
+            25px;
+
+        height:
+            25px;
+
+        font-size:
+            25px;
+    }
+
+
+    .file-list-content {
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+    }
+
+
+    .file-list-name {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    .file-list-item.is-selected
+    .file-list-name {
+
+        color:
+            inherit;
+    }
+
+
+    .file-list-meta {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .file-list-item.is-selected
+    .file-list-meta {
+
+        color:
+            inherit;
+
+        opacity:
+            0.72;
+    }
+
+
+    /* =====================================================
+       Selection Indicator
+       ===================================================== */
+
+    .file-selection-indicator {
+
+        position:
+            absolute;
+
+        top:
+            8px;
+
+        right:
+            8px;
+
+        z-index:
+            5;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .file-selection-indicator.inline {
+
+        position:
+            relative;
+
+        top:
+            auto;
+
+        right:
+            auto;
+
+        flex:
+            0 0 auto;
+    }
+
+
+    .file-selection-indicator iconify-icon {
+
+        width:
+            15px;
+
+        height:
+            15px;
+
+        font-size:
+            15px;
+    }
+
+
+    /* =====================================================
+       Empty
+       ===================================================== */
+
+    .file-empty {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        min-height:
+            360px;
+
+        text-align:
+            center;
+    }
+
+
+    .file-empty-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            84px;
+
+        height:
+            84px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .file-empty-icon iconify-icon {
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        font-size:
+            42px;
+    }
+
+
+    .file-empty-title {
+
+        margin-top:
+            18px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            650;
+    }
+
+
+    .file-empty-text {
+
+        max-width:
+            280px;
+
+        margin-top:
+            6px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        line-height:
+            1.4;
+    }
+
+
+    /* =====================================================
+       Navigation Drawer
+       ===================================================== */
+
+    .file-drawer-layer {
+
+        position:
+            fixed;
+
+        z-index:
+            3000;
+
+        inset:
+            0;
+
+        display:
+            flex;
+    }
+
+
+    .file-drawer-backdrop {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.42
+            );
+    }
+
+
+    .file-drawer {
+
+        position:
+            relative;
+
+        z-index:
+            1;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            min(
+                320px,
+                84vw
+            );
+
+        height:
+            100%;
+
+        padding:
+            18px 12px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--shadow-large);
+    }
+
+
+    .file-drawer-title {
+
+        padding:
+            10px 14px 18px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            650;
+    }
+
+
+    .file-drawer-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-height:
+            52px;
+
+        padding:
+            0 14px;
+
+        gap:
+            14px;
+
+        border:
+            none;
+
+        border-radius:
+            26px;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        text-align:
+            left;
+
+        cursor:
+            pointer;
+    }
+
+
+    .file-drawer-item.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .file-drawer-item iconify-icon {
+
+        width:
+            22px;
+
+        height:
+            22px;
+
+        font-size:
+            22px;
+    }
+
+
+    .file-storage {
+
+        margin-top:
+            auto;
+
+        padding:
+            16px 14px 6px;
+    }
+
+
+    .file-storage-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+    }
+
+
+    .file-storage-track {
+
+        width:
+            100%;
+
+        height:
+            6px;
+
+        margin-top:
+            10px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .file-storage-fill {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    .file-storage-text {
+
+        margin-top:
+            6px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    /* =====================================================
+       Sort Menu
+       ===================================================== */
+
+    .file-sort-menu {
+
+        position:
+            fixed;
+
+        z-index:
+            3100;
+
+        top:
+            calc(
+                var(--status-bar-height)
+                +
+                54px
+            );
+
+        right:
+            12px;
+
+        width:
+            190px;
+
+        padding:
+            8px;
+
+        border-radius:
+            18px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--shadow-large);
+    }
+
+
+    .file-sort-option {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-height:
+            44px;
+
+        padding:
+            0 12px;
+
+        border:
+            none;
+
+        border-radius:
+            12px;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        font:
+            inherit;
+
+        font-size:
+            13px;
+
+        cursor:
+            pointer;
+    }
+
+
+    .file-sort-option.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* =====================================================
+       Bottom Selection Bar
+       ===================================================== */
+
+    .file-selection-bar {
+
+        position:
+            sticky;
+
+        z-index:
+            20;
+
+        bottom:
+            0;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-height:
+            64px;
+
+        padding:
+            8px 16px;
+
+        gap:
+            10px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+    }
+
+
+    .file-selection-count {
+
+        flex:
+            1 1 auto;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .file-selection-action {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            44px;
+
+        padding:
+            0 18px;
+
+        border:
+            none;
+
+        border-radius:
+            22px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font:
+            inherit;
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+
+        cursor:
+            pointer;
+    }
+
+
+    /* =====================================================
+       Tablet
+       ===================================================== */
+
+    @media (
+        min-width: 600px
+    ) {
+
+        .file-grid {
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+    }
+
+
+    @media (
+        min-width: 900px
+    ) {
+
+        .file-grid {
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .file-picker-content {
+
+            max-width:
+                1100px;
+
+            margin:
+                0 auto;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="file-picker-screen">
+
+
+    <!-- =================================================
+         App Bar
+         ================================================= -->
+
+    <header
+        class="file-picker-app-bar"
+        data-class="app_bar"
+        data-semantic="file_picker_app_bar"
+    >
+
+
+        <button
+            class="file-picker-icon-button"
+            data-class="button"
+            data-semantic="open_file_navigation"
+        >
+
+            <iconify-icon
+                icon="mdi:menu"
+                data-class="icon"
+                data-semantic="file_navigation_icon"
+            >
+            </iconify-icon>
+
+        </button>
+
+
+        {% if file_picker.show_search %}
+
+        <div
+            class="file-picker-search"
+            data-class="search_bar"
+            data-semantic="file_picker_search"
+        >
+
+            <iconify-icon
+                icon="mdi:magnify"
+                data-class="icon"
+                data-semantic="file_search_icon"
+            >
+            </iconify-icon>
+
+
+            <input
+                type="text"
+                value="{{ file_picker.search_query }}"
+                aria-label="Search files"
+                data-class="input_field"
+                data-semantic="file_search_input"
+            >
+
+
+            <button
+                class="file-picker-icon-button"
+                style="width: 36px; height: 36px;"
+                data-class="button"
+                data-semantic="clear_file_search"
+            >
+
+                <iconify-icon
+                    icon="mdi:close"
+                    data-class="icon"
+                    data-semantic="clear_file_search_icon"
+                >
+                </iconify-icon>
+
+            </button>
+
+        </div>
+
+
+        {% else %}
+
+        <div
+            class="file-picker-app-title"
+            data-class="text"
+            data-semantic="file_picker_title"
+        >
+
+            {% if file_picker.picker_state == "multi_select" %}
+
+                {{ file_picker.selected_count }}
+                selected
+
+            {% else %}
+
+                {{ file_picker.location.label }}
+
+            {% endif %}
+
+        </div>
+
+
+        <button
+            class="file-picker-icon-button"
+            data-class="button"
+            data-semantic="search_files"
+        >
+
+            <iconify-icon
+                icon="mdi:magnify"
+                data-class="icon"
+                data-semantic="search_files_icon"
+            >
+            </iconify-icon>
+
+        </button>
+
+        {% endif %}
+
+
+        <button
+            class="file-picker-icon-button"
+            data-class="button"
+            data-semantic="toggle_file_view"
+        >
+
+            <iconify-icon
+                icon="{{ 'mdi:view-list-outline' if file_picker.view_mode == 'grid' else 'mdi:view-grid-outline' }}"
+                data-class="icon"
+                data-semantic="toggle_file_view_icon"
+            >
+            </iconify-icon>
+
+        </button>
+
+
+        <button
+            class="file-picker-icon-button"
+            data-class="button"
+            data-semantic="file_more_options"
+        >
+
+            <iconify-icon
+                icon="mdi:dots-vertical"
+                data-class="icon"
+                data-semantic="file_more_options_icon"
+            >
+            </iconify-icon>
+
+        </button>
+
+    </header>
+
+
+    <!-- =================================================
+         Filter Toolbar
+         ================================================= -->
+
+    <div class="file-picker-toolbar">
+
+
+        <button
+            class="file-picker-location-chip"
+            data-class="chip"
+            data-semantic="current_file_location"
+        >
+
+            <iconify-icon
+                icon="{{ file_picker.location.icon }}"
+                data-class="icon"
+                data-semantic="current_location_icon"
+            >
+            </iconify-icon>
+
+            {{ file_picker.location.label }}
+
+        </button>
+
+
+        <button
+            class="file-picker-filter-chip"
+            data-class="chip"
+            data-semantic="file_type_filter"
+        >
+
+            {{ file_picker.file_filter }}
+
+            <iconify-icon
+                icon="mdi:chevron-down"
+                data-class="icon"
+                data-semantic="file_type_filter_icon"
+            >
+            </iconify-icon>
+
+        </button>
+
+
+        <div class="file-picker-toolbar-spacer">
+        </div>
+
+
+        <button
+            class="file-picker-icon-button"
+            data-class="button"
+            data-semantic="sort_files"
+        >
+
+            <iconify-icon
+                icon="mdi:sort"
+                data-class="icon"
+                data-semantic="sort_files_icon"
+            >
+            </iconify-icon>
+
+        </button>
+
+    </div>
+
+
+    <!-- =================================================
+         Main Content
+         ================================================= -->
+
+    <main
+        class="file-picker-content"
+        data-class="section"
+        data-semantic="file_picker_content"
+    >
+
+
+        {% if file_picker.picker_state in ["empty", "no_results"] %}
+
+
+        <!-- =============================================
+             Empty State
+             ============================================= -->
+
+        <section class="file-empty">
+
+            <div class="file-empty-icon">
+
+                <iconify-icon
+                    icon="{{ 'mdi:file-search-outline' if file_picker.picker_state == 'no_results' else 'mdi:folder-open-outline' }}"
+                    data-class="icon"
+                    data-semantic="file_empty_icon"
+                >
+                </iconify-icon>
+
+            </div>
+
+
+            <div
+                class="file-empty-title"
+                data-class="text"
+                data-semantic="file_empty_title"
+            >
+
+                {% if file_picker.picker_state == "no_results" %}
+
+                    No results
+
+                {% else %}
+
+                    This folder is empty
+
+                {% endif %}
+
+            </div>
+
+
+            <div
+                class="file-empty-text"
+                data-class="text"
+                data-semantic="file_empty_text"
+            >
+
+                {% if file_picker.picker_state == "no_results" %}
+
+                    No files match
+                    "{{ file_picker.search_query }}".
+
+                {% else %}
+
+                    Files added here will appear in this folder.
+
+                {% endif %}
+
+            </div>
+
+        </section>
+
+
+        {% else %}
+
+
+        <div
+            class="file-section-title"
+            data-class="text"
+            data-semantic="file_section_title"
+        >
+
+            {% if file_picker.picker_state == "search_results" %}
+
+                Search results
+
+            {% else %}
+
+                {{ file_picker.sort_by }}
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- =============================================
+             GRID VIEW
+             ============================================= -->
+
+        {% if file_picker.view_mode == "grid" %}
+
+        <div class="file-grid">
+
+
+            {% for entry in file_picker["items"] %}
+
+
+            <button
+                class="file-grid-item{{ ' is-selected' if entry.selected else '' }}"
+                data-class="{{ 'image' if entry.type == 'image' and entry.thumbnail else 'card' }}"
+                data-semantic="{{ entry.semantic }}"
+            >
+
+
+                <div class="file-grid-preview">
+
+
+                    {% if entry.type == "image" and entry.thumbnail %}
+
+                    <img
+                        src="{{ entry.thumbnail }}"
+                        alt=""
+                    >
+
+                    {% else %}
+
+                    <iconify-icon
+                        icon="{{ entry.icon }}"
+                        data-class="icon"
+                        data-semantic="{{ entry.semantic }}_icon"
+                    >
+                    </iconify-icon>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="file-grid-info">
+
+                    <div
+                        class="file-grid-name"
+                        data-class="text"
+                        data-semantic="{{ entry.semantic }}_name"
+                    >
+                        {{ entry.name }}
+                    </div>
+
+
+                    <div
+                        class="file-grid-meta"
+                        data-class="text"
+                        data-semantic="{{ entry.semantic }}_meta"
+                    >
+
+                        {{ entry.modified }}
+
+                        {% if entry.size %}
+
+                            ·
+                            {{ entry.size }}
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                {% if entry.selected %}
+
+                <span
+                    class="file-selection-indicator"
+                    data-class="selection_indicator"
+                    data-semantic="{{ entry.semantic }}_selected"
+                >
+
+                    <iconify-icon
+                        icon="mdi:check"
+                        data-class="icon"
+                        data-semantic="{{ entry.semantic }}_selected_icon"
+                    >
+                    </iconify-icon>
+
+                </span>
+
+                {% endif %}
+
+            </button>
+
+
+            {% endfor %}
+
+
+        </div>
+
+
+        <!-- =============================================
+             LIST VIEW
+             ============================================= -->
+
+        {% else %}
+
+        <div class="file-list">
+
+
+            {% for entry in file_picker["items"] %}
+
+
+            <button
+                class="file-list-item{{ ' is-selected' if entry.selected else '' }}"
+                data-class="button"
+                data-semantic="{{ entry.semantic }}"
+            >
+
+
+                {% if entry.type == "image" and entry.thumbnail %}
+
+                <div
+                    class="file-list-icon"
+                    data-class="image"
+                    data-semantic="{{ entry.semantic }}_preview"
+                >
+
+                    <img
+                        src="{{ entry.thumbnail }}"
+                        alt=""
+                    >
+
+                </div>
+
+
+                {% else %}
+
+
+                <div
+                    class="file-list-icon"
+                    data-semantic="{{ entry.semantic }}_preview"
+                >
+
+                    <iconify-icon
+                        icon="{{ entry.icon }}"
+                        data-class="icon"
+                        data-semantic="{{ entry.semantic }}_icon"
+                    >
+                    </iconify-icon>
+
+                </div>
+
+
+                {% endif %}
+
+
+                <div class="file-list-content">
+
+                    <div
+                        class="file-list-name"
+                        data-class="text"
+                        data-semantic="{{ entry.semantic }}_name"
+                    >
+                        {{ entry.name }}
+                    </div>
+
+
+                    <div
+                        class="file-list-meta"
+                        data-class="text"
+                        data-semantic="{{ entry.semantic }}_meta"
+                    >
+
+                        {{ entry.modified }}
+
+                        {% if entry.size %}
+
+                            ·
+                            {{ entry.size }}
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                {% if entry.selected %}
+
+                <span
+                    class="file-selection-indicator inline"
+                    data-class="selection_indicator"
+                    data-semantic="{{ entry.semantic }}_selected"
+                >
+
+                    <iconify-icon
+                        icon="mdi:check"
+                        data-class="icon"
+                        data-semantic="{{ entry.semantic }}_selected_icon"
+                    >
+                    </iconify-icon>
+
+                </span>
+
+
+                {% else %}
+
+                <iconify-icon
+                    icon="mdi:dots-vertical"
+                    data-class="icon"
+                    data-semantic="{{ entry.semantic }}_more"
+                >
+                </iconify-icon>
+
+                {% endif %}
+
+
+            </button>
+
+
+            {% endfor %}
+
+
+        </div>
+
+        {% endif %}
+
+
+        {% endif %}
+
+
+    </main>
+
+
+    <!-- =================================================
+         Multi Selection Bottom Bar
+         ================================================= -->
+
+    {% if file_picker.picker_state == "multi_select" %}
+
+    <div
+        class="file-selection-bar"
+        data-class="navigation_bar"
+        data-semantic="file_selection_bar"
+    >
+
+        <div
+            class="file-selection-count"
+            data-class="text"
+            data-semantic="file_selection_count"
+        >
+            {{ file_picker.selected_count }}
+            selected
+        </div>
+
+
+        <button
+            class="file-selection-action"
+            data-class="button"
+            data-semantic="confirm_file_selection"
+        >
+            Open
+        </button>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =================================================
+         Sort Menu
+         ================================================= -->
+
+    {% if file_picker.sort_menu_open %}
+
+    <section
+        class="file-sort-menu"
+        data-class="dialog"
+        data-semantic="file_sort_menu"
+        data-occluder="true"
+    >
+
+
+        {% for option in ["Name", "Date modified", "Size"] %}
+
+        <button
+            class="file-sort-option{{ ' selected' if option == file_picker.sort_by else '' }}"
+            data-class="button"
+            data-semantic="sort_{{ loop.index }}"
+        >
+            {{ option }}
+        </button>
+
+        {% endfor %}
+
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =================================================
+         Navigation Drawer
+         ================================================= -->
+
+    {% if file_picker.drawer_open %}
+
+
+    <div class="file-drawer-layer">
+
+
+        <!-- Background belongs to the underlying screen.
+             Do not annotate it while drawer is open. -->
+
+        <div
+            class="file-drawer-backdrop"
+            data-annotation-skip="true"
+        >
+        </div>
+
+
+        <aside
+            class="file-drawer"
+            data-class="section"
+            data-semantic="file_navigation_drawer"
+            data-occluder="true"
+        >
+
+
+            <div
+                class="file-drawer-title"
+                data-class="text"
+                data-semantic="file_navigation_title"
+            >
+                Open from
+            </div>
+
+
+            {% for location in file_picker.locations %}
+
+
+            <button
+                class="file-drawer-item{{ ' selected' if location.semantic == file_picker.location.semantic else '' }}"
+                data-class="navigation_item"
+                data-semantic="file_location_{{ location.semantic }}"
+            >
+
+                <iconify-icon
+                    icon="{{ location.icon }}"
+                    data-class="icon"
+                    data-semantic="file_location_{{ location.semantic }}_icon"
+                >
+                </iconify-icon>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="file_location_{{ location.semantic }}_label"
+                >
+                    {{ location.label }}
+                </span>
+
+            </button>
+
+
+            {% endfor %}
+
+
+            <!-- =========================================
+                 Storage
+                 ========================================= -->
+
+            <div class="file-storage">
+
+
+                <div
+                    class="file-storage-title"
+                    data-class="text"
+                    data-semantic="file_storage_title"
+                >
+                    Internal storage
+                </div>
+
+
+                <div
+                    class="file-storage-track"
+                    data-class="progress_bar"
+                    data-semantic="file_storage_progress"
+                >
+
+                    <div
+                        class="file-storage-fill"
+                        style="width: {{ file_picker.storage_percentage }}%;"
+                        data-annotation-skip="true"
+                    >
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="file-storage-text"
+                    data-class="text"
+                    data-semantic="file_storage_text"
+                >
+                    {{ file_picker.storage_used }}
+                    GB of
+                    {{ file_picker.storage_total }}
+                    GB used
+                </div>
+
+
+            </div>
+
+
+        </aside>
+
+
+    </div>
+
+
+    {% endif %}
+
+
+</div>
+
+{% endblock %}

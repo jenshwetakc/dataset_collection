@@ -1,0 +1,1926 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Android Notification Shade
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* =====================================================
+       Root
+       ===================================================== */
+
+    .shade-screen {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                -
+                var(--status-bar-height)
+                -
+                var(--system-navigation-height)
+            );
+
+        overflow:
+            hidden;
+
+        background:
+            var(--background);
+    }
+
+
+    /* =====================================================
+       Background / Launcher Placeholder
+       ===================================================== */
+
+    .shade-background {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        align-content:
+            center;
+
+        justify-items:
+            center;
+
+        gap:
+            20px;
+
+        padding:
+            32px;
+
+        opacity:
+            0.20;
+    }
+
+
+    .shade-background-app {
+
+        width:
+            min(
+                64px,
+                100%
+            );
+
+        aspect-ratio:
+            1;
+
+        border-radius:
+            18px;
+
+        background:
+            var(--primary-container);
+    }
+
+
+    /* =====================================================
+       Scrim
+       ===================================================== */
+
+    .shade-scrim {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        z-index:
+            1;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.30
+            );
+    }
+
+
+    /* =====================================================
+       Notification Shade Panel
+       ===================================================== */
+
+    .notification-shade {
+
+        position:
+            relative;
+
+        z-index:
+            10;
+
+        width:
+            100%;
+
+        min-height:
+            100%;
+
+        padding:
+            10px 12px 20px;
+
+        border-radius:
+            0 0 28px 28px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+    }
+
+
+    /* =====================================================
+       Shade States
+       ===================================================== */
+
+    .notification-shade.is-collapsed {
+
+        max-height:
+            54vh;
+
+        overflow:
+            hidden;
+    }
+
+
+    .notification-shade.is-partial {
+
+        max-height:
+            76vh;
+
+        overflow:
+            hidden;
+    }
+
+
+    .notification-shade.is-expanded {
+
+        min-height:
+            100%;
+    }
+
+
+    /* =====================================================
+       Header
+       ===================================================== */
+
+    .shade-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        width:
+            100%;
+
+        min-height:
+            50px;
+
+        padding:
+            0 4px 0 8px;
+    }
+
+
+    .shade-time {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            650;
+
+        line-height:
+            1;
+    }
+
+
+    .shade-header-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            2px;
+    }
+
+
+    .shade-action {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .shade-action iconify-icon {
+
+        width:
+            22px;
+
+        height:
+            22px;
+
+        font-size:
+            22px;
+    }
+
+
+    /* =====================================================
+       Quick Settings
+       ===================================================== */
+
+    .quick-settings-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            8px;
+
+        width:
+            100%;
+
+        padding:
+            6px 4px 12px;
+    }
+
+
+    .quick-setting-tile {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        min-height:
+            58px;
+
+        padding:
+            8px 14px;
+
+        gap:
+            10px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+    }
+
+
+    .quick-setting-tile.is-enabled {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .quick-setting-icon {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+    }
+
+
+    .quick-setting-icon iconify-icon {
+
+        width:
+            22px;
+
+        height:
+            22px;
+
+        font-size:
+            22px;
+    }
+
+
+    .quick-setting-title {
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+
+        line-height:
+            1.2;
+    }
+
+
+    /* =====================================================
+       Brightness
+       ===================================================== */
+
+    .brightness-container {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        gap:
+            12px;
+
+        padding:
+            6px 8px 14px;
+    }
+
+
+    .brightness-icon {
+
+        flex:
+            0 0 auto;
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        color:
+            var(--icon);
+
+        font-size:
+            24px;
+    }
+
+
+    .brightness-slider {
+
+        position:
+            relative;
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+
+        height:
+            36px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .brightness-progress {
+
+        position:
+            absolute;
+
+        top:
+            0;
+
+        bottom:
+            0;
+
+        left:
+            0;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary);
+    }
+
+
+    .brightness-thumb {
+
+        position:
+            absolute;
+
+        top:
+            50%;
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border-radius:
+            50%;
+
+        background:
+            var(--on-primary);
+
+        box-shadow:
+            0 1px 3px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    /* =====================================================
+       Media Control
+       ===================================================== */
+
+    .media-control-card {
+
+        width:
+            calc(
+                100%
+                -
+                8px
+            );
+
+        margin:
+            2px 4px 12px;
+
+        padding:
+            14px;
+
+        border-radius:
+            24px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+    }
+
+
+    .media-main {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        gap:
+            12px;
+    }
+
+
+    .media-art {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            52px;
+
+        height:
+            52px;
+
+        border-radius:
+            14px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .media-art iconify-icon {
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        font-size:
+            28px;
+    }
+
+
+    .media-text {
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+    }
+
+
+    .media-title {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        font-weight:
+            650;
+
+        line-height:
+            1.25;
+    }
+
+
+    .media-artist {
+
+        margin-top:
+            3px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.25;
+    }
+
+
+    .media-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-end;
+
+        flex:
+            0 0 auto;
+
+        gap:
+            0;
+    }
+
+
+    /* =====================================================
+       Notification Section
+       ===================================================== */
+
+    .notification-section {
+
+        width:
+            100%;
+
+        padding:
+            4px;
+    }
+
+
+    .notification-card {
+
+        width:
+            100%;
+
+        margin-bottom:
+            8px;
+
+        padding:
+            14px;
+
+        border-radius:
+            22px;
+
+        background:
+            var(--background);
+
+        color:
+            var(--on-background);
+    }
+
+
+    .notification-card.is-silent {
+
+        opacity:
+            0.88;
+    }
+
+
+    .notification-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        gap:
+            8px;
+    }
+
+
+    .notification-app-icon {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .notification-app-icon iconify-icon {
+
+        width:
+            19px;
+
+        height:
+            19px;
+
+        font-size:
+            19px;
+    }
+
+
+    .notification-app {
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+
+        line-height:
+            1.2;
+    }
+
+
+    .notification-time {
+
+        flex:
+            0 0 auto;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        line-height:
+            1;
+    }
+
+
+    .notification-title {
+
+        margin-top:
+            8px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        font-weight:
+            650;
+
+        line-height:
+            1.3;
+    }
+
+
+    .notification-body {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.4;
+    }
+
+
+    .notification-actions {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            8px;
+
+        margin-top:
+            12px;
+    }
+
+
+    .notification-action {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            34px;
+
+        padding:
+            0 14px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            12px;
+
+        font-weight:
+            650;
+
+        line-height:
+            1;
+    }
+
+
+    /* =====================================================
+       Silent Label
+       ===================================================== */
+
+    .notification-silent-label {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        margin:
+            4px 6px 8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+    }
+
+
+    .notification-silent-label iconify-icon {
+
+        width:
+            16px;
+
+        height:
+            16px;
+
+        font-size:
+            16px;
+    }
+
+
+    /* =====================================================
+       Footer
+       ===================================================== */
+
+    .shade-footer {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        width:
+            100%;
+
+        padding:
+            8px 8px 0;
+    }
+
+
+    .shade-footer-left {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+    }
+
+
+    .shade-footer-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+    }
+
+
+    .clear-all-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            40px;
+
+        padding:
+            0 20px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+
+        font-size:
+            13px;
+
+        font-weight:
+            650;
+
+        line-height:
+            1;
+    }
+
+
+    .shade-footer-icon {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .shade-footer-icon iconify-icon {
+
+        width:
+            21px;
+
+        height:
+            21px;
+
+        font-size:
+            21px;
+    }
+
+
+    /* =====================================================
+       Expanded / Tablet
+       ===================================================== */
+
+    @media (
+        min-width: 768px
+    ) {
+
+        .notification-shade {
+
+            max-width:
+                720px;
+
+            margin:
+                0 auto;
+
+            padding:
+                14px 16px 24px;
+
+            border-radius:
+                0 0 32px 32px;
+
+            box-shadow:
+                var(--shadow-large);
+        }
+
+
+        .quick-settings-grid {
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+
+            gap:
+                10px;
+        }
+
+
+        .quick-setting-tile {
+
+            min-height:
+                64px;
+        }
+
+
+        .notification-card {
+
+            padding:
+                16px;
+        }
+    }
+
+
+    /* =====================================================
+       Very Narrow Screens
+       ===================================================== */
+
+    @media (
+        max-width: 350px
+    ) {
+
+        .notification-shade {
+
+            padding-left:
+                8px;
+
+            padding-right:
+                8px;
+        }
+
+
+        .quick-setting-tile {
+
+            padding:
+                8px 10px;
+
+            gap:
+                7px;
+        }
+
+
+        .quick-setting-icon {
+
+            width:
+                30px;
+
+            height:
+                30px;
+        }
+
+
+        .quick-setting-icon iconify-icon {
+
+            width:
+                19px;
+
+            height:
+                19px;
+
+            font-size:
+                19px;
+        }
+
+
+        .quick-setting-title {
+
+            font-size:
+                12px;
+        }
+
+
+        .media-art {
+
+            width:
+                46px;
+
+            height:
+                46px;
+        }
+
+
+        .shade-action {
+
+            width:
+                38px;
+
+            height:
+                38px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="shade-screen">
+
+
+    <!-- =================================================
+         Inactive Launcher Background
+         ================================================= -->
+
+    <div
+        class="shade-background"
+        data-annotation-skip="true"
+    >
+
+        {% for _ in range(12) %}
+
+        <div class="shade-background-app">
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+
+    <!-- =================================================
+         Background Scrim
+         ================================================= -->
+
+    <div
+        class="shade-scrim"
+        data-annotation-skip="true"
+    >
+    </div>
+
+
+    <!-- =================================================
+         Active Notification Shade
+         ================================================= -->
+
+    <section
+        class="
+            notification-shade
+            is-{{ shade.shade_state }}
+        "
+        data-class="section"
+        data-semantic="notification_shade"
+        data-occluder="true"
+    >
+
+
+        <!-- =============================================
+             Header
+             ============================================= -->
+
+        <div class="shade-header">
+
+            <div
+                class="shade-time"
+                data-class="system_text"
+                data-semantic="shade_time"
+            >
+                {{ time_text }}
+            </div>
+
+
+            <div class="shade-header-actions">
+
+
+                <!-- User -->
+
+                <button
+                    class="shade-action"
+                    data-class="button"
+                    data-semantic="user_switcher"
+                >
+
+                    <iconify-icon
+                        icon="mdi:account-circle-outline"
+                        data-class="icon"
+                        data-semantic="user_switcher_icon"
+                    >
+                    </iconify-icon>
+
+                </button>
+
+
+                <!-- Power -->
+
+                <button
+                    class="shade-action"
+                    data-class="button"
+                    data-semantic="power_menu"
+                >
+
+                    <iconify-icon
+                        icon="mdi:power"
+                        data-class="icon"
+                        data-semantic="power_icon"
+                    >
+                    </iconify-icon>
+
+                </button>
+
+
+                <!-- Settings -->
+
+                <button
+                    class="shade-action"
+                    data-class="button"
+                    data-semantic="shade_settings"
+                >
+
+                    <iconify-icon
+                        icon="mdi:cog-outline"
+                        data-class="icon"
+                        data-semantic="shade_settings_icon"
+                    >
+                    </iconify-icon>
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =============================================
+             Quick Settings
+             ============================================= -->
+
+        <div class="quick-settings-grid">
+
+            {% for tile in shade.quick_settings %}
+
+            <button
+                class="
+                    quick-setting-tile
+                    {% if tile.enabled %}
+                    is-enabled
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="{{ tile.semantic }}_quick_setting"
+            >
+
+                <span class="quick-setting-icon">
+
+                    <iconify-icon
+                        icon="{{ tile.icon }}"
+                        data-class="icon"
+                        data-semantic="{{ tile.semantic }}_icon"
+                    >
+                    </iconify-icon>
+
+                </span>
+
+
+                <span
+                    class="quick-setting-title"
+                    data-class="text"
+                    data-semantic="{{ tile.semantic }}_label"
+                >
+                    {{ tile.title }}
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+
+        <!-- =============================================
+             Brightness
+             ============================================= -->
+
+        {% if shade.show_brightness %}
+
+        <div class="brightness-container">
+
+            <iconify-icon
+                icon="mdi:brightness-6"
+                class="brightness-icon"
+                data-class="icon"
+                data-semantic="brightness_icon"
+            >
+            </iconify-icon>
+
+
+            <div
+                class="brightness-slider"
+                data-class="slider"
+                data-semantic="brightness_slider"
+            >
+
+                <div
+                    class="brightness-progress"
+                    style="
+                        width:
+                        {{ shade.brightness }}%;
+                    "
+                    data-annotation-skip="true"
+                >
+                </div>
+
+
+                <div
+                    class="brightness-thumb"
+                    style="
+                        left:
+                        {{ shade.brightness }}%;
+                    "
+                    data-annotation-skip="true"
+                >
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- =============================================
+             Media Controls
+             ============================================= -->
+
+        {% if shade.show_media %}
+
+        <article
+            class="media-control-card"
+            data-class="card"
+            data-semantic="media_control"
+        >
+
+            <div class="media-main">
+
+
+                <!-- Album / Media Art -->
+
+                <div class="media-art">
+
+                    <iconify-icon
+                        icon="mdi:music-note"
+                        data-class="icon"
+                        data-semantic="media_art_icon"
+                    >
+                    </iconify-icon>
+
+                </div>
+
+
+                <!-- Metadata -->
+
+                <div class="media-text">
+
+                    <div
+                        class="media-title"
+                        data-class="text"
+                        data-semantic="media_title"
+                    >
+                        {{ shade.media.title }}
+                    </div>
+
+
+                    <div
+                        class="media-artist"
+                        data-class="text"
+                        data-semantic="media_artist"
+                    >
+                        {{ shade.media.artist }}
+                    </div>
+
+                </div>
+
+
+                <!-- Controls -->
+
+                <div class="media-actions">
+
+
+                    <button
+                        class="shade-action"
+                        data-class="button"
+                        data-semantic="media_previous"
+                    >
+
+                        <iconify-icon
+                            icon="mdi:skip-previous"
+                            data-class="icon"
+                            data-semantic="media_previous_icon"
+                        >
+                        </iconify-icon>
+
+                    </button>
+
+
+                    <button
+                        class="shade-action"
+                        data-class="button"
+                        data-semantic="media_play_pause"
+                    >
+
+                        <iconify-icon
+                            icon="
+                                {% if shade.media.playing %}
+                                mdi:pause
+                                {% else %}
+                                mdi:play
+                                {% endif %}
+                            "
+                            data-class="icon"
+                            data-semantic="media_play_pause_icon"
+                        >
+                        </iconify-icon>
+
+                    </button>
+
+
+                    <button
+                        class="shade-action"
+                        data-class="button"
+                        data-semantic="media_next"
+                    >
+
+                        <iconify-icon
+                            icon="mdi:skip-next"
+                            data-class="icon"
+                            data-semantic="media_next_icon"
+                        >
+                        </iconify-icon>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </article>
+
+        {% endif %}
+
+
+        <!-- =============================================
+             Regular Notifications
+             ============================================= -->
+
+        <div class="notification-section">
+
+            {% for notification in shade.notifications %}
+
+
+                {% if not notification.silent %}
+
+                <article
+                    class="notification-card"
+                    data-class="card"
+                    data-semantic="{{ notification.semantic }}"
+                >
+
+
+                    <!-- Header -->
+
+                    <div class="notification-header">
+
+                        <div class="notification-app-icon">
+
+                            <iconify-icon
+                                icon="{{ notification.icon }}"
+                                data-class="icon"
+                                data-semantic="{{ notification.semantic }}_app_icon"
+                            >
+                            </iconify-icon>
+
+                        </div>
+
+
+                        <div
+                            class="notification-app"
+                            data-class="text"
+                            data-semantic="{{ notification.semantic }}_app"
+                        >
+                            {{ notification.app }}
+                        </div>
+
+
+                        <div
+                            class="notification-time"
+                            data-class="timestamp"
+                            data-semantic="{{ notification.semantic }}_time"
+                        >
+                            {{ notification.time }}
+                        </div>
+
+                    </div>
+
+
+                    <!-- Title -->
+
+                    <div
+                        class="notification-title"
+                        data-class="text"
+                        data-semantic="{{ notification.semantic }}_title"
+                    >
+                        {{ notification.title }}
+                    </div>
+
+
+                    <!-- Body -->
+
+                    <div
+                        class="
+                            notification-body
+                            line-clamp-2
+                        "
+                        data-class="text"
+                        data-semantic="{{ notification.semantic }}_body"
+                    >
+                        {{ notification.body }}
+                    </div>
+
+
+                    <!-- Actions -->
+
+                    {% if notification.actions %}
+
+                    <div class="notification-actions">
+
+                        {% for action in notification.actions %}
+
+                        <button
+                            class="notification-action"
+                            data-class="button"
+                            data-semantic="{{ notification.semantic }}_action_{{ loop.index }}"
+                        >
+                            {{ action }}
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                    {% endif %}
+
+                </article>
+
+                {% endif %}
+
+            {% endfor %}
+
+
+            <!-- =========================================
+                 Silent Notifications
+                 ========================================= -->
+
+            {% set silent_namespace = namespace(has_silent=false) %}
+
+            {% for notification in shade.notifications %}
+
+                {% if notification.silent %}
+
+                    {% set silent_namespace.has_silent = true %}
+
+                {% endif %}
+
+            {% endfor %}
+
+
+            {% if silent_namespace.has_silent %}
+
+            <div
+                class="notification-silent-label"
+                data-class="text"
+                data-semantic="silent_notifications_label"
+            >
+
+                <iconify-icon
+                    icon="mdi:bell-off-outline"
+                    data-class="icon"
+                    data-semantic="silent_notifications_icon"
+                >
+                </iconify-icon>
+
+                <span>
+                    Silent
+                </span>
+
+            </div>
+
+
+            {% for notification in shade.notifications %}
+
+                {% if notification.silent %}
+
+                <article
+                    class="
+                        notification-card
+                        is-silent
+                    "
+                    data-class="card"
+                    data-semantic="{{ notification.semantic }}"
+                >
+
+
+                    <div class="notification-header">
+
+                        <div class="notification-app-icon">
+
+                            <iconify-icon
+                                icon="{{ notification.icon }}"
+                                data-class="icon"
+                                data-semantic="{{ notification.semantic }}_app_icon"
+                            >
+                            </iconify-icon>
+
+                        </div>
+
+
+                        <div
+                            class="notification-app"
+                            data-class="text"
+                            data-semantic="{{ notification.semantic }}_app"
+                        >
+                            {{ notification.app }}
+                        </div>
+
+
+                        <div
+                            class="notification-time"
+                            data-class="timestamp"
+                            data-semantic="{{ notification.semantic }}_time"
+                        >
+                            {{ notification.time }}
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="notification-title"
+                        data-class="text"
+                        data-semantic="{{ notification.semantic }}_title"
+                    >
+                        {{ notification.title }}
+                    </div>
+
+
+                    <div
+                        class="
+                            notification-body
+                            line-clamp-2
+                        "
+                        data-class="text"
+                        data-semantic="{{ notification.semantic }}_body"
+                    >
+                        {{ notification.body }}
+                    </div>
+
+
+                    {% if notification.actions %}
+
+                    <div class="notification-actions">
+
+                        {% for action in notification.actions %}
+
+                        <button
+                            class="notification-action"
+                            data-class="button"
+                            data-semantic="{{ notification.semantic }}_action_{{ loop.index }}"
+                        >
+                            {{ action }}
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                    {% endif %}
+
+                </article>
+
+                {% endif %}
+
+            {% endfor %}
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- =============================================
+             Footer
+             ============================================= -->
+
+        <div class="shade-footer">
+
+
+            <div class="shade-footer-left">
+
+                {% if shade.show_clear_all %}
+
+                <button
+                    class="clear-all-button"
+                    data-class="button"
+                    data-semantic="clear_all_notifications"
+                >
+                    Clear all
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="shade-footer-right">
+
+                <button
+                    class="shade-footer-icon"
+                    data-class="button"
+                    data-semantic="notification_history"
+                >
+
+                    <iconify-icon
+                        icon="mdi:history"
+                        data-class="icon"
+                        data-semantic="notification_history_icon"
+                    >
+                    </iconify-icon>
+
+                </button>
+
+
+                <button
+                    class="shade-footer-icon"
+                    data-class="button"
+                    data-semantic="notification_settings"
+                >
+
+                    <iconify-icon
+                        icon="mdi:cog-outline"
+                        data-class="icon"
+                        data-semantic="notification_settings_icon"
+                    >
+                    </iconify-icon>
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}

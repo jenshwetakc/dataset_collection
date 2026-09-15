@@ -1,0 +1,1375 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Android Home Screen
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* =====================================================
+       Root
+       ===================================================== */
+
+    .home-screen {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                -
+                var(--status-bar-height)
+                -
+                var(--system-navigation-height)
+            );
+
+        overflow:
+            hidden;
+    }
+
+
+    /* =====================================================
+       Wallpaper
+       ===================================================== */
+
+    .home-wallpaper {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        z-index:
+            0;
+
+        background:
+            {{ home.wallpaper.css }};
+    }
+
+
+    .home-wallpaper::after {
+
+        content:
+            "";
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.04
+                ),
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.13
+                )
+            );
+    }
+
+
+    /* =====================================================
+       Main
+       ===================================================== */
+
+    .home-content {
+
+        position:
+            relative;
+
+        z-index:
+            2;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+
+        min-height:
+            inherit;
+
+        padding:
+            16px 14px 10px;
+    }
+
+
+    /* =====================================================
+       Weather Widget
+       ===================================================== */
+
+    .home-widget {
+
+        width:
+            100%;
+
+        max-width:
+            420px;
+
+        margin:
+            6px auto 16px;
+
+        padding:
+            16px;
+
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.16
+            );
+
+        border-radius:
+            26px;
+
+        background:
+            rgba(
+                20,
+                20,
+                24,
+                0.24
+            );
+
+        color:
+            #FFFFFF;
+
+        backdrop-filter:
+            blur(
+                18px
+            );
+    }
+
+
+    .home-widget-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            14px;
+    }
+
+
+    .home-widget-main {
+
+        min-width:
+            0;
+    }
+
+
+    .home-widget-temperature {
+
+        font-size:
+            38px;
+
+        font-weight:
+            350;
+
+        line-height:
+            1;
+    }
+
+
+    .home-widget-city {
+
+        margin-top:
+            4px;
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    .home-widget-condition {
+
+        margin-top:
+            3px;
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.76
+            );
+
+        font-size:
+            12px;
+    }
+
+
+    .home-widget-icon {
+
+        width:
+            48px;
+
+        height:
+            48px;
+
+        color:
+            #FFFFFF;
+
+        font-size:
+            48px;
+    }
+
+
+    /* =====================================================
+       Search
+       ===================================================== */
+
+    .home-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        max-width:
+            500px;
+
+        min-height:
+            54px;
+
+        margin:
+            0 auto 18px;
+
+        padding:
+            0 16px;
+
+        gap:
+            12px;
+
+        border-radius:
+            28px;
+
+        background:
+            rgba(
+                245,
+                245,
+                245,
+                0.92
+            );
+
+        color:
+            #202124;
+
+        box-shadow:
+            0 3px 12px
+            rgba(
+                0,
+                0,
+                0,
+                0.14
+            );
+    }
+
+
+    .home-search iconify-icon {
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        font-size:
+            24px;
+    }
+
+
+    .home-search-text {
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+
+        color:
+            #5F6368;
+
+        font-size:
+            15px;
+
+        font-weight:
+            500;
+    }
+
+
+    /* =====================================================
+       App Grid
+       ===================================================== */
+
+    .home-app-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                {{ home.columns }},
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        align-content:
+            start;
+
+        width:
+            100%;
+
+        gap:
+            16px 8px;
+
+        padding:
+            2px 2px 12px;
+    }
+
+
+    .home-app {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-start;
+
+        min-width:
+            0;
+
+        min-height:
+            76px;
+
+        gap:
+            6px;
+    }
+
+
+    .home-app-icon-wrap {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            52px;
+
+        height:
+            52px;
+
+        border-radius:
+            17px;
+
+        background:
+            var(--app-color);
+
+        color:
+            #FFFFFF;
+
+        box-shadow:
+            0 3px 9px
+            rgba(
+                0,
+                0,
+                0,
+                0.16
+            );
+    }
+
+
+    .home-app-icon-wrap iconify-icon {
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        font-size:
+            30px;
+    }
+
+
+    .home-app-label {
+
+        width:
+            100%;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-align:
+            center;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            #FFFFFF;
+
+        font-size:
+            11px;
+
+        font-weight:
+            600;
+
+        text-shadow:
+            0 1px 4px
+            rgba(
+                0,
+                0,
+                0,
+                0.44
+            );
+    }
+
+
+    /* =====================================================
+       Notification Dot
+       ===================================================== */
+
+    .home-notification-dot {
+
+        position:
+            absolute;
+
+        top:
+            -2px;
+
+        right:
+            -2px;
+
+        width:
+            11px;
+
+        height:
+            11px;
+
+        border:
+            2px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.96
+            );
+
+        border-radius:
+            50%;
+
+        background:
+            #D32F2F;
+    }
+
+
+    /* =====================================================
+       Work Badge
+       ===================================================== */
+
+    .home-work-badge {
+
+        position:
+            absolute;
+
+        right:
+            -4px;
+
+        bottom:
+            -4px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            17px;
+
+        height:
+            17px;
+
+        border:
+            2px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.96
+            );
+
+        border-radius:
+            50%;
+
+        background:
+            #455A64;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .home-work-badge iconify-icon {
+
+        width:
+            10px;
+
+        height:
+            10px;
+
+        font-size:
+            10px;
+    }
+
+
+    /* =====================================================
+       Folder
+       ===================================================== */
+
+    .home-folder {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        min-height:
+            76px;
+
+        gap:
+            6px;
+    }
+
+
+    .home-folder-icon {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                1fr
+            );
+
+        width:
+            52px;
+
+        height:
+            52px;
+
+        padding:
+            7px;
+
+        gap:
+            3px;
+
+        border-radius:
+            17px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.26
+            );
+
+        backdrop-filter:
+            blur(
+                10px
+            );
+    }
+
+
+    .home-folder-mini {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            6px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.22
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .home-folder-mini iconify-icon {
+
+        width:
+            11px;
+
+        height:
+            11px;
+
+        font-size:
+            11px;
+    }
+
+
+    .home-folder-label {
+
+        color:
+            #FFFFFF;
+
+        font-size:
+            11px;
+
+        font-weight:
+            600;
+
+        text-shadow:
+            0 1px 4px
+            rgba(
+                0,
+                0,
+                0,
+                0.44
+            );
+    }
+
+
+    /* =====================================================
+       Bottom Area
+       ===================================================== */
+
+    .home-bottom {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+
+        margin-top:
+            auto;
+    }
+
+
+    /* =====================================================
+       Page Indicator
+       ===================================================== */
+
+    .home-page-indicator {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        min-height:
+            20px;
+
+        margin-bottom:
+            5px;
+    }
+
+
+    .home-page-dot {
+
+        width:
+            6px;
+
+        height:
+            6px;
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.44
+            );
+    }
+
+
+    .home-page-dot.is-active {
+
+        width:
+            8px;
+
+        height:
+            8px;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    /* =====================================================
+       Dock
+       ===================================================== */
+
+    .home-dock {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-around;
+
+        width:
+            100%;
+
+        max-width:
+            520px;
+
+        min-height:
+            76px;
+
+        margin:
+            0 auto;
+
+        padding:
+            8px 12px;
+
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.14
+            );
+
+        border-radius:
+            28px;
+
+        background:
+            rgba(
+                25,
+                25,
+                30,
+                0.25
+            );
+
+        backdrop-filter:
+            blur(
+                18px
+            );
+    }
+
+
+    .home-dock-app {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            52px;
+
+        height:
+            52px;
+
+        border-radius:
+            17px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.18
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .home-dock-app iconify-icon {
+
+        width:
+            29px;
+
+        height:
+            29px;
+
+        font-size:
+            29px;
+    }
+
+
+    /* =====================================================
+       App Drawer Hint
+       ===================================================== */
+
+    .home-app-drawer-hint {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+
+        margin-top:
+            5px;
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.76
+            );
+
+        font-size:
+            10px;
+
+        font-weight:
+            600;
+    }
+
+
+    .home-app-drawer-hint iconify-icon {
+
+        width:
+            14px;
+
+        height:
+            14px;
+
+        font-size:
+            14px;
+    }
+
+
+    /* =====================================================
+       Tablet
+       ===================================================== */
+
+    @media (
+        min-width: 768px
+    ) {
+
+        .home-content {
+
+            max-width:
+                820px;
+
+            margin:
+                0 auto;
+
+            padding-left:
+                32px;
+
+            padding-right:
+                32px;
+        }
+
+
+        .home-app-grid {
+
+            gap:
+                22px 18px;
+        }
+
+
+        .home-app-icon-wrap {
+
+            width:
+                62px;
+
+            height:
+                62px;
+
+            border-radius:
+                20px;
+        }
+
+
+        .home-app-icon-wrap iconify-icon {
+
+            width:
+                34px;
+
+            height:
+                34px;
+
+            font-size:
+                34px;
+        }
+
+
+        .home-app-label {
+
+            font-size:
+                12px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="home-screen">
+
+
+    <!-- =================================================
+         Wallpaper
+         ================================================= -->
+
+    <div
+        class="home-wallpaper"
+        data-annotation-skip="true"
+    >
+    </div>
+
+
+    <!-- =================================================
+         Main Content
+         ================================================= -->
+
+    <div class="home-content">
+
+
+        <!-- =============================================
+             Weather Widget
+             ============================================= -->
+
+        {% if home.show_widget %}
+
+        <section
+            class="home-widget"
+            data-class="card"
+            data-semantic="home_weather_widget"
+        >
+
+            <div class="home-widget-row">
+
+                <div class="home-widget-main">
+
+                    <div
+                        class="home-widget-temperature"
+                        data-class="text"
+                        data-semantic="weather_temperature"
+                    >
+                        {{ home.weather.temperature }}
+                    </div>
+
+
+                    <div
+                        class="home-widget-city"
+                        data-class="text"
+                        data-semantic="weather_city"
+                    >
+                        {{ home.weather.city }}
+                    </div>
+
+
+                    <div
+                        class="home-widget-condition"
+                        data-class="text"
+                        data-semantic="weather_condition"
+                    >
+                        {{ home.weather.condition }}
+                    </div>
+
+                </div>
+
+
+                <iconify-icon
+                    icon="{{ home.weather.icon }}"
+                    class="home-widget-icon"
+                    data-class="icon"
+                    data-semantic="weather_icon"
+                >
+                </iconify-icon>
+
+            </div>
+
+        </section>
+
+        {% endif %}
+
+
+        <!-- =============================================
+             Search
+             ============================================= -->
+
+        {% if home.show_search %}
+
+        <div
+            class="home-search"
+            data-class="search_bar"
+            data-semantic="home_search"
+        >
+
+            <iconify-icon
+                icon="mdi:google"
+                data-class="icon"
+                data-semantic="home_search_google"
+            >
+            </iconify-icon>
+
+
+            <div
+                class="home-search-text"
+                data-class="text"
+                data-semantic="home_search_placeholder"
+            >
+                Search your phone
+            </div>
+
+
+            <iconify-icon
+                icon="mdi:microphone-outline"
+                data-class="icon"
+                data-semantic="home_search_voice"
+            >
+            </iconify-icon>
+
+
+            <iconify-icon
+                icon="mdi:google-lens"
+                data-class="icon"
+                data-semantic="home_search_lens"
+            >
+            </iconify-icon>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- =============================================
+             Apps
+             ============================================= -->
+
+        <section
+            class="home-app-grid"
+            data-semantic="home_app_grid"
+        >
+
+            {% for app in home.apps %}
+
+            <div
+                class="home-app"
+                data-semantic="{{ app.semantic }}"
+            >
+
+                <div
+                    class="home-app-icon-wrap"
+                    style="
+                        --app-color:
+                        {{ app.color }};
+                    "
+                    data-class="button"
+                    data-semantic="{{ app.semantic }}_button"
+                >
+
+                    <iconify-icon
+                        icon="{{ app.icon }}"
+                        data-class="icon"
+                        data-semantic="{{ app.semantic }}_icon"
+                    >
+                    </iconify-icon>
+
+
+                    {% if app.notification_dot %}
+
+                    <span
+                        class="home-notification-dot"
+                        data-class="badge"
+                        data-semantic="{{ app.semantic }}_notification_dot"
+                    >
+                    </span>
+
+                    {% endif %}
+
+
+                    {% if app.work_profile %}
+
+                    <span
+                        class="home-work-badge"
+                        data-class="badge"
+                        data-semantic="{{ app.semantic }}_work_badge"
+                    >
+
+                        <iconify-icon
+                            icon="mdi:briefcase"
+                            data-class="icon"
+                            data-semantic="{{ app.semantic }}_work_icon"
+                        >
+                        </iconify-icon>
+
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div
+                    class="home-app-label"
+                    data-class="text"
+                    data-semantic="{{ app.semantic }}_label"
+                >
+                    {{ app.name }}
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+
+            <!-- =========================================
+                 Optional Folder
+                 ========================================= -->
+
+            {% if home.show_folder and home.folder %}
+
+            <div
+                class="home-folder"
+                data-semantic="home_folder"
+            >
+
+                <div
+                    class="home-folder-icon"
+                    data-class="button"
+                    data-semantic="home_folder_button"
+                >
+
+                    {% for folder_app in home.folder.apps[:4] %}
+
+                    <div class="home-folder-mini">
+
+                        <iconify-icon
+                            icon="{{ folder_app.icon }}"
+                            data-class="icon"
+                            data-semantic="folder_app_{{ loop.index }}_icon"
+                        >
+                        </iconify-icon>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <div
+                    class="home-folder-label"
+                    data-class="text"
+                    data-semantic="home_folder_label"
+                >
+                    {{ home.folder.name }}
+                </div>
+
+            </div>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- =============================================
+             Bottom
+             ============================================= -->
+
+        <div class="home-bottom">
+
+
+            {% if home.show_page_indicator %}
+
+            <div
+                class="home-page-indicator"
+                data-semantic="home_page_indicator"
+            >
+
+                {% for page_index in range(home.page_count) %}
+
+                <span
+                    class="
+                        home-page-dot
+                        {% if page_index == home.active_page %}
+                        is-active
+                        {% endif %}
+                    "
+                    data-class="selection_indicator"
+                    data-semantic="home_page_{{ page_index }}"
+                >
+                </span>
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- Dock -->
+
+            <nav
+                class="home-dock"
+                data-class="navigation_bar"
+                data-semantic="home_dock"
+            >
+
+                {% for app in home.dock_apps %}
+
+                <button
+                    class="home-dock-app"
+                    data-class="button"
+                    data-semantic="dock_app_{{ loop.index }}"
+                >
+
+                    <iconify-icon
+                        icon="{{ app.icon }}"
+                        data-class="icon"
+                        data-semantic="dock_app_{{ loop.index }}_icon"
+                    >
+                    </iconify-icon>
+
+                </button>
+
+                {% endfor %}
+
+            </nav>
+
+
+            {% if home.show_app_drawer_hint %}
+
+            <div
+                class="home-app-drawer-hint"
+                data-semantic="app_drawer_hint"
+            >
+
+                <iconify-icon
+                    icon="mdi:chevron-up"
+                    data-class="icon"
+                    data-semantic="app_drawer_hint_icon"
+                >
+                </iconify-icon>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="app_drawer_hint_text"
+                >
+                    Swipe up for all apps
+                </span>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

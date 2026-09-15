@@ -1,0 +1,1547 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Android Screenshot Overlay
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* =====================================================
+       Root
+       ===================================================== */
+
+    .screenshot-screen {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                -
+                var(--status-bar-height)
+                -
+                var(--system-navigation-height)
+            );
+
+        overflow:
+            hidden;
+    }
+
+
+    /* =====================================================
+       Background
+       ===================================================== */
+
+    .screenshot-background {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        z-index:
+            0;
+
+        background-position:
+            center;
+
+        background-repeat:
+            no-repeat;
+
+        background-size:
+            cover;
+    }
+
+
+    .screenshot-background-fallback {
+
+        background:
+            linear-gradient(
+                145deg,
+                #1C3248 0%,
+                #496D89 50%,
+                #A6C3D5 100%
+            );
+    }
+
+
+    .screenshot-background-content {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        z-index:
+            1;
+
+        padding:
+            28px 18px;
+
+        color:
+            #FFFFFF;
+
+        opacity:
+            0.72;
+    }
+
+
+    .screenshot-bg-time {
+
+        font-size:
+            34px;
+
+        font-weight:
+            400;
+    }
+
+
+    .screenshot-bg-card {
+
+        width:
+            78%;
+
+        height:
+            130px;
+
+        margin-top:
+            22px;
+
+        border-radius:
+            24px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.16
+            );
+    }
+
+
+    .screenshot-bg-row {
+
+        width:
+            100%;
+
+        height:
+            62px;
+
+        margin-top:
+            12px;
+
+        border-radius:
+            18px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.11
+            );
+    }
+
+
+    /* =====================================================
+       Overlay Layer
+       ===================================================== */
+
+    .screenshot-overlay-layer {
+
+        position:
+            relative;
+
+        z-index:
+            20;
+
+        display:
+            flex;
+
+        width:
+            100%;
+
+        min-height:
+            inherit;
+
+        padding:
+            16px;
+    }
+
+
+    .screenshot-overlay-layer.is-bottom {
+
+        align-items:
+            flex-end;
+
+        justify-content:
+            center;
+    }
+
+
+    .screenshot-overlay-layer.is-lower_left {
+
+        align-items:
+            flex-end;
+
+        justify-content:
+            flex-start;
+    }
+
+
+    /* =====================================================
+       Toolbar
+       ===================================================== */
+
+    .screenshot-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            min(
+                540px,
+                calc(
+                    100vw
+                    -
+                    32px
+                )
+            );
+
+        min-height:
+            92px;
+
+        padding:
+            10px;
+
+        gap:
+            10px;
+
+        border:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.08
+            );
+
+        border-radius:
+            28px;
+
+        background:
+            color-mix(
+                in srgb,
+                var(--surface) 95%,
+                transparent
+            );
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            0 10px 32px
+            rgba(
+                0,
+                0,
+                0,
+                0.28
+            );
+
+        backdrop-filter:
+            blur(
+                24px
+            );
+    }
+
+
+    /* =====================================================
+       Preview
+       ===================================================== */
+
+    .screenshot-preview {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--on-surface-variant);
+
+        box-shadow:
+            var(--shadow-small);
+    }
+
+
+    .screenshot-preview.is-portrait {
+
+        width:
+            54px;
+
+        height:
+            72px;
+    }
+
+
+    .screenshot-preview.is-landscape {
+
+        width:
+            78px;
+
+        height:
+            54px;
+    }
+
+
+    .screenshot-preview img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .screenshot-preview iconify-icon {
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        font-size:
+            28px;
+    }
+
+
+    /* =====================================================
+       Actions
+       ===================================================== */
+
+    .screenshot-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex:
+            1 1 auto;
+
+        min-width:
+            0;
+
+        gap:
+            6px;
+    }
+
+
+    .screenshot-action {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            1 1 0;
+
+        min-width:
+            48px;
+
+        min-height:
+            64px;
+
+        padding:
+            5px;
+
+        gap:
+            3px;
+
+        border-radius:
+            16px;
+
+        color:
+            var(--icon);
+    }
+
+
+    .screenshot-action iconify-icon {
+
+        width:
+            22px;
+
+        height:
+            22px;
+
+        font-size:
+            22px;
+    }
+
+
+    .screenshot-action-label {
+
+        width:
+            100%;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-align:
+            center;
+
+        text-overflow:
+            ellipsis;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* =====================================================
+       Scroll Capture
+       ===================================================== */
+
+    .scroll-capture-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            0 0 auto;
+
+        min-width:
+            72px;
+
+        min-height:
+            44px;
+
+        padding:
+            0 12px;
+
+        gap:
+            6px;
+
+        border-radius:
+            22px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            11px;
+
+        font-weight:
+            650;
+    }
+
+
+    .scroll-capture-button iconify-icon {
+
+        width:
+            18px;
+
+        height:
+            18px;
+
+        font-size:
+            18px;
+    }
+
+
+    /* =====================================================
+       Saved Chip
+       ===================================================== */
+
+    .screenshot-saved-chip {
+
+        position:
+            absolute;
+
+        left:
+            50%;
+
+        bottom:
+            122px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        padding:
+            10px 15px;
+
+        transform:
+            translateX(
+                -50%
+            );
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--shadow-medium);
+    }
+
+
+    .screenshot-saved-chip iconify-icon {
+
+        width:
+            19px;
+
+        height:
+            19px;
+
+        color:
+            var(--success);
+
+        font-size:
+            19px;
+    }
+
+
+    .screenshot-saved-text {
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* =====================================================
+       Expanded Preview
+       ===================================================== */
+
+    .expanded-screenshot-preview {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        top:
+            50%;
+
+        left:
+            50%;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            min(
+                360px,
+                calc(
+                    100vw
+                    -
+                    40px
+                )
+            );
+
+        max-height:
+            72vh;
+
+        overflow:
+            hidden;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border-radius:
+            28px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--shadow-large);
+    }
+
+
+    .expanded-preview-image {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            min(
+                48vh,
+                440px
+            );
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .expanded-preview-image img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            contain;
+    }
+
+
+    .expanded-preview-image iconify-icon {
+
+        width:
+            60px;
+
+        height:
+            60px;
+
+        font-size:
+            60px;
+    }
+
+
+    .expanded-preview-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        padding:
+            10px;
+
+        gap:
+            8px;
+    }
+
+
+    .expanded-preview-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        flex:
+            1 1 0;
+
+        min-height:
+            44px;
+
+        gap:
+            6px;
+
+        border-radius:
+            22px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            11px;
+
+        font-weight:
+            650;
+    }
+
+
+    /* =====================================================
+       Scrolling Screenshot
+       ===================================================== */
+
+    .scrolling-overlay {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        top:
+            50%;
+
+        left:
+            50%;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        width:
+            min(
+                320px,
+                calc(
+                    100vw
+                    -
+                    40px
+                )
+            );
+
+        padding:
+            22px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border-radius:
+            28px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--shadow-large);
+    }
+
+
+    .scrolling-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            54px;
+
+        height:
+            54px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .scrolling-icon iconify-icon {
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        font-size:
+            28px;
+    }
+
+
+    .scrolling-title {
+
+        margin-top:
+            14px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            650;
+    }
+
+
+    .scrolling-progress {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            8px;
+
+        margin-top:
+            16px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .scrolling-progress-fill {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    .scrolling-percentage {
+
+        margin-top:
+            8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* =====================================================
+       Failed State
+       ===================================================== */
+
+    .screenshot-failed {
+
+        position:
+            absolute;
+
+        z-index:
+            30;
+
+        left:
+            50%;
+
+        bottom:
+            28px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            min(
+                360px,
+                calc(
+                    100vw
+                    -
+                    32px
+                )
+            );
+
+        padding:
+            13px 15px;
+
+        gap:
+            10px;
+
+        transform:
+            translateX(
+                -50%
+            );
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--on-surface);
+
+        box-shadow:
+            var(--shadow-medium);
+    }
+
+
+    .screenshot-failed iconify-icon {
+
+        flex:
+            0 0 auto;
+
+        width:
+            22px;
+
+        height:
+            22px;
+
+        color:
+            var(--error);
+
+        font-size:
+            22px;
+    }
+
+
+    .screenshot-failed-text {
+
+        flex:
+            1 1 auto;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* =====================================================
+       Tablet
+       ===================================================== */
+
+    @media (
+        min-width: 768px
+    ) {
+
+        .screenshot-toolbar {
+
+            width:
+                560px;
+        }
+
+
+        .expanded-screenshot-preview {
+
+            width:
+                420px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="screenshot-screen">
+
+
+    <!-- =================================================
+         Background
+
+         Screenshot overlay is active, so underlying UI
+         is not annotated.
+         ================================================= -->
+
+    <div data-annotation-skip="true">
+
+        {% if screenshot_ui.wallpaper %}
+
+        <div
+            class="screenshot-background"
+            style="
+                background-image:
+                url('{{ screenshot_ui.wallpaper }}');
+            "
+        >
+        </div>
+
+        {% else %}
+
+        <div
+            class="
+                screenshot-background
+                screenshot-background-fallback
+            "
+        >
+        </div>
+
+        {% endif %}
+
+
+        <div class="screenshot-background-content">
+
+            <div class="screenshot-bg-time">
+                {{ time_text }}
+            </div>
+
+            <div class="screenshot-bg-card">
+            </div>
+
+            <div class="screenshot-bg-row">
+            </div>
+
+            <div class="screenshot-bg-row">
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         Toolbar States
+         ================================================= -->
+
+    {% if screenshot_ui.overlay_state in [
+        "captured",
+        "scroll_available",
+        "saved"
+    ] %}
+
+    <div
+        class="
+            screenshot-overlay-layer
+            is-{{ screenshot_ui.overlay_position }}
+        "
+    >
+
+        <section
+            class="screenshot-toolbar"
+            data-class="dialog"
+            data-semantic="screenshot_toolbar"
+            data-occluder="true"
+        >
+
+
+            <!-- Preview -->
+
+            <button
+                class="
+                    screenshot-preview
+                    is-{{ screenshot_ui.preview_orientation }}
+                "
+                data-class="button"
+                data-semantic="screenshot_preview"
+            >
+
+                {% if screenshot_ui.screenshot %}
+
+                <img
+                    src="{{ screenshot_ui.screenshot }}"
+                    data-class="image"
+                    data-semantic="screenshot_preview_image"
+                    alt=""
+                >
+
+                {% else %}
+
+                <iconify-icon
+                    icon="mdi:image-outline"
+                    data-class="icon"
+                    data-semantic="screenshot_preview_icon"
+                >
+                </iconify-icon>
+
+                {% endif %}
+
+            </button>
+
+
+            <!-- Actions -->
+
+            <div class="screenshot-actions">
+
+
+                {% if screenshot_ui.show_share %}
+
+                <button
+                    class="screenshot-action"
+                    data-class="button"
+                    data-semantic="screenshot_share"
+                >
+
+                    <iconify-icon
+                        icon="mdi:share-variant-outline"
+                        data-class="icon"
+                        data-semantic="screenshot_share_icon"
+                    >
+                    </iconify-icon>
+
+                    <span
+                        class="screenshot-action-label"
+                        data-class="text"
+                        data-semantic="screenshot_share_label"
+                    >
+                        Share
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+
+                {% if screenshot_ui.show_edit %}
+
+                <button
+                    class="screenshot-action"
+                    data-class="button"
+                    data-semantic="screenshot_edit"
+                >
+
+                    <iconify-icon
+                        icon="mdi:pencil-outline"
+                        data-class="icon"
+                        data-semantic="screenshot_edit_icon"
+                    >
+                    </iconify-icon>
+
+                    <span
+                        class="screenshot-action-label"
+                        data-class="text"
+                        data-semantic="screenshot_edit_label"
+                    >
+                        Edit
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+
+                {% if screenshot_ui.show_copy_text %}
+
+                <button
+                    class="screenshot-action"
+                    data-class="button"
+                    data-semantic="screenshot_copy_text"
+                >
+
+                    <iconify-icon
+                        icon="mdi:text-recognition"
+                        data-class="icon"
+                        data-semantic="screenshot_copy_text_icon"
+                    >
+                    </iconify-icon>
+
+                    <span
+                        class="screenshot-action-label"
+                        data-class="text"
+                        data-semantic="screenshot_copy_text_label"
+                    >
+                        Copy text
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+
+                {% if screenshot_ui.show_delete %}
+
+                <button
+                    class="screenshot-action"
+                    data-class="button"
+                    data-semantic="screenshot_delete"
+                >
+
+                    <iconify-icon
+                        icon="mdi:delete-outline"
+                        data-class="icon"
+                        data-semantic="screenshot_delete_icon"
+                    >
+                    </iconify-icon>
+
+                    <span
+                        class="screenshot-action-label"
+                        data-class="text"
+                        data-semantic="screenshot_delete_label"
+                    >
+                        Delete
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- Scroll Capture -->
+
+            {% if screenshot_ui.show_scroll_capture %}
+
+            <button
+                class="scroll-capture-button"
+                data-class="button"
+                data-semantic="capture_more"
+            >
+
+                <iconify-icon
+                    icon="mdi:arrow-expand-vertical"
+                    data-class="icon"
+                    data-semantic="capture_more_icon"
+                >
+                </iconify-icon>
+
+                Capture more
+
+            </button>
+
+            {% endif %}
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =================================================
+         Saved State
+         ================================================= -->
+
+    {% if screenshot_ui.show_saved_message %}
+
+    <div
+        class="screenshot-saved-chip"
+        data-class="card"
+        data-semantic="screenshot_saved_message"
+    >
+
+        <iconify-icon
+            icon="mdi:check-circle"
+            data-class="icon"
+            data-semantic="screenshot_saved_icon"
+        >
+        </iconify-icon>
+
+
+        <span
+            class="screenshot-saved-text"
+            data-class="text"
+            data-semantic="screenshot_saved_text"
+        >
+            Screenshot saved
+        </span>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- =================================================
+         Expanded Preview
+         ================================================= -->
+
+    {% if screenshot_ui.overlay_state == "expanded_preview" %}
+
+    <section
+        class="expanded-screenshot-preview"
+        data-class="dialog"
+        data-semantic="expanded_screenshot_preview"
+        data-occluder="true"
+    >
+
+        <div
+            class="expanded-preview-image"
+            data-semantic="expanded_preview_media"
+        >
+
+            {% if screenshot_ui.screenshot %}
+
+            <img
+                src="{{ screenshot_ui.screenshot }}"
+                data-class="image"
+                data-semantic="expanded_screenshot_image"
+                alt=""
+            >
+
+            {% else %}
+
+            <iconify-icon
+                icon="mdi:image-outline"
+                data-class="icon"
+                data-semantic="expanded_screenshot_icon"
+            >
+            </iconify-icon>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="expanded-preview-actions">
+
+
+            {% if screenshot_ui.show_share %}
+
+            <button
+                class="expanded-preview-button"
+                data-class="button"
+                data-semantic="expanded_share"
+            >
+                Share
+            </button>
+
+            {% endif %}
+
+
+            {% if screenshot_ui.show_edit %}
+
+            <button
+                class="expanded-preview-button"
+                data-class="button"
+                data-semantic="expanded_edit"
+            >
+                Edit
+            </button>
+
+            {% endif %}
+
+
+            {% if screenshot_ui.show_delete %}
+
+            <button
+                class="expanded-preview-button"
+                data-class="button"
+                data-semantic="expanded_delete"
+            >
+                Delete
+            </button>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =================================================
+         Scrolling Screenshot
+         ================================================= -->
+
+    {% if screenshot_ui.overlay_state == "scrolling" %}
+
+    <section
+        class="scrolling-overlay"
+        data-class="dialog"
+        data-semantic="scrolling_screenshot"
+        data-occluder="true"
+    >
+
+        <div class="scrolling-icon">
+
+            <iconify-icon
+                icon="mdi:arrow-expand-vertical"
+                data-class="icon"
+                data-semantic="scrolling_screenshot_icon"
+            >
+            </iconify-icon>
+
+        </div>
+
+
+        <div
+            class="scrolling-title"
+            data-class="text"
+            data-semantic="scrolling_screenshot_title"
+        >
+            Capturing more
+        </div>
+
+
+        <div
+            class="scrolling-progress"
+            data-class="progress_bar"
+            data-semantic="scroll_capture_progress"
+        >
+
+            <div
+                class="scrolling-progress-fill"
+                style="
+                    width:
+                    {{ screenshot_ui.scroll_progress }}%;
+                "
+                data-annotation-skip="true"
+            >
+            </div>
+
+        </div>
+
+
+        <div
+            class="scrolling-percentage"
+            data-class="text"
+            data-semantic="scroll_capture_percentage"
+        >
+            {{ screenshot_ui.scroll_progress }}%
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =================================================
+         Failed
+         ================================================= -->
+
+    {% if screenshot_ui.overlay_state == "failed" %}
+
+    <section
+        class="screenshot-failed"
+        data-class="dialog"
+        data-semantic="screenshot_failed"
+        data-occluder="true"
+    >
+
+        <iconify-icon
+            icon="mdi:alert-circle-outline"
+            data-class="icon"
+            data-semantic="screenshot_failed_icon"
+        >
+        </iconify-icon>
+
+
+        <div
+            class="screenshot-failed-text"
+            data-class="text"
+            data-semantic="screenshot_failed_text"
+        >
+            {{ screenshot_ui.failure_reason }}
+        </div>
+
+
+        <button
+            class="android-text-button"
+            data-class="button"
+            data-semantic="screenshot_failed_dismiss"
+        >
+            Dismiss
+        </button>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
