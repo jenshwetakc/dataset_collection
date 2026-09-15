@@ -1,0 +1,2049 @@
+{% extends "base.html" %}
+
+{% block title %}
+YouTube Shorts Camera
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Fullscreen Root
+       ====================================================== */
+
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+
+        width: 100%;
+        height: 100%;
+
+        overflow: hidden;
+
+        background:
+            #000000;
+    }
+
+
+    body {
+        font-family:
+            Arial,
+            Helvetica,
+            sans-serif;
+    }
+
+
+    .shorts-camera-page {
+        position: relative;
+
+        width: 100vw;
+        height: 100vh;
+
+        overflow: hidden;
+
+        background:
+            #000000;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Camera Preview
+       ====================================================== */
+
+    .camera-preview {
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+
+        background:
+            #000000;
+    }
+
+
+    .camera-overlay {
+        position: absolute;
+
+        inset: 0;
+
+        pointer-events: none;
+
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.34) 0%,
+                rgba(0, 0, 0, 0.04) 28%,
+                rgba(0, 0, 0, 0.04) 64%,
+                rgba(0, 0, 0, 0.44) 100%
+            );
+    }
+
+
+    /* ======================================================
+       Recording Progress
+       ====================================================== */
+
+    .recording-progress {
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        right: 0;
+
+        z-index: 60;
+
+        height: 5px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.28
+            );
+    }
+
+
+    .recording-segment {
+        position: absolute;
+
+        top: 0;
+        bottom: 0;
+
+        background:
+            #FF0033;
+    }
+
+
+    /* ======================================================
+       Top Bar
+       ====================================================== */
+
+    .camera-top-bar {
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        right: 0;
+
+        z-index: 50;
+
+        min-height: 64px;
+
+        display: grid;
+
+        grid-template-columns:
+            50px
+            minmax(
+                0,
+                1fr
+            )
+            50px;
+
+        align-items: center;
+
+        gap: 8px;
+
+        padding:
+            8px 12px;
+
+        pointer-events: auto;
+    }
+
+
+    .camera-title {
+        margin: 0;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        color:
+            #FFFFFF;
+
+        font-size: 17px;
+        font-weight: 600;
+
+        text-align: center;
+
+        text-shadow:
+            0 1px 3px
+            rgba(
+                0,
+                0,
+                0,
+                0.60
+            );
+    }
+
+
+    .camera-top-button {
+        width: 42px;
+        height: 42px;
+
+        display: inline-flex;
+
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border: none;
+        border-radius: 50%;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.36
+            );
+
+        color:
+            #FFFFFF;
+
+        backdrop-filter:
+            blur(4px);
+    }
+
+
+    .camera-top-button
+    .material-symbols-rounded {
+        font-size: 25px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Sound
+       ====================================================== */
+
+    .sound-button-wrap {
+        position: absolute;
+
+        top: 78px;
+        left: 50%;
+
+        z-index: 45;
+
+        transform:
+            translateX(-50%);
+
+        pointer-events: auto;
+    }
+
+
+    .sound-button {
+        min-height: 36px;
+
+        max-width: 220px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 7px;
+
+        padding:
+            0 14px;
+
+        border: none;
+        border-radius: 18px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.42
+            );
+
+        color:
+            #FFFFFF;
+
+        backdrop-filter:
+            blur(4px);
+    }
+
+
+    .sound-button
+    .material-symbols-rounded {
+        flex-shrink: 0;
+
+        font-size: 19px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .sound-button-label {
+        min-width: 0;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+
+    /* ======================================================
+       Duration Limit
+       ====================================================== */
+
+    .duration-limit {
+        position: absolute;
+
+        top: 80px;
+        left: 16px;
+
+        z-index: 45;
+
+        min-width: 34px;
+        height: 28px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        padding:
+            0 8px;
+
+        border-radius: 14px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.42
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+
+    /* ======================================================
+       Tool Rail
+       ====================================================== */
+
+    .camera-tools {
+        position: absolute;
+
+        top: 118px;
+        right: 12px;
+
+        z-index: 45;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        gap: 13px;
+
+        pointer-events: auto;
+    }
+
+
+    .camera-tool {
+        width: 58px;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 3px;
+
+        padding: 0;
+
+        border: none;
+
+        background:
+            transparent;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .camera-tool-icon {
+        width: 42px;
+        height: 42px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 50%;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.40
+            );
+
+        backdrop-filter:
+            blur(4px);
+    }
+
+
+    .camera-tool.selected
+    .camera-tool-icon {
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.26
+            );
+    }
+
+
+    .camera-tool-icon
+    .material-symbols-rounded {
+        font-size: 24px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .camera-tool-label {
+        font-size: 9px;
+        font-weight: 600;
+
+        text-shadow:
+            0 1px 2px
+            rgba(
+                0,
+                0,
+                0,
+                0.70
+            );
+    }
+
+
+    .camera-tool-value {
+        max-width: 56px;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.78
+            );
+
+        font-size: 8px;
+
+        text-transform: capitalize;
+    }
+
+
+    /* ======================================================
+       Countdown
+       ====================================================== */
+
+    .countdown-overlay {
+        position: absolute;
+
+        inset: 0;
+
+        z-index: 70;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 7px;
+
+        pointer-events: none;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.14
+            );
+    }
+
+
+    .countdown-number {
+        color:
+            #FFFFFF;
+
+        font-size:
+            clamp(
+                96px,
+                20vw,
+                180px
+            );
+
+        font-weight: 700;
+
+        line-height: 0.9;
+
+        text-shadow:
+            0 3px 14px
+            rgba(
+                0,
+                0,
+                0,
+                0.50
+            );
+    }
+
+
+    .countdown-label {
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.88
+            );
+
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+
+    /* ======================================================
+       Recording Indicator
+       ====================================================== */
+
+    .recording-indicator {
+        position: absolute;
+
+        top: 82px;
+        left: 50%;
+
+        z-index: 55;
+
+        transform:
+            translateX(-50%);
+
+        min-height: 26px;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+        padding:
+            0 9px;
+
+        border-radius: 13px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.50
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size: 9px;
+        font-weight: 700;
+    }
+
+
+    .recording-dot {
+        width: 7px;
+        height: 7px;
+
+        border-radius: 50%;
+
+        background:
+            #FF0033;
+    }
+
+
+    /* ======================================================
+       Effects Panel
+       ====================================================== */
+
+    .effects-panel {
+        position: absolute;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        z-index: 80;
+
+        min-height: 240px;
+
+        padding:
+            13px 12px 116px;
+
+        box-sizing: border-box;
+
+        background:
+            rgba(
+                18,
+                18,
+                18,
+                0.92
+            );
+
+        backdrop-filter:
+            blur(12px);
+
+        pointer-events: auto;
+    }
+
+
+    .effects-header {
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 10px;
+
+        margin-bottom: 12px;
+    }
+
+
+    .effects-title {
+        margin: 0;
+
+        color:
+            #FFFFFF;
+
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+
+    .effects-close {
+        width: 32px;
+        height: 32px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border: none;
+        border-radius: 50%;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.12
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .effects-list {
+        display: flex;
+
+        align-items: flex-start;
+
+        gap: 11px;
+
+        overflow-x: auto;
+
+        padding-bottom: 4px;
+
+        scrollbar-width: none;
+    }
+
+
+    .effects-list::-webkit-scrollbar {
+        display: none;
+    }
+
+
+    .effect-option {
+        min-width: 74px;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        gap: 6px;
+
+        padding: 0;
+
+        border: none;
+
+        background:
+            transparent;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .effect-image-wrap {
+        width: 66px;
+        height: 66px;
+
+        overflow: hidden;
+
+        border:
+            3px solid
+            transparent;
+
+        border-radius: 50%;
+
+        background:
+            #333333;
+    }
+
+
+    .effect-option.selected
+    .effect-image-wrap {
+        border-color:
+            #FFFFFF;
+    }
+
+
+    .effect-image {
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+    }
+
+
+    .effect-label {
+        max-width: 72px;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.86
+            );
+
+        font-size: 9px;
+    }
+
+
+    /* ======================================================
+       Bottom Actions
+       ====================================================== */
+
+    .camera-bottom {
+        position: absolute;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        z-index: 90;
+
+        min-height: 110px;
+
+        display: grid;
+
+        grid-template-columns:
+            minmax(
+                70px,
+                1fr
+            )
+            120px
+            minmax(
+                70px,
+                1fr
+            );
+
+        align-items: center;
+
+        gap: 10px;
+
+        padding:
+            8px 18px 15px;
+
+        box-sizing: border-box;
+
+        pointer-events: auto;
+    }
+
+
+    .bottom-side {
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+    }
+
+
+    .bottom-side.left {
+        justify-content: flex-start;
+    }
+
+
+    .bottom-side.right {
+        justify-content: flex-end;
+    }
+
+
+    /* ======================================================
+       Record Button
+       ====================================================== */
+
+    .record-button-wrap {
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+    }
+
+
+    .record-button {
+        position: relative;
+
+        width: 82px;
+        height: 82px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border:
+            5px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.94
+            );
+
+        border-radius: 50%;
+
+        background:
+            transparent;
+    }
+
+
+    .record-button-inner {
+        width: 62px;
+        height: 62px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 50%;
+
+        background:
+            #FF0033;
+    }
+
+
+    .record-button.recording
+    .record-button-inner {
+        width: 34px;
+        height: 34px;
+
+        border-radius: 7px;
+    }
+
+
+    .record-button
+    .material-symbols-rounded {
+        font-size: 24px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Gallery
+       ====================================================== */
+
+    .gallery-button {
+        width: 52px;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        gap: 4px;
+
+        padding: 0;
+
+        border: none;
+
+        background:
+            transparent;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .gallery-preview {
+        width: 42px;
+        height: 42px;
+
+        overflow: hidden;
+
+        border:
+            2px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.80
+            );
+
+        border-radius: 8px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.16
+            );
+    }
+
+
+    .gallery-preview-image {
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+    }
+
+
+    .gallery-label {
+        font-size: 8px;
+        font-weight: 600;
+    }
+
+
+    /* ======================================================
+       Undo / Next
+       ====================================================== */
+
+    .round-action {
+        width: 42px;
+        height: 42px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border: none;
+        border-radius: 50%;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.45
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .round-action
+    .material-symbols-rounded {
+        font-size: 22px;
+    }
+
+
+    .next-button {
+        min-height: 40px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 5px;
+
+        padding:
+            0 15px;
+
+        border: none;
+        border-radius: 20px;
+
+        background:
+            #FFFFFF;
+
+        color:
+            #111111;
+
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+
+    .next-button
+    .material-symbols-rounded {
+        font-size: 18px;
+    }
+
+
+    /* ======================================================
+       Desktop / Wide Screens
+       ====================================================== */
+
+    @media (
+        min-width: 900px
+    ) {
+
+        .shorts-camera-page {
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            background:
+                {{ theme.background }};
+        }
+
+
+        .camera-stage {
+            position: relative;
+
+            width:
+                min(
+                    430px,
+                    40vw
+                );
+
+            height:
+                min(
+                    92vh,
+                    860px
+                );
+
+            overflow: hidden;
+
+            border-radius: 20px;
+
+            background:
+                #000000;
+
+            box-shadow:
+                0 8px 40px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.35
+                );
+        }
+
+
+        .camera-preview {
+            position: absolute;
+        }
+
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        max-width: 700px
+    ) {
+
+        .camera-top-bar {
+            padding:
+                7px 9px;
+        }
+
+
+        .camera-title {
+            font-size: 15px;
+        }
+
+
+        .camera-tools {
+            right: 8px;
+
+            gap: 11px;
+        }
+
+
+        .camera-tool {
+            width: 52px;
+        }
+
+
+        .camera-tool-icon {
+            width: 38px;
+            height: 38px;
+        }
+
+
+        .camera-tool-icon
+        .material-symbols-rounded {
+            font-size: 22px;
+        }
+
+
+        .sound-button {
+            max-width: 180px;
+        }
+
+
+        .record-button {
+            width: 76px;
+            height: 76px;
+        }
+
+
+        .record-button-inner {
+            width: 58px;
+            height: 58px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 390px
+    ) {
+
+        .camera-tools {
+            top: 112px;
+
+            gap: 9px;
+        }
+
+
+        .camera-tool-icon {
+            width: 35px;
+            height: 35px;
+        }
+
+
+        .camera-tool-label {
+            font-size: 8px;
+        }
+
+
+        .sound-button {
+            max-width: 145px;
+
+            min-height: 32px;
+        }
+
+
+        .camera-bottom {
+            grid-template-columns:
+                70px
+                100px
+                70px;
+
+            padding-left: 11px;
+            padding-right: 11px;
+        }
+
+
+        .record-button {
+            width: 70px;
+            height: 70px;
+        }
+
+
+        .record-button-inner {
+            width: 53px;
+            height: 53px;
+        }
+
+
+        .effects-panel {
+            min-height: 220px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Landscape
+       ====================================================== */
+
+    @media (
+        orientation: landscape
+    )
+    and
+    (
+        max-height: 600px
+    ) {
+
+        .camera-stage {
+            width: 100%;
+            height: 100%;
+
+            border-radius: 0;
+        }
+
+
+        .camera-tools {
+            top: 68px;
+
+            flex-direction: row;
+
+            right: 12px;
+
+            gap: 7px;
+        }
+
+
+        .camera-tool {
+            width: 48px;
+        }
+
+
+        .camera-tool-label {
+            display: none;
+        }
+
+
+        .camera-tool-value {
+            display: none;
+        }
+
+
+        .sound-button-wrap {
+            top: 12px;
+        }
+
+
+        .duration-limit {
+            top: 14px;
+            left: 62px;
+        }
+
+
+        .camera-bottom {
+            min-height: 88px;
+
+            grid-template-columns:
+                100px
+                100px
+                100px;
+
+            justify-content: center;
+
+            padding-bottom: 7px;
+        }
+
+
+        .record-button {
+            width: 64px;
+            height: 64px;
+        }
+
+
+        .record-button-inner {
+            width: 48px;
+            height: 48px;
+        }
+
+
+        .effects-panel {
+            left: auto;
+
+            width: 330px;
+
+            min-height: 100%;
+
+            padding:
+                50px 12px 90px;
+
+            border-left:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.12
+                );
+        }
+
+
+        .effects-list {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    1fr
+                );
+
+            overflow-y: auto;
+
+            max-height:
+                calc(
+                    100vh - 150px
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="shorts-camera-page"
+
+    data-camera-state="{{ page.state }}"
+>
+
+    <div class="camera-stage">
+
+
+        <!-- ==================================================
+             Camera Preview
+             ================================================== -->
+
+        {% if page.preview.image %}
+
+        <img
+            class="camera-preview"
+
+            src="{{ page.preview.image }}"
+
+            alt="Camera preview"
+
+            data-class="video"
+
+            data-semantic="shorts_camera_preview"
+        >
+
+        {% endif %}
+
+
+        <div class="camera-overlay">
+        </div>
+
+
+        <!-- ==================================================
+             Recording Progress
+             ================================================== -->
+
+        {% if page.layout.show_progress %}
+
+        <div
+            class="recording-progress"
+
+            data-class="progress_bar"
+
+            data-semantic="recording_progress"
+        >
+
+            {% for segment in page.segments["segments"] %}
+
+            <div
+                class="recording-segment"
+
+                style="
+                    left:
+                        {{ segment.start_percent }}%;
+
+                    width:
+                        {{ segment.width_percent }}%;
+                "
+
+                data-class="progress_bar"
+
+                data-semantic="recording_segment"
+            >
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- ==================================================
+             Top App Bar
+             ================================================== -->
+
+        <header
+            class="camera-top-bar"
+
+            data-class="app_bar"
+
+            data-semantic="shorts_camera_top_bar"
+        >
+
+            <div>
+
+                {% if page.top_bar.show_close %}
+
+                <button
+                    class="camera-top-button"
+
+                    data-class="button"
+
+                    data-semantic="close_button"
+
+                    aria-label="Close"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="close_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            <h1
+                class="camera-title"
+
+                data-class="text"
+
+                data-semantic="create_short_title"
+            >
+                {{ page.top_bar.title }}
+            </h1>
+
+
+            <div>
+
+                {% if page.top_bar.show_settings %}
+
+                <button
+                    class="camera-top-button"
+
+                    data-class="button"
+
+                    data-semantic="camera_settings_button"
+
+                    aria-label="Settings"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="camera_settings_icon"
+                    >
+                        settings
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+        </header>
+
+
+        <!-- ==================================================
+             Duration
+             ================================================== -->
+
+        <div
+            class="duration-limit"
+
+            data-class="badge"
+
+            data-semantic="duration_limit"
+        >
+            {{ page.duration.max_text }}
+        </div>
+
+
+        <!-- ==================================================
+             Sound
+             ================================================== -->
+
+        {% if page.layout.show_sound %}
+
+        <div class="sound-button-wrap">
+
+            <button
+                class="sound-button"
+
+                data-class="button"
+
+                data-semantic="add_sound_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="sound_icon"
+                >
+                    music_note
+                </span>
+
+
+                <span
+                    class="sound-button-label"
+
+                    data-class="text"
+
+                    data-semantic="selected_sound"
+                >
+                    {{ page.sound.title }}
+                </span>
+
+            </button>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- ==================================================
+             Recording Indicator
+             ================================================== -->
+
+        {% if page.recording.is_recording %}
+
+        <div
+            class="recording-indicator"
+
+            data-class="badge"
+
+            data-semantic="recording_indicator"
+        >
+
+            <span class="recording-dot">
+            </span>
+
+
+            <span
+                data-class="text"
+
+                data-semantic="recording_status_text"
+            >
+                Recording
+            </span>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- ==================================================
+             Camera Tools
+             ================================================== -->
+
+        {% if page.layout.show_tools %}
+
+        <nav
+            class="camera-tools"
+
+            data-class="toolbar"
+
+            data-semantic="camera_tools"
+        >
+
+            {% for tool in page.tools %}
+
+            <button
+                class="
+                    camera-tool
+
+                    {% if tool.selected %}
+                        selected
+                    {% endif %}
+                "
+
+                data-class="button"
+
+                data-semantic="{{ tool.semantic }}"
+            >
+
+                <span class="camera-tool-icon">
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="camera_tool_icon"
+                    >
+                        {{ tool.icon }}
+                    </span>
+
+                </span>
+
+
+                <span
+                    class="camera-tool-label"
+
+                    data-class="text"
+
+                    data-semantic="tool_label"
+                >
+                    {{ tool.label }}
+                </span>
+
+
+                {% if tool.value %}
+
+                <span
+                    class="camera-tool-value"
+
+                    data-class="text"
+
+                    data-semantic="tool_value"
+                >
+                    {{ tool.value }}
+                </span>
+
+                {% endif %}
+
+            </button>
+
+            {% endfor %}
+
+        </nav>
+
+        {% endif %}
+
+
+        <!-- ==================================================
+             Countdown
+             ================================================== -->
+
+        {% if page.layout.show_countdown
+              and page.countdown.enabled %}
+
+        <div class="countdown-overlay">
+
+            <span
+                class="countdown-label"
+
+                data-class="text"
+
+                data-semantic="countdown_label"
+            >
+                {{ page.countdown.label }}
+            </span>
+
+
+            <span
+                class="countdown-number"
+
+                data-class="text"
+
+                data-semantic="countdown_number"
+            >
+                {{ page.countdown.number }}
+            </span>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- ==================================================
+             Effects Bottom Sheet
+             ================================================== -->
+
+        {% if page.layout.show_effects_panel
+              and page.effects.open %}
+
+        <section
+            class="effects-panel"
+
+            data-class="bottom_sheet"
+
+            data-semantic="effects_bottom_sheet"
+        >
+
+            <div
+                class="effects-header"
+
+                data-class="toolbar"
+
+                data-semantic="effects_header"
+            >
+
+                <h2
+                    class="effects-title"
+
+                    data-class="text"
+
+                    data-semantic="effects_panel_title"
+                >
+                    Effects
+                </h2>
+
+
+                <button
+                    class="effects-close"
+
+                    data-class="button"
+
+                    data-semantic="effects_close_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="effects_close_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <div class="effects-list">
+
+                {% for effect in page.effects["items"] %}
+
+                <button
+                    class="
+                        effect-option
+
+                        {% if effect.selected %}
+                            selected
+                        {% endif %}
+                    "
+
+                    data-class="button"
+
+                    data-semantic="effect_option_button"
+                >
+
+                    <span class="effect-image-wrap">
+
+                        {% if effect.preview %}
+
+                        <img
+                            class="effect-image"
+
+                            src="{{ effect.preview }}"
+
+                            alt="{{ effect.label }}"
+
+                            data-class="image"
+
+                            data-semantic="effect_preview"
+                        >
+
+                        {% endif %}
+
+                    </span>
+
+
+                    <span
+                        class="effect-label"
+
+                        data-class="text"
+
+                        data-semantic="effect_label"
+                    >
+                        {{ effect.label }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        {% endif %}
+
+
+        <!-- ==================================================
+             Bottom Action Toolbar
+             ================================================== -->
+
+        <div
+            class="camera-bottom"
+
+            data-class="toolbar"
+
+            data-semantic="camera_bottom_actions"
+        >
+
+
+            <!-- ==============================================
+                 Left
+                 ============================================== -->
+
+            <div class="bottom-side left">
+
+                {% if page.bottom_actions.show_gallery %}
+
+                <button
+                    class="gallery-button"
+
+                    data-class="button"
+
+                    data-semantic="gallery_button"
+                >
+
+                    <span class="gallery-preview">
+
+                        {% if page.preview.image %}
+
+                        <img
+                            class="gallery-preview-image"
+
+                            src="{{ page.preview.image }}"
+
+                            alt="Gallery"
+
+                            data-class="image"
+
+                            data-semantic="gallery_preview"
+                        >
+
+                        {% endif %}
+
+                    </span>
+
+
+                    <span
+                        class="gallery-label"
+
+                        data-class="text"
+
+                        data-semantic="gallery_label"
+                    >
+                        {{ page.bottom_actions.gallery_label }}
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+
+                {% if page.bottom_actions.show_undo %}
+
+                <button
+                    class="round-action"
+
+                    data-class="button"
+
+                    data-semantic="undo_recording_button"
+
+                    aria-label="Undo recording"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="undo_recording_icon"
+                    >
+                        undo
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- ==============================================
+                 Record
+                 ============================================== -->
+
+            <div class="record-button-wrap">
+
+                {% if page.bottom_actions.show_record %}
+
+                <button
+                    class="
+                        record-button
+
+                        {% if page.recording.is_recording %}
+                            recording
+                        {% endif %}
+                    "
+
+                    data-class="button"
+
+                    data-semantic="record_button"
+
+                    aria-label="{{ page.recording.record_button_label }}"
+                >
+
+                    <span class="record-button-inner">
+
+                        {% if page.recording.record_button_icon %}
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="recording_icon"
+                        >
+                            {{ page.recording.record_button_icon }}
+                        </span>
+
+                        {% endif %}
+
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- ==============================================
+                 Right
+                 ============================================== -->
+
+            <div class="bottom-side right">
+
+                {% if page.bottom_actions.show_next %}
+
+                <button
+                    class="next-button"
+
+                    data-class="button"
+
+                    data-semantic="next_button"
+                >
+
+                    <span
+                        data-class="text"
+
+                        data-semantic="next_button_label"
+                    >
+                        {{ page.bottom_actions.next_label }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="next_icon"
+                    >
+                        arrow_forward
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

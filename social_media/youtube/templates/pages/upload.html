@@ -1,0 +1,2459 @@
+{% extends "base.html" %}
+
+{% block title %}
+YouTube Upload Video
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+
+        width: 100%;
+        min-height: 100%;
+
+        background:
+            {{ theme.background }};
+
+        color:
+            {{ theme.on_background }};
+    }
+
+
+    .upload-page {
+        width: 100%;
+        min-height: 100vh;
+
+        background:
+            {{ theme.background }};
+    }
+
+
+    /* ======================================================
+       Top Bar
+       ====================================================== */
+
+    .upload-top-bar {
+        position: sticky;
+        top: 0;
+
+        z-index: 100;
+
+        min-height: 60px;
+
+        display: flex;
+        align-items: center;
+
+        gap: 12px;
+
+        padding:
+            0 18px;
+
+        border-bottom:
+            1px solid
+            {{ theme.border_subtle }};
+
+        background:
+            {{ theme.surface }};
+    }
+
+
+    .upload-top-title {
+        min-width: 0;
+
+        flex: 1;
+
+        margin: 0;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+
+    .upload-top-actions {
+        display: flex;
+        align-items: center;
+
+        gap: 4px;
+
+        flex-shrink: 0;
+    }
+
+
+    .top-icon-button {
+        width: 40px;
+        height: 40px;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border: none;
+
+        border-radius: 50%;
+
+        background:
+            transparent;
+
+        color:
+            {{ theme.icon }};
+    }
+
+
+    .top-icon-button:hover {
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .top-icon-button
+    .material-symbols-rounded {
+        font-size: 23px;
+    }
+
+
+    .save-button {
+        min-height: 38px;
+
+        padding:
+            0 16px;
+
+        border: none;
+
+        border-radius: 19px;
+
+        background:
+            {{ theme.primary }};
+
+        color:
+            {{ theme.on_primary }};
+
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+
+    /* ======================================================
+       Select File State
+       ====================================================== */
+
+    .upload-select-root {
+        min-height:
+            calc(
+                100vh - 60px
+            );
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 30px 20px;
+    }
+
+
+    .upload-drop-zone {
+        width:
+            min(
+                100%,
+                680px
+            );
+
+        min-height: 430px;
+
+        display: flex;
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 13px;
+
+        padding:
+            44px 28px;
+
+        border:
+            2px dashed
+            {{ theme.border }};
+
+        border-radius: 18px;
+
+        background:
+            {{ theme.surface }};
+
+        text-align: center;
+    }
+
+
+    .upload-icon-circle {
+        width: 92px;
+        height: 92px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        margin-bottom: 8px;
+
+        border-radius: 50%;
+
+        background:
+            {{ theme.surface_variant }};
+
+        color:
+            {{ theme.icon }};
+    }
+
+
+    .upload-icon-circle
+    .material-symbols-rounded {
+        font-size: 46px;
+    }
+
+
+    .upload-drop-title {
+        margin: 0;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 22px;
+        font-weight: 600;
+    }
+
+
+    .upload-drop-instruction {
+        margin: 0;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 14px;
+    }
+
+
+    .upload-privacy-note {
+        max-width: 430px;
+
+        margin:
+            2px 0 12px;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+
+    .select-files-button {
+        min-height: 42px;
+
+        padding:
+            0 20px;
+
+        border: none;
+
+        border-radius: 21px;
+
+        background:
+            {{ theme.primary }};
+
+        color:
+            {{ theme.on_primary }};
+
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+
+    /* ======================================================
+       Upload Workspace
+       ====================================================== */
+
+    .upload-workspace {
+        width: 100%;
+
+        max-width: 1500px;
+
+        margin: 0 auto;
+
+        padding:
+            18px 24px 80px;
+    }
+
+
+    /* ======================================================
+       Step Navigation
+       ====================================================== */
+
+    .upload-steps {
+        display: flex;
+        align-items: flex-start;
+
+        gap: 0;
+
+        overflow-x: auto;
+
+        margin-bottom: 26px;
+
+        scrollbar-width: none;
+    }
+
+
+    .upload-steps::-webkit-scrollbar {
+        display: none;
+    }
+
+
+    .upload-step {
+        position: relative;
+
+        min-width: 150px;
+
+        flex: 1;
+
+        display: flex;
+        flex-direction: column;
+
+        align-items: center;
+
+        gap: 7px;
+
+        padding:
+            0 8px;
+
+        border: none;
+
+        background:
+            transparent;
+
+        color:
+            {{ theme.text_secondary }};
+    }
+
+
+    .upload-step::before {
+        content: "";
+
+        position: absolute;
+
+        top: 12px;
+        left: 0;
+
+        width: 50%;
+        height: 2px;
+
+        transform:
+            translateX(-50%);
+
+        background:
+            {{ theme.border }};
+    }
+
+
+    .upload-step:first-child::before {
+        display: none;
+    }
+
+
+    .step-circle {
+        position: relative;
+
+        z-index: 2;
+
+        width: 24px;
+        height: 24px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border:
+            2px solid
+            {{ theme.border }};
+
+        border-radius: 50%;
+
+        background:
+            {{ theme.surface }};
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+
+    .upload-step.active
+    .step-circle {
+        border-color:
+            {{ theme.primary }};
+
+        background:
+            {{ theme.primary }};
+
+        color:
+            {{ theme.on_primary }};
+    }
+
+
+    .upload-step.completed
+    .step-circle {
+        border-color:
+            {{ theme.primary }};
+
+        background:
+            {{ theme.primary }};
+
+        color:
+            {{ theme.on_primary }};
+    }
+
+
+    .upload-step-label {
+        min-width: max-content;
+
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+
+    .upload-step.active
+    .upload-step-label {
+        color:
+            {{ theme.text_primary }};
+    }
+
+
+    /* ======================================================
+       Main Grid
+       ====================================================== */
+
+    .upload-content-grid {
+        display: grid;
+
+        grid-template-columns:
+            minmax(
+                0,
+                1fr
+            )
+            340px;
+
+        gap: 30px;
+
+        align-items: start;
+    }
+
+
+    .upload-details-column {
+        min-width: 0;
+    }
+
+
+    .upload-preview-column {
+        position: sticky;
+
+        top: 82px;
+
+        min-width: 0;
+    }
+
+
+    /* ======================================================
+       Page Heading
+       ====================================================== */
+
+    .details-heading {
+        margin:
+            0 0 22px;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 25px;
+        font-weight: 700;
+    }
+
+
+    /* ======================================================
+       Field Group
+       ====================================================== */
+
+    .field-group {
+        margin-bottom: 24px;
+    }
+
+
+    .field-label {
+        display: block;
+
+        margin-bottom: 8px;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+
+    .field-help {
+        display: block;
+
+        margin:
+            -3px 0 10px;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 11px;
+        line-height: 1.45;
+    }
+
+
+    .text-input-shell {
+        position: relative;
+
+        width: 100%;
+
+        border:
+            1px solid
+            {{ theme.border }};
+
+        border-radius: 9px;
+
+        background:
+            {{ theme.surface }};
+    }
+
+
+    .text-input,
+    .description-input {
+        width: 100%;
+
+        box-sizing: border-box;
+
+        border: none;
+        outline: none;
+
+        background:
+            transparent;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-family: inherit;
+
+        font-size: 14px;
+    }
+
+
+    .text-input {
+        min-height: 50px;
+
+        padding:
+            12px 14px 22px;
+    }
+
+
+    .description-input {
+        min-height: 150px;
+
+        resize: none;
+
+        padding:
+            13px 14px 28px;
+
+        line-height: 1.45;
+    }
+
+
+    .character-count {
+        position: absolute;
+
+        right: 10px;
+        bottom: 6px;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 9px;
+    }
+
+
+    /* ======================================================
+       Upload Progress
+       ====================================================== */
+
+    .upload-progress-card {
+        margin-bottom: 24px;
+
+        padding:
+            14px 16px;
+
+        border:
+            1px solid
+            {{ theme.border_subtle }};
+
+        border-radius: 10px;
+
+        background:
+            {{ theme.surface }};
+    }
+
+
+    .upload-progress-header {
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+
+        margin-bottom: 10px;
+    }
+
+
+    .upload-progress-status {
+        min-width: 0;
+
+        flex: 1;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+
+    .upload-progress-percent {
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 11px;
+    }
+
+
+    .upload-progress-bar {
+        position: relative;
+
+        width: 100%;
+        height: 5px;
+
+        overflow: hidden;
+
+        border-radius: 4px;
+
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .upload-progress-fill {
+        height: 100%;
+
+        border-radius: inherit;
+
+        background:
+            {{ theme.primary }};
+    }
+
+
+    /* ======================================================
+       Thumbnail Selection
+       ====================================================== */
+
+    .thumbnail-options {
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap: 10px;
+    }
+
+
+    .thumbnail-option {
+        position: relative;
+
+        min-width: 0;
+
+        padding: 0;
+
+        overflow: hidden;
+
+        border:
+            2px solid
+            transparent;
+
+        border-radius: 9px;
+
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .thumbnail-option.selected {
+        border-color:
+            {{ theme.primary }};
+    }
+
+
+    .thumbnail-option-image {
+        width: 100%;
+
+        aspect-ratio:
+            16 / 9;
+
+        display: block;
+
+        object-fit: cover;
+    }
+
+
+    .thumbnail-selected-mark {
+        position: absolute;
+
+        top: 6px;
+        right: 6px;
+
+        width: 22px;
+        height: 22px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 50%;
+
+        background:
+            {{ theme.primary }};
+
+        color:
+            {{ theme.on_primary }};
+    }
+
+
+    .thumbnail-selected-mark
+    .material-symbols-rounded {
+        font-size: 15px;
+    }
+
+
+    /* ======================================================
+       Radio-style Options
+       ====================================================== */
+
+    .option-list {
+        display: flex;
+        flex-direction: column;
+
+        gap: 8px;
+    }
+
+
+    .option-row {
+        width: 100%;
+
+        display: flex;
+        align-items: flex-start;
+
+        gap: 11px;
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            {{ theme.border_subtle }};
+
+        border-radius: 10px;
+
+        background:
+            {{ theme.surface }};
+
+        color:
+            {{ theme.text_primary }};
+
+        text-align: left;
+    }
+
+
+    .option-row.selected {
+        border-color:
+            {{ theme.primary }};
+
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .radio-circle {
+        width: 18px;
+        height: 18px;
+
+        flex-shrink: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        margin-top: 1px;
+
+        border:
+            2px solid
+            {{ theme.border }};
+
+        border-radius: 50%;
+    }
+
+
+    .option-row.selected
+    .radio-circle {
+        border-color:
+            {{ theme.primary }};
+    }
+
+
+    .option-row.selected
+    .radio-circle::after {
+        content: "";
+
+        width: 8px;
+        height: 8px;
+
+        border-radius: 50%;
+
+        background:
+            {{ theme.primary }};
+    }
+
+
+    .option-content {
+        min-width: 0;
+
+        flex: 1;
+    }
+
+
+    .option-title {
+        display: block;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+
+    .option-description {
+        display: block;
+
+        margin-top: 3px;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 11px;
+        line-height: 1.4;
+    }
+
+
+    /* ======================================================
+       Playlist
+       ====================================================== */
+
+    .playlist-box {
+        min-height: 46px;
+
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            {{ theme.border }};
+
+        border-radius: 9px;
+
+        background:
+            {{ theme.surface }};
+
+        color:
+            {{ theme.text_primary }};
+    }
+
+
+    .playlist-box
+    .material-symbols-rounded {
+        color:
+            {{ theme.icon }};
+
+        font-size: 21px;
+    }
+
+
+    .playlist-value {
+        min-width: 0;
+
+        flex: 1;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        font-size: 12px;
+    }
+
+
+    /* ======================================================
+       Tags
+       ====================================================== */
+
+    .tags-input-shell {
+        min-height: 48px;
+
+        display: flex;
+        align-items: center;
+
+        flex-wrap: wrap;
+
+        gap: 6px;
+
+        padding:
+            7px 9px;
+
+        border:
+            1px solid
+            {{ theme.border }};
+
+        border-radius: 9px;
+
+        background:
+            {{ theme.surface }};
+    }
+
+
+    .tag-chip {
+        padding:
+            5px 8px;
+
+        border-radius: 12px;
+
+        background:
+            {{ theme.surface_variant }};
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 10px;
+    }
+
+
+    /* ======================================================
+       Checks
+       ====================================================== */
+
+    .checks-card {
+        margin-bottom: 24px;
+
+        padding: 16px;
+
+        border:
+            1px solid
+            {{ theme.border_subtle }};
+
+        border-radius: 11px;
+
+        background:
+            {{ theme.surface }};
+    }
+
+
+    .checks-title {
+        margin:
+            0 0 12px;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+
+    .check-row {
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+
+        min-height: 38px;
+    }
+
+
+    .check-row
+    .material-symbols-rounded {
+        flex-shrink: 0;
+
+        color:
+            {{ theme.icon }};
+
+        font-size: 21px;
+    }
+
+
+    .check-content {
+        min-width: 0;
+
+        flex: 1;
+    }
+
+
+    .check-label {
+        display: block;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+
+    .check-status {
+        display: block;
+
+        margin-top: 2px;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 10px;
+    }
+
+
+    /* ======================================================
+       Preview Card
+       ====================================================== */
+
+    .video-preview-card {
+        overflow: hidden;
+
+        border:
+            1px solid
+            {{ theme.border_subtle }};
+
+        border-radius: 12px;
+
+        background:
+            {{ theme.surface }};
+    }
+
+
+    .upload-preview-image-wrap {
+        position: relative;
+
+        background: #000000;
+    }
+
+
+    .upload-preview-image {
+        width: 100%;
+
+        aspect-ratio:
+            16 / 9;
+
+        display: block;
+
+        object-fit: cover;
+    }
+
+
+    .preview-duration {
+        position: absolute;
+
+        right: 7px;
+        bottom: 7px;
+
+        padding:
+            3px 5px;
+
+        border-radius: 4px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.78
+            );
+
+        color: #FFFFFF;
+
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+
+    .preview-body {
+        padding: 13px;
+    }
+
+
+    .preview-file-name {
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+
+    .preview-file-meta {
+        display: flex;
+        align-items: center;
+
+        gap: 6px;
+
+        margin-top: 5px;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 10px;
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 800px
+    ) {
+
+        .upload-content-grid {
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .upload-preview-column {
+            position: static;
+
+            order: -1;
+        }
+
+
+        .video-preview-card {
+            width:
+                min(
+                    100%,
+                    480px
+                );
+
+            margin:
+                0 auto;
+        }
+
+
+        .thumbnail-options {
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+    }
+
+
+    /* ======================================================
+       Small Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 520px
+    ) {
+
+        .upload-top-bar {
+            min-height: 54px;
+
+            padding:
+                0 9px;
+        }
+
+
+        .upload-top-title {
+            font-size: 15px;
+        }
+
+
+        .top-icon-button {
+            width: 34px;
+            height: 34px;
+        }
+
+
+        .save-button {
+            min-height: 34px;
+
+            padding:
+                0 11px;
+
+            font-size: 11px;
+        }
+
+
+        .upload-select-root {
+            min-height:
+                calc(
+                    100vh - 54px
+                );
+
+            padding:
+                18px 12px;
+        }
+
+
+        .upload-drop-zone {
+            min-height: 390px;
+
+            padding:
+                30px 18px;
+
+            border-radius: 13px;
+        }
+
+
+        .upload-icon-circle {
+            width: 72px;
+            height: 72px;
+        }
+
+
+        .upload-icon-circle
+        .material-symbols-rounded {
+            font-size: 38px;
+        }
+
+
+        .upload-drop-title {
+            font-size: 19px;
+        }
+
+
+        .upload-workspace {
+            padding:
+                14px 11px 60px;
+        }
+
+
+        .upload-steps {
+            margin-bottom: 20px;
+        }
+
+
+        .upload-step {
+            min-width: 110px;
+        }
+
+
+        .upload-step-label {
+            font-size: 9px;
+        }
+
+
+        .details-heading {
+            font-size: 21px;
+        }
+
+
+        .thumbnail-options {
+            grid-template-columns:
+                1fr 1fr;
+        }
+
+
+        .description-input {
+            min-height: 125px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="upload-page"
+
+    data-upload-state="{{ page.state }}"
+>
+
+
+    <!-- ==================================================
+         Top App Bar
+         ================================================== -->
+
+    <header
+        class="upload-top-bar"
+
+        data-class="app_bar"
+
+        data-semantic="upload_top_bar"
+    >
+
+        <h1
+            class="upload-top-title"
+
+            data-class="text"
+
+            data-semantic="upload_title"
+        >
+            {{ page.top_bar.title }}
+        </h1>
+
+
+        <div
+            class="upload-top-actions"
+
+            data-class="toolbar"
+
+            data-semantic="upload_top_actions"
+        >
+
+            {% if page.top_bar.show_help %}
+
+            <button
+                class="top-icon-button"
+
+                data-class="button"
+
+                data-semantic="help_button"
+
+                aria-label="Help"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="help_icon"
+                >
+                    help
+                </span>
+
+            </button>
+
+            {% endif %}
+
+
+            {% if page.top_bar.show_feedback %}
+
+            <button
+                class="top-icon-button"
+
+                data-class="button"
+
+                data-semantic="feedback_button"
+
+                aria-label="Send feedback"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="feedback_icon"
+                >
+                    feedback
+                </span>
+
+            </button>
+
+            {% endif %}
+
+
+            {% if page.state != "select_file" %}
+
+            <button
+                class="save-button"
+
+                data-class="button"
+
+                data-semantic="save_button"
+            >
+
+                <span
+                    data-class="text"
+
+                    data-semantic="save_button_label"
+                >
+                    {{ page.top_bar.save_label }}
+                </span>
+
+            </button>
+
+            {% endif %}
+
+
+            {% if page.top_bar.show_close %}
+
+            <button
+                class="top-icon-button"
+
+                data-class="button"
+
+                data-semantic="close_button"
+
+                aria-label="Close"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="close_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+            {% endif %}
+
+        </div>
+
+    </header>
+
+
+    <!-- ==================================================
+         Select File
+         ================================================== -->
+
+    {% if page.layout.show_upload_area %}
+
+    <main class="upload-select-root">
+
+        <section
+            class="upload-drop-zone"
+
+            data-class="section"
+
+            data-semantic="upload_drop_zone"
+        >
+
+            <div class="upload-icon-circle">
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="upload_icon"
+                >
+                    upload
+                </span>
+
+            </div>
+
+
+            <h2
+                class="upload-drop-title"
+
+                data-class="text"
+
+                data-semantic="upload_instruction_title"
+            >
+                {{ page.upload_area.title }}
+            </h2>
+
+
+            <p
+                class="upload-drop-instruction"
+
+                data-class="text"
+
+                data-semantic="upload_instruction"
+            >
+                {{ page.upload_area.instruction }}
+            </p>
+
+
+            <p
+                class="upload-privacy-note"
+
+                data-class="text"
+
+                data-semantic="upload_privacy_note"
+            >
+                {{ page.upload_area.privacy_note }}
+            </p>
+
+
+            <button
+                class="select-files-button"
+
+                data-class="button"
+
+                data-semantic="select_files_button"
+            >
+
+                <span
+                    data-class="text"
+
+                    data-semantic="select_files_label"
+                >
+                    {{ page.upload_area.select_button_label }}
+                </span>
+
+            </button>
+
+        </section>
+
+    </main>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Upload Details Workspace
+         ================================================== -->
+
+    {% if page.layout.show_details %}
+
+    <main class="upload-workspace">
+
+
+        <!-- ==============================================
+             Steps Toolbar
+             ============================================== -->
+
+        {% if page.layout.show_steps %}
+
+        <nav
+            class="upload-steps"
+
+            data-class="toolbar"
+
+            data-semantic="upload_steps"
+        >
+
+            {% for step in page.steps %}
+
+            <button
+                class="
+                    upload-step
+
+                    {% if step.active %}
+                        active
+                    {% endif %}
+
+                    {% if step.completed %}
+                        completed
+                    {% endif %}
+                "
+
+                data-class="tab"
+
+                data-semantic="upload_step"
+            >
+
+                <span class="step-circle">
+
+                    {% if step.completed %}
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="upload_step_complete_icon"
+                    >
+                        check
+                    </span>
+
+                    {% else %}
+
+                    {{ loop.index }}
+
+                    {% endif %}
+
+                </span>
+
+
+                <span
+                    class="upload-step-label"
+
+                    data-class="text"
+
+                    data-semantic="upload_step_label"
+                >
+                    {{ step.label }}
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </nav>
+
+        {% endif %}
+
+
+        <div class="upload-content-grid">
+
+
+            <!-- ==========================================
+                 Details Column
+                 ========================================== -->
+
+            <section
+                class="upload-details-column"
+
+                data-class="section"
+
+                data-semantic="upload_details_section"
+            >
+
+                <h2
+                    class="details-heading"
+
+                    data-class="text"
+
+                    data-semantic="details_heading"
+                >
+                    {% if page.layout.show_visibility %}
+                        Visibility
+                    {% else %}
+                        Details
+                    {% endif %}
+                </h2>
+
+
+                <!-- ======================================
+                     Upload Progress
+                     ====================================== -->
+
+                {% if page.layout.show_progress %}
+
+                <div
+                    class="upload-progress-card"
+
+                    data-class="card"
+
+                    data-semantic="upload_progress_card"
+                >
+
+                    <div class="upload-progress-header">
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="upload_status_icon"
+                        >
+                            {% if page.progress.processing %}
+                                pending
+                            {% else %}
+                                upload
+                            {% endif %}
+                        </span>
+
+
+                        <span
+                            class="upload-progress-status"
+
+                            data-class="text"
+
+                            data-semantic="upload_progress_status"
+                        >
+                            {{ page.progress.status }}
+                        </span>
+
+
+                        <span
+                            class="upload-progress-percent"
+
+                            data-class="text"
+
+                            data-semantic="upload_progress_percent"
+                        >
+                            {{ page.progress.percent }}%
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="upload-progress-bar"
+
+                        data-class="progress_bar"
+
+                        data-semantic="upload_progress"
+                    >
+
+                        <div
+                            class="upload-progress-fill"
+
+                            style="
+                                width:
+                                    {{ page.progress.percent }}%;
+                            "
+                        >
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                <!-- ======================================
+                     DETAILS MODE
+                     ====================================== -->
+
+                {% if not page.layout.show_visibility %}
+
+
+                <!-- ======================================
+                     Title
+                     ====================================== -->
+
+                <div class="field-group">
+
+                    <label
+                        class="field-label"
+
+                        data-class="text"
+
+                        data-semantic="field_label"
+                    >
+                        Title
+                    </label>
+
+
+                    <div class="text-input-shell">
+
+                        <input
+                            class="text-input"
+
+                            type="text"
+
+                            value="{{ page.details.title }}"
+
+                            data-class="input_field"
+
+                            data-semantic="video_title_input"
+                        >
+
+
+                        <span class="character-count">
+                            {{ page.details.title|length }}
+                            /
+                            {{ page.details.title_limit }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ======================================
+                     Description
+                     ====================================== -->
+
+                <div class="field-group">
+
+                    <label
+                        class="field-label"
+
+                        data-class="text"
+
+                        data-semantic="field_label"
+                    >
+                        Description
+                    </label>
+
+
+                    <div class="text-input-shell">
+
+                        <textarea
+                            class="description-input"
+
+                            data-class="input_field"
+
+                            data-semantic="video_description_input"
+                        >{{ page.details.description }}</textarea>
+
+
+                        <span class="character-count">
+                            {{ page.details.description|length }}
+                            /
+                            {{ page.details.description_limit }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ======================================
+                     Thumbnail
+                     ====================================== -->
+
+                <div class="field-group">
+
+                    <span
+                        class="field-label"
+
+                        data-class="text"
+
+                        data-semantic="field_label"
+                    >
+                        Thumbnail
+                    </span>
+
+
+                    <span
+                        class="field-help"
+
+                        data-class="text"
+
+                        data-semantic="field_help"
+                    >
+                        Select an image that represents your video.
+                    </span>
+
+
+                    <div class="thumbnail-options">
+
+                        {% for thumbnail in page.thumbnail_options %}
+
+                        <button
+                            class="
+                                thumbnail-option
+
+                                {% if thumbnail.selected %}
+                                    selected
+                                {% endif %}
+                            "
+
+                            data-class="button"
+
+                            data-semantic="thumbnail_option_button"
+                        >
+
+                            {% if thumbnail.image %}
+
+                            <img
+                                class="thumbnail-option-image"
+
+                                src="{{ thumbnail.image }}"
+
+                                alt="Thumbnail option"
+
+                                data-class="image"
+
+                                data-semantic="thumbnail_option"
+                            >
+
+                            {% endif %}
+
+
+                            {% if thumbnail.selected %}
+
+                            <span class="thumbnail-selected-mark">
+
+                                <span
+                                    class="material-symbols-rounded"
+
+                                    data-class="icon"
+
+                                    data-semantic="thumbnail_selected_icon"
+                                >
+                                    check
+                                </span>
+
+                            </span>
+
+                            {% endif %}
+
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- ======================================
+                     Playlist
+                     ====================================== -->
+
+                <div class="field-group">
+
+                    <span
+                        class="field-label"
+
+                        data-class="text"
+
+                        data-semantic="field_label"
+                    >
+                        Playlist
+                    </span>
+
+
+                    <button
+                        class="playlist-box"
+
+                        data-class="button"
+
+                        data-semantic="playlist_selector"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="playlist_icon"
+                        >
+                            playlist_add
+                        </span>
+
+
+                        <span
+                            class="playlist-value"
+
+                            data-class="text"
+
+                            data-semantic="playlist_value"
+                        >
+                            {% if page.playlist.enabled %}
+                                {{ page.playlist.selected }}
+                            {% else %}
+                                Select playlist
+                            {% endif %}
+                        </span>
+
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="dropdown_icon"
+                        >
+                            expand_more
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                <!-- ======================================
+                     Audience
+                     ====================================== -->
+
+                <div class="field-group">
+
+                    <span
+                        class="field-label"
+
+                        data-class="text"
+
+                        data-semantic="audience_label"
+                    >
+                        Audience
+                    </span>
+
+
+                    <span
+                        class="field-help"
+
+                        data-class="text"
+
+                        data-semantic="field_help"
+                    >
+                        Is this video made for kids?
+                    </span>
+
+
+                    <div class="option-list">
+
+                        {% for option in page.audience.options %}
+
+                        <button
+                            class="
+                                option-row
+
+                                {% if option.selected %}
+                                    selected
+                                {% endif %}
+                            "
+
+                            data-class="list_item"
+
+                            data-semantic="audience_option"
+                        >
+
+                            <span class="radio-circle">
+                            </span>
+
+
+                            <span class="option-content">
+
+                                <span
+                                    class="option-title"
+
+                                    data-class="text"
+
+                                    data-semantic="audience_option_label"
+                                >
+                                    {{ option.label }}
+                                </span>
+
+                            </span>
+
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- ======================================
+                     Tags
+                     ====================================== -->
+
+                <div class="field-group">
+
+                    <span
+                        class="field-label"
+
+                        data-class="text"
+
+                        data-semantic="field_label"
+                    >
+                        Tags
+                    </span>
+
+
+                    <div
+                        class="tags-input-shell"
+
+                        data-class="input_field"
+
+                        data-semantic="tags_input"
+                    >
+
+                        {% for tag in page.tags %}
+
+                        <span
+                            class="tag-chip"
+
+                            data-class="text"
+
+                            data-semantic="tag_text"
+                        >
+                            {{ tag }}
+                        </span>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                <!-- ======================================
+                     Checks
+                     ====================================== -->
+
+                {% if page.layout.show_checks %}
+
+                <div
+                    class="checks-card"
+
+                    data-class="card"
+
+                    data-semantic="upload_checks_card"
+                >
+
+                    <h3
+                        class="checks-title"
+
+                        data-class="text"
+
+                        data-semantic="checks_title"
+                    >
+                        Checks
+                    </h3>
+
+
+                    <div
+                        class="check-row"
+
+                        data-class="list_item"
+
+                        data-semantic="copyright_check_item"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="copyright_check_icon"
+                        >
+                            copyright
+                        </span>
+
+
+                        <div class="check-content">
+
+                            <span
+                                class="check-label"
+
+                                data-class="text"
+
+                                data-semantic="check_label"
+                            >
+                                Copyright
+                            </span>
+
+
+                            <span
+                                class="check-status"
+
+                                data-class="text"
+
+                                data-semantic="check_status"
+                            >
+                                {{ page.checks.copyright }}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="check-row"
+
+                        data-class="list_item"
+
+                        data-semantic="ad_suitability_check_item"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="ad_check_icon"
+                        >
+                            monetization_on
+                        </span>
+
+
+                        <div class="check-content">
+
+                            <span
+                                class="check-label"
+
+                                data-class="text"
+
+                                data-semantic="check_label"
+                            >
+                                Ad suitability
+                            </span>
+
+
+                            <span
+                                class="check-status"
+
+                                data-class="text"
+
+                                data-semantic="check_status"
+                            >
+                                {{ page.checks.ad_suitability }}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                <!-- ======================================
+                     VISIBILITY MODE
+                     ====================================== -->
+
+                {% if page.layout.show_visibility %}
+
+                <div class="field-group">
+
+                    <span
+                        class="field-label"
+
+                        data-class="text"
+
+                        data-semantic="visibility_label"
+                    >
+                        Save or publish
+                    </span>
+
+
+                    <span
+                        class="field-help"
+
+                        data-class="text"
+
+                        data-semantic="field_help"
+                    >
+                        Choose who can watch your video.
+                    </span>
+
+
+                    <div class="option-list">
+
+                        {% for option in page.visibility.options %}
+
+                        <button
+                            class="
+                                option-row
+
+                                {% if option.selected %}
+                                    selected
+                                {% endif %}
+                            "
+
+                            data-class="list_item"
+
+                            data-semantic="visibility_option"
+                        >
+
+                            <span class="radio-circle">
+                            </span>
+
+
+                            <span
+                                class="material-symbols-rounded"
+
+                                data-class="icon"
+
+                                data-semantic="visibility_icon"
+                            >
+                                {{ option.icon }}
+                            </span>
+
+
+                            <span class="option-content">
+
+                                <span
+                                    class="option-title"
+
+                                    data-class="text"
+
+                                    data-semantic="visibility_option_label"
+                                >
+                                    {{ option.label }}
+                                </span>
+
+
+                                <span
+                                    class="option-description"
+
+                                    data-class="text"
+
+                                    data-semantic="visibility_option_description"
+                                >
+                                    {{ option.description }}
+                                </span>
+
+                            </span>
+
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+            </section>
+
+
+            <!-- ==========================================
+                 Preview
+                 ========================================== -->
+
+            {% if page.layout.show_preview %}
+
+            <aside class="upload-preview-column">
+
+                <div
+                    class="video-preview-card"
+
+                    data-class="card"
+
+                    data-semantic="upload_video_preview_card"
+                >
+
+                    <div class="upload-preview-image-wrap">
+
+                        {% if page.preview.image %}
+
+                        <img
+                            class="upload-preview-image"
+
+                            src="{{ page.preview.image }}"
+
+                            alt="Uploaded video preview"
+
+                            data-class="video"
+
+                            data-semantic="upload_video_preview"
+                        >
+
+                        {% endif %}
+
+
+                        <span
+                            class="preview-duration"
+
+                            data-class="timestamp"
+
+                            data-semantic="video_duration"
+                        >
+                            {{ page.preview.duration }}
+                        </span>
+
+                    </div>
+
+
+                    <div class="preview-body">
+
+                        <div
+                            class="preview-file-name"
+
+                            data-class="text"
+
+                            data-semantic="file_name"
+                        >
+                            {{ page.file.filename }}
+                        </div>
+
+
+                        <div class="preview-file-meta">
+
+                            <span
+                                data-class="text"
+
+                                data-semantic="file_size"
+                            >
+                                {{ page.file.size_text }}
+                            </span>
+
+                            <span>
+                                •
+                            </span>
+
+                            <span
+                                data-class="text"
+
+                                data-semantic="file_resolution"
+                            >
+                                {{ page.preview.resolution }}
+                            </span>
+
+                            <span>
+                                •
+                            </span>
+
+                            <span
+                                data-class="text"
+
+                                data-semantic="file_format"
+                            >
+                                {{ page.file.format }}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+            {% endif %}
+
+        </div>
+
+    </main>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

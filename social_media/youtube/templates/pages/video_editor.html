@@ -1,0 +1,2037 @@
+{% extends "base.html" %}
+
+{% block title %}
+YouTube Video Editor
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+
+        width: 100%;
+        min-height: 100%;
+
+        background:
+            {{ theme.background }};
+
+        color:
+            {{ theme.on_background }};
+    }
+
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .video-editor-page {
+        width: 100%;
+        min-height: 100vh;
+
+        display: flex;
+        flex-direction: column;
+
+        background:
+            {{ theme.background }};
+    }
+
+
+    /* ======================================================
+       Top Bar
+       ====================================================== */
+
+    .editor-top-bar {
+        position: sticky;
+        top: 0;
+
+        z-index: 100;
+
+        min-height: 58px;
+
+        display: grid;
+
+        grid-template-columns:
+            minmax(90px, 1fr)
+            auto
+            minmax(90px, 1fr);
+
+        align-items: center;
+
+        gap: 12px;
+
+        padding:
+            0 18px;
+
+        border-bottom:
+            1px solid
+            {{ theme.border_subtle }};
+
+        background:
+            {{ theme.surface }};
+    }
+
+
+    .editor-top-left,
+    .editor-top-right {
+        display: flex;
+        align-items: center;
+
+        gap: 5px;
+    }
+
+
+    .editor-top-right {
+        justify-content: flex-end;
+    }
+
+
+    .editor-title {
+        margin: 0;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 17px;
+        font-weight: 600;
+
+        text-align: center;
+    }
+
+
+    .top-text-button {
+        min-height: 38px;
+
+        padding:
+            0 12px;
+
+        border: none;
+
+        border-radius: 19px;
+
+        background:
+            transparent;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+
+    .next-button {
+        background:
+            {{ theme.primary }};
+
+        color:
+            {{ theme.on_primary }};
+    }
+
+
+    .top-icon-button {
+        width: 38px;
+        height: 38px;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border: none;
+
+        border-radius: 50%;
+
+        background:
+            transparent;
+
+        color:
+            {{ theme.icon }};
+    }
+
+
+    .top-icon-button:hover {
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .top-icon-button
+    .material-symbols-rounded {
+        font-size: 21px;
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .editor-main {
+        flex: 1;
+
+        min-height: 0;
+
+        display: grid;
+
+        grid-template-rows:
+            minmax(
+                300px,
+                1fr
+            )
+            auto;
+
+        background:
+            #000000;
+    }
+
+
+    /* ======================================================
+       Preview
+       ====================================================== */
+
+    .preview-area {
+        position: relative;
+
+        min-height: 300px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        overflow: hidden;
+
+        background:
+            #000000;
+    }
+
+
+    .preview-frame {
+        width: 100%;
+        height: 100%;
+
+        max-height:
+            calc(
+                100vh - 310px
+            );
+
+        object-fit: contain;
+
+        background:
+            #000000;
+    }
+
+
+    /* ======================================================
+       Preview Gradient
+       ====================================================== */
+
+    .preview-gradient {
+        position: absolute;
+
+        inset: 0;
+
+        pointer-events: none;
+
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.08),
+                rgba(0, 0, 0, 0),
+                rgba(0, 0, 0, 0.12)
+            );
+    }
+
+
+    /* ======================================================
+       Center Play Button
+       ====================================================== */
+
+    .preview-play-button {
+        position: absolute;
+
+        top: 50%;
+        left: 50%;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        width: 72px;
+        height: 72px;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border: none;
+
+        border-radius: 50%;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.52
+            );
+
+        color:
+            #FFFFFF;
+    }
+
+
+    .preview-play-button
+    .material-symbols-rounded {
+        font-size: 44px;
+
+        color:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Current Time Overlay
+       ====================================================== */
+
+    .preview-time {
+        position: absolute;
+
+        left: 16px;
+        bottom: 14px;
+
+        padding:
+            5px 8px;
+
+        border-radius: 5px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.62
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+
+    /* ======================================================
+       State Indicator
+       ====================================================== */
+
+    .editor-state {
+        position: absolute;
+
+        right: 14px;
+        bottom: 14px;
+
+        padding:
+            4px 7px;
+
+        border-radius: 4px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.54
+            );
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.72
+            );
+
+        font-size: 9px;
+
+        text-transform: uppercase;
+
+        letter-spacing:
+            0.4px;
+    }
+
+
+    /* ======================================================
+       Bottom Editor
+       ====================================================== */
+
+    .editing-panel {
+        background:
+            {{ theme.surface }};
+
+        color:
+            {{ theme.text_primary }};
+
+        border-top:
+            1px solid
+            {{ theme.border_subtle }};
+    }
+
+
+    /* ======================================================
+       Timeline Header
+       ====================================================== */
+
+    .timeline-header {
+        min-height: 44px;
+
+        display: flex;
+        align-items: center;
+
+        gap: 12px;
+
+        padding:
+            8px 18px 5px;
+    }
+
+
+    .timeline-time {
+        min-width:
+            max-content;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+
+    .timeline-duration {
+        margin-left: auto;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 11px;
+    }
+
+
+    .selected-duration {
+        padding:
+            4px 8px;
+
+        border-radius: 12px;
+
+        background:
+            {{ theme.surface_variant }};
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+
+    /* ======================================================
+       Timeline
+       ====================================================== */
+
+    .timeline-container {
+        padding:
+            0 18px 12px;
+    }
+
+
+    .timeline {
+        position: relative;
+
+        width: 100%;
+        height: 74px;
+
+        overflow: hidden;
+
+        border-radius: 8px;
+
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    /* ======================================================
+       Timeline Frame Strip
+       ====================================================== */
+
+    .timeline-frames {
+        position: absolute;
+
+        inset: 0;
+
+        display: flex;
+
+        overflow: hidden;
+    }
+
+
+    .timeline-frame {
+        min-width: 0;
+
+        flex: 1;
+
+        height: 100%;
+
+        object-fit: cover;
+
+        border-right:
+            1px solid
+            rgba(
+                255,
+                255,
+                255,
+                0.12
+            );
+    }
+
+
+    /* ======================================================
+       Timeline Dark Outside Selection
+       ====================================================== */
+
+    .timeline-outside {
+        position: absolute;
+
+        top: 0;
+        bottom: 0;
+
+        z-index: 5;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.56
+            );
+
+        pointer-events: none;
+    }
+
+
+    .timeline-outside.left {
+        left: 0;
+    }
+
+
+    .timeline-outside.right {
+        right: 0;
+    }
+
+
+    /* ======================================================
+       Selected Trim Range
+       ====================================================== */
+
+    .trim-selection {
+        position: absolute;
+
+        top: 0;
+        bottom: 0;
+
+        z-index: 8;
+
+        border-top:
+            3px solid
+            {{ theme.primary }};
+
+        border-bottom:
+            3px solid
+            {{ theme.primary }};
+
+        pointer-events: none;
+    }
+
+
+    /* ======================================================
+       Trim Handles
+       ====================================================== */
+
+    .trim-handle {
+        position: absolute;
+
+        top: 0;
+        bottom: 0;
+
+        z-index: 15;
+
+        width: 18px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border: none;
+
+        background:
+            {{ theme.primary }};
+
+        color:
+            {{ theme.on_primary }};
+    }
+
+
+    .trim-handle.start {
+        transform:
+            translateX(-50%);
+
+        border-radius:
+            6px 0 0 6px;
+    }
+
+
+    .trim-handle.end {
+        transform:
+            translateX(-50%);
+
+        border-radius:
+            0 6px 6px 0;
+    }
+
+
+    .trim-handle.selected {
+        width: 22px;
+
+        box-shadow:
+            0 0 0 3px
+            rgba(
+                255,
+                255,
+                255,
+                0.55
+            );
+    }
+
+
+    .trim-handle-grip {
+        width: 3px;
+        height: 26px;
+
+        border-radius: 2px;
+
+        background:
+            {{ theme.on_primary }};
+    }
+
+
+    /* ======================================================
+       Playhead
+       ====================================================== */
+
+    .editor-playhead {
+        position: absolute;
+
+        top: -5px;
+        bottom: -5px;
+
+        z-index: 25;
+
+        width: 2px;
+
+        transform:
+            translateX(-50%);
+
+        background:
+            #FFFFFF;
+    }
+
+
+    .editor-playhead::before {
+        content: "";
+
+        position: absolute;
+
+        top: -2px;
+        left: 50%;
+
+        width: 12px;
+        height: 12px;
+
+        transform:
+            translateX(-50%);
+
+        border-radius: 50%;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Current Timeline Time
+       ====================================================== */
+
+    .playhead-time {
+        position: absolute;
+
+        top: -26px;
+
+        z-index: 30;
+
+        transform:
+            translateX(-50%);
+
+        padding:
+            3px 6px;
+
+        border-radius: 4px;
+
+        background:
+            {{ theme.text_primary }};
+
+        color:
+            {{ theme.background }};
+
+        font-size: 9px;
+        font-weight: 600;
+    }
+
+
+    /* ======================================================
+       Audio Track
+       ====================================================== */
+
+    .audio-track {
+        margin:
+            0 18px 10px;
+
+        min-height: 42px;
+
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+
+        padding:
+            7px 10px;
+
+        border-radius: 8px;
+
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .audio-track-icon {
+        width: 28px;
+        height: 28px;
+
+        flex-shrink: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 50%;
+
+        background:
+            {{ theme.surface }};
+
+        color:
+            {{ theme.icon }};
+    }
+
+
+    .audio-track-icon
+    .material-symbols-rounded {
+        font-size: 18px;
+    }
+
+
+    .audio-track-content {
+        min-width: 0;
+
+        flex: 1;
+    }
+
+
+    .audio-track-title {
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+
+    .audio-volume {
+        position: relative;
+
+        width: 100%;
+        height: 3px;
+
+        margin-top: 5px;
+
+        border-radius: 2px;
+
+        background:
+            {{ theme.border }};
+    }
+
+
+    .audio-volume-fill {
+        height: 100%;
+
+        border-radius: inherit;
+
+        background:
+            {{ theme.primary }};
+    }
+
+
+    /* ======================================================
+       Tools
+       ====================================================== */
+
+    .editor-tools {
+        min-height: 76px;
+
+        display: flex;
+        align-items: stretch;
+
+        overflow-x: auto;
+
+        border-top:
+            1px solid
+            {{ theme.border_subtle }};
+
+        scrollbar-width: none;
+    }
+
+
+    .editor-tools::-webkit-scrollbar {
+        display: none;
+    }
+
+
+    .editor-tool {
+        min-width: 84px;
+
+        flex: 1;
+
+        display: flex;
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 4px;
+
+        padding:
+            7px 8px;
+
+        border: none;
+
+        background:
+            transparent;
+
+        color:
+            {{ theme.text_secondary }};
+    }
+
+
+    .editor-tool.selected {
+        color:
+            {{ theme.primary }};
+    }
+
+
+    .editor-tool-icon {
+        position: relative;
+
+        width: 38px;
+        height: 38px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 50%;
+    }
+
+
+    .editor-tool.selected
+    .editor-tool-icon {
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .editor-tool-icon
+    .material-symbols-rounded {
+        font-size: 23px;
+    }
+
+
+    .editor-tool-label {
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 1000px
+    ) {
+
+        .video-editor-page {
+            height: 100vh;
+
+            overflow: hidden;
+        }
+
+
+        .editor-main {
+            min-height: 0;
+
+            grid-template-columns:
+                minmax(
+                    0,
+                    1fr
+                )
+                420px;
+
+            grid-template-rows:
+                1fr;
+        }
+
+
+        .preview-area {
+            min-height: 0;
+        }
+
+
+        .preview-frame {
+            max-height:
+                calc(
+                    100vh - 58px
+                );
+        }
+
+
+        .editing-panel {
+            height:
+                calc(
+                    100vh - 58px
+                );
+
+            display: flex;
+            flex-direction: column;
+
+            overflow-y: auto;
+
+            border-top: none;
+
+            border-left:
+                1px solid
+                {{ theme.border_subtle }};
+        }
+
+
+        .timeline-container {
+            padding-top: 10px;
+        }
+
+
+        .timeline {
+            height: 96px;
+        }
+
+
+        .editor-tools {
+            margin-top: auto;
+
+            flex-wrap: wrap;
+
+            align-content: flex-start;
+        }
+
+
+        .editor-tool {
+            min-width: 33.3333%;
+
+            flex:
+                0 0 33.3333%;
+
+            min-height: 86px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        max-width: 760px
+    ) {
+
+        .editor-top-bar {
+            min-height: 54px;
+
+            grid-template-columns:
+                90px
+                minmax(
+                    0,
+                    1fr
+                )
+                90px;
+
+            padding:
+                0 10px;
+        }
+
+
+        .editor-title {
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+
+            white-space: nowrap;
+
+            font-size: 15px;
+        }
+
+
+        .top-text-button {
+            padding:
+                0 9px;
+
+            font-size: 12px;
+        }
+
+
+        .preview-area {
+            min-height: 280px;
+        }
+
+
+        .preview-play-button {
+            width: 64px;
+            height: 64px;
+        }
+
+
+        .preview-play-button
+        .material-symbols-rounded {
+            font-size: 39px;
+        }
+
+
+        .timeline-header {
+            padding:
+                7px 12px 4px;
+        }
+
+
+        .timeline-container {
+            padding:
+                0 12px 10px;
+        }
+
+
+        .timeline {
+            height: 66px;
+        }
+
+
+        .audio-track {
+            margin:
+                0 12px 8px;
+        }
+
+
+        .editor-tool {
+            min-width: 76px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 520px
+    ) {
+
+        .editor-top-bar {
+            grid-template-columns:
+                74px
+                minmax(
+                    0,
+                    1fr
+                )
+                74px;
+
+            gap: 4px;
+
+            padding:
+                0 7px;
+        }
+
+
+        .editor-top-left,
+        .editor-top-right {
+            gap: 0;
+        }
+
+
+        .top-icon-button {
+            width: 34px;
+            height: 34px;
+        }
+
+
+        .top-text-button {
+            min-height: 34px;
+
+            padding:
+                0 8px;
+
+            font-size: 11px;
+        }
+
+
+        .editor-title {
+            font-size: 14px;
+        }
+
+
+        .preview-area {
+            min-height: 300px;
+        }
+
+
+        .preview-frame {
+            max-height:
+                52vh;
+        }
+
+
+        .preview-play-button {
+            width: 58px;
+            height: 58px;
+        }
+
+
+        .preview-play-button
+        .material-symbols-rounded {
+            font-size: 36px;
+        }
+
+
+        .preview-time {
+            left: 10px;
+            bottom: 10px;
+
+            font-size: 10px;
+        }
+
+
+        .editor-state {
+            display: none;
+        }
+
+
+        .timeline-header {
+            gap: 8px;
+
+            padding:
+                6px 10px 3px;
+        }
+
+
+        .timeline-time,
+        .timeline-duration {
+            font-size: 9px;
+        }
+
+
+        .selected-duration {
+            padding:
+                3px 6px;
+
+            font-size: 9px;
+        }
+
+
+        .timeline-container {
+            padding:
+                0 10px 9px;
+        }
+
+
+        .timeline {
+            height: 58px;
+        }
+
+
+        .trim-handle {
+            width: 14px;
+        }
+
+
+        .trim-handle.selected {
+            width: 18px;
+        }
+
+
+        .trim-handle-grip {
+            height: 21px;
+        }
+
+
+        .audio-track {
+            min-height: 38px;
+
+            margin:
+                0 10px 7px;
+
+            padding:
+                5px 8px;
+        }
+
+
+        .audio-track-icon {
+            width: 25px;
+            height: 25px;
+        }
+
+
+        .editor-tools {
+            min-height: 67px;
+        }
+
+
+        .editor-tool {
+            min-width: 68px;
+
+            padding:
+                5px;
+        }
+
+
+        .editor-tool-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+
+        .editor-tool-icon
+        .material-symbols-rounded {
+            font-size: 20px;
+        }
+
+
+        .editor-tool-label {
+            font-size: 9px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile Landscape
+       ====================================================== */
+
+    @media (
+        max-height: 520px
+    )
+    and
+    (
+        orientation: landscape
+    ) {
+
+        .video-editor-page {
+            height: 100vh;
+
+            overflow: hidden;
+        }
+
+
+        .editor-top-bar {
+            min-height: 46px;
+
+            padding:
+                0 8px;
+        }
+
+
+        .editor-main {
+            min-height: 0;
+
+            grid-template-columns:
+                minmax(
+                    0,
+                    1fr
+                )
+                330px;
+
+            grid-template-rows:
+                1fr;
+        }
+
+
+        .preview-area {
+            min-height: 0;
+        }
+
+
+        .preview-frame {
+            max-height:
+                calc(
+                    100vh - 46px
+                );
+        }
+
+
+        .preview-play-button {
+            width: 54px;
+            height: 54px;
+        }
+
+
+        .preview-play-button
+        .material-symbols-rounded {
+            font-size: 34px;
+        }
+
+
+        .editing-panel {
+            height:
+                calc(
+                    100vh - 46px
+                );
+
+            overflow-y: auto;
+
+            border-top: none;
+
+            border-left:
+                1px solid
+                {{ theme.border_subtle }};
+        }
+
+
+        .timeline-header {
+            min-height: 34px;
+
+            padding:
+                4px 8px 2px;
+        }
+
+
+        .timeline-container {
+            padding:
+                3px 8px 7px;
+        }
+
+
+        .timeline {
+            height: 54px;
+        }
+
+
+        .audio-track {
+            margin:
+                0 8px 6px;
+        }
+
+
+        .editor-tools {
+            min-height: 58px;
+
+            flex-wrap: wrap;
+        }
+
+
+        .editor-tool {
+            min-width: 33.3333%;
+
+            flex:
+                0 0 33.3333%;
+
+            min-height: 56px;
+        }
+
+
+        .editor-tool-icon {
+            width: 29px;
+            height: 29px;
+        }
+
+
+        .editor-tool-icon
+        .material-symbols-rounded {
+            font-size: 18px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="video-editor-page"
+
+    data-editor-state="{{ page.state }}"
+>
+
+
+    <!-- ==================================================
+         Top App Bar
+         ================================================== -->
+
+    <header
+        class="editor-top-bar"
+
+        data-class="app_bar"
+
+        data-semantic="video_editor_top_bar"
+    >
+
+        <div class="editor-top-left">
+
+            <button
+                class="top-text-button"
+
+                data-class="button"
+
+                data-semantic="cancel_button"
+            >
+
+                <span
+                    data-class="text"
+
+                    data-semantic="cancel_label"
+                >
+                    {{ page.top_bar.cancel_label }}
+                </span>
+
+            </button>
+
+
+            {% if page.top_bar.show_undo %}
+
+            <button
+                class="top-icon-button"
+
+                data-class="button"
+
+                data-semantic="undo_button"
+
+                aria-label="Undo"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="undo_icon"
+                >
+                    undo
+                </span>
+
+            </button>
+
+            {% endif %}
+
+
+            {% if page.top_bar.show_redo %}
+
+            <button
+                class="top-icon-button"
+
+                data-class="button"
+
+                data-semantic="redo_button"
+
+                aria-label="Redo"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="redo_icon"
+                >
+                    redo
+                </span>
+
+            </button>
+
+            {% endif %}
+
+        </div>
+
+
+        <h1
+            class="editor-title"
+
+            data-class="text"
+
+            data-semantic="editor_title"
+        >
+            {{ page.top_bar.title }}
+        </h1>
+
+
+        <div class="editor-top-right">
+
+            <button
+                class="
+                    top-text-button
+                    next-button
+                "
+
+                data-class="button"
+
+                data-semantic="next_button"
+            >
+
+                <span
+                    data-class="text"
+
+                    data-semantic="next_label"
+                >
+                    {{ page.top_bar.next_label }}
+                </span>
+
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ==================================================
+         Main
+         ================================================== -->
+
+    <main class="editor-main">
+
+
+        <!-- ==============================================
+             Video Preview
+             ============================================== -->
+
+        <section
+            class="preview-area"
+
+            data-class="media_item"
+
+            data-semantic="editor_video_preview_item"
+        >
+
+            {% if page.video.preview %}
+
+            <img
+                class="preview-frame"
+
+                src="{{ page.video.preview }}"
+
+                alt="{{ page.video.title }}"
+
+                data-class="video"
+
+                data-semantic="editor_video_preview"
+            >
+
+            {% endif %}
+
+
+            <div class="preview-gradient">
+            </div>
+
+
+            <button
+                class="preview-play-button"
+
+                data-class="button"
+
+                data-semantic="play_pause_button"
+
+                aria-label="{{ page.playback.play_label }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="play_pause_icon"
+                >
+                    {{ page.playback.play_icon }}
+                </span>
+
+            </button>
+
+
+            <span
+                class="preview-time"
+
+                data-class="timestamp"
+
+                data-semantic="current_time"
+            >
+                {{ page.playhead.current_time_text }}
+            </span>
+
+
+            <span class="editor-state">
+                {{ page.state }}
+            </span>
+
+        </section>
+
+
+        <!-- ==============================================
+             Editing Panel
+             ============================================== -->
+
+        <section
+            class="editing-panel"
+
+            data-class="section"
+
+            data-semantic="video_editing_section"
+        >
+
+
+            <!-- ==========================================
+                 Timeline Header
+                 ========================================== -->
+
+            {% if page.layout.show_time_labels %}
+
+            <div
+                class="timeline-header"
+
+                data-class="toolbar"
+
+                data-semantic="timeline_header"
+            >
+
+                <span
+                    class="timeline-time"
+
+                    data-class="timestamp"
+
+                    data-semantic="start_time"
+                >
+                    {{ page.trim.start_text }}
+                </span>
+
+
+                <span
+                    class="selected-duration"
+
+                    data-class="text"
+
+                    data-semantic="selected_duration"
+                >
+                    {{ page.trim.selected_duration_text }}
+                </span>
+
+
+                <span
+                    class="timeline-duration"
+
+                    data-class="timestamp"
+
+                    data-semantic="end_time"
+                >
+                    {{ page.trim.end_text }}
+                </span>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- ==========================================
+                 Timeline
+                 ========================================== -->
+
+            {% if page.layout.show_timeline %}
+
+            <div class="timeline-container">
+
+                <div
+                    class="timeline"
+
+                    data-class="progress_bar"
+
+                    data-semantic="editor_timeline"
+                >
+
+
+                    <!-- ==================================
+                         Timeline Frames
+                         ================================== -->
+
+                    <div class="timeline-frames">
+
+                        {% for frame in page.timeline_frames %}
+
+                        {% if frame.image %}
+
+                        <img
+                            class="timeline-frame"
+
+                            src="{{ frame.image }}"
+
+                            alt="Timeline frame"
+
+                            data-class="image"
+
+                            data-semantic="timeline_frame"
+                        >
+
+                        {% endif %}
+
+                        {% endfor %}
+
+                    </div>
+
+
+                    <!-- ==================================
+                         Outside Start
+                         ================================== -->
+
+                    <div
+                        class="
+                            timeline-outside
+                            left
+                        "
+
+                        style="
+                            width:
+                                {{ page.trim.start_percent }}%;
+                        "
+                    >
+                    </div>
+
+
+                    <!-- ==================================
+                         Outside End
+                         ================================== -->
+
+                    <div
+                        class="
+                            timeline-outside
+                            right
+                        "
+
+                        style="
+                            width:
+                                {{ 100 - page.trim.end_percent }}%;
+                        "
+                    >
+                    </div>
+
+
+                    <!-- ==================================
+                         Selection
+                         ================================== -->
+
+                    <div
+                        class="trim-selection"
+
+                        style="
+                            left:
+                                {{ page.trim.start_percent }}%;
+
+                            width:
+                                {{ page.trim.end_percent - page.trim.start_percent }}%;
+                        "
+                    >
+                    </div>
+
+
+                    <!-- ==================================
+                         Start Handle
+                         ================================== -->
+
+                    <button
+                        class="
+                            trim-handle
+                            start
+
+                            {% if page.handles.start_selected %}
+                                selected
+                            {% endif %}
+                        "
+
+                        style="
+                            left:
+                                {{ page.trim.start_percent }}%;
+                        "
+
+                        data-class="button"
+
+                        data-semantic="trim_start_handle"
+
+                        aria-label="Trim start"
+                    >
+
+                        <span class="trim-handle-grip">
+                        </span>
+
+                    </button>
+
+
+                    <!-- ==================================
+                         End Handle
+                         ================================== -->
+
+                    <button
+                        class="
+                            trim-handle
+                            end
+
+                            {% if page.handles.end_selected %}
+                                selected
+                            {% endif %}
+                        "
+
+                        style="
+                            left:
+                                {{ page.trim.end_percent }}%;
+                        "
+
+                        data-class="button"
+
+                        data-semantic="trim_end_handle"
+
+                        aria-label="Trim end"
+                    >
+
+                        <span class="trim-handle-grip">
+                        </span>
+
+                    </button>
+
+
+                    <!-- ==================================
+                         Playhead Time
+                         ================================== -->
+
+                    <span
+                        class="playhead-time"
+
+                        style="
+                            left:
+                                {{ page.playhead.percent }}%;
+                        "
+
+                        data-class="timestamp"
+
+                        data-semantic="playhead_time"
+                    >
+                        {{ page.playhead.current_time_text }}
+                    </span>
+
+
+                    <!-- ==================================
+                         Playhead
+                         ================================== -->
+
+                    <div
+                        class="editor-playhead"
+
+                        style="
+                            left:
+                                {{ page.playhead.percent }}%;
+                        "
+
+                        data-class="progress_bar"
+
+                        data-semantic="editor_playhead"
+                    >
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- ==========================================
+                 Audio Track
+                 ========================================== -->
+
+            {% if page.layout.show_audio_track
+                  and page.audio.enabled %}
+
+            <div
+                class="audio-track"
+
+                data-class="list_item"
+
+                data-semantic="editor_audio_track"
+            >
+
+                <span class="audio-track-icon">
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="audio_track_icon"
+                    >
+                        music_note
+                    </span>
+
+                </span>
+
+
+                <div class="audio-track-content">
+
+                    <div
+                        class="audio-track-title"
+
+                        data-class="text"
+
+                        data-semantic="audio_title"
+                    >
+                        {{ page.audio.title }}
+                    </div>
+
+
+                    <div
+                        class="audio-volume"
+
+                        data-class="progress_bar"
+
+                        data-semantic="audio_volume"
+                    >
+
+                        <div
+                            class="audio-volume-fill"
+
+                            style="
+                                width:
+                                    {{ page.audio.volume }}%;
+                            "
+                        >
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- ==========================================
+                 Editing Tools
+                 ========================================== -->
+
+            {% if page.layout.show_tools %}
+
+            <nav
+                class="editor-tools"
+
+                data-class="toolbar"
+
+                data-semantic="editor_tools"
+            >
+
+                {% for tool in page.tools %}
+
+                <button
+                    class="
+                        editor-tool
+
+                        {% if tool.selected %}
+                            selected
+                        {% endif %}
+                    "
+
+                    data-class="button"
+
+                    data-semantic="{{ tool.semantic }}"
+                >
+
+                    <span class="editor-tool-icon">
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="editor_tool_icon"
+                        >
+                            {{ tool.icon }}
+                        </span>
+
+                    </span>
+
+
+                    <span
+                        class="editor-tool-label"
+
+                        data-class="text"
+
+                        data-semantic="tool_label"
+                    >
+                        {{ tool.label }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </nav>
+
+            {% endif %}
+
+        </section>
+
+    </main>
+
+</div>
+
+{% endblock %}

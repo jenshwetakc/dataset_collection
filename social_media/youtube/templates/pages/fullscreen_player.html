@@ -1,0 +1,2003 @@
+{% extends "base.html" %}
+
+{% block title %}
+YouTube Fullscreen Player
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Reset for fullscreen player
+       ====================================================== */
+
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+
+        width: 100%;
+        height: 100%;
+
+        overflow: hidden;
+
+        background: #000000;
+    }
+
+
+    body {
+        font-family:
+            Arial,
+            Helvetica,
+            sans-serif;
+    }
+
+
+    /* ======================================================
+       Fullscreen Root
+       ====================================================== */
+
+    .fullscreen-player {
+        position: relative;
+
+        width: 100vw;
+        height: 100vh;
+
+        overflow: hidden;
+
+        background: #000000;
+
+        color: #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Video Frame
+       ====================================================== */
+
+    .video-frame {
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+
+        background: #000000;
+    }
+
+
+    /* ======================================================
+       Base Overlay
+       ====================================================== */
+
+    .player-overlay {
+        position: absolute;
+
+        inset: 0;
+
+        pointer-events: none;
+    }
+
+
+    .player-overlay.controls-hidden {
+        pointer-events: none;
+    }
+
+
+    .player-overlay.controls-visible {
+        pointer-events: auto;
+    }
+
+
+    /* ======================================================
+       Gradients
+       ====================================================== */
+
+    .top-gradient {
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        right: 0;
+
+        height: 160px;
+
+        pointer-events: none;
+
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.72),
+                rgba(0, 0, 0, 0.26),
+                rgba(0, 0, 0, 0)
+            );
+    }
+
+
+    .bottom-gradient {
+        position: absolute;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        height: 210px;
+
+        pointer-events: none;
+
+        background:
+            linear-gradient(
+                to top,
+                rgba(0, 0, 0, 0.82),
+                rgba(0, 0, 0, 0.32),
+                rgba(0, 0, 0, 0)
+            );
+    }
+
+
+    /* ======================================================
+       Generic Player Button
+       ====================================================== */
+
+    .player-icon-button {
+        display: inline-flex;
+
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border: none;
+
+        background: transparent;
+
+        color: #FFFFFF;
+
+        cursor: default;
+    }
+
+
+    .player-icon-button
+    .material-symbols-rounded {
+        color: #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Top Bar
+       ====================================================== */
+
+    .player-top-bar {
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        right: 0;
+
+        z-index: 20;
+
+        min-height: 68px;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 14px;
+
+        padding:
+            12px 20px;
+    }
+
+
+    .top-back-button {
+        width: 44px;
+        height: 44px;
+
+        flex-shrink: 0;
+
+        border-radius: 50%;
+    }
+
+
+    .top-back-button
+    .material-symbols-rounded {
+        font-size: 28px;
+    }
+
+
+    .player-title-block {
+        min-width: 0;
+
+        flex: 1;
+    }
+
+
+    .player-title {
+        margin: 0;
+
+        max-width: 900px;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        color: #FFFFFF;
+
+        font-size: 18px;
+        font-weight: 600;
+
+        text-shadow:
+            0 1px 2px
+            rgba(0, 0, 0, 0.55);
+    }
+
+
+    .player-channel {
+        margin-top: 3px;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 7px;
+
+        min-width: 0;
+    }
+
+
+    .player-channel-avatar {
+        width: 26px;
+        height: 26px;
+
+        flex-shrink: 0;
+
+        border-radius: 50%;
+
+        object-fit: cover;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.18
+            );
+    }
+
+
+    .player-channel-name {
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.88
+            );
+
+        font-size: 12px;
+    }
+
+
+    .player-channel-verified {
+        flex-shrink: 0;
+
+        font-size:
+            14px !important;
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.86
+            ) !important;
+    }
+
+
+    .top-actions {
+        flex-shrink: 0;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 4px;
+    }
+
+
+    .top-action-button {
+        width: 42px;
+        height: 42px;
+
+        border-radius: 50%;
+    }
+
+
+    .top-action-button
+    .material-symbols-rounded {
+        font-size: 25px;
+    }
+
+
+    /* ======================================================
+       Center Controls
+       ====================================================== */
+
+    .center-controls {
+        position: absolute;
+
+        top: 50%;
+        left: 50%;
+
+        z-index: 30;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        gap: clamp(
+            28px,
+            7vw,
+            90px
+        );
+    }
+
+
+    .center-control-button {
+        width: 72px;
+        height: 72px;
+
+        flex-shrink: 0;
+
+        border-radius: 50%;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.42
+            );
+
+        backdrop-filter:
+            blur(2px);
+    }
+
+
+    .center-control-button
+    .material-symbols-rounded {
+        font-size: 42px;
+    }
+
+
+    .center-play-button {
+        width: 84px;
+        height: 84px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.52
+            );
+    }
+
+
+    .center-play-button
+    .material-symbols-rounded {
+        font-size: 50px;
+    }
+
+
+    /* ======================================================
+       Seeking Feedback
+       ====================================================== */
+
+    .seek-feedback {
+        position: absolute;
+
+        top: 50%;
+
+        z-index: 40;
+
+        transform:
+            translateY(-50%);
+
+        width: 180px;
+        height: 180px;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 5px;
+
+        border-radius: 50%;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.45
+            );
+
+        color: #FFFFFF;
+    }
+
+
+    .seek-feedback.backward {
+        left: 12%;
+    }
+
+
+    .seek-feedback.forward {
+        right: 12%;
+    }
+
+
+    .seek-feedback
+    .material-symbols-rounded {
+        font-size: 48px;
+
+        color: #FFFFFF;
+    }
+
+
+    .seek-feedback-label {
+        font-size: 14px;
+        font-weight: 600;
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.92
+            );
+    }
+
+
+    /* ======================================================
+       Bottom Controls Root
+       ====================================================== */
+
+    .bottom-controls {
+        position: absolute;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        z-index: 30;
+
+        padding:
+            0 18px 13px;
+    }
+
+
+    /* ======================================================
+       Seek Bar
+       ====================================================== */
+
+    .seek-bar-wrapper {
+        width: 100%;
+
+        display: flex;
+
+        align-items: center;
+
+        min-height: 18px;
+
+        cursor: default;
+    }
+
+
+    .seek-bar {
+        position: relative;
+
+        width: 100%;
+        height: 4px;
+
+        border-radius: 3px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.32
+            );
+    }
+
+
+    .seek-buffer {
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        bottom: 0;
+
+        width: 72%;
+
+        border-radius: inherit;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.38
+            );
+    }
+
+
+    .seek-progress {
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        bottom: 0;
+
+        border-radius: inherit;
+
+        background:
+            #FF0033;
+    }
+
+
+    .seek-thumb {
+        position: absolute;
+
+        top: 50%;
+
+        width: 13px;
+        height: 13px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border-radius: 50%;
+
+        background:
+            #FF0033;
+    }
+
+
+    /* ======================================================
+       Bottom Row
+       ====================================================== */
+
+    .bottom-control-row {
+        min-height: 46px;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 4px;
+    }
+
+
+    .bottom-left-controls,
+    .bottom-right-controls {
+        display: flex;
+
+        align-items: center;
+
+        gap: 2px;
+    }
+
+
+    .bottom-left-controls {
+        min-width: 0;
+    }
+
+
+    .bottom-right-controls {
+        margin-left: auto;
+
+        flex-shrink: 0;
+    }
+
+
+    .bottom-control-button {
+        width: 40px;
+        height: 40px;
+
+        border-radius: 50%;
+    }
+
+
+    .bottom-control-button
+    .material-symbols-rounded {
+        font-size: 25px;
+    }
+
+
+    /* ======================================================
+       Volume
+       ====================================================== */
+
+    .volume-group {
+        display: flex;
+
+        align-items: center;
+    }
+
+
+    .volume-slider {
+        position: relative;
+
+        width: 72px;
+        height: 4px;
+
+        margin:
+            0 6px 0 2px;
+
+        border-radius: 4px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.35
+            );
+    }
+
+
+    .volume-slider-fill {
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        bottom: 0;
+
+        border-radius: inherit;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    .volume-slider-thumb {
+        position: absolute;
+
+        top: 50%;
+
+        width: 10px;
+        height: 10px;
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+
+        border-radius: 50%;
+
+        background:
+            #FFFFFF;
+    }
+
+
+    /* ======================================================
+       Time
+       ====================================================== */
+
+    .player-time {
+        min-width: max-content;
+
+        margin-left: 6px;
+
+        color: #FFFFFF;
+
+        font-size: 12px;
+
+        text-shadow:
+            0 1px 2px
+            rgba(0, 0, 0, 0.7);
+    }
+
+
+    .player-time-separator {
+        margin:
+            0 4px;
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.68
+            );
+    }
+
+
+    /* ======================================================
+       Captions Active
+       ====================================================== */
+
+    .captions-active {
+        position: relative;
+    }
+
+
+    .captions-active::after {
+        content: "";
+
+        position: absolute;
+
+        left: 9px;
+        right: 9px;
+        bottom: 5px;
+
+        height: 2px;
+
+        background: #FF0033;
+    }
+
+
+    /* ======================================================
+       State Badge - development visual state
+       ====================================================== */
+
+    .state-label {
+        position: absolute;
+
+        left: 18px;
+        bottom: 76px;
+
+        z-index: 35;
+
+        padding:
+            4px 8px;
+
+        border-radius: 4px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.58
+            );
+
+        color:
+            rgba(
+                255,
+                255,
+                255,
+                0.76
+            );
+
+        font-size: 10px;
+
+        letter-spacing: 0.4px;
+
+        text-transform: uppercase;
+    }
+
+
+    /* ======================================================
+       Portrait Tablet / Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 760px
+    )
+    and
+    (
+        orientation: portrait
+    ) {
+
+        .video-frame {
+            object-fit: contain;
+        }
+
+
+        .player-top-bar {
+            min-height: 58px;
+
+            padding:
+                8px 10px;
+        }
+
+
+        .top-back-button {
+            width: 40px;
+            height: 40px;
+        }
+
+
+        .player-title {
+            font-size: 15px;
+        }
+
+
+        .player-channel {
+            display: none;
+        }
+
+
+        .top-action-button {
+            width: 38px;
+            height: 38px;
+        }
+
+
+        .center-controls {
+            gap:
+                clamp(
+                    20px,
+                    8vw,
+                    44px
+                );
+        }
+
+
+        .center-control-button {
+            width: 60px;
+            height: 60px;
+        }
+
+
+        .center-control-button
+        .material-symbols-rounded {
+            font-size: 36px;
+        }
+
+
+        .center-play-button {
+            width: 72px;
+            height: 72px;
+        }
+
+
+        .center-play-button
+        .material-symbols-rounded {
+            font-size: 44px;
+        }
+
+
+        .volume-slider {
+            display: none;
+        }
+
+
+        .bottom-controls {
+            padding:
+                0 10px 10px;
+        }
+
+
+        .bottom-control-button {
+            width: 36px;
+            height: 36px;
+        }
+
+
+        .bottom-control-button
+        .material-symbols-rounded {
+            font-size: 22px;
+        }
+
+
+        .hide-portrait-mobile {
+            display: none;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile Landscape
+       ====================================================== */
+
+    @media (
+        max-height: 520px
+    )
+    and
+    (
+        orientation: landscape
+    ) {
+
+        .player-top-bar {
+            min-height: 52px;
+
+            padding:
+                6px 10px;
+        }
+
+
+        .top-back-button {
+            width: 38px;
+            height: 38px;
+        }
+
+
+        .top-back-button
+        .material-symbols-rounded {
+            font-size: 25px;
+        }
+
+
+        .player-title {
+            font-size: 14px;
+        }
+
+
+        .player-channel {
+            display: none;
+        }
+
+
+        .top-action-button {
+            width: 36px;
+            height: 36px;
+        }
+
+
+        .top-action-button
+        .material-symbols-rounded {
+            font-size: 22px;
+        }
+
+
+        .center-controls {
+            gap:
+                clamp(
+                    36px,
+                    9vw,
+                    78px
+                );
+        }
+
+
+        .center-control-button {
+            width: 58px;
+            height: 58px;
+        }
+
+
+        .center-control-button
+        .material-symbols-rounded {
+            font-size: 34px;
+        }
+
+
+        .center-play-button {
+            width: 66px;
+            height: 66px;
+        }
+
+
+        .center-play-button
+        .material-symbols-rounded {
+            font-size: 40px;
+        }
+
+
+        .seek-feedback {
+            width: 130px;
+            height: 130px;
+        }
+
+
+        .seek-feedback
+        .material-symbols-rounded {
+            font-size: 38px;
+        }
+
+
+        .seek-feedback-label {
+            font-size: 11px;
+        }
+
+
+        .bottom-gradient {
+            height: 130px;
+        }
+
+
+        .bottom-controls {
+            padding:
+                0 10px 7px;
+        }
+
+
+        .bottom-control-row {
+            min-height: 38px;
+        }
+
+
+        .bottom-control-button {
+            width: 34px;
+            height: 34px;
+        }
+
+
+        .bottom-control-button
+        .material-symbols-rounded {
+            font-size: 21px;
+        }
+
+
+        .volume-slider {
+            width: 56px;
+        }
+
+
+        .player-time {
+            font-size: 11px;
+        }
+
+
+        .state-label {
+            left: 12px;
+            bottom: 58px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Very Small Landscape
+       ====================================================== */
+
+    @media (
+        max-height: 420px
+    )
+    and
+    (
+        orientation: landscape
+    ) {
+
+        .top-actions
+        .cast-button {
+            display: none;
+        }
+
+
+        .center-control-button {
+            width: 52px;
+            height: 52px;
+        }
+
+
+        .center-play-button {
+            width: 60px;
+            height: 60px;
+        }
+
+
+        .center-control-button
+        .material-symbols-rounded {
+            font-size: 31px;
+        }
+
+
+        .center-play-button
+        .material-symbols-rounded {
+            font-size: 37px;
+        }
+
+
+        .volume-slider {
+            display: none;
+        }
+
+
+        .hide-small-landscape {
+            display: none;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="fullscreen-player"
+
+    data-player-state="{{ page.state }}"
+>
+
+
+    <!-- ==================================================
+         Video
+         ================================================== -->
+
+    {% if page.video.frame %}
+
+    <img
+        class="video-frame"
+
+        src="{{ page.video.frame }}"
+
+        alt="{{ page.video.title }}"
+
+        data-class="video"
+
+        data-semantic="fullscreen_video"
+    >
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Overlay
+         ================================================== -->
+
+    <div
+        class="
+            player-overlay
+
+            {% if page.playback.controls_visible %}
+                controls-visible
+            {% else %}
+                controls-hidden
+            {% endif %}
+        "
+    >
+
+
+        <!-- ==============================================
+             Gradients
+             ============================================== -->
+
+        {% if page.overlay.show_top_gradient %}
+
+        <div class="top-gradient">
+        </div>
+
+        {% endif %}
+
+
+        {% if page.overlay.show_bottom_gradient %}
+
+        <div class="bottom-gradient">
+        </div>
+
+        {% endif %}
+
+
+        <!-- ==============================================
+             Top Toolbar
+             ============================================== -->
+
+        {% if page.playback.controls_visible %}
+
+        <div
+            class="player-top-bar"
+
+            data-class="toolbar"
+
+            data-semantic="player_top_controls"
+        >
+
+
+            {% if page.top_controls.show_back %}
+
+            <button
+                class="
+                    player-icon-button
+                    top-back-button
+                "
+
+                data-class="button"
+
+                data-semantic="back_button"
+
+                aria-label="Back"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="back_icon"
+                >
+                    arrow_back
+                </span>
+
+            </button>
+
+            {% endif %}
+
+
+            <!-- ==========================================
+                 Video Information
+                 ========================================== -->
+
+            <div class="player-title-block">
+
+                {% if page.overlay.show_title %}
+
+                <h1
+                    class="player-title"
+
+                    data-class="text"
+
+                    data-semantic="player_video_title"
+                >
+                    {{ page.video.title }}
+                </h1>
+
+                {% endif %}
+
+
+                {% if page.overlay.show_channel %}
+
+                <div class="player-channel">
+
+                    {% if page.video.channel.avatar %}
+
+                    <img
+                        class="player-channel-avatar"
+
+                        src="{{ page.video.channel.avatar }}"
+
+                        alt="{{ page.video.channel.name }}"
+
+                        data-class="avatar"
+
+                        data-semantic="player_channel_avatar"
+                    >
+
+                    {% endif %}
+
+
+                    <span
+                        class="player-channel-name"
+
+                        data-class="text"
+
+                        data-semantic="player_channel_name"
+                    >
+                        {{ page.video.channel.name }}
+                    </span>
+
+
+                    {% if page.video.channel.verified %}
+
+                    <span
+                        class="
+                            material-symbols-rounded
+                            player-channel-verified
+                        "
+
+                        data-class="icon"
+
+                        data-semantic="verified_icon"
+                    >
+                        verified
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- ==========================================
+                 Top Right Actions
+                 ========================================== -->
+
+            <div class="top-actions">
+
+                {% if page.top_controls.show_cast %}
+
+                <button
+                    class="
+                        player-icon-button
+                        top-action-button
+                        cast-button
+                    "
+
+                    data-class="button"
+
+                    data-semantic="cast_button"
+
+                    aria-label="Cast"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="cast_icon"
+                    >
+                        cast
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+
+                {% if page.top_controls.show_more %}
+
+                <button
+                    class="
+                        player-icon-button
+                        top-action-button
+                    "
+
+                    data-class="button"
+
+                    data-semantic="more_button"
+
+                    aria-label="More"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="more_icon"
+                    >
+                        more_vert
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- ==============================================
+             Center Playback Toolbar
+             ============================================== -->
+
+        {% if page.playback.center_controls_visible %}
+
+        <div
+            class="center-controls"
+
+            data-class="toolbar"
+
+            data-semantic="player_center_controls"
+        >
+
+
+            <!-- ==========================================
+                 Backward
+                 ========================================== -->
+
+            <button
+                class="
+                    player-icon-button
+                    center-control-button
+                "
+
+                data-class="button"
+
+                data-semantic="seek_backward_button"
+
+                aria-label="Seek backward 10 seconds"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="seek_backward_icon"
+                >
+                    {{ page.center_controls.backward_icon }}
+                </span>
+
+            </button>
+
+
+            <!-- ==========================================
+                 Play / Pause
+                 ========================================== -->
+
+            <button
+                class="
+                    player-icon-button
+                    center-control-button
+                    center-play-button
+                "
+
+                data-class="button"
+
+                data-semantic="play_pause_button"
+
+                aria-label="{{ page.playback.play_label }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="play_pause_icon"
+                >
+                    {{ page.playback.play_icon }}
+                </span>
+
+            </button>
+
+
+            <!-- ==========================================
+                 Forward
+                 ========================================== -->
+
+            <button
+                class="
+                    player-icon-button
+                    center-control-button
+                "
+
+                data-class="button"
+
+                data-semantic="seek_forward_button"
+
+                aria-label="Seek forward 10 seconds"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="seek_forward_icon"
+                >
+                    {{ page.center_controls.forward_icon }}
+                </span>
+
+            </button>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- ==============================================
+             Seeking Feedback
+             ============================================== -->
+
+        {% if page.overlay.show_seek_feedback
+              and page.seek_feedback %}
+
+        <div
+            class="
+                seek-feedback
+                {{ page.seek_feedback.direction }}
+            "
+        >
+
+            <span
+                class="material-symbols-rounded"
+
+                data-class="icon"
+
+                data-semantic="seek_feedback_icon"
+            >
+                {{ page.seek_feedback.icon }}
+            </span>
+
+
+            <span
+                class="seek-feedback-label"
+
+                data-class="text"
+
+                data-semantic="seek_feedback_text"
+            >
+                {{ page.seek_feedback.label }}
+            </span>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- ==============================================
+             Bottom Controls Toolbar
+             ============================================== -->
+
+        {% if page.playback.controls_visible %}
+
+        <div
+            class="bottom-controls"
+
+            data-class="toolbar"
+
+            data-semantic="player_bottom_controls"
+        >
+
+
+            <!-- ==========================================
+                 Seek Bar
+                 ========================================== -->
+
+            <div class="seek-bar-wrapper">
+
+                <div
+                    class="seek-bar"
+
+                    data-class="progress_bar"
+
+                    data-semantic="player_seek_bar"
+                >
+
+                    <div
+                        class="seek-buffer"
+                    >
+                    </div>
+
+
+                    <div
+                        class="seek-progress"
+
+                        style="
+                            width:
+                                {{ page.video.progress_percent }}%;
+                        "
+                    >
+                    </div>
+
+
+                    <div
+                        class="seek-thumb"
+
+                        style="
+                            left:
+                                {{ page.video.progress_percent }}%;
+                        "
+                    >
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==========================================
+                 Bottom Control Row
+                 ========================================== -->
+
+            <div class="bottom-control-row">
+
+
+                <!-- ======================================
+                     Left Controls
+                     ====================================== -->
+
+                <div class="bottom-left-controls">
+
+
+                    <button
+                        class="
+                            player-icon-button
+                            bottom-control-button
+                        "
+
+                        data-class="button"
+
+                        data-semantic="bottom_play_pause_button"
+
+                        aria-label="{{ page.playback.play_label }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="bottom_play_pause_icon"
+                        >
+                            {{ page.playback.play_icon }}
+                        </span>
+
+                    </button>
+
+
+                    {% if page.bottom_controls.show_previous %}
+
+                    <button
+                        class="
+                            player-icon-button
+                            bottom-control-button
+                            hide-small-landscape
+                        "
+
+                        data-class="button"
+
+                        data-semantic="previous_video_button"
+
+                        aria-label="Previous"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="previous_video_icon"
+                        >
+                            skip_previous
+                        </span>
+
+                    </button>
+
+                    {% endif %}
+
+
+                    {% if page.bottom_controls.show_next %}
+
+                    <button
+                        class="
+                            player-icon-button
+                            bottom-control-button
+                        "
+
+                        data-class="button"
+
+                        data-semantic="next_video_button"
+
+                        aria-label="Next"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="next_video_icon"
+                        >
+                            skip_next
+                        </span>
+
+                    </button>
+
+                    {% endif %}
+
+
+                    <!-- ==================================
+                         Volume
+                         ================================== -->
+
+                    {% if page.bottom_controls.show_volume %}
+
+                    <div class="volume-group">
+
+                        <button
+                            class="
+                                player-icon-button
+                                bottom-control-button
+                            "
+
+                            data-class="button"
+
+                            data-semantic="volume_button"
+
+                            aria-label="Volume"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+
+                                data-class="icon"
+
+                                data-semantic="volume_icon"
+                            >
+                                {{ page.volume.icon }}
+                            </span>
+
+                        </button>
+
+
+                        <div
+                            class="volume-slider"
+
+                            data-class="progress_bar"
+
+                            data-semantic="volume_slider"
+                        >
+
+                            <div
+                                class="volume-slider-fill"
+
+                                style="
+                                    width:
+                                        {{ page.volume.level }}%;
+                                "
+                            >
+                            </div>
+
+
+                            <div
+                                class="volume-slider-thumb"
+
+                                style="
+                                    left:
+                                        {{ page.volume.level }}%;
+                                "
+                            >
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <!-- ==================================
+                         Time
+                         ================================== -->
+
+                    <div class="player-time">
+
+                        <span
+                            data-class="timestamp"
+
+                            data-semantic="current_time"
+                        >
+                            {{ page.video.current_time_text }}
+                        </span>
+
+
+                        <span
+                            class="player-time-separator"
+
+                            data-class="text"
+
+                            data-semantic="time_separator"
+                        >
+                            /
+                        </span>
+
+
+                        <span
+                            data-class="timestamp"
+
+                            data-semantic="total_duration"
+                        >
+                            {{ page.video.duration_text }}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ======================================
+                     Right Controls
+                     ====================================== -->
+
+                <div class="bottom-right-controls">
+
+
+                    {% if page.bottom_controls.show_captions %}
+
+                    <button
+                        class="
+                            player-icon-button
+                            bottom-control-button
+
+                            {% if page.settings.captions_enabled %}
+                                captions-active
+                            {% endif %}
+                        "
+
+                        data-class="button"
+
+                        data-semantic="captions_button"
+
+                        aria-label="Captions"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="captions_icon"
+                        >
+                            closed_caption
+                        </span>
+
+                    </button>
+
+                    {% endif %}
+
+
+                    {% if page.bottom_controls.show_settings %}
+
+                    <button
+                        class="
+                            player-icon-button
+                            bottom-control-button
+                        "
+
+                        data-class="button"
+
+                        data-semantic="settings_button"
+
+                        aria-label="Settings"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="settings_icon"
+                        >
+                            settings
+                        </span>
+
+                    </button>
+
+                    {% endif %}
+
+
+                    {% if page.bottom_controls.show_miniplayer %}
+
+                    <button
+                        class="
+                            player-icon-button
+                            bottom-control-button
+                            hide-portrait-mobile
+                            hide-small-landscape
+                        "
+
+                        data-class="button"
+
+                        data-semantic="miniplayer_button"
+
+                        aria-label="Miniplayer"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="miniplayer_icon"
+                        >
+                            picture_in_picture_alt
+                        </span>
+
+                    </button>
+
+                    {% endif %}
+
+
+                    {% if page.bottom_controls.show_theater %}
+
+                    <button
+                        class="
+                            player-icon-button
+                            bottom-control-button
+                            hide-portrait-mobile
+                            hide-small-landscape
+                        "
+
+                        data-class="button"
+
+                        data-semantic="theater_mode_button"
+
+                        aria-label="Theater mode"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="theater_mode_icon"
+                        >
+                            crop_16_9
+                        </span>
+
+                    </button>
+
+                    {% endif %}
+
+
+                    {% if page.bottom_controls.show_fullscreen %}
+
+                    <button
+                        class="
+                            player-icon-button
+                            bottom-control-button
+                        "
+
+                        data-class="button"
+
+                        data-semantic="fullscreen_button"
+
+                        aria-label="Fullscreen"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="fullscreen_icon"
+                        >
+                            fullscreen_exit
+                        </span>
+
+                    </button>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- ==============================================
+             Development State Marker
+             ============================================== -->
+
+        {% if page.playback.controls_visible %}
+
+        <div class="state-label">
+            {{ page.state }}
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

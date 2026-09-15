@@ -1,0 +1,2215 @@
+{% extends "base.html" %}
+
+{% block title %}
+YouTube Search
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page Root
+       ====================================================== */
+
+    .youtube-page {
+        width: 100%;
+        min-height: 100vh;
+
+        display: flex;
+        flex-direction: column;
+
+        background:
+            {{ theme.background }};
+
+        color:
+            {{ theme.on_background }};
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .youtube-header {
+        position: sticky;
+        top: 0;
+
+        z-index: 100;
+
+        height: 64px;
+
+        display: grid;
+
+        grid-template-columns:
+            auto
+            minmax(
+                220px,
+                700px
+            )
+            auto;
+
+        align-items: center;
+
+        gap: 24px;
+
+        padding:
+            0 20px;
+
+        background:
+            {{ theme.surface }};
+    }
+
+
+    .header-left,
+    .header-center,
+    .header-right {
+        display: flex;
+        align-items: center;
+    }
+
+
+    .header-left {
+        gap: 14px;
+        min-width: max-content;
+    }
+
+
+    .header-center {
+        min-width: 0;
+        justify-content: center;
+    }
+
+
+    .header-right {
+        min-width: max-content;
+
+        justify-content: flex-end;
+
+        gap: 8px;
+    }
+
+
+    /* ======================================================
+       Icon Button
+       ====================================================== */
+
+    .icon-button {
+        width: 42px;
+        height: 42px;
+
+        flex-shrink: 0;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border-radius: 50%;
+
+        background:
+            transparent;
+
+        color:
+            {{ theme.icon }};
+    }
+
+
+    .icon-button:hover {
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .icon-button
+    .material-symbols-rounded {
+        font-size: 24px;
+    }
+
+
+    /* ======================================================
+       Logo
+       ====================================================== */
+
+    .youtube-logo {
+        display: flex;
+        align-items: center;
+
+        gap: 6px;
+
+        min-width: max-content;
+    }
+
+
+    .youtube-logo-mark {
+        position: relative;
+
+        width: 32px;
+        height: 22px;
+
+        border-radius: 7px;
+
+        background:
+            #FF0033;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+
+    .youtube-logo-mark::after {
+        content: "";
+
+        width: 0;
+        height: 0;
+
+        border-top:
+            5px solid transparent;
+
+        border-bottom:
+            5px solid transparent;
+
+        border-left:
+            8px solid #FFFFFF;
+
+        margin-left: 2px;
+    }
+
+
+    .youtube-logo-text {
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 20px;
+        font-weight: 700;
+
+        line-height: 1;
+
+        letter-spacing:
+            -0.7px;
+    }
+
+
+    /* ======================================================
+       Search Bar
+       ====================================================== */
+
+    .search-wrapper {
+        width:
+            min(
+                100%,
+                680px
+            );
+
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+    }
+
+
+    .search-bar {
+        min-width: 0;
+
+        flex: 1;
+
+        height: 42px;
+
+        display: flex;
+        align-items: center;
+
+        overflow: hidden;
+
+        border:
+            1px solid
+            {{ theme.border }};
+
+        border-radius: 24px;
+
+        background:
+            {{ theme.background }};
+    }
+
+
+    .search-input {
+        min-width: 0;
+
+        flex: 1;
+
+        height: 100%;
+
+        padding:
+            0 16px;
+
+        border: none;
+
+        outline: none;
+
+        background:
+            transparent;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 16px;
+    }
+
+
+    .search-submit {
+        width: 64px;
+        height: 100%;
+
+        flex-shrink: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0;
+
+        border-left:
+            1px solid
+            {{ theme.border }};
+
+        background:
+            {{ theme.surface_variant }};
+
+        color:
+            {{ theme.icon }};
+    }
+
+
+    .voice-button {
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    /* ======================================================
+       Avatar
+       ====================================================== */
+
+    .header-avatar {
+        width: 34px;
+        height: 34px;
+
+        flex-shrink: 0;
+
+        border-radius: 50%;
+
+        object-fit: cover;
+
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    /* ======================================================
+       Body
+       ====================================================== */
+
+    .youtube-body {
+        flex: 1;
+
+        min-height: 0;
+
+        display: flex;
+    }
+
+
+    /* ======================================================
+       Sidebar
+       ====================================================== */
+
+    .youtube-sidebar {
+        width: 232px;
+
+        flex-shrink: 0;
+
+        padding:
+            12px 10px 24px;
+
+        background:
+            {{ theme.background }};
+
+        overflow-y: auto;
+    }
+
+
+    .sidebar-section {
+        padding-bottom: 12px;
+
+        margin-bottom: 12px;
+
+        border-bottom:
+            1px solid
+            {{ theme.border_subtle }};
+    }
+
+
+    .sidebar-item {
+        width: 100%;
+        height: 44px;
+
+        display: flex;
+        align-items: center;
+
+        gap: 22px;
+
+        padding:
+            0 12px;
+
+        border-radius: 10px;
+
+        background:
+            transparent;
+
+        color:
+            {{ theme.text_primary }};
+
+        text-align: left;
+    }
+
+
+    .sidebar-item:hover,
+    .sidebar-item.selected {
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .sidebar-item
+    .material-symbols-rounded {
+        flex-shrink: 0;
+
+        font-size: 24px;
+    }
+
+
+    .sidebar-label {
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        font-size: 14px;
+    }
+
+
+    /* ======================================================
+       Main Search Content
+       ====================================================== */
+
+    .youtube-main {
+        min-width: 0;
+
+        flex: 1;
+
+        padding:
+            0 28px 48px;
+
+        max-width:
+            1500px;
+    }
+
+
+    /* ======================================================
+       Filters
+       ====================================================== */
+
+    .filter-strip {
+        position: sticky;
+
+        top: 64px;
+
+        z-index: 50;
+
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+
+        overflow-x: auto;
+
+        padding:
+            14px 0;
+
+        background:
+            {{ theme.background }};
+
+        scrollbar-width: none;
+    }
+
+
+    .filter-strip::-webkit-scrollbar {
+        display: none;
+    }
+
+
+    .filter-chip {
+        flex-shrink: 0;
+
+        min-height: 34px;
+
+        padding:
+            0 13px;
+
+        border-radius: 9px;
+
+        background:
+            {{ theme.surface_variant }};
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 14px;
+
+        font-weight: 500;
+    }
+
+
+    .filter-chip.selected {
+        background:
+            {{ theme.text_primary }};
+
+        color:
+            {{ theme.background }};
+    }
+
+
+    /* ======================================================
+       Search Results
+       ====================================================== */
+
+    .search-results {
+        display: flex;
+        flex-direction: column;
+
+        gap: 20px;
+
+        padding-top: 8px;
+    }
+
+
+    /* ======================================================
+       Video Result
+       ====================================================== */
+
+    .video-result {
+        width: 100%;
+
+        display: grid;
+
+        grid-template-columns:
+            minmax(
+                260px,
+                500px
+            )
+            minmax(
+                0,
+                1fr
+            )
+            40px;
+
+        gap: 16px;
+    }
+
+
+    .result-thumbnail-wrapper {
+        position: relative;
+
+        width: 100%;
+
+        aspect-ratio:
+            16 / 9;
+
+        overflow: hidden;
+
+        border-radius: 12px;
+
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .result-thumbnail {
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+    }
+
+
+    .video-duration {
+        position: absolute;
+
+        right: 6px;
+        bottom: 6px;
+
+        padding:
+            3px 5px;
+
+        border-radius: 4px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.82
+            );
+
+        color:
+            #FFFFFF;
+
+        font-size: 12px;
+
+        font-weight: 600;
+
+        line-height: 1.2;
+    }
+
+
+    .live-badge {
+        position: absolute;
+
+        left: 7px;
+        bottom: 7px;
+
+        padding:
+            4px 7px;
+
+        border-radius: 4px;
+
+        background:
+            {{ theme.error }};
+
+        color:
+            {{ theme.on_error }};
+
+        font-size: 11px;
+
+        font-weight: 700;
+    }
+
+
+    /* ======================================================
+       Video Result Details
+       ====================================================== */
+
+    .result-details {
+        min-width: 0;
+
+        padding-top: 2px;
+    }
+
+
+    .result-title {
+        margin: 0 0 6px;
+
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 18px;
+
+        font-weight: 500;
+
+        line-height: 1.35;
+
+        display:
+            -webkit-box;
+
+        -webkit-box-orient:
+            vertical;
+
+        -webkit-line-clamp:
+            2;
+
+        overflow: hidden;
+    }
+
+
+    .result-stats {
+        display: flex;
+        align-items: center;
+
+        flex-wrap: wrap;
+
+        gap: 4px;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 13px;
+
+        line-height: 1.4;
+    }
+
+
+    .result-channel-row {
+        display: flex;
+        align-items: center;
+
+        gap: 8px;
+
+        margin-top: 12px;
+    }
+
+
+    .result-channel-avatar {
+        width: 28px;
+        height: 28px;
+
+        flex-shrink: 0;
+
+        border-radius: 50%;
+
+        object-fit: cover;
+
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .result-channel-name {
+        min-width: 0;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 13px;
+    }
+
+
+    .verified-icon {
+        flex-shrink: 0;
+
+        font-size:
+            14px !important;
+
+        color:
+            {{ theme.icon_secondary }};
+    }
+
+
+    .result-description {
+        margin-top: 10px;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 13px;
+
+        line-height: 1.45;
+
+        display:
+            -webkit-box;
+
+        -webkit-box-orient:
+            vertical;
+
+        -webkit-line-clamp:
+            2;
+
+        overflow: hidden;
+    }
+
+
+    .result-badges {
+        display: flex;
+        align-items: center;
+
+        gap: 6px;
+
+        flex-wrap: wrap;
+
+        margin-top: 9px;
+    }
+
+
+    .result-badge {
+        padding:
+            2px 6px;
+
+        border-radius: 4px;
+
+        background:
+            {{ theme.surface_variant }};
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 11px;
+
+        font-weight: 600;
+    }
+
+
+    .result-more {
+        width: 38px;
+        height: 38px;
+    }
+
+
+    /* ======================================================
+       Channel Search Result
+       ====================================================== */
+
+    .channel-result {
+        width: 100%;
+
+        display: grid;
+
+        grid-template-columns:
+            minmax(
+                260px,
+                500px
+            )
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items: center;
+
+        gap: 16px;
+
+        padding:
+            14px 0 22px;
+
+        border-bottom:
+            1px solid
+            {{ theme.border_subtle }};
+    }
+
+
+    .channel-result-avatar-area {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+
+    .channel-result-avatar {
+        width: 140px;
+        height: 140px;
+
+        border-radius: 50%;
+
+        object-fit: cover;
+
+        background:
+            {{ theme.surface_variant }};
+    }
+
+
+    .channel-result-info {
+        min-width: 0;
+    }
+
+
+    .channel-result-name-row {
+        display: flex;
+        align-items: center;
+
+        gap: 5px;
+    }
+
+
+    .channel-result-name {
+        color:
+            {{ theme.text_primary }};
+
+        font-size: 18px;
+
+        font-weight: 500;
+    }
+
+
+    .channel-result-meta {
+        margin-top: 7px;
+
+        display: flex;
+        flex-wrap: wrap;
+
+        gap: 5px;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 13px;
+    }
+
+
+    .channel-result-description {
+        margin-top: 10px;
+
+        color:
+            {{ theme.text_secondary }};
+
+        font-size: 13px;
+
+        line-height: 1.45;
+
+        display:
+            -webkit-box;
+
+        -webkit-box-orient:
+            vertical;
+
+        -webkit-line-clamp:
+            2;
+
+        overflow: hidden;
+    }
+
+
+    .subscribe-button {
+        min-width: 100px;
+
+        min-height: 38px;
+
+        padding:
+            0 16px;
+
+        border-radius: 20px;
+
+        background:
+            {{ theme.text_primary }};
+
+        color:
+            {{ theme.background }};
+
+        font-size: 14px;
+
+        font-weight: 600;
+    }
+
+
+    .subscribe-button.subscribed {
+        background:
+            {{ theme.surface_variant }};
+
+        color:
+            {{ theme.text_primary }};
+    }
+
+
+    /* ======================================================
+       Mobile Bottom Navigation
+       ====================================================== */
+
+    .bottom-navigation {
+        display: none;
+
+        position: fixed;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        z-index: 120;
+
+        height: 64px;
+
+        background:
+            {{ theme.surface }};
+
+        border-top:
+            1px solid
+            {{ theme.border_subtle }};
+    }
+
+
+    .bottom-nav-item {
+        min-width: 0;
+
+        flex: 1;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 2px;
+
+        padding: 0;
+
+        background:
+            transparent;
+
+        color:
+            {{ theme.text_primary }};
+    }
+
+
+    .bottom-nav-item
+    .material-symbols-rounded {
+        font-size: 24px;
+    }
+
+
+    .bottom-nav-item.create
+    .material-symbols-rounded {
+        font-size: 34px;
+    }
+
+
+    .bottom-nav-label {
+        max-width: 100%;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+
+        font-size: 10px;
+    }
+
+
+    /* ======================================================
+       Compact Sidebar
+       ====================================================== */
+
+    @media (
+        max-width: 1100px
+    ) {
+
+        .youtube-sidebar {
+            width: 84px;
+
+            padding-left: 6px;
+            padding-right: 6px;
+        }
+
+
+        .sidebar-item {
+            height: 68px;
+
+            padding:
+                7px 4px;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            gap: 4px;
+        }
+
+
+        .sidebar-label {
+            max-width: 68px;
+
+            font-size: 10px;
+
+            text-align: center;
+        }
+
+
+        .video-result {
+            grid-template-columns:
+                minmax(
+                    250px,
+                    420px
+                )
+                minmax(
+                    0,
+                    1fr
+                )
+                36px;
+        }
+
+
+        .channel-result {
+            grid-template-columns:
+                250px
+                minmax(
+                    0,
+                    1fr
+                )
+                auto;
+        }
+
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        max-width: 760px
+    ) {
+
+        .youtube-header {
+            grid-template-columns:
+                auto
+                1fr
+                auto;
+
+            gap: 8px;
+
+            padding:
+                0 10px;
+        }
+
+
+        .desktop-search {
+            display: none;
+        }
+
+
+        .youtube-logo-text {
+            display: none;
+        }
+
+
+        .youtube-sidebar {
+            display: none;
+        }
+
+
+        .youtube-main {
+            padding:
+                0 12px 88px;
+        }
+
+
+        .filter-strip {
+            padding:
+                10px 0;
+        }
+
+
+        .video-result {
+            grid-template-columns:
+                minmax(
+                    180px,
+                    42%
+                )
+                minmax(
+                    0,
+                    1fr
+                )
+                32px;
+
+            gap: 12px;
+        }
+
+
+        .result-title {
+            font-size: 15px;
+        }
+
+
+        .result-description {
+            display: none;
+        }
+
+
+        .channel-result {
+            grid-template-columns:
+                180px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap: 12px;
+        }
+
+
+        .channel-result-avatar {
+            width: 110px;
+            height: 110px;
+        }
+
+
+        .subscribe-button {
+            grid-column:
+                2;
+
+            justify-self:
+                start;
+
+            margin-top:
+                -4px;
+        }
+
+
+        .bottom-navigation {
+            display: flex;
+        }
+
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 520px
+    ) {
+
+        .youtube-header {
+            height: 56px;
+
+            padding:
+                0 8px;
+        }
+
+
+        .menu-button {
+            display: none;
+        }
+
+
+        .youtube-logo-mark {
+            width: 30px;
+            height: 21px;
+        }
+
+
+        .header-right {
+            gap: 2px;
+        }
+
+
+        .header-right
+        .icon-button {
+            width: 38px;
+            height: 38px;
+        }
+
+
+        .hide-mobile {
+            display: none;
+        }
+
+
+        .filter-strip {
+            top: 56px;
+        }
+
+
+        .youtube-main {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+
+        .filter-strip {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+
+        .search-results {
+            gap: 0;
+        }
+
+
+        .video-result {
+            display: flex;
+            flex-direction: column;
+
+            gap: 0;
+
+            padding-bottom: 24px;
+        }
+
+
+        .result-thumbnail-wrapper {
+            border-radius: 0;
+        }
+
+
+        .result-details {
+            padding:
+                10px 48px 0 12px;
+
+            position: relative;
+        }
+
+
+        .result-title {
+            font-size: 15px;
+        }
+
+
+        .result-channel-row {
+            margin-top: 7px;
+        }
+
+
+        .result-description {
+            display: none;
+        }
+
+
+        .result-more {
+            position: absolute;
+
+            right: 6px;
+
+            margin-top: 4px;
+        }
+
+
+        .channel-result {
+            grid-template-columns:
+                86px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            padding:
+                16px 12px 20px;
+
+            gap: 12px;
+        }
+
+
+        .channel-result-avatar {
+            width: 72px;
+            height: 72px;
+        }
+
+
+        .channel-result-name {
+            font-size: 16px;
+        }
+
+
+        .channel-result-description {
+            display: none;
+        }
+
+
+        .subscribe-button {
+            grid-column:
+                2;
+
+            min-width: 92px;
+
+            min-height: 34px;
+
+            margin-top: 2px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="youtube-page">
+
+
+    <!-- ==================================================
+         Header / App Bar
+         ================================================== -->
+
+    <header
+        class="youtube-header"
+
+        data-class="app_bar"
+
+        data-semantic="youtube_header"
+    >
+
+
+        <div class="header-left">
+
+            <button
+                class="icon-button menu-button"
+
+                data-class="button"
+
+                data-semantic="menu_button"
+
+                aria-label="Menu"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="menu_icon"
+                >
+                    menu
+                </span>
+
+            </button>
+
+
+            <div
+                class="youtube-logo"
+
+                data-class="image"
+
+                data-semantic="youtube_logo"
+            >
+
+                <div
+                    class="youtube-logo-mark"
+                >
+                </div>
+
+
+                <span
+                    class="youtube-logo-text"
+
+                    data-class="text"
+
+                    data-semantic="youtube_logo_text"
+                >
+                    {{ page.header.logo_text }}
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==============================================
+             Search
+             ============================================== -->
+
+        <div
+            class="
+                header-center
+                desktop-search
+            "
+        >
+
+            <div class="search-wrapper">
+
+                <div
+                    class="search-bar"
+
+                    data-class="search_bar"
+
+                    data-semantic="global_search"
+                >
+
+                    <input
+                        class="search-input"
+
+                        type="text"
+
+                        value="{{ page.header.search_value }}"
+
+                        placeholder="{{ page.header.search_placeholder }}"
+
+                        data-class="input_field"
+
+                        data-semantic="search_input"
+                    >
+
+
+                    <button
+                        class="search-submit"
+
+                        data-class="button"
+
+                        data-semantic="search_button"
+
+                        aria-label="Search"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="search_icon"
+                        >
+                            search
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                {% if page.header.show_voice_search %}
+
+                <button
+                    class="
+                        icon-button
+                        voice-button
+                    "
+
+                    data-class="button"
+
+                    data-semantic="voice_search_button"
+
+                    aria-label="Voice search"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="voice_search_icon"
+                    >
+                        mic
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- ==============================================
+             Header Actions
+             ============================================== -->
+
+        <div class="header-right">
+
+
+            <button
+                class="icon-button"
+
+                data-class="button"
+
+                data-semantic="mobile_search_button"
+
+                aria-label="Search"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="search_icon"
+                >
+                    search
+                </span>
+
+            </button>
+
+
+            {% if page.header.show_create %}
+
+            <button
+                class="
+                    icon-button
+                    hide-mobile
+                "
+
+                data-class="button"
+
+                data-semantic="create_button"
+
+                aria-label="Create"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="create_icon"
+                >
+                    video_call
+                </span>
+
+            </button>
+
+            {% endif %}
+
+
+            {% if page.header.show_notifications %}
+
+            <button
+                class="icon-button"
+
+                data-class="button"
+
+                data-semantic="notifications_button"
+
+                aria-label="Notifications"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+
+                    data-class="icon"
+
+                    data-semantic="notifications_icon"
+                >
+                    notifications
+                </span>
+
+            </button>
+
+            {% endif %}
+
+
+            {% if page.header.avatar %}
+
+            <img
+                class="header-avatar"
+
+                src="{{ page.header.avatar }}"
+
+                alt="User avatar"
+
+                data-class="avatar"
+
+                data-semantic="account_avatar"
+            >
+
+            {% endif %}
+
+        </div>
+
+    </header>
+
+
+    <!-- ==================================================
+         Main Body
+         ================================================== -->
+
+    <div class="youtube-body">
+
+
+        <!-- ==============================================
+             Sidebar Navigation
+             ============================================== -->
+
+        {% if page.layout.show_sidebar %}
+
+        <aside
+            class="youtube-sidebar"
+
+            data-class="navigation_bar"
+
+            data-semantic="desktop_navigation"
+        >
+
+            <div class="sidebar-section">
+
+                {% for item in page.navigation %}
+
+                <button
+                    class="
+                        sidebar-item
+
+                        {% if item.selected %}
+                            selected
+                        {% endif %}
+                    "
+
+                    data-class="navigation_item"
+
+                    data-semantic="{{ item.semantic }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+
+                        data-class="icon"
+
+                        data-semantic="{{ item.semantic }}_icon"
+
+                        style="
+                            font-variation-settings:
+                                'FILL' {% if item.selected %}1{% else %}0{% endif %},
+                                'wght' 400,
+                                'GRAD' 0,
+                                'opsz' 24;
+                        "
+                    >
+                        {{ item.icon }}
+                    </span>
+
+
+                    <span
+                        class="sidebar-label"
+
+                        data-class="text"
+
+                        data-semantic="navigation_label"
+                    >
+                        {{ item.label }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+        </aside>
+
+        {% endif %}
+
+
+        <!-- ==============================================
+             Search Main
+             ============================================== -->
+
+        <main class="youtube-main">
+
+
+            <!-- ==========================================
+                 Filter Toolbar
+                 ========================================== -->
+
+            {% if page.layout.show_filters %}
+
+            <div
+                class="filter-strip"
+
+                data-class="toolbar"
+
+                data-semantic="search_filter_toolbar"
+            >
+
+                {% for filter in page.filters %}
+
+                <button
+                    class="
+                        filter-chip
+
+                        {% if filter.selected %}
+                            selected
+                        {% endif %}
+                    "
+
+                    data-class="tab"
+
+                    data-semantic="search_filter"
+                >
+
+                    <span
+                        data-class="text"
+
+                        data-semantic="search_filter_label"
+                    >
+                        {{ filter.label }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- ==========================================
+                 Search Results Section
+                 ========================================== -->
+
+            <section
+                class="search-results"
+
+                data-class="section"
+
+                data-semantic="search_results_section"
+            >
+
+                {% for result in page.results %}
+
+
+                <!-- ======================================
+                     Channel Result
+                     ====================================== -->
+
+                {% if result.type == "channel" %}
+
+                <article
+                    class="channel-result"
+
+                    data-class="media_item"
+
+                    data-semantic="channel_search_result"
+                >
+
+
+                    <div class="channel-result-avatar-area">
+
+                        {% if result.avatar %}
+
+                        <img
+                            class="channel-result-avatar"
+
+                            src="{{ result.avatar }}"
+
+                            alt="{{ result.name }}"
+
+                            data-class="avatar"
+
+                            data-semantic="channel_result_avatar"
+                        >
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="channel-result-info">
+
+                        <div class="channel-result-name-row">
+
+                            <span
+                                class="channel-result-name"
+
+                                data-class="text"
+
+                                data-semantic="channel_result_name"
+                            >
+                                {{ result.name }}
+                            </span>
+
+
+                            {% if result.verified %}
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    verified-icon
+                                "
+
+                                data-class="icon"
+
+                                data-semantic="verified_icon"
+                            >
+                                verified
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="channel-result-meta">
+
+                            <span
+                                data-class="text"
+
+                                data-semantic="subscriber_count"
+                            >
+                                {{ result.subscribers_text }}
+                            </span>
+
+
+                            <span
+                                data-class="text"
+
+                                data-semantic="metadata_separator"
+                            >
+                                •
+                            </span>
+
+
+                            <span
+                                data-class="text"
+
+                                data-semantic="channel_video_count"
+                            >
+                                {{ result.video_count_text }}
+                            </span>
+
+                        </div>
+
+
+                        <p
+                            class="channel-result-description"
+
+                            data-class="text"
+
+                            data-semantic="channel_description"
+                        >
+                            {{ result.description }}
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        class="
+                            subscribe-button
+
+                            {% if result.subscribed %}
+                                subscribed
+                            {% endif %}
+                        "
+
+                        data-class="button"
+
+                        data-semantic="subscribe_button"
+                    >
+
+                        <span
+                            data-class="text"
+
+                            data-semantic="subscribe_label"
+                        >
+                            {% if result.subscribed %}
+                                Subscribed
+                            {% else %}
+                                Subscribe
+                            {% endif %}
+                        </span>
+
+                    </button>
+
+                </article>
+
+
+                <!-- ======================================
+                     Video Result
+                     ====================================== -->
+
+                {% else %}
+
+                <article
+                    class="video-result"
+
+                    data-class="media_item"
+
+                    data-semantic="video_search_result"
+                >
+
+
+                    <!-- ==================================
+                         Thumbnail
+                         ================================== -->
+
+                    <div class="result-thumbnail-wrapper">
+
+                        {% if result.thumbnail %}
+
+                        <img
+                            class="result-thumbnail"
+
+                            src="{{ result.thumbnail }}"
+
+                            alt="{{ result.title }}"
+
+                            data-class="image"
+
+                            data-semantic="video_thumbnail"
+                        >
+
+                        {% endif %}
+
+
+                        {% if result.live %}
+
+                        <span
+                            class="live-badge"
+
+                            data-class="badge"
+
+                            data-semantic="live_badge"
+                        >
+                            LIVE
+                        </span>
+
+
+                        {% elif result.duration %}
+
+                        <span
+                            class="video-duration"
+
+                            data-class="badge"
+
+                            data-semantic="video_duration"
+                        >
+                            {{ result.duration }}
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- ==================================
+                         Details
+                         ================================== -->
+
+                    <div class="result-details">
+
+
+                        <h3
+                            class="result-title"
+
+                            data-class="text"
+
+                            data-semantic="video_title"
+                        >
+                            {{ result.title }}
+                        </h3>
+
+
+                        <div class="result-stats">
+
+                            <span
+                                data-class="text"
+
+                                data-semantic="video_view_count"
+                            >
+                                {{ result.views_text }}
+                            </span>
+
+
+                            {% if result.uploaded %}
+
+                            <span
+                                data-class="text"
+
+                                data-semantic="metadata_separator"
+                            >
+                                •
+                            </span>
+
+
+                            <span
+                                data-class="timestamp"
+
+                                data-semantic="upload_time"
+                            >
+                                {{ result.uploaded }}
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="result-channel-row">
+
+                            {% if result.channel.avatar %}
+
+                            <img
+                                class="result-channel-avatar"
+
+                                src="{{ result.channel.avatar }}"
+
+                                alt="{{ result.channel.name }}"
+
+                                data-class="avatar"
+
+                                data-semantic="channel_avatar"
+                            >
+
+                            {% endif %}
+
+
+                            <span
+                                class="result-channel-name"
+
+                                data-class="text"
+
+                                data-semantic="channel_name"
+                            >
+                                {{ result.channel.name }}
+                            </span>
+
+
+                            {% if result.channel.verified %}
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    verified-icon
+                                "
+
+                                data-class="icon"
+
+                                data-semantic="verified_icon"
+                            >
+                                verified
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <p
+                            class="result-description"
+
+                            data-class="text"
+
+                            data-semantic="video_description"
+                        >
+                            {{ result.description }}
+                        </p>
+
+
+                        {% if result.badges %}
+
+                        <div class="result-badges">
+
+                            {% for badge in result.badges %}
+
+                            <span
+                                class="result-badge"
+
+                                data-class="badge"
+
+                                data-semantic="video_badge"
+                            >
+                                {{ badge }}
+                            </span>
+
+                            {% endfor %}
+
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- ==================================
+                         More Actions
+                         ================================== -->
+
+                    <button
+                        class="
+                            icon-button
+                            result-more
+                        "
+
+                        data-class="button"
+
+                        data-semantic="video_more_actions"
+
+                        aria-label="More actions"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+
+                            data-class="icon"
+
+                            data-semantic="more_actions_icon"
+                        >
+                            more_vert
+                        </span>
+
+                    </button>
+
+                </article>
+
+                {% endif %}
+
+
+                {% endfor %}
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- ==================================================
+         Bottom Navigation
+         ================================================== -->
+
+    <nav
+        class="bottom-navigation"
+
+        data-class="navigation_bar"
+
+        data-semantic="mobile_bottom_navigation"
+    >
+
+        {% for item in page.bottom_navigation %}
+
+        <button
+            class="
+                bottom-nav-item
+
+                {% if item.selected %}
+                    selected
+                {% endif %}
+
+                {% if item.create %}
+                    create
+                {% endif %}
+            "
+
+            data-class="navigation_item"
+
+            data-semantic="{{ item.semantic }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+
+                data-class="icon"
+
+                data-semantic="{{ item.semantic }}_icon"
+
+                style="
+                    font-variation-settings:
+                        'FILL' {% if item.selected %}1{% else %}0{% endif %},
+                        'wght' 400,
+                        'GRAD' 0,
+                        'opsz' 24;
+                "
+            >
+                {{ item.icon }}
+            </span>
+
+
+            {% if item.label %}
+
+            <span
+                class="bottom-nav-label"
+
+                data-class="text"
+
+                data-semantic="navigation_label"
+            >
+                {{ item.label }}
+            </span>
+
+            {% endif %}
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+</div>
+
+{% endblock %}
