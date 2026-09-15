@@ -1,0 +1,3097 @@
+
+{% extends "base.html" %}
+
+
+{% block title %}
+Canva Editor States
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ==========================================================
+       Root
+       ========================================================== */
+
+    .state-editor {
+
+        position: relative;
+
+        display: flex;
+        flex-direction: column;
+
+        width: 100%;
+        height: 100vh;
+
+        overflow: hidden;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    /* ==========================================================
+       Normal Editor
+       ========================================================== */
+
+    .state-editor-background {
+
+        position: relative;
+
+        display: flex;
+        flex-direction: column;
+
+        width: 100%;
+        height: 100%;
+
+        min-height: 0;
+    }
+
+
+    /* ==========================================================
+       Header
+       ========================================================== */
+
+    .state-header {
+
+        position: relative;
+
+        z-index: 200;
+
+        display: grid;
+
+        grid-template-columns:
+            auto
+            minmax(0, 1fr)
+            auto;
+
+        align-items: center;
+
+        gap: 12px;
+
+        height: 58px;
+
+        padding:
+            0 12px;
+
+        flex: 0 0 auto;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .state-header-left,
+    .state-header-right {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 5px;
+    }
+
+
+    .state-header-right {
+
+        justify-content: flex-end;
+    }
+
+
+    .state-logo {
+
+        margin-right: 5px;
+
+        font-size: 20px;
+
+        font-weight: 900;
+
+        color:
+            var(--primary);
+    }
+
+
+    .state-document-name {
+
+        min-width: 0;
+
+        overflow: hidden;
+
+        text-align: center;
+
+        white-space: nowrap;
+
+        text-overflow: ellipsis;
+
+        font-size: 13px;
+
+        font-weight: 700;
+    }
+
+
+    /* ==========================================================
+       Toolbar
+       ========================================================== */
+
+    .state-toolbar {
+
+        position: relative;
+
+        z-index: 190;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 5px;
+
+        min-height: 50px;
+
+        padding:
+            6px 10px;
+
+        overflow-x: auto;
+
+        flex: 0 0 auto;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        scrollbar-width: none;
+    }
+
+
+    .state-toolbar::-webkit-scrollbar {
+
+        display: none;
+    }
+
+
+    .state-toolbar-button {
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        width: 36px;
+        height: 36px;
+
+        flex: 0 0 auto;
+
+        border-radius:
+            var(--button-radius);
+
+        color:
+            var(--icon);
+    }
+
+
+    .toolbar-color {
+
+        position: relative;
+    }
+
+
+    .toolbar-color-line {
+
+        position: absolute;
+
+        left: 8px;
+        right: 8px;
+        bottom: 5px;
+
+        height: 3px;
+
+        border-radius: 3px;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ==========================================================
+       Body
+       ========================================================== */
+
+    .state-body {
+
+        position: relative;
+
+        display: grid;
+
+        grid-template-columns:
+            72px
+            minmax(0, 1fr);
+
+        flex: 1;
+
+        min-height: 0;
+    }
+
+
+    /* ==========================================================
+       Desktop / Tablet Tool Rail
+       ========================================================== */
+
+    .state-tool-rail {
+
+        position: relative;
+
+        z-index: 150;
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 4px;
+
+        padding:
+            8px 6px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .state-tool {
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 3px;
+
+        min-height: 60px;
+
+        border-radius:
+            var(--medium-radius);
+
+        color:
+            var(--text-secondary);
+
+        font-size: 9px;
+
+        font-weight: 700;
+    }
+
+
+    .state-tool
+    .material-symbols-rounded {
+
+        font-size: 22px;
+    }
+
+
+    /* ==========================================================
+       Workspace
+       ========================================================== */
+
+    .state-workspace {
+
+        position: relative;
+
+        min-width: 0;
+        min-height: 0;
+
+        overflow: hidden;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .state-workspace-scroll {
+
+        position: absolute;
+
+        inset: 0;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        overflow: auto;
+
+        padding:
+            50px
+            50px
+            120px;
+    }
+
+
+    /* ==========================================================
+       Desktop Side Panel Space
+       ========================================================== */
+
+    @media (min-width: 1024px) {
+
+        .state-workspace.has-side-panel
+        .state-workspace-scroll {
+
+            right: 340px;
+        }
+
+
+        .state-workspace.has-side-panel
+        .state-pages {
+
+            right: 360px;
+        }
+
+
+        .state-workspace.has-side-panel
+        .state-footer {
+
+            right: 340px;
+        }
+
+    }
+
+
+    /* ==========================================================
+       Canvas
+       ========================================================== */
+
+    .state-canvas {
+
+        position: relative;
+
+        width:
+            min(
+                780px,
+                72vw
+            );
+
+        aspect-ratio:
+            16 / 10;
+
+        overflow: hidden;
+
+        flex: 0 0 auto;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 8px 28px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .state-canvas-image {
+
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+
+        opacity: 0.38;
+    }
+
+
+    .state-canvas-overlay {
+
+        position: absolute;
+
+        inset: 0;
+
+        background:
+            linear-gradient(
+                90deg,
+                var(--surface) 0%,
+                color-mix(
+                    in srgb,
+                    var(--surface) 80%,
+                    transparent
+                )
+                52%,
+                transparent 100%
+            );
+    }
+
+
+    .state-canvas-content {
+
+        position: absolute;
+
+        inset: 0;
+
+        display: flex;
+
+        flex-direction: column;
+
+        justify-content: center;
+
+        width: 58%;
+
+        padding: 8%;
+    }
+
+
+    .state-canvas-heading {
+
+        font-size:
+            clamp(
+                28px,
+                4vw,
+                58px
+            );
+
+        line-height: 1.02;
+
+        font-weight: 900;
+
+        letter-spacing: -1.5px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .state-canvas-subtitle {
+
+        margin-top: 16px;
+
+        font-size:
+            clamp(
+                11px,
+                1.5vw,
+                17px
+            );
+
+        line-height: 1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ==========================================================
+       Page Strip
+       ========================================================== */
+
+    .state-pages {
+
+        position: absolute;
+
+        z-index: 120;
+
+        left: 20px;
+        right: 20px;
+        bottom: 50px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 8px;
+
+        overflow-x: auto;
+
+        scrollbar-width: none;
+    }
+
+
+    .state-pages::-webkit-scrollbar {
+
+        display: none;
+    }
+
+
+    .state-page-thumb {
+
+        position: relative;
+
+        width: 88px;
+        height: 56px;
+
+        overflow: hidden;
+
+        flex: 0 0 auto;
+
+        border:
+            2px solid
+            transparent;
+
+        border-radius: 6px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .state-page-thumb.selected {
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .state-page-thumb img {
+
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+    }
+
+
+    .state-page-number {
+
+        position: absolute;
+
+        left: 4px;
+        bottom: 3px;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        min-width: 18px;
+        height: 18px;
+
+        padding:
+            0 4px;
+
+        border-radius: 4px;
+
+        background:
+            var(--surface);
+
+        font-size: 9px;
+
+        font-weight: 800;
+    }
+
+
+    /* ==========================================================
+       Footer
+       ========================================================== */
+
+    .state-footer {
+
+        position: absolute;
+
+        z-index: 130;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: flex-end;
+
+        gap: 5px;
+
+        height: 44px;
+
+        padding:
+            0 10px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .zoom-badge {
+
+        min-width: 44px;
+
+        text-align: center;
+
+        font-size: 10px;
+
+        font-weight: 700;
+    }
+
+
+    /* ==========================================================
+       Shared Side Panel
+       ========================================================== */
+
+    .state-side-panel {
+
+        position: absolute;
+
+        z-index: 300;
+
+        top: 0;
+        right: 0;
+        bottom: 0;
+
+        width: 340px;
+
+        overflow-y: auto;
+
+        border-left:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            -6px 0 20px
+            rgba(
+                0,
+                0,
+                0,
+                0.08
+            );
+    }
+
+
+    .state-panel-header {
+
+        position: sticky;
+
+        top: 0;
+
+        z-index: 5;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: space-between;
+
+        min-height: 58px;
+
+        padding:
+            0 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .state-panel-title {
+
+        font-size: 16px;
+
+        font-weight: 800;
+    }
+
+
+    .state-panel-content {
+
+        padding: 14px;
+    }
+
+
+    /* ==========================================================
+       Comments
+       ========================================================== */
+
+    .comment-input {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        min-height: 42px;
+
+        margin-bottom: 16px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--input-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .comment-input input {
+
+        width: 100%;
+
+        min-width: 0;
+
+        font-size: 11px;
+    }
+
+
+    .comments-list {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 8px;
+    }
+
+
+    .comment-card {
+
+        padding: 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--card-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .comment-header {
+
+        display: grid;
+
+        grid-template-columns:
+            34px
+            minmax(0, 1fr)
+            auto;
+
+        align-items: center;
+
+        gap: 8px;
+    }
+
+
+    .comment-avatar {
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        width: 34px;
+        height: 34px;
+
+        overflow: hidden;
+
+        border-radius: 50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size: 11px;
+
+        font-weight: 800;
+    }
+
+
+    .comment-avatar img {
+
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+    }
+
+
+    .comment-name {
+
+        overflow: hidden;
+
+        white-space: nowrap;
+
+        text-overflow: ellipsis;
+
+        font-size: 11px;
+
+        font-weight: 700;
+    }
+
+
+    .comment-time {
+
+        margin-top: 2px;
+
+        color:
+            var(--text-secondary);
+
+        font-size: 9px;
+    }
+
+
+    .comment-text {
+
+        margin-top: 9px;
+
+        font-size: 11px;
+
+        line-height: 1.45;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .comment-actions {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+        margin-top: 9px;
+    }
+
+
+    /* ==========================================================
+       Layers
+       ========================================================== */
+
+    .layer-list {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 4px;
+    }
+
+
+    .layer-row {
+
+        display: grid;
+
+        grid-template-columns:
+            34px
+            minmax(0, 1fr)
+            auto
+            auto;
+
+        align-items: center;
+
+        gap: 7px;
+
+        min-height: 46px;
+
+        padding:
+            5px 7px;
+
+        border-radius:
+            var(--medium-radius);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .layer-row.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .layer-icon {
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        width: 30px;
+        height: 30px;
+
+        border-radius: 6px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .layer-name {
+
+        overflow: hidden;
+
+        white-space: nowrap;
+
+        text-overflow: ellipsis;
+
+        font-size: 11px;
+
+        font-weight: 600;
+    }
+
+
+    /* ==========================================================
+       Color Picker
+       ========================================================== */
+
+    .color-picker-popup {
+
+        position: absolute;
+
+        z-index: 330;
+
+        top: 18px;
+        left: 92px;
+
+        width: 300px;
+
+        padding: 14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 12px 34px
+            rgba(
+                0,
+                0,
+                0,
+                0.20
+            );
+    }
+
+
+    .color-picker-title {
+
+        display: flex;
+
+        align-items: center;
+        justify-content: space-between;
+
+        margin-bottom: 12px;
+
+        font-size: 13px;
+
+        font-weight: 800;
+    }
+
+
+    .color-input {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        height: 38px;
+
+        margin-bottom: 14px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--input-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .color-preview {
+
+        width: 22px;
+        height: 22px;
+
+        flex: 0 0 auto;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius: 5px;
+    }
+
+
+    .color-input-value {
+
+        font-size: 11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .color-grid {
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                6,
+                1fr
+            );
+
+        gap: 8px;
+    }
+
+
+    .color-swatch {
+
+        position: relative;
+
+        aspect-ratio:
+            1 / 1;
+
+        border:
+            2px solid
+            transparent;
+
+        border-radius: 8px;
+    }
+
+
+    .color-swatch.selected {
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .color-swatch.selected::after {
+
+        content: "";
+
+        position: absolute;
+
+        inset: 3px;
+
+        border:
+            2px solid
+            white;
+
+        border-radius: 5px;
+    }
+
+
+    /* ==========================================================
+       Image Edit
+       ========================================================== */
+
+    .adjustment-list {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 18px;
+    }
+
+
+    .adjustment-row {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 7px;
+    }
+
+
+    .adjustment-header {
+
+        display: flex;
+
+        align-items: center;
+        justify-content: space-between;
+
+        font-size: 10px;
+
+        font-weight: 700;
+    }
+
+
+    .adjustment-value {
+
+        color:
+            var(--text-secondary);
+
+        font-size: 9px;
+    }
+
+
+    .adjustment-slider {
+
+        position: relative;
+
+        height: 24px;
+    }
+
+
+    .adjustment-track {
+
+        position: absolute;
+
+        top: 10px;
+        left: 0;
+        right: 0;
+
+        height: 4px;
+
+        border-radius: 4px;
+
+        background:
+            var(--border);
+    }
+
+
+    .adjustment-fill {
+
+        position: absolute;
+
+        top: 10px;
+        left: 0;
+
+        height: 4px;
+
+        border-radius: 4px;
+
+        background:
+            var(--primary);
+    }
+
+
+    .adjustment-thumb {
+
+        position: absolute;
+
+        top: 4px;
+
+        width: 16px;
+        height: 16px;
+
+        transform:
+            translateX(-50%);
+
+        border:
+            2px solid
+            var(--primary);
+
+        border-radius: 50%;
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ==========================================================
+       Presentation State
+       ========================================================== */
+
+    .present-backdrop {
+
+        position: absolute;
+
+        z-index: 400;
+
+        inset: 0;
+
+        display: flex;
+
+        align-items: center;
+        justify-content: center;
+
+        padding: 40px;
+
+        background:
+            #111111;
+    }
+
+
+    .present-canvas {
+
+        position: relative;
+
+        width:
+            min(
+                1180px,
+                88vw
+            );
+
+        aspect-ratio:
+            16 / 9;
+
+        overflow: hidden;
+
+        background:
+            var(--surface);
+    }
+
+
+    .present-canvas img {
+
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+
+        opacity: 0.42;
+    }
+
+
+    .present-copy {
+
+        position: absolute;
+
+        inset: 0;
+
+        display: flex;
+
+        flex-direction: column;
+
+        justify-content: center;
+
+        width: 58%;
+
+        padding: 8%;
+    }
+
+
+    .present-heading {
+
+        font-size:
+            clamp(
+                34px,
+                5vw,
+                72px
+            );
+
+        line-height: 1;
+
+        font-weight: 900;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .present-subtitle {
+
+        margin-top: 18px;
+
+        font-size:
+            clamp(
+                14px,
+                1.5vw,
+                20px
+            );
+
+        line-height: 1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .present-controls {
+
+        position: absolute;
+
+        z-index: 430;
+
+        left: 50%;
+        bottom: 22px;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 5px;
+
+        padding: 6px;
+
+        transform:
+            translateX(-50%);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .present-page-badge {
+
+        min-width: 62px;
+
+        text-align: center;
+
+        font-size: 10px;
+
+        font-weight: 700;
+    }
+
+
+    .present-close {
+
+        position: absolute;
+
+        z-index: 440;
+
+        top: 18px;
+        right: 18px;
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ==========================================================
+       Mobile Tool Tray
+       ========================================================== */
+
+    .state-mobile-tools {
+
+        position: absolute;
+
+        z-index: 180;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        display: flex;
+
+        height: 58px;
+
+        overflow-x: auto;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        scrollbar-width: none;
+    }
+
+
+    .state-mobile-tools::-webkit-scrollbar {
+
+        display: none;
+    }
+
+
+    .state-mobile-tool {
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 2px;
+
+        min-width: 64px;
+
+        flex: 0 0 auto;
+
+        color:
+            var(--text-secondary);
+
+        font-size: 8px;
+
+        font-weight: 700;
+    }
+
+
+    /* ==========================================================
+       Tablet
+       ========================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .state-side-panel {
+
+            width: 300px;
+        }
+
+
+        .state-canvas {
+
+            width: 650px;
+        }
+
+
+        .color-picker-popup {
+
+            left: 82px;
+
+            width: 280px;
+        }
+
+
+        .state-workspace.has-side-panel
+        .state-workspace-scroll {
+
+            right: 300px;
+        }
+
+
+        .state-workspace.has-side-panel
+        .state-pages {
+
+            right: 320px;
+        }
+
+
+        .state-workspace.has-side-panel
+        .state-footer {
+
+            right: 300px;
+        }
+
+    }
+
+
+    /* ==========================================================
+       Mobile
+       ========================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .state-editor {
+
+            height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                );
+        }
+
+
+        .state-header {
+
+            height: 52px;
+
+            padding:
+                0 7px;
+        }
+
+
+        .state-logo {
+
+            display: none;
+        }
+
+
+        .state-document-name {
+
+            font-size: 11px;
+        }
+
+
+        .state-header-right
+        .secondary-button {
+
+            width: 38px;
+
+            min-width: 38px;
+
+            padding: 0;
+
+            overflow: hidden;
+
+            font-size: 0;
+        }
+
+
+        .state-header-right
+        .secondary-button
+        .material-symbols-rounded {
+
+            margin: 0 !important;
+
+            font-size: 20px;
+        }
+
+
+        .state-toolbar {
+
+            min-height: 46px;
+
+            padding:
+                5px 7px;
+        }
+
+
+        .state-body {
+
+            display: block;
+        }
+
+
+        .state-workspace {
+
+            position: absolute;
+
+            inset: 0;
+
+            padding-bottom: 58px;
+        }
+
+
+        .state-workspace-scroll,
+        .state-workspace.has-side-panel
+        .state-workspace-scroll {
+
+            right: 0;
+
+            padding:
+                24px
+                12px
+                94px;
+        }
+
+
+        .state-canvas {
+
+            width:
+                calc(
+                    100vw
+                    - 24px
+                );
+        }
+
+
+        .state-canvas-heading {
+
+            font-size:
+                clamp(
+                    17px,
+                    7vw,
+                    30px
+                );
+        }
+
+
+        .state-canvas-subtitle {
+
+            margin-top: 8px;
+
+            font-size:
+                clamp(
+                    8px,
+                    2.7vw,
+                    12px
+                );
+        }
+
+
+        .state-pages,
+        .state-workspace.has-side-panel
+        .state-pages {
+
+            right: 20px;
+
+            bottom: 48px;
+
+            justify-content:
+                flex-start;
+        }
+
+
+        .state-page-thumb {
+
+            width: 70px;
+            height: 44px;
+        }
+
+
+        .state-footer,
+        .state-workspace.has-side-panel
+        .state-footer {
+
+            right: 0;
+
+            bottom: 58px;
+
+            height: 40px;
+        }
+
+
+        /* ======================================================
+           Bottom Sheet
+           ====================================================== */
+
+        .state-side-panel {
+
+            top: auto;
+
+            left: 0;
+            right: 0;
+            bottom: 0;
+
+            width: 100%;
+
+            max-height: 62%;
+
+            border: none;
+
+            border-top:
+                1px solid
+                var(--border-subtle);
+
+            border-radius:
+                18px
+                18px
+                0
+                0;
+
+            box-shadow:
+                0
+                -10px
+                30px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.16
+                );
+        }
+
+
+        /* ======================================================
+           Color Picker
+           ====================================================== */
+
+        .color-picker-popup {
+
+            top: auto;
+
+            left: 10px;
+            right: 10px;
+            bottom: 12px;
+
+            width: auto;
+        }
+
+
+        /* ======================================================
+           Presentation
+           ====================================================== */
+
+        .present-backdrop {
+
+            padding: 10px;
+        }
+
+
+        .present-canvas {
+
+            width: 100%;
+        }
+
+
+        .present-controls {
+
+            bottom: 12px;
+        }
+
+    }
+
+
+    /* ==========================================================
+       Small Mobile
+       ========================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .state-header {
+
+            gap: 5px;
+
+            padding:
+                0 5px;
+        }
+
+
+        .state-document-name {
+
+            font-size: 10px;
+        }
+
+
+        .state-toolbar-button {
+
+            width: 34px;
+            height: 34px;
+        }
+
+
+        .state-side-panel {
+
+            max-height: 66%;
+        }
+
+
+        .state-panel-content {
+
+            padding: 11px;
+        }
+
+
+        .color-grid {
+
+            gap: 6px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+{% set viewport_width = viewport.width %}
+{% set is_mobile = viewport_width < 768 %}
+{% set is_tablet = viewport_width >= 768 and viewport_width < 1024 %}
+{% set is_desktop = viewport_width >= 1024 %}
+
+
+<div class="state-editor">
+
+
+    <!-- ======================================================
+         PRESENTATION STATE
+
+         Important:
+         When this state is active we do NOT render the normal
+         editor DOM at all.
+         ====================================================== -->
+
+    {% if editor_state.state == "present" %}
+
+
+    <div
+        class="present-backdrop"
+        data-class="dialog"
+        data-semantic="presentation_mode"
+        data-occluder="true"
+    >
+
+        <div
+            class="present-canvas"
+            data-class="card"
+            data-semantic="presentation_canvas"
+        >
+
+            {% if editor_state.canvas.image %}
+
+            <img
+                src="{{ editor_state.canvas.image }}"
+                alt=""
+                data-class="image"
+                data-semantic="presentation_image"
+            >
+
+            {% endif %}
+
+
+            <div class="present-copy">
+
+                <h1 class="present-heading">
+                    {{ editor_state.canvas.headline }}
+                </h1>
+
+
+                <p class="present-subtitle">
+                    {{ editor_state.canvas.subtitle }}
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="
+                icon-button
+                present-close
+            "
+            data-class="button"
+            data-semantic="close_presentation"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="close_presentation_icon"
+            >
+                close
+            </span>
+
+        </button>
+
+
+        <div
+            class="present-controls"
+            data-class="navigation_bar"
+            data-semantic="presentation_controls"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="previous_slide"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="previous_slide_icon"
+                >
+                    arrow_back
+                </span>
+
+            </button>
+
+
+            <span
+                class="present-page-badge"
+                data-class="badge"
+                data-semantic="presentation_page"
+            >
+
+                {{ editor_state.present.page }}
+                /
+                {{ editor_state.present.total }}
+
+            </span>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="next_slide"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="next_slide_icon"
+                >
+                    arrow_forward
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="presentation_fullscreen"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="presentation_fullscreen_icon"
+                >
+                    fullscreen
+                </span>
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ======================================================
+         NORMAL EDITOR STATES
+         ====================================================== -->
+
+    {% else %}
+
+
+    <div class="state-editor-background">
+
+
+        <!-- ==================================================
+             Header
+             ================================================== -->
+
+        <header
+            class="state-header"
+            data-class="app_bar"
+            data-semantic="state_editor_header"
+            data-occluder="true"
+        >
+
+            <div class="state-header-left">
+
+                {% if not is_mobile %}
+
+                <div
+                    class="state-logo"
+                    data-class="logo"
+                    data-semantic="canva_logo"
+                >
+                    Canva
+                </div>
+
+                {% endif %}
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="main_menu"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="main_menu_icon"
+                    >
+                        menu
+                    </span>
+
+                </button>
+
+
+                <!-- Desktop / Tablet Undo -->
+
+                {% if not is_mobile %}
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="undo"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="undo_icon"
+                    >
+                        undo
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="state-document-name">
+
+                {{ editor_state.document.name }}
+
+            </div>
+
+
+            <div class="state-header-right">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="comments_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="comments_icon"
+                        style="
+                            margin-right:
+                                5px;
+                        "
+                    >
+                        comment
+                    </span>
+
+                    Comments
+
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="share_button"
+                >
+                    Share
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- ==================================================
+             Toolbar
+             ================================================== -->
+
+        <nav
+            class="state-toolbar"
+            data-class="navigation_bar"
+            data-semantic="state_editor_toolbar"
+            data-occluder="true"
+        >
+
+            <button
+                class="
+                    state-toolbar-button
+                    toolbar-color
+                "
+                data-class="button"
+                data-semantic="text_color_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="text_color_icon"
+                >
+                    format_color_text
+                </span>
+
+
+                <span
+                    class="toolbar-color-line"
+                    data-annotation-skip="true"
+                ></span>
+
+            </button>
+
+
+            <button
+                class="state-toolbar-button"
+                data-class="button"
+                data-semantic="bold"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="bold_icon"
+                >
+                    format_bold
+                </span>
+
+            </button>
+
+
+            <button
+                class="state-toolbar-button"
+                data-class="button"
+                data-semantic="italic"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="italic_icon"
+                >
+                    format_italic
+                </span>
+
+            </button>
+
+
+            <button
+                class="state-toolbar-button"
+                data-class="button"
+                data-semantic="alignment"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="alignment_icon"
+                >
+                    format_align_center
+                </span>
+
+            </button>
+
+
+            <button
+                class="state-toolbar-button"
+                data-class="button"
+                data-semantic="layers_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="layers_button_icon"
+                >
+                    layers
+                </span>
+
+            </button>
+
+
+            <button
+                class="state-toolbar-button"
+                data-class="button"
+                data-semantic="image_edit_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="image_edit_icon"
+                >
+                    tune
+                </span>
+
+            </button>
+
+
+            <button
+                class="state-toolbar-button"
+                data-class="button"
+                data-semantic="more_options"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="more_options_icon"
+                >
+                    more_horiz
+                </span>
+
+            </button>
+
+        </nav>
+
+
+        <!-- ==================================================
+             Main Body
+             ================================================== -->
+
+        <div
+            class="state-body"
+            {% if is_mobile %}
+            style="
+                grid-template-columns:
+                    minmax(0, 1fr);
+            "
+            {% endif %}
+        >
+
+
+            <!-- ==================================================
+                 Desktop / Tablet Tool Rail
+
+                 This DOM does not exist on mobile.
+                 ================================================== -->
+
+            {% if not is_mobile %}
+
+            <nav
+                class="state-tool-rail"
+                data-class="navigation_bar"
+                data-semantic="state_tool_rail"
+                data-occluder="true"
+            >
+
+                {% for tool in editor_state.tools %}
+
+                <button
+                    class="state-tool"
+                    data-class="navigation_item"
+                    data-semantic="state_tool_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="state_tool_icon_{{ loop.index }}"
+                    >
+                        {{ tool.icon }}
+                    </span>
+
+                    {{ tool.label }}
+
+                </button>
+
+                {% endfor %}
+
+            </nav>
+
+            {% endif %}
+
+
+            <!-- ==================================================
+                 Workspace
+                 ================================================== -->
+
+            <main
+                class="
+                    state-workspace
+
+                    {% if
+                        not is_mobile
+                        and editor_state.state in [
+                            'comments',
+                            'layers',
+                            'image_edit'
+                        ]
+                    %}
+
+                    has-side-panel
+
+                    {% endif %}
+                "
+                data-class="section"
+                data-semantic="state_workspace"
+            >
+
+
+                <!-- ==========================================
+                     Main Canvas
+                     ========================================== -->
+
+                <div class="state-workspace-scroll">
+
+                    <div
+                        class="state-canvas"
+                        data-class="card"
+                        data-semantic="state_canvas"
+                    >
+
+                        {% if editor_state.canvas.image %}
+
+                        <img
+                            class="state-canvas-image"
+                            src="{{ editor_state.canvas.image }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="state_canvas_image"
+                        >
+
+                        {% endif %}
+
+
+                        <div
+                            class="state-canvas-overlay"
+                            data-annotation-skip="true"
+                        ></div>
+
+
+                        <div class="state-canvas-content">
+
+                            <h1 class="state-canvas-heading">
+
+                                {{ editor_state.canvas.headline }}
+
+                            </h1>
+
+
+                            <p class="state-canvas-subtitle">
+
+                                {{ editor_state.canvas.subtitle }}
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==========================================
+                     Page Strip
+                     ========================================== -->
+
+                <div class="state-pages">
+
+                    {% for page_item in editor_state.pages %}
+
+                    <button
+                        class="
+                            state-page-thumb
+
+                            {% if page_item.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="state_page_{{ page_item.number }}"
+                    >
+
+                        {% if page_item.image %}
+
+                        <img
+                            src="{{ page_item.image }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="state_page_image_{{ page_item.number }}"
+                        >
+
+                        {% endif %}
+
+
+                        <span
+                            class="state-page-number"
+                            data-class="badge"
+                            data-semantic="state_page_number_{{ page_item.number }}"
+                        >
+                            {{ page_item.number }}
+                        </span>
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- ==========================================
+                     Footer
+                     ========================================== -->
+
+                <footer
+                    class="state-footer"
+                    data-class="navigation_bar"
+                    data-semantic="state_editor_footer"
+                    data-occluder="true"
+                >
+
+                    <button
+                        class="
+                            icon-button
+                            icon-button-small
+                        "
+                        data-class="button"
+                        data-semantic="zoom_out"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="zoom_out_icon"
+                        >
+                            remove
+                        </span>
+
+                    </button>
+
+
+                    <div
+                        class="zoom-badge"
+                        data-class="badge"
+                        data-semantic="zoom_value"
+                    >
+
+                        {{ editor_state.zoom }}%
+
+                    </div>
+
+
+                    <button
+                        class="
+                            icon-button
+                            icon-button-small
+                        "
+                        data-class="button"
+                        data-semantic="zoom_in"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="zoom_in_icon"
+                        >
+                            add
+                        </span>
+
+                    </button>
+
+                </footer>
+
+
+                <!-- ==================================================
+                     COMMENTS STATE
+                     ================================================== -->
+
+                {% if editor_state.state == "comments" %}
+
+                <aside
+                    class="state-side-panel"
+                    data-class="section"
+                    data-semantic="comments_panel"
+                    data-occluder="true"
+                >
+
+                    <div class="state-panel-header">
+
+                        <div class="state-panel-title">
+
+                            Comments
+
+                        </div>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="close_comments"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="close_comments_icon"
+                            >
+                                close
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="state-panel-content">
+
+                        <div
+                            class="comment-input"
+                            data-class="input_field"
+                            data-semantic="new_comment_input"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="new_comment_icon"
+                            >
+                                add_comment
+                            </span>
+
+
+                            <input
+                                type="text"
+                                placeholder="Add a comment"
+                            >
+
+                        </div>
+
+
+                        <div class="comments-list">
+
+                            {% for comment in editor_state.comments %}
+
+                            <article
+                                class="comment-card"
+                                data-class="card"
+                                data-semantic="comment_{{ loop.index }}"
+                            >
+
+                                <div class="comment-header">
+
+                                    <div
+                                        class="comment-avatar"
+                                        data-class="avatar"
+                                        data-semantic="comment_avatar_{{ loop.index }}"
+                                    >
+
+                                        {% if comment.avatar %}
+
+                                        <img
+                                            src="{{ comment.avatar }}"
+                                            alt=""
+                                        >
+
+                                        {% else %}
+
+                                        {{ comment.name[0] }}
+
+                                        {% endif %}
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <div class="comment-name">
+
+                                            {{ comment.name }}
+
+                                        </div>
+
+
+                                        <div class="comment-time">
+
+                                            {{ comment.time }}
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <button
+                                        class="
+                                            icon-button
+                                            icon-button-small
+                                        "
+                                        data-class="button"
+                                        data-semantic="comment_menu_{{ loop.index }}"
+                                    >
+
+                                        <span
+                                            class="material-symbols-rounded"
+                                            data-class="icon"
+                                            data-semantic="comment_menu_icon_{{ loop.index }}"
+                                        >
+                                            more_horiz
+                                        </span>
+
+                                    </button>
+
+                                </div>
+
+
+                                <div class="comment-text">
+
+                                    {{ comment.text }}
+
+                                </div>
+
+
+                                <div class="comment-actions">
+
+                                    <button
+                                        class="secondary-button"
+                                        data-class="button"
+                                        data-semantic="reply_comment_{{ loop.index }}"
+                                        style="
+                                            min-height:
+                                                30px;
+
+                                            padding:
+                                                0 10px;
+
+                                            font-size:
+                                                10px;
+                                        "
+                                    >
+                                        Reply
+                                    </button>
+
+
+                                    {% if not comment.resolved %}
+
+                                    <button
+                                        class="secondary-button"
+                                        data-class="button"
+                                        data-semantic="resolve_comment_{{ loop.index }}"
+                                        style="
+                                            min-height:
+                                                30px;
+
+                                            padding:
+                                                0 10px;
+
+                                            font-size:
+                                                10px;
+                                        "
+                                    >
+                                        Resolve
+                                    </button>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </article>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                </aside>
+
+                {% endif %}
+
+
+                <!-- ==================================================
+                     LAYERS STATE
+                     ================================================== -->
+
+                {% if editor_state.state == "layers" %}
+
+                <aside
+                    class="state-side-panel"
+                    data-class="section"
+                    data-semantic="layers_panel"
+                    data-occluder="true"
+                >
+
+                    <div class="state-panel-header">
+
+                        <div class="state-panel-title">
+
+                            Layers
+
+                        </div>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="close_layers"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="close_layers_icon"
+                            >
+                                close
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="state-panel-content">
+
+                        <div class="layer-list">
+
+                            {% for layer in editor_state.layers %}
+
+                            <button
+                                class="
+                                    layer-row
+
+                                    {% if layer.selected %}
+                                    selected
+                                    {% endif %}
+                                "
+                                data-class="card"
+                                data-semantic="layer_{{ loop.index }}"
+                            >
+
+                                <span
+                                    class="
+                                        layer-icon
+                                        material-symbols-rounded
+                                    "
+                                    data-class="icon"
+                                    data-semantic="layer_icon_{{ loop.index }}"
+                                >
+                                    {{ layer.icon }}
+                                </span>
+
+
+                                <span class="layer-name">
+
+                                    {{ layer.name }}
+
+                                </span>
+
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="layer_visibility_{{ loop.index }}"
+                                >
+
+                                    {% if layer.visible %}
+                                        visibility
+                                    {% else %}
+                                        visibility_off
+                                    {% endif %}
+
+                                </span>
+
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="layer_lock_{{ loop.index }}"
+                                >
+
+                                    {% if layer.locked %}
+                                        lock
+                                    {% else %}
+                                        lock_open
+                                    {% endif %}
+
+                                </span>
+
+                            </button>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                </aside>
+
+                {% endif %}
+
+
+                <!-- ==================================================
+                     COLOR PICKER STATE
+
+                     This remains a true overlay.
+                     ================================================== -->
+
+                {% if editor_state.state == "color_picker" %}
+
+                <div
+                    class="color-picker-popup"
+                    data-class="dialog"
+                    data-semantic="color_picker"
+                    data-occluder="true"
+                >
+
+                    <div class="color-picker-title">
+
+                        <span>
+
+                            Text color
+
+                        </span>
+
+
+                        <button
+                            class="
+                                icon-button
+                                icon-button-small
+                            "
+                            data-class="button"
+                            data-semantic="close_color_picker"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="close_color_picker_icon"
+                            >
+                                close
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    {% for color in editor_state.colors %}
+
+                        {% if color.selected %}
+
+                        <div
+                            class="color-input"
+                            data-class="input_field"
+                            data-semantic="color_hex_input"
+                        >
+
+                            <span
+                                class="color-preview"
+                                style="
+                                    background:
+                                        {{ color.value }};
+                                "
+                            ></span>
+
+
+                            <span class="color-input-value">
+
+                                {{ color.value }}
+
+                            </span>
+
+                        </div>
+
+                        {% endif %}
+
+                    {% endfor %}
+
+
+                    <div class="color-grid">
+
+                        {% for color in editor_state.colors %}
+
+                        <button
+                            class="
+                                color-swatch
+
+                                {% if color.selected %}
+                                selected
+                                {% endif %}
+                            "
+                            style="
+                                background:
+                                    {{ color.value }};
+                            "
+                            data-class="button"
+                            data-semantic="color_swatch_{{ loop.index }}"
+                        ></button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                <!-- ==================================================
+                     IMAGE EDIT STATE
+                     ================================================== -->
+
+                {% if editor_state.state == "image_edit" %}
+
+                <aside
+                    class="state-side-panel"
+                    data-class="section"
+                    data-semantic="image_edit_panel"
+                    data-occluder="true"
+                >
+
+                    <div class="state-panel-header">
+
+                        <div class="state-panel-title">
+
+                            Adjust
+
+                        </div>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="close_image_adjustments"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="close_adjustments_icon"
+                            >
+                                close
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="state-panel-content">
+
+                        <div class="adjustment-list">
+
+                            {% for adjustment in editor_state.adjustments %}
+
+                            <div class="adjustment-row">
+
+                                <div class="adjustment-header">
+
+                                    <span>
+
+                                        {{ adjustment.label }}
+
+                                    </span>
+
+
+                                    <span class="adjustment-value">
+
+                                        {{ adjustment.value }}
+
+                                    </span>
+
+                                </div>
+
+
+                                <div
+                                    class="adjustment-slider"
+                                    data-class="slider"
+                                    data-semantic="{{ adjustment.semantic }}_slider"
+                                >
+
+                                    <div
+                                        class="adjustment-track"
+                                        data-annotation-skip="true"
+                                    ></div>
+
+
+                                    <div
+                                        class="adjustment-fill"
+                                        data-annotation-skip="true"
+                                        style="
+                                            width:
+                                                {{ adjustment.value }}%;
+                                        "
+                                    ></div>
+
+
+                                    <div
+                                        class="adjustment-thumb"
+                                        data-annotation-skip="true"
+                                        style="
+                                            left:
+                                                {{ adjustment.value }}%;
+                                        "
+                                    ></div>
+
+                                </div>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                </aside>
+
+                {% endif %}
+
+
+                <!-- ==================================================
+                     MOBILE TOOL TRAY
+
+                     This DOM only exists on mobile.
+                     It is removed completely while a bottom sheet
+                     state is active.
+                     ================================================== -->
+
+                {% if
+                    is_mobile
+                    and editor_state.state not in [
+                        "comments",
+                        "layers",
+                        "image_edit"
+                    ]
+                %}
+
+                <nav
+                    class="state-mobile-tools"
+                    data-class="navigation_bar"
+                    data-semantic="mobile_editor_tools"
+                    data-occluder="true"
+                >
+
+                    {% for tool in editor_state.tools %}
+
+                    <button
+                        class="state-mobile-tool"
+                        data-class="navigation_item"
+                        data-semantic="mobile_tool_{{ loop.index }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="mobile_tool_icon_{{ loop.index }}"
+                        >
+                            {{ tool.icon }}
+                        </span>
+
+                        {{ tool.label }}
+
+                    </button>
+
+                    {% endfor %}
+
+                </nav>
+
+                {% endif %}
+
+            </main>
+
+        </div>
+
+    </div>
+
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
+

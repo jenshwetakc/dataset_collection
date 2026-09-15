@@ -1,0 +1,3203 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Canva Editor
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ==========================================================
+       Root
+       ========================================================== */
+
+    .editor-page {
+
+        width:
+            100%;
+
+        height:
+            100vh;
+
+        overflow:
+            hidden;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ==========================================================
+       Top Header
+       ========================================================== */
+
+    .editor-header {
+
+        position:
+            relative;
+
+        z-index:
+            220;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        height:
+            58px;
+
+        padding:
+            0 14px;
+
+        flex:
+            0 0 auto;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .editor-header-left,
+    .editor-header-center,
+    .editor-header-right {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-width:
+            0;
+    }
+
+
+    .editor-header-left {
+
+        gap:
+            6px;
+    }
+
+
+    .editor-header-center {
+
+        justify-content:
+            center;
+    }
+
+
+    .editor-header-right {
+
+        justify-content:
+            flex-end;
+
+        gap:
+            6px;
+    }
+
+
+    .editor-brand {
+
+        margin-right:
+            6px;
+
+        font-size:
+            20px;
+
+        font-weight:
+            900;
+
+        letter-spacing:
+            -0.8px;
+
+        color:
+            var(--primary);
+    }
+
+
+    .document-title {
+
+        max-width:
+            360px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    .saved-state {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        margin-left:
+            8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .share-button {
+
+        gap:
+            6px;
+    }
+
+
+    /* ==========================================================
+       Context Toolbar
+       ========================================================== */
+
+    .context-toolbar {
+
+        position:
+            relative;
+
+        z-index:
+            210;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            52px;
+
+        padding:
+            6px 12px;
+
+        flex:
+            0 0 auto;
+
+        overflow-x:
+            auto;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        scrollbar-width:
+            none;
+    }
+
+
+    .context-toolbar::-webkit-scrollbar {
+
+        display:
+            none;
+    }
+
+
+    .toolbar-select {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-width:
+            128px;
+
+        height:
+            36px;
+
+        padding:
+            0 10px;
+
+        flex:
+            0 0 auto;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--button-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+    }
+
+
+    .toolbar-number {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            50px;
+
+        height:
+            36px;
+
+        padding:
+            0 8px;
+
+        flex:
+            0 0 auto;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--button-radius);
+
+        background:
+            var(--surface);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .toolbar-divider {
+
+        width:
+            1px;
+
+        height:
+            26px;
+
+        flex:
+            0 0 auto;
+
+        margin:
+            0 4px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .toolbar-icon-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            var(--button-radius);
+
+        color:
+            var(--icon);
+    }
+
+
+    .toolbar-icon-button.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ==========================================================
+       Editor Body
+       ========================================================== */
+
+    .editor-body {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            var(--editor-rail-width)
+            var(--editor-panel-width)
+            minmax(0, 1fr);
+
+        flex:
+            1;
+
+        min-height:
+            0;
+    }
+
+
+    /* ==========================================================
+       Tool Rail
+       ========================================================== */
+
+    .tool-rail {
+
+        position:
+            relative;
+
+        z-index:
+            180;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            stretch;
+
+        gap:
+            4px;
+
+        min-height:
+            0;
+
+        padding:
+            8px 6px;
+
+        overflow-y:
+            auto;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .tool-item {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            4px;
+
+        min-height:
+            62px;
+
+        padding:
+            5px 2px;
+
+        border-radius:
+            var(--medium-radius);
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .tool-item.selected {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .tool-item-icon {
+
+        font-size:
+            23px;
+    }
+
+
+    .tool-item-label {
+
+        width:
+            100%;
+
+        overflow:
+            hidden;
+
+        text-align:
+            center;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ==========================================================
+       Content Panel
+       ========================================================== */
+
+    .content-panel {
+
+        position:
+            relative;
+
+        z-index:
+            170;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow-y:
+            auto;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .panel-inner {
+
+        padding:
+            16px;
+    }
+
+
+    .panel-title-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            8px;
+
+        margin-bottom:
+            12px;
+    }
+
+
+    .panel-title {
+
+        font-size:
+            16px;
+
+        font-weight:
+            800;
+    }
+
+
+    .panel-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        height:
+            40px;
+
+        margin-bottom:
+            16px;
+
+        padding:
+            0 10px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--input-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .panel-search input {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        font-size:
+            12px;
+    }
+
+
+    /* ==========================================================
+       Design Panel
+       ========================================================== */
+
+    .template-panel-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+    }
+
+
+    .panel-template-card {
+
+        min-width:
+            0;
+    }
+
+
+    .panel-template-image {
+
+        position:
+            relative;
+
+        overflow:
+            hidden;
+
+        width:
+            100%;
+
+        aspect-ratio:
+            4 / 3;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .panel-template-image img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .panel-template-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .panel-pro-badge {
+
+        position:
+            absolute;
+
+        left:
+            5px;
+
+        bottom:
+            5px;
+
+        min-height:
+            20px;
+
+        padding:
+            0 6px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+
+        line-height:
+            20px;
+    }
+
+
+    .panel-card-title {
+
+        margin-top:
+            5px;
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+
+        font-size:
+            10px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ==========================================================
+       Element Panel
+       ========================================================== */
+
+    .element-categories {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            8px;
+
+        margin-bottom:
+            18px;
+    }
+
+
+    .element-category {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            5px;
+
+        min-height:
+            70px;
+
+        padding:
+            6px;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            10px;
+
+        font-weight:
+            600;
+    }
+
+
+    .element-category-icon {
+
+        font-size:
+            23px;
+
+        color:
+            var(--primary);
+    }
+
+
+    .element-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            8px;
+    }
+
+
+    .element-card {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        overflow:
+            hidden;
+
+        aspect-ratio:
+            1 / 1;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .element-card img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .synthetic-shape {
+
+        width:
+            44%;
+
+        height:
+            44%;
+
+        background:
+            var(--primary);
+    }
+
+
+    .synthetic-shape.circle {
+
+        border-radius:
+            50%;
+    }
+
+
+    .synthetic-shape.square {
+
+        border-radius:
+            8px;
+    }
+
+
+    .synthetic-shape.triangle {
+
+        width:
+            0;
+
+        height:
+            0;
+
+        border-left:
+            24px solid transparent;
+
+        border-right:
+            24px solid transparent;
+
+        border-bottom:
+            42px solid var(--primary);
+
+        background:
+            transparent;
+    }
+
+
+    .synthetic-shape.star {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            auto;
+
+        height:
+            auto;
+
+        background:
+            transparent;
+
+        color:
+            var(--primary);
+
+        font-size:
+            46px;
+    }
+
+
+    /* ==========================================================
+       Text Panel
+       ========================================================== */
+
+    .text-action {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        width:
+            100%;
+
+        min-height:
+            44px;
+
+        margin-bottom:
+            8px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface);
+
+        font-weight:
+            700;
+    }
+
+
+    .text-action.heading {
+
+        font-size:
+            20px;
+    }
+
+
+    .text-action.subheading {
+
+        font-size:
+            15px;
+    }
+
+
+    .text-action.body {
+
+        font-size:
+            12px;
+
+        font-weight:
+            500;
+    }
+
+
+    /* ==========================================================
+       Workspace
+       ========================================================== */
+
+    .workspace {
+
+        position:
+            relative;
+
+        min-width:
+            0;
+
+        min-height:
+            0;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .workspace-scroll {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        overflow:
+            auto;
+
+        padding:
+            38px
+            50px
+            110px;
+    }
+
+
+    .canvas-wrap {
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        justify-content:
+            center;
+
+        min-width:
+            700px;
+    }
+
+
+    /* ==========================================================
+       Canvas
+       ========================================================== */
+
+    .design-canvas {
+
+        position:
+            relative;
+
+        overflow:
+            hidden;
+
+        width:
+            min(
+                760px,
+                68vw
+            );
+
+        aspect-ratio:
+            16 / 10;
+
+        flex:
+            0 0 auto;
+
+        border:
+            1px solid
+            var(--border);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 8px 28px
+            rgba(0, 0, 0, 0.15);
+    }
+
+
+    .canvas-background {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+
+        opacity:
+            0.25;
+    }
+
+
+    .canvas-overlay {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        background:
+            linear-gradient(
+                90deg,
+                var(--surface) 0%,
+                color-mix(
+                    in srgb,
+                    var(--surface) 80%,
+                    transparent
+                ) 48%,
+                transparent 100%
+            );
+    }
+
+
+    .canvas-content {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            54%
+            46%;
+
+        align-items:
+            center;
+
+        padding:
+            8%;
+    }
+
+
+    .canvas-copy {
+
+        position:
+            relative;
+
+        z-index:
+            4;
+    }
+
+
+    .canvas-accent {
+
+        margin-bottom:
+            10px;
+
+        font-size:
+            clamp(
+                10px,
+                1vw,
+                14px
+            );
+
+        font-weight:
+            900;
+
+        letter-spacing:
+            4px;
+
+        color:
+            var(--primary);
+    }
+
+
+    .canvas-headline {
+
+        max-width:
+            460px;
+
+        font-size:
+            clamp(
+                26px,
+                4vw,
+                56px
+            );
+
+        line-height:
+            1.02;
+
+        font-weight:
+            900;
+
+        letter-spacing:
+            -1.5px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .canvas-subtitle {
+
+        max-width:
+            420px;
+
+        margin-top:
+            16px;
+
+        font-size:
+            clamp(
+                11px,
+                1.4vw,
+                17px
+            );
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .canvas-photo-wrap {
+
+        position:
+            relative;
+
+        z-index:
+            4;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+    }
+
+
+    .canvas-photo {
+
+        width:
+            86%;
+
+        aspect-ratio:
+            4 / 5;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%
+            50%
+            16px
+            16px;
+
+        background:
+            var(--primary-container);
+
+        box-shadow:
+            10px
+            12px
+            0
+            var(--primary);
+    }
+
+
+    .canvas-photo img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .selection-box {
+
+        position:
+            absolute;
+
+        z-index:
+            20;
+
+        left:
+            6.6%;
+
+        top:
+            27%;
+
+        width:
+            46%;
+
+        height:
+            39%;
+
+        border:
+            2px solid
+            var(--primary);
+
+        pointer-events:
+            none;
+    }
+
+
+    .selection-handle {
+
+        position:
+            absolute;
+
+        width:
+            9px;
+
+        height:
+            9px;
+
+        border:
+            1px solid
+            var(--primary);
+
+        border-radius:
+            2px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .handle-tl {
+
+        left:
+            -6px;
+
+        top:
+            -6px;
+    }
+
+
+    .handle-tr {
+
+        right:
+            -6px;
+
+        top:
+            -6px;
+    }
+
+
+    .handle-bl {
+
+        left:
+            -6px;
+
+        bottom:
+            -6px;
+    }
+
+
+    .handle-br {
+
+        right:
+            -6px;
+
+        bottom:
+            -6px;
+    }
+
+
+    /* ==========================================================
+       Page Strip
+       ========================================================== */
+
+    .page-strip {
+
+        position:
+            absolute;
+
+        z-index:
+            150;
+
+        left:
+            18px;
+
+        right:
+            18px;
+
+        bottom:
+            52px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            10px;
+
+        pointer-events:
+            none;
+    }
+
+
+    .page-thumbnail {
+
+        position:
+            relative;
+
+        width:
+            92px;
+
+        height:
+            58px;
+
+        overflow:
+            hidden;
+
+        flex:
+            0 0 auto;
+
+        border:
+            2px solid
+            transparent;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface);
+
+        pointer-events:
+            auto;
+    }
+
+
+    .page-thumbnail.selected {
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .page-thumbnail img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .page-number {
+
+        position:
+            absolute;
+
+        left:
+            4px;
+
+        bottom:
+            3px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-width:
+            17px;
+
+        height:
+            17px;
+
+        padding:
+            0 4px;
+
+        border-radius:
+            4px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+    }
+
+
+    /* ==========================================================
+       Footer
+       ========================================================== */
+
+    .editor-footer {
+
+        position:
+            absolute;
+
+        z-index:
+            190;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            6px;
+
+        height:
+            var(--editor-footer-height);
+
+        padding:
+            0 12px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .zoom-value {
+
+        min-width:
+            50px;
+
+        text-align:
+            center;
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ==========================================================
+       Mobile Tool Tray
+       ========================================================== */
+
+    .mobile-tool-tray {
+
+        display:
+            none;
+    }
+
+
+    /* ==========================================================
+       Tablet
+       ========================================================== */
+
+    @media (
+        min-width: 768px
+    )
+    and (
+        max-width: 1023px
+    ) {
+
+        .editor-header {
+
+            height:
+                54px;
+
+            padding:
+                0 10px;
+        }
+
+
+        .editor-brand {
+
+            display:
+                none;
+        }
+
+
+        .editor-body {
+
+            grid-template-columns:
+                64px
+                260px
+                minmax(0, 1fr);
+        }
+
+
+        .tool-item {
+
+            min-height:
+                58px;
+        }
+
+
+        .workspace-scroll {
+
+            padding:
+                32px
+                28px
+                100px;
+        }
+
+
+        .design-canvas {
+
+            width:
+                640px;
+        }
+
+
+        .canvas-wrap {
+
+            min-width:
+                660px;
+        }
+
+    }
+
+
+    /* ==========================================================
+       Mobile
+       ========================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .editor-page {
+
+            height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                );
+        }
+
+
+        .editor-header {
+
+            grid-template-columns:
+                auto
+                minmax(0, 1fr)
+                auto;
+
+            height:
+                52px;
+
+            padding:
+                0 8px;
+        }
+
+
+        .editor-brand {
+
+            display:
+                none;
+        }
+
+
+        .editor-header-left .history-action {
+
+            display:
+                none;
+        }
+
+
+        .document-title {
+
+            max-width:
+                160px;
+
+            font-size:
+                12px;
+        }
+
+
+        .saved-state {
+
+            display:
+                none;
+        }
+
+
+        .editor-header-right
+        .secondary-button {
+
+            display:
+                none;
+        }
+
+
+        .share-button {
+
+            min-height:
+                34px;
+
+            padding:
+                0 10px;
+
+            font-size:
+                11px;
+        }
+
+
+        .context-toolbar {
+
+            min-height:
+                46px;
+
+            padding:
+                5px 7px;
+        }
+
+
+        .toolbar-select {
+
+            min-width:
+                110px;
+
+            height:
+                34px;
+        }
+
+
+        .toolbar-number,
+        .toolbar-icon-button {
+
+            height:
+                34px;
+        }
+
+
+        .toolbar-icon-button {
+
+            width:
+                34px;
+        }
+
+
+        .editor-body {
+
+            display:
+                block;
+
+            position:
+                relative;
+
+            flex:
+                1;
+
+            min-height:
+                0;
+        }
+
+
+        .tool-rail,
+        .content-panel {
+
+            display:
+                none;
+        }
+
+
+        .workspace {
+
+            position:
+                absolute;
+
+            inset:
+                0;
+
+            padding-bottom:
+                var(--mobile-toolbar-height);
+        }
+
+
+        .workspace-scroll {
+
+            padding:
+                26px
+                18px
+                96px;
+
+            overflow:
+                auto;
+        }
+
+
+        .canvas-wrap {
+
+            justify-content:
+                center;
+
+            min-width:
+                0;
+        }
+
+
+        .design-canvas {
+
+            width:
+                min(
+                    680px,
+                    calc(
+                        100vw
+                        - 36px
+                    )
+                );
+        }
+
+
+        .canvas-content {
+
+            padding:
+                7%;
+        }
+
+
+        .canvas-headline {
+
+            font-size:
+                clamp(
+                    16px,
+                    7vw,
+                    30px
+                );
+
+            letter-spacing:
+                -0.7px;
+        }
+
+
+        .canvas-subtitle {
+
+            margin-top:
+                8px;
+
+            font-size:
+                clamp(
+                    8px,
+                    2.7vw,
+                    12px
+                );
+        }
+
+
+        .canvas-accent {
+
+            margin-bottom:
+                5px;
+
+            font-size:
+                8px;
+
+            letter-spacing:
+                2px;
+        }
+
+
+        .page-strip {
+
+            bottom:
+                58px;
+
+            justify-content:
+                flex-start;
+
+            overflow-x:
+                auto;
+
+            pointer-events:
+                auto;
+        }
+
+
+        .page-thumbnail {
+
+            width:
+                72px;
+
+            height:
+                46px;
+        }
+
+
+        .editor-footer {
+
+            bottom:
+                var(--mobile-toolbar-height);
+
+            height:
+                42px;
+        }
+
+
+        .mobile-tool-tray {
+
+            position:
+                absolute;
+
+            z-index:
+                240;
+
+            left:
+                0;
+
+            right:
+                0;
+
+            bottom:
+                0;
+
+            display:
+                flex;
+
+            align-items:
+                stretch;
+
+            height:
+                var(--mobile-toolbar-height);
+
+            overflow-x:
+                auto;
+
+            border-top:
+                1px solid
+                var(--border-subtle);
+
+            background:
+                var(--surface);
+
+            scrollbar-width:
+                none;
+        }
+
+
+        .mobile-tool-tray::-webkit-scrollbar {
+
+            display:
+                none;
+        }
+
+
+        .mobile-tool-item {
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            gap:
+                2px;
+
+            min-width:
+                66px;
+
+            height:
+                100%;
+
+            flex:
+                0 0 auto;
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .mobile-tool-item.selected {
+
+            color:
+                var(--primary);
+        }
+
+
+        .mobile-tool-item
+        .material-symbols-rounded {
+
+            font-size:
+                21px;
+        }
+
+
+        .mobile-tool-label {
+
+            font-size:
+                9px;
+
+            font-weight:
+                700;
+        }
+
+    }
+
+
+    /* ==========================================================
+       Small Mobile
+       ========================================================== */
+
+    @media (
+        max-width: 359px
+    ) {
+
+        .document-title {
+
+            max-width:
+                105px;
+        }
+
+
+        .workspace-scroll {
+
+            padding-left:
+                12px;
+
+            padding-right:
+                12px;
+        }
+
+
+        .design-canvas {
+
+            width:
+                calc(
+                    100vw
+                    - 24px
+                );
+        }
+
+
+        .context-toolbar
+        .toolbar-divider {
+
+            display:
+                none;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="editor-page">
+
+
+    <!-- ======================================================
+         Editor Header
+         ====================================================== -->
+
+    <header
+        class="editor-header"
+        data-class="app_bar"
+        data-semantic="editor_header"
+        data-occluder="true"
+    >
+
+        <div class="editor-header-left">
+
+            <div
+                class="editor-brand"
+                data-class="logo"
+                data-semantic="canva_logo"
+            >
+                Canva
+            </div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="main_menu"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="main_menu_icon"
+                >
+                    menu
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    icon-button
+                    history-action
+                "
+                data-class="button"
+                data-semantic="undo"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="undo_icon"
+                >
+                    undo
+                </span>
+            </button>
+
+
+            <button
+                class="
+                    icon-button
+                    history-action
+                "
+                data-class="button"
+                data-semantic="redo"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="redo_icon"
+                >
+                    redo
+                </span>
+            </button>
+
+        </div>
+
+
+        <div class="editor-header-center">
+
+            <div class="document-title">
+
+                {{ editor.document.name }}
+
+            </div>
+
+
+            {% if editor.document.saved %}
+
+            <div class="saved-state">
+
+                <span
+                    class="material-symbols-rounded"
+                    style="font-size:15px;"
+                >
+                    cloud_done
+                </span>
+
+                Saved
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="editor-header-right">
+
+            <button
+                class="secondary-button"
+                data-class="button"
+                data-semantic="present_button"
+            >
+                Present
+            </button>
+
+
+            <button
+                class="
+                    primary-button
+                    share-button
+                "
+                data-class="button"
+                data-semantic="share_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="share_icon"
+                >
+                    person_add
+                </span>
+
+                Share
+
+            </button>
+
+
+            <div
+                class="profile-avatar"
+                data-class="avatar"
+                data-semantic="editor_avatar"
+            >
+
+                {% if editor.user.avatar %}
+
+                <img
+                    src="{{ editor.user.avatar }}"
+                    alt=""
+                >
+
+                {% else %}
+
+                <span
+                    class="material-symbols-rounded"
+                >
+                    person
+                </span>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- ======================================================
+         Context Toolbar
+         ====================================================== -->
+
+    <div
+        class="context-toolbar"
+        data-class="navigation_bar"
+        data-semantic="context_toolbar"
+        data-occluder="true"
+    >
+
+        <button
+            class="toolbar-select"
+            data-class="button"
+            data-semantic="font_family"
+        >
+
+            <span class="truncate">
+                {{ editor.toolbar.font }}
+            </span>
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="font_dropdown"
+            >
+                arrow_drop_down
+            </span>
+
+        </button>
+
+
+        <button
+            class="toolbar-number"
+            data-class="button"
+            data-semantic="font_size"
+        >
+            {{ editor.toolbar.font_size }}
+        </button>
+
+
+        <div class="toolbar-divider"></div>
+
+
+        <button
+            class="
+                toolbar-icon-button
+                {% if editor.toolbar.bold %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="bold_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="bold_icon"
+            >
+                format_bold
+            </span>
+
+        </button>
+
+
+        <button
+            class="
+                toolbar-icon-button
+                {% if editor.toolbar.italic %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="italic_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="italic_icon"
+            >
+                format_italic
+            </span>
+
+        </button>
+
+
+        <button
+            class="toolbar-icon-button"
+            data-class="button"
+            data-semantic="text_color"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="text_color_icon"
+            >
+                format_color_text
+            </span>
+
+        </button>
+
+
+        <button
+            class="toolbar-icon-button"
+            data-class="button"
+            data-semantic="alignment"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="alignment_icon"
+            >
+                format_align_center
+            </span>
+
+        </button>
+
+
+        <div class="toolbar-divider"></div>
+
+
+        <button
+            class="toolbar-icon-button"
+            data-class="button"
+            data-semantic="position_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="position_icon"
+            >
+                layers
+            </span>
+
+        </button>
+
+
+        <button
+            class="toolbar-icon-button"
+            data-class="button"
+            data-semantic="transparency_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="transparency_icon"
+            >
+                opacity
+            </span>
+
+        </button>
+
+
+        <button
+            class="toolbar-icon-button"
+            data-class="button"
+            data-semantic="more_toolbar_options"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="more_toolbar_options_icon"
+            >
+                more_horiz
+            </span>
+
+        </button>
+
+    </div>
+
+
+    <!-- ======================================================
+         Editor Body
+         ====================================================== -->
+
+    <div class="editor-body">
+
+
+        <!-- ==================================================
+             Tool Rail
+             ================================================== -->
+
+        <nav
+            class="tool-rail"
+            data-class="navigation_bar"
+            data-semantic="editor_tool_rail"
+            data-occluder="true"
+        >
+
+            {% for tool in editor.tools %}
+
+            <button
+                class="
+                    tool-item
+                    {% if tool.selected %}
+                    selected
+                    {% endif %}
+                "
+                data-class="navigation_item"
+                data-semantic="editor_tool_{{ tool.panel }}"
+            >
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        tool-item-icon
+                    "
+                    data-class="icon"
+                    data-semantic="editor_tool_icon_{{ tool.panel }}"
+                >
+                    {{ tool.icon }}
+                </span>
+
+
+                <span class="tool-item-label">
+                    {{ tool.label }}
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </nav>
+
+
+        <!-- ==================================================
+             Content Panel
+             ================================================== -->
+
+        <aside
+            class="content-panel"
+            data-class="section"
+            data-semantic="editor_content_panel"
+        >
+
+            <div class="panel-inner">
+
+                <div class="panel-title-row">
+
+                    <div class="panel-title">
+
+                        {% if editor.active_panel == "design" %}
+                            Design
+
+                        {% elif editor.active_panel == "elements" %}
+                            Elements
+
+                        {% elif editor.active_panel == "text" %}
+                            Text
+
+                        {% else %}
+                            Editor
+                        {% endif %}
+
+                    </div>
+
+
+                    <button
+                        class="
+                            icon-button
+                            icon-button-small
+                        "
+                        data-class="button"
+                        data-semantic="close_panel"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="close_panel_icon"
+                        >
+                            close
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                {% if editor.active_panel != "text" %}
+
+                <div
+                    class="panel-search"
+                    data-class="search_bar"
+                    data-semantic="panel_search"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="panel_search_icon"
+                    >
+                        search
+                    </span>
+
+                    <input
+                        type="text"
+                        placeholder="{{ editor.search.placeholder }}"
+                    >
+
+                </div>
+
+                {% endif %}
+
+
+                <!-- ==========================================
+                     Design Panel
+                     ========================================== -->
+
+                {% if editor.active_panel == "design" %}
+
+                <div class="template-panel-grid">
+
+                    {% for item in editor.templates %}
+
+                    <article
+                        class="panel-template-card"
+                        data-class="card"
+                        data-semantic="editor_template_{{ loop.index }}"
+                    >
+
+                        <div class="panel-template-image">
+
+                            {% if item.image %}
+
+                            <img
+                                src="{{ item.image }}"
+                                alt=""
+                                data-class="image"
+                                data-semantic="editor_template_image_{{ loop.index }}"
+                            >
+
+                            {% else %}
+
+                            <div class="panel-template-placeholder">
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="editor_template_placeholder_{{ loop.index }}"
+                                >
+                                    image
+                                </span>
+
+                            </div>
+
+                            {% endif %}
+
+
+                            {% if item.premium %}
+
+                            <span
+                                class="panel-pro-badge"
+                                data-class="badge"
+                                data-semantic="editor_template_pro_{{ loop.index }}"
+                            >
+                                Pro
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="panel-card-title">
+                            {{ item.title }}
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- ==========================================
+                     Elements Panel
+                     ========================================== -->
+
+                {% elif editor.active_panel == "elements" %}
+
+                <div class="element-categories">
+
+                    {% for category in editor.categories %}
+
+                    <button
+                        class="element-category"
+                        data-class="card"
+                        data-semantic="element_category_{{ loop.index }}"
+                    >
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                element-category-icon
+                            "
+                            data-class="icon"
+                            data-semantic="element_category_icon_{{ loop.index }}"
+                        >
+                            {{ category.icon }}
+                        </span>
+
+                        {{ category.label }}
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <div class="element-grid">
+
+                    {% for item in editor.elements %}
+
+                    <button
+                        class="element-card"
+                        data-class="card"
+                        data-semantic="element_item_{{ loop.index }}"
+                    >
+
+                        {% if item.image %}
+
+                        <img
+                            src="{{ item.image }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="element_image_{{ loop.index }}"
+                        >
+
+                        {% else %}
+
+                            {% if item.shape == "star" %}
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    synthetic-shape
+                                    star
+                                "
+                                data-class="icon"
+                                data-semantic="shape_{{ loop.index }}"
+                            >
+                                star
+                            </span>
+
+                            {% else %}
+
+                            <span
+                                class="
+                                    synthetic-shape
+                                    {{ item.shape }}
+                                "
+                            ></span>
+
+                            {% endif %}
+
+                        {% endif %}
+
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- ==========================================
+                     Text Panel
+                     ========================================== -->
+
+                {% elif editor.active_panel == "text" %}
+
+                <button
+                    class="
+                        primary-button
+                    "
+                    style="
+                        width:100%;
+                        margin-bottom:14px;
+                    "
+                    data-class="button"
+                    data-semantic="add_text_box"
+                >
+                    Add a text box
+                </button>
+
+
+                <button
+                    class="
+                        text-action
+                        heading
+                    "
+                    data-class="button"
+                    data-semantic="add_heading"
+                >
+                    Add a heading
+                </button>
+
+
+                <button
+                    class="
+                        text-action
+                        subheading
+                    "
+                    data-class="button"
+                    data-semantic="add_subheading"
+                >
+                    Add a subheading
+                </button>
+
+
+                <button
+                    class="
+                        text-action
+                        body
+                    "
+                    data-class="button"
+                    data-semantic="add_body_text"
+                >
+                    Add a little bit of body text
+                </button>
+
+                {% endif %}
+
+            </div>
+
+        </aside>
+
+
+        <!-- ==================================================
+             Workspace
+             ================================================== -->
+
+        <main
+            class="workspace"
+            data-class="section"
+            data-semantic="canvas_workspace"
+        >
+
+            <div class="workspace-scroll">
+
+                <div class="canvas-wrap">
+
+                    <div
+                        class="design-canvas"
+                        data-class="card"
+                        data-semantic="design_canvas"
+                    >
+
+                        {% if editor.canvas.background %}
+
+                        <img
+                            class="canvas-background"
+                            src="{{ editor.canvas.background }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="canvas_background"
+                        >
+
+                        {% endif %}
+
+
+                        <div
+                            class="canvas-overlay"
+                            data-annotation-skip="true"
+                        ></div>
+
+
+                        <div class="canvas-content">
+
+                            <div class="canvas-copy">
+
+                                <div class="canvas-accent">
+                                    {{ editor.canvas.accent_text }}
+                                </div>
+
+
+                                <h1 class="canvas-headline">
+                                    {{ editor.canvas.headline }}
+                                </h1>
+
+
+                                <p class="canvas-subtitle">
+                                    {{ editor.canvas.subtitle }}
+                                </p>
+
+                            </div>
+
+
+                            <div class="canvas-photo-wrap">
+
+                                <div
+                                    class="canvas-photo"
+                                    data-class="image"
+                                    data-semantic="canvas_photo_container"
+                                >
+
+                                    {% if editor.canvas.photo %}
+
+                                    <img
+                                        src="{{ editor.canvas.photo }}"
+                                        alt=""
+                                    >
+
+                                    {% else %}
+
+                                    <div
+                                        class="flex-center"
+                                        style="
+                                            width:100%;
+                                            height:100%;
+                                        "
+                                    >
+                                        <span
+                                            class="material-symbols-rounded"
+                                            data-class="icon"
+                                            data-semantic="canvas_photo_placeholder"
+                                        >
+                                            person
+                                        </span>
+                                    </div>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Selection outline is decorative -->
+
+                        <div
+                            class="selection-box"
+                            data-annotation-skip="true"
+                        >
+
+                            <span
+                                class="
+                                    selection-handle
+                                    handle-tl
+                                "
+                            ></span>
+
+                            <span
+                                class="
+                                    selection-handle
+                                    handle-tr
+                                "
+                            ></span>
+
+                            <span
+                                class="
+                                    selection-handle
+                                    handle-bl
+                                "
+                            ></span>
+
+                            <span
+                                class="
+                                    selection-handle
+                                    handle-br
+                                "
+                            ></span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==============================================
+                 Page Strip
+                 ============================================== -->
+
+            <div class="page-strip">
+
+                {% for page_item in editor.pages %}
+
+                <button
+                    class="
+                        page-thumbnail
+                        {% if page_item.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="card"
+                    data-semantic="page_thumbnail_{{ page_item.number }}"
+                >
+
+                    {% if page_item.thumbnail %}
+
+                    <img
+                        src="{{ page_item.thumbnail }}"
+                        alt=""
+                        data-class="image"
+                        data-semantic="page_thumbnail_image_{{ page_item.number }}"
+                    >
+
+                    {% endif %}
+
+
+                    <span
+                        class="page-number"
+                        data-class="badge"
+                        data-semantic="page_number_{{ page_item.number }}"
+                    >
+                        {{ page_item.number }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+
+                <button
+                    class="
+                        icon-button
+                        icon-button-small
+                    "
+                    data-class="button"
+                    data-semantic="add_page"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="add_page_icon"
+                    >
+                        add
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <!-- ==============================================
+                 Footer
+                 ============================================== -->
+
+            <div
+                class="editor-footer"
+                data-class="navigation_bar"
+                data-semantic="editor_footer"
+                data-occluder="true"
+            >
+
+                <button
+                    class="
+                        icon-button
+                        icon-button-small
+                    "
+                    data-class="button"
+                    data-semantic="zoom_out"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="zoom_out_icon"
+                    >
+                        remove
+                    </span>
+                </button>
+
+
+                <div
+                    class="zoom-value"
+                    data-class="badge"
+                    data-semantic="zoom_value"
+                >
+                    {{ editor.zoom }}%
+                </div>
+
+
+                <button
+                    class="
+                        icon-button
+                        icon-button-small
+                    "
+                    data-class="button"
+                    data-semantic="zoom_in"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="zoom_in_icon"
+                    >
+                        add
+                    </span>
+                </button>
+
+
+                <button
+                    class="
+                        icon-button
+                        icon-button-small
+                    "
+                    data-class="button"
+                    data-semantic="fullscreen"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="fullscreen_icon"
+                    >
+                        fullscreen
+                    </span>
+                </button>
+
+            </div>
+
+
+            <!-- ==============================================
+                 Mobile Tool Tray
+                 ============================================== -->
+
+            <nav
+                class="mobile-tool-tray"
+                data-class="navigation_bar"
+                data-semantic="mobile_editor_tools"
+                data-occluder="true"
+            >
+
+                {% for tool in editor.tools %}
+
+                <button
+                    class="
+                        mobile-tool-item
+                        {% if tool.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="navigation_item"
+                    data-semantic="mobile_editor_tool_{{ tool.panel }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="mobile_editor_tool_icon_{{ tool.panel }}"
+                    >
+                        {{ tool.icon }}
+                    </span>
+
+                    <span class="mobile-tool-label">
+                        {{ tool.label }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </nav>
+
+        </main>
+
+    </div>
+
+</div>
+
+{% endblock %}

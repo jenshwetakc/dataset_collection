@@ -1,0 +1,2388 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Canva Presentation
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ==========================================================
+       Root
+       ========================================================== */
+
+    .presentation-page {
+
+        position: relative;
+
+        width: 100%;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ==========================================================
+       Standard Editor
+       ========================================================== */
+
+    .presentation-editor {
+
+        display: flex;
+
+        flex-direction: column;
+
+        width: 100%;
+
+        height: 100%;
+    }
+
+
+    /* ==========================================================
+       Header
+       ========================================================== */
+
+    .presentation-header {
+
+        position: relative;
+
+        z-index: 220;
+
+        display: grid;
+
+        grid-template-columns:
+            auto
+            minmax(0, 1fr)
+            auto;
+
+        align-items: center;
+
+        gap: 10px;
+
+        height: 58px;
+
+        padding:
+            0 10px;
+
+        flex: 0 0 auto;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .presentation-header-left,
+    .presentation-header-right {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 5px;
+    }
+
+
+    .presentation-header-right {
+
+        justify-content: flex-end;
+    }
+
+
+    .presentation-logo {
+
+        margin-right: 5px;
+
+        font-size: 20px;
+
+        font-weight: 900;
+
+        color:
+            var(--primary);
+    }
+
+
+    .presentation-document-name {
+
+        min-width: 0;
+
+        overflow: hidden;
+
+        text-align: center;
+
+        white-space: nowrap;
+
+        text-overflow: ellipsis;
+
+        font-size: 12px;
+
+        font-weight: 700;
+    }
+
+
+    /* ==========================================================
+       Toolbar
+       ========================================================== */
+
+    .presentation-toolbar {
+
+        position: relative;
+
+        z-index: 210;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 5px;
+
+        min-height: 48px;
+
+        padding:
+            5px 9px;
+
+        overflow-x: auto;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        scrollbar-width: none;
+    }
+
+
+    .presentation-toolbar::-webkit-scrollbar {
+
+        display: none;
+    }
+
+
+    .presentation-tool {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        width: 36px;
+
+        height: 36px;
+
+        flex: 0 0 auto;
+
+        border-radius:
+            var(--button-radius);
+    }
+
+
+    /* ==========================================================
+       Body
+       ========================================================== */
+
+    .presentation-body {
+
+        position: relative;
+
+        display: grid;
+
+        grid-template-columns:
+            150px
+            minmax(0, 1fr);
+
+        flex: 1;
+
+        min-height: 0;
+    }
+
+
+    /* ==========================================================
+       Slide Rail
+       ========================================================== */
+
+    .slide-rail {
+
+        position: relative;
+
+        z-index: 160;
+
+        overflow-y: auto;
+
+        padding:
+            10px 8px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .slide-thumb {
+
+        display: grid;
+
+        grid-template-columns:
+            22px
+            minmax(0, 1fr);
+
+        gap: 5px;
+
+        width: 100%;
+
+        margin-bottom: 8px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .slide-thumb-number {
+
+        padding-top: 6px;
+
+        font-size: 9px;
+
+        text-align: center;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .slide-thumb-preview {
+
+        position: relative;
+
+        width: 100%;
+
+        aspect-ratio:
+            16 / 9;
+
+        overflow: hidden;
+
+        border:
+            2px solid
+            transparent;
+
+        border-radius: 5px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .slide-thumb.selected
+    .slide-thumb-preview {
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .slide-thumb-preview img {
+
+        width: 100%;
+
+        height: 100%;
+
+        object-fit: cover;
+    }
+
+
+    .hidden-slide-badge {
+
+        position: absolute;
+
+        right: 4px;
+
+        bottom: 4px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        width: 20px;
+
+        height: 20px;
+
+        border-radius: 50%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ==========================================================
+       Workspace
+       ========================================================== */
+
+    .presentation-workspace {
+
+        position: relative;
+
+        min-width: 0;
+
+        min-height: 0;
+
+        overflow: hidden;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .presentation-stage {
+
+        position: absolute;
+
+        inset: 0;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        overflow: auto;
+
+        padding:
+            44px
+            44px
+            100px;
+    }
+
+
+    .presentation-canvas {
+
+        position: relative;
+
+        width:
+            min(
+                900px,
+                74vw
+            );
+
+        aspect-ratio:
+            16 / 9;
+
+        overflow: hidden;
+
+        flex: 0 0 auto;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 8px 28px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .presentation-canvas-image {
+
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+
+        height: 100%;
+
+        object-fit: cover;
+
+        opacity: 0.30;
+    }
+
+
+    .presentation-canvas-gradient {
+
+        position: absolute;
+
+        inset: 0;
+
+        background:
+            linear-gradient(
+                90deg,
+                var(--surface)
+                0%,
+                var(--surface)
+                42%,
+                transparent
+                100%
+            );
+    }
+
+
+    .presentation-canvas-copy {
+
+        position: absolute;
+
+        inset: 0;
+
+        display: flex;
+
+        flex-direction: column;
+
+        justify-content: center;
+
+        width: 56%;
+
+        padding: 7%;
+    }
+
+
+    .presentation-canvas-title {
+
+        font-size:
+            clamp(
+                28px,
+                4vw,
+                58px
+            );
+
+        line-height: 1;
+
+        font-weight: 900;
+    }
+
+
+    .presentation-canvas-subtitle {
+
+        margin-top: 14px;
+
+        font-size:
+            clamp(
+                11px,
+                1.4vw,
+                18px
+            );
+
+        line-height: 1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ==========================================================
+       Footer
+       ========================================================== */
+
+    .presentation-footer {
+
+        position: absolute;
+
+        z-index: 180;
+
+        left: 0;
+
+        right: 0;
+
+        bottom: 0;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 8px;
+
+        min-height: 46px;
+
+        padding:
+            0 10px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .presentation-footer-left,
+    .presentation-footer-right {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 5px;
+    }
+
+
+    /* ==========================================================
+       Speaker Notes Panel
+       ========================================================== */
+
+    .speaker-notes-panel {
+
+        position: absolute;
+
+        z-index: 310;
+
+        left: 150px;
+
+        right: 0;
+
+        bottom: 46px;
+
+        height: 220px;
+
+        overflow-y: auto;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .speaker-notes-header {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        min-height: 46px;
+
+        padding:
+            0 12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .speaker-notes-title {
+
+        font-size: 12px;
+
+        font-weight: 800;
+    }
+
+
+    .speaker-note-list {
+
+        padding: 12px;
+    }
+
+
+    .speaker-note {
+
+        display: flex;
+
+        gap: 8px;
+
+        margin-bottom: 9px;
+
+        font-size: 10px;
+
+        line-height: 1.45;
+    }
+
+
+    .speaker-note-bullet {
+
+        width: 6px;
+
+        height: 6px;
+
+        margin-top: 5px;
+
+        flex: 0 0 auto;
+
+        border-radius: 50%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ==========================================================
+       Presenter View
+       ========================================================== */
+
+    .presenter-view {
+
+        position: absolute;
+
+        inset: 0;
+
+        display: grid;
+
+        grid-template-columns:
+            minmax(0, 1.4fr)
+            minmax(280px, 0.6fr);
+
+        gap: 20px;
+
+        padding: 24px;
+
+        background:
+            #111111;
+    }
+
+
+    .presenter-primary {
+
+        display: flex;
+
+        flex-direction: column;
+
+        min-width: 0;
+    }
+
+
+    .presenter-current-slide {
+
+        position: relative;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        flex: 1;
+
+        min-height: 0;
+
+        overflow: hidden;
+
+        border-radius: 10px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .presenter-current-slide img {
+
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+
+        height: 100%;
+
+        object-fit: cover;
+
+        opacity: 0.35;
+    }
+
+
+    .presenter-slide-copy {
+
+        position: relative;
+
+        z-index: 2;
+
+        width: 68%;
+
+        text-align: center;
+    }
+
+
+    .presenter-slide-title {
+
+        font-size:
+            clamp(
+                28px,
+                5vw,
+                68px
+            );
+
+        font-weight: 900;
+    }
+
+
+    .presenter-slide-subtitle {
+
+        margin-top: 12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .presenter-controls {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 8px;
+
+        margin-top: 12px;
+
+        padding: 8px;
+
+        border-radius: 8px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .presenter-controls-left,
+    .presenter-controls-right {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 6px;
+    }
+
+
+    .presenter-side {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 12px;
+
+        min-height: 0;
+    }
+
+
+    .presenter-card {
+
+        padding: 14px;
+
+        border-radius: 10px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .presenter-card-title {
+
+        margin-bottom: 10px;
+
+        font-size: 11px;
+
+        font-weight: 800;
+    }
+
+
+    .next-slide-preview {
+
+        width: 100%;
+
+        aspect-ratio:
+            16 / 9;
+
+        overflow: hidden;
+
+        border-radius: 7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .next-slide-preview img {
+
+        width: 100%;
+
+        height: 100%;
+
+        object-fit: cover;
+    }
+
+
+    .presenter-notes {
+
+        flex: 1;
+
+        overflow-y: auto;
+
+        font-size: 10px;
+
+        line-height: 1.5;
+    }
+
+
+    /* ==========================================================
+       Recording Mode
+       ========================================================== */
+
+    .recording-state {
+
+        position: absolute;
+
+        inset: 0;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        padding: 40px;
+
+        background:
+            #101010;
+    }
+
+
+    .recording-stage {
+
+        position: relative;
+
+        width:
+            min(
+                1100px,
+                88vw
+            );
+
+        aspect-ratio:
+            16 / 9;
+
+        overflow: hidden;
+
+        border-radius: 10px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .recording-stage img {
+
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+
+        height: 100%;
+
+        object-fit: cover;
+
+        opacity: 0.35;
+    }
+
+
+    .recording-copy {
+
+        position: absolute;
+
+        inset: 0;
+
+        display: flex;
+
+        flex-direction: column;
+
+        justify-content: center;
+
+        width: 60%;
+
+        padding: 8%;
+    }
+
+
+    .recording-title {
+
+        font-size:
+            clamp(
+                32px,
+                5vw,
+                68px
+            );
+
+        font-weight: 900;
+    }
+
+
+    .recording-toolbar {
+
+        position: absolute;
+
+        z-index: 20;
+
+        left: 50%;
+
+        bottom: 22px;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+        padding: 7px;
+
+        transform:
+            translateX(-50%);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .recording-time {
+
+        min-width: 60px;
+
+        padding:
+            0 8px;
+
+        font-size: 10px;
+
+        font-weight: 800;
+
+        text-align: center;
+    }
+
+
+    .recording-camera {
+
+        position: absolute;
+
+        z-index: 20;
+
+        right: 20px;
+
+        bottom: 20px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        width: 150px;
+
+        height: 110px;
+
+        overflow: hidden;
+
+        border:
+            3px solid
+            var(--surface);
+
+        border-radius: 12px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .recording-camera
+    .material-symbols-rounded {
+
+        font-size: 40px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ==========================================================
+       Share Preview
+       ========================================================== */
+
+    .share-preview-state {
+
+        position: absolute;
+
+        inset: 0;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        padding: 24px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .share-preview-dialog {
+
+        width:
+            min(
+                620px,
+                calc(
+                    100vw
+                    - 28px
+                )
+            );
+
+        overflow: hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 18px 50px
+            rgba(
+                0,
+                0,
+                0,
+                0.22
+            );
+    }
+
+
+    .share-preview-header {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        min-height: 58px;
+
+        padding:
+            0 16px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .share-preview-title {
+
+        font-size: 18px;
+
+        font-weight: 900;
+    }
+
+
+    .share-preview-content {
+
+        padding: 18px;
+    }
+
+
+    .share-preview-slide {
+
+        width: 100%;
+
+        aspect-ratio:
+            16 / 9;
+
+        overflow: hidden;
+
+        margin-bottom: 18px;
+
+        border-radius: 8px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .share-preview-slide img {
+
+        width: 100%;
+
+        height: 100%;
+
+        object-fit: cover;
+    }
+
+
+    .share-option {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 12px;
+
+        min-height: 48px;
+
+        padding:
+            8px 10px;
+
+        margin-bottom: 8px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--medium-radius);
+    }
+
+
+    .share-option-text {
+
+        min-width: 0;
+    }
+
+
+    .share-option-title {
+
+        font-size: 10px;
+
+        font-weight: 800;
+    }
+
+
+    .share-option-value {
+
+        margin-top: 2px;
+
+        font-size: 9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .share-preview-footer {
+
+        display: flex;
+
+        justify-content: flex-end;
+
+        gap: 7px;
+
+        padding: 12px 16px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    /* ==========================================================
+       Mobile
+       ========================================================== */
+
+    @media (
+        max-width: 767px
+    ) {
+
+        .presentation-page {
+
+            height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                );
+        }
+
+
+        .presentation-header {
+
+            height: 52px;
+
+            padding:
+                0 6px;
+
+            gap: 5px;
+        }
+
+
+        .presentation-logo {
+
+            display: none;
+        }
+
+
+        .presentation-document-name {
+
+            font-size: 10px;
+        }
+
+
+        .presentation-toolbar {
+
+            min-height: 44px;
+
+            padding:
+                4px 6px;
+        }
+
+
+        .presentation-body {
+
+            display: block;
+        }
+
+
+        .presentation-workspace {
+
+            position: absolute;
+
+            inset: 0;
+        }
+
+
+        .presentation-stage {
+
+            padding:
+                22px
+                10px
+                92px;
+        }
+
+
+        .presentation-canvas {
+
+            width:
+                calc(
+                    100vw
+                    - 20px
+                );
+        }
+
+
+        .presentation-footer {
+
+            min-height: 44px;
+        }
+
+
+        .speaker-notes-panel {
+
+            left: 0;
+
+            height: 46%;
+
+            border-radius:
+                16px
+                16px
+                0
+                0;
+        }
+
+
+        .presenter-view {
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 10px;
+
+            padding: 10px;
+        }
+
+
+        .presenter-current-slide {
+
+            min-height: 48vh;
+        }
+
+
+        .presenter-side {
+
+            display: grid;
+
+            grid-template-columns:
+                1fr
+                1fr;
+        }
+
+
+        .presenter-notes {
+
+            max-height: 160px;
+        }
+
+
+        .recording-state {
+
+            padding: 10px;
+        }
+
+
+        .recording-stage {
+
+            width: 100%;
+        }
+
+
+        .recording-camera {
+
+            width: 90px;
+
+            height: 68px;
+
+            right: 8px;
+
+            bottom: 8px;
+        }
+
+
+        .share-preview-state {
+
+            padding: 10px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+{% set viewport_width = viewport.width %}
+{% set is_mobile = viewport_width < 768 %}
+{% set is_tablet = viewport_width >= 768 and viewport_width < 1024 %}
+{% set is_desktop = viewport_width >= 1024 %}
+
+
+<div class="presentation-page">
+
+
+    <!-- ======================================================
+         PRESENTER VIEW
+
+         Replacement state:
+         normal editor DOM does not exist.
+         ====================================================== -->
+
+    {% if presentation.state == "presenter_view" %}
+
+    <section
+        class="presenter-view"
+        data-class="section"
+        data-semantic="presenter_view"
+    >
+
+        <div class="presenter-primary">
+
+            <div
+                class="presenter-current-slide"
+                data-class="card"
+                data-semantic="presenter_current_slide"
+            >
+
+                {% if presentation.selected_slide.image %}
+
+                <img
+                    src="{{ presentation.selected_slide.image }}"
+                    alt=""
+                    data-class="image"
+                    data-semantic="presenter_current_slide_image"
+                >
+
+                {% endif %}
+
+
+                <div class="presenter-slide-copy">
+
+                    <div class="presenter-slide-title">
+                        {{ presentation.selected_slide.title }}
+                    </div>
+
+                    <div class="presenter-slide-subtitle">
+                        {{ presentation.selected_slide.subtitle }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <nav
+                class="presenter-controls"
+                data-class="navigation_bar"
+                data-semantic="presenter_controls"
+            >
+
+                <div class="presenter-controls-left">
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="presenter_previous"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="presenter_previous_icon"
+                        >
+                            arrow_back
+                        </span>
+                    </button>
+
+
+                    <span
+                        data-class="badge"
+                        data-semantic="presenter_slide_number"
+                    >
+                        {{ presentation.presenter.current }}
+                        /
+                        {{ presentation.presenter.total }}
+                    </span>
+
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="presenter_next"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="presenter_next_icon"
+                        >
+                            arrow_forward
+                        </span>
+                    </button>
+
+                </div>
+
+
+                <div class="presenter-controls-right">
+
+                    <span
+                        data-class="badge"
+                        data-semantic="presenter_timer"
+                    >
+                        {{ presentation.presenter.timer }}
+                    </span>
+
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="exit_presenter"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="exit_presenter_icon"
+                        >
+                            close
+                        </span>
+                    </button>
+
+                </div>
+
+            </nav>
+
+        </div>
+
+
+        <aside class="presenter-side">
+
+            <article
+                class="presenter-card"
+                data-class="card"
+                data-semantic="next_slide_card"
+            >
+
+                <div class="presenter-card-title">
+                    Next slide
+                </div>
+
+
+                <div class="next-slide-preview">
+
+                    {% if presentation.presenter.next_slide.image %}
+
+                    <img
+                        src="{{ presentation.presenter.next_slide.image }}"
+                        alt=""
+                        data-class="image"
+                        data-semantic="next_slide_image"
+                    >
+
+                    {% endif %}
+
+                </div>
+
+            </article>
+
+
+            <article
+                class="presenter-card presenter-notes"
+                data-class="card"
+                data-semantic="presenter_notes"
+            >
+
+                <div class="presenter-card-title">
+                    Speaker notes
+                </div>
+
+
+                {% for note in presentation.notes %}
+
+                <p>
+                    {{ note }}
+                </p>
+
+                {% endfor %}
+
+            </article>
+
+        </aside>
+
+    </section>
+
+
+    <!-- ======================================================
+         RECORDING MODE
+         ====================================================== -->
+
+    {% elif presentation.state == "recording" %}
+
+    <section
+        class="recording-state"
+        data-class="section"
+        data-semantic="recording_state"
+    >
+
+        <div
+            class="recording-stage"
+            data-class="card"
+            data-semantic="recording_slide"
+        >
+
+            {% if presentation.selected_slide.image %}
+
+            <img
+                src="{{ presentation.selected_slide.image }}"
+                alt=""
+                data-class="image"
+                data-semantic="recording_slide_image"
+            >
+
+            {% endif %}
+
+
+            <div class="recording-copy">
+
+                <div class="recording-title">
+                    {{ presentation.selected_slide.title }}
+                </div>
+
+            </div>
+
+
+            {% if presentation.recording.camera_on %}
+
+            <div
+                class="recording-camera"
+                data-class="video"
+                data-semantic="recording_camera_preview"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="recording_camera_icon"
+                >
+                    person
+                </span>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <nav
+            class="recording-toolbar"
+            data-class="navigation_bar"
+            data-semantic="recording_controls"
+        >
+
+            <span
+                class="recording-time"
+                data-class="badge"
+                data-semantic="recording_elapsed_time"
+            >
+                {{ presentation.recording.elapsed }}
+            </span>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="recording_microphone"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="recording_microphone_icon"
+                >
+                    {% if presentation.recording.mic_on %}
+                        mic
+                    {% else %}
+                        mic_off
+                    {% endif %}
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="recording_camera"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="recording_camera_control_icon"
+                >
+                    {% if presentation.recording.camera_on %}
+                        videocam
+                    {% else %}
+                        videocam_off
+                    {% endif %}
+                </span>
+
+            </button>
+
+
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="recording_pause"
+            >
+
+                {% if presentation.recording.paused %}
+                    Resume
+                {% else %}
+                    Pause
+                {% endif %}
+
+            </button>
+
+
+            <button
+                class="secondary-button"
+                data-class="button"
+                data-semantic="recording_finish"
+            >
+                Finish
+            </button>
+
+        </nav>
+
+    </section>
+
+
+    <!-- ======================================================
+         SHARE PREVIEW
+         ====================================================== -->
+
+    {% elif presentation.state == "share_preview" %}
+
+    <section
+        class="share-preview-state"
+        data-class="section"
+        data-semantic="share_preview_state"
+    >
+
+        <article
+            class="share-preview-dialog"
+            data-class="dialog"
+            data-semantic="share_preview_dialog"
+            data-occluder="true"
+        >
+
+            <div class="share-preview-header">
+
+                <div class="share-preview-title">
+                    {{ presentation.share.title }}
+                </div>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="close_share_preview"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_share_preview_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <div class="share-preview-content">
+
+                <div
+                    class="share-preview-slide"
+                    data-class="card"
+                    data-semantic="share_slide_preview"
+                >
+
+                    {% if presentation.selected_slide.image %}
+
+                    <img
+                        src="{{ presentation.selected_slide.image }}"
+                        alt=""
+                        data-class="image"
+                        data-semantic="share_slide_preview_image"
+                    >
+
+                    {% endif %}
+
+                </div>
+
+
+                <button
+                    class="share-option"
+                    data-class="button"
+                    data-semantic="share_link_access"
+                >
+
+                    <div class="share-option-text">
+
+                        <div class="share-option-title">
+                            Link access
+                        </div>
+
+                        <div class="share-option-value">
+                            {{ presentation.share.link_access }}
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="share_link_access_icon"
+                    >
+                        expand_more
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="share-option"
+                    data-class="button"
+                    data-semantic="share_permission"
+                >
+
+                    <div class="share-option-text">
+
+                        <div class="share-option-title">
+                            Permission
+                        </div>
+
+                        <div class="share-option-value">
+                            {{ presentation.share.permission }}
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="share_permission_icon"
+                    >
+                        expand_more
+                    </span>
+
+                </button>
+
+            </div>
+
+
+            <footer
+                class="share-preview-footer"
+                data-class="navigation_bar"
+                data-semantic="share_preview_footer"
+            >
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="copy_presentation_link"
+                >
+                    Copy link
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="share_presentation_button"
+                >
+                    Share
+                </button>
+
+            </footer>
+
+        </article>
+
+    </section>
+
+
+    <!-- ======================================================
+         STANDARD EDITOR STATES
+         editing + speaker_notes
+         ====================================================== -->
+
+    {% else %}
+
+    <div class="presentation-editor">
+
+
+        <!-- ==================================================
+             Header
+             ================================================== -->
+
+        <header
+            class="presentation-header"
+            data-class="app_bar"
+            data-semantic="presentation_header"
+            data-occluder="true"
+        >
+
+            <div class="presentation-header-left">
+
+
+                {% if not is_mobile %}
+
+                <div
+                    class="presentation-logo"
+                    data-class="logo"
+                    data-semantic="canva_logo"
+                >
+                    Canva
+                </div>
+
+                {% endif %}
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="presentation_menu"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="presentation_menu_icon"
+                    >
+                        menu
+                    </span>
+
+                </button>
+
+
+                {% if not is_mobile %}
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="presentation_undo"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="presentation_undo_icon"
+                    >
+                        undo
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="presentation-document-name">
+                {{ presentation.document.name }}
+            </div>
+
+
+            <div class="presentation-header-right">
+
+                {% if not is_mobile %}
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="presentation_share"
+                >
+                    Share
+                </button>
+
+                {% endif %}
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="start_presentation"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="start_presentation_icon"
+                        style="
+                            margin-right:
+                                5px;
+                        "
+                    >
+                        play_arrow
+                    </span>
+
+                    Present
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- ==================================================
+             Toolbar
+             ================================================== -->
+
+        <nav
+            class="presentation-toolbar"
+            data-class="navigation_bar"
+            data-semantic="presentation_toolbar"
+            data-occluder="true"
+        >
+
+            {% for tool in [
+                "add",
+                "text_fields",
+                "image",
+                "shapes",
+                "format_color_fill",
+                "animation",
+                "more_horiz"
+            ] %}
+
+            <button
+                class="presentation-tool"
+                data-class="button"
+                data-semantic="presentation_tool_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="presentation_tool_icon_{{ loop.index }}"
+                >
+                    {{ tool }}
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </nav>
+
+
+        <!-- ==================================================
+             Body
+             ================================================== -->
+
+        <div
+            class="presentation-body"
+
+            {% if is_mobile %}
+            style="
+                grid-template-columns:
+                    minmax(0, 1fr);
+            "
+            {% endif %}
+        >
+
+
+            <!-- ==============================================
+                 Desktop / Tablet Slide Rail
+                 ============================================== -->
+
+            {% if not is_mobile %}
+
+            <aside
+                class="slide-rail"
+                data-class="navigation_bar"
+                data-semantic="presentation_slide_rail"
+            >
+
+                {% for slide in presentation.slides %}
+
+                <button
+                    class="
+                        slide-thumb
+
+                        {% if slide.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="navigation_item"
+                    data-semantic="presentation_slide_{{ slide.number }}"
+                >
+
+                    <span class="slide-thumb-number">
+                        {{ slide.number }}
+                    </span>
+
+
+                    <span class="slide-thumb-preview">
+
+                        {% if slide.image %}
+
+                        <img
+                            src="{{ slide.image }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="slide_thumbnail_{{ slide.number }}"
+                        >
+
+                        {% endif %}
+
+
+                        {% if slide.hidden %}
+
+                        <span
+                            class="hidden-slide-badge"
+                            data-class="badge"
+                            data-semantic="hidden_slide_{{ slide.number }}"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="hidden_slide_icon_{{ slide.number }}"
+                            >
+                                visibility_off
+                            </span>
+
+                        </span>
+
+                        {% endif %}
+
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </aside>
+
+            {% endif %}
+
+
+            <!-- ==============================================
+                 Workspace
+                 ============================================== -->
+
+            <main
+                class="presentation-workspace"
+                data-class="section"
+                data-semantic="presentation_workspace"
+            >
+
+                <div
+                    class="presentation-stage"
+
+                    {% if presentation.state == "speaker_notes" %}
+                    style="
+                        bottom:
+                            {% if is_mobile %}
+                                46%
+                            {% else %}
+                                220px
+                            {% endif %};
+                    "
+                    {% endif %}
+                >
+
+                    <div
+                        class="presentation-canvas"
+                        data-class="card"
+                        data-semantic="presentation_canvas"
+                    >
+
+                        {% if presentation.selected_slide.image %}
+
+                        <img
+                            class="presentation-canvas-image"
+                            src="{{ presentation.selected_slide.image }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="presentation_canvas_image"
+                        >
+
+                        {% endif %}
+
+
+                        <div
+                            class="presentation-canvas-gradient"
+                            data-annotation-skip="true"
+                        ></div>
+
+
+                        <div class="presentation-canvas-copy">
+
+                            <h1 class="presentation-canvas-title">
+                                {{ presentation.selected_slide.title }}
+                            </h1>
+
+
+                            <p class="presentation-canvas-subtitle">
+                                {{ presentation.selected_slide.subtitle }}
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==========================================
+                     Footer
+                     ========================================== -->
+
+                <footer
+                    class="presentation-footer"
+                    data-class="navigation_bar"
+                    data-semantic="presentation_footer"
+                    data-occluder="true"
+                >
+
+                    <div class="presentation-footer-left">
+
+                        <button
+                            class="
+                                icon-button
+                                icon-button-small
+                            "
+                            data-class="button"
+                            data-semantic="add_slide"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="add_slide_icon"
+                            >
+                                add
+                            </span>
+
+                        </button>
+
+
+                        <span
+                            data-class="badge"
+                            data-semantic="current_slide_indicator"
+                        >
+                            {{ presentation.selected_slide.number }}
+                            /
+                            {{ presentation.slides|length }}
+                        </span>
+
+                    </div>
+
+
+                    <div class="presentation-footer-right">
+
+                        <button
+                            class="
+                                icon-button
+                                icon-button-small
+                            "
+                            data-class="button"
+                            data-semantic="speaker_notes_toggle"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="speaker_notes_toggle_icon"
+                            >
+                                notes
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="
+                                icon-button
+                                icon-button-small
+                            "
+                            data-class="button"
+                            data-semantic="presentation_grid_view"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="presentation_grid_view_icon"
+                            >
+                                grid_view
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </footer>
+
+
+                <!-- ==================================================
+                     SPEAKER NOTES STATE
+
+                     Normal editing state does not contain this panel.
+                     ================================================== -->
+
+                {% if presentation.state == "speaker_notes" %}
+
+                <aside
+                    class="speaker-notes-panel"
+                    data-class="section"
+                    data-semantic="speaker_notes_panel"
+                    data-occluder="true"
+                >
+
+                    <div class="speaker-notes-header">
+
+                        <div class="speaker-notes-title">
+                            Speaker notes
+                        </div>
+
+
+                        <button
+                            class="
+                                icon-button
+                                icon-button-small
+                            "
+                            data-class="button"
+                            data-semantic="close_speaker_notes"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="close_speaker_notes_icon"
+                            >
+                                close
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="speaker-note-list">
+
+                        {% for note in presentation.notes %}
+
+                        <div class="speaker-note">
+
+                            <span
+                                class="speaker-note-bullet"
+                                data-annotation-skip="true"
+                            ></span>
+
+                            <span>
+                                {{ note }}
+                            </span>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </aside>
+
+                {% endif %}
+
+            </main>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
