@@ -1,0 +1,1887 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Order Tracking
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .tracking-page {
+
+        width:
+            100%;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .tracking-layout {
+
+        width:
+            100%;
+
+        max-width:
+            1500px;
+
+        margin:
+            0 auto;
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .tracking-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            120;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            44px
+            minmax(0, 1fr)
+            44px;
+
+        align-items:
+            center;
+
+        height:
+            58px;
+
+        padding:
+            0 10px;
+
+        background:
+            var(--surface);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .tracking-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            850;
+
+        text-align:
+            center;
+    }
+
+
+    .icon-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Map Area
+       ====================================================== */
+
+    .delivery-map {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            330px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .map-grid {
+
+        position:
+            absolute;
+
+        inset:
+            0;
+
+        opacity:
+            0.25;
+
+        background-image:
+            linear-gradient(
+                var(--border-subtle) 1px,
+                transparent 1px
+            ),
+            linear-gradient(
+                90deg,
+                var(--border-subtle) 1px,
+                transparent 1px
+            );
+
+        background-size:
+            34px 34px;
+    }
+
+
+    .map-road {
+
+        position:
+            absolute;
+
+        left:
+            -10%;
+
+        top:
+            47%;
+
+        width:
+            120%;
+
+        height:
+            24px;
+
+        transform:
+            rotate(-8deg);
+
+        border-radius:
+            999px;
+
+        background:
+            var(--background);
+    }
+
+
+    .map-road.secondary {
+
+        top:
+            20%;
+
+        transform:
+            rotate(18deg);
+
+        height:
+            18px;
+    }
+
+
+    .map-marker {
+
+        position:
+            absolute;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            50%;
+
+        box-shadow:
+            0 5px 16px
+            rgba(0, 0, 0, 0.18);
+    }
+
+
+    .restaurant-marker {
+
+        left:
+            18%;
+
+        top:
+            38%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--primary);
+    }
+
+
+    .driver-marker {
+
+        left:
+            54%;
+
+        top:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .home-marker {
+
+        right:
+            14%;
+
+        top:
+            24%;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .route-line {
+
+        position:
+            absolute;
+
+        left:
+            22%;
+
+        top:
+            49%;
+
+        width:
+            58%;
+
+        height:
+            4px;
+
+        transform:
+            rotate(-12deg);
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Main Content
+       ====================================================== */
+
+    .tracking-content {
+
+        position:
+            relative;
+
+        z-index:
+            20;
+
+        margin-top:
+            -24px;
+
+        padding:
+            0 var(--page-gap) 30px;
+    }
+
+
+    .status-card {
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0 8px 24px
+            rgba(0, 0, 0, 0.10);
+    }
+
+
+    .eta-label {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            650;
+    }
+
+
+    .eta-title {
+
+        margin-top:
+            5px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            26px;
+
+        font-weight:
+            900;
+    }
+
+
+    .eta-range {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ======================================================
+       Progress
+       ====================================================== */
+
+    .progress-track {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            6px;
+
+        margin:
+            22px 0 20px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .progress-fill {
+
+        height:
+            100%;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Status Steps
+       ====================================================== */
+
+    .status-list {
+
+        display:
+            grid;
+
+        gap:
+            0;
+    }
+
+
+    .status-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(0, 1fr);
+
+        gap:
+            12px;
+
+        min-height:
+            68px;
+    }
+
+
+    .status-indicator-column {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        justify-content:
+            center;
+    }
+
+
+    .status-icon {
+
+        position:
+            relative;
+
+        z-index:
+            2;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .status-row.completed .status-icon,
+    .status-row.current .status-icon {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .status-line {
+
+        position:
+            absolute;
+
+        top:
+            34px;
+
+        bottom:
+            0;
+
+        width:
+            2px;
+
+        background:
+            var(--border-subtle);
+    }
+
+
+    .status-row.completed .status-line {
+
+        background:
+            var(--primary);
+    }
+
+
+    .status-copy {
+
+        padding-top:
+            2px;
+    }
+
+
+    .status-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .status-subtitle {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        line-height:
+            1.4;
+    }
+
+
+    /* ======================================================
+       Secondary Cards
+       ====================================================== */
+
+    .info-section {
+
+        margin-top:
+            14px;
+
+        padding:
+            18px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .section-title {
+
+        margin-bottom:
+            14px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        font-weight:
+            850;
+    }
+
+
+    /* ======================================================
+       Driver
+       ====================================================== */
+
+    .driver-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            52px
+            minmax(0, 1fr)
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+    }
+
+
+    .driver-avatar {
+
+        width:
+            52px;
+
+        height:
+            52px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .driver-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+    }
+
+
+    .driver-name {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .driver-meta {
+
+        display:
+            flex;
+
+        gap:
+            6px;
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .driver-actions {
+
+        display:
+            flex;
+
+        gap:
+            6px;
+    }
+
+
+    .driver-action-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Address
+       ====================================================== */
+
+    .address-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(0, 1fr);
+
+        gap:
+            10px;
+    }
+
+
+    .address-icon {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .address-title {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .address-main {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            750;
+    }
+
+
+    .address-detail {
+
+        margin-top:
+            3px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    /* ======================================================
+       Order Summary
+       ====================================================== */
+
+    .order-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+    }
+
+
+    .order-id {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+    }
+
+
+    .order-restaurant {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+    }
+
+
+    .order-item-list {
+
+        display:
+            grid;
+
+        gap:
+            8px;
+
+        margin-top:
+            14px;
+    }
+
+
+    .order-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            10px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .order-total {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        margin-top:
+            14px;
+
+        padding-top:
+            14px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            850;
+    }
+
+
+    /* ======================================================
+       Support
+       ====================================================== */
+
+    .support-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+    }
+
+
+    .support-copy {
+
+        min-width:
+            0;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .support-button {
+
+        flex:
+            0 0 auto;
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            38px;
+
+        padding:
+            0 14px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    .desktop-side-panel {
+
+        display:
+            none;
+    }
+
+
+    @media (
+        min-width: 1024px
+    ) {
+
+        .tracking-layout {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                minmax(0, 1.6fr)
+                minmax(320px, 0.8fr);
+
+            gap:
+                24px;
+
+            padding:
+                24px;
+        }
+
+
+        .tracking-main {
+
+            overflow:
+                hidden;
+
+            border:
+                1px solid
+                var(--border-subtle);
+
+            border-radius:
+                20px;
+
+            background:
+                var(--surface);
+        }
+
+
+        .tracking-app-bar {
+
+            position:
+                relative;
+        }
+
+
+        .delivery-map {
+
+            height:
+                480px;
+        }
+
+
+        .tracking-content {
+
+            margin-top:
+                -34px;
+
+            padding:
+                0 28px 30px;
+        }
+
+
+        .desktop-side-panel {
+
+            position:
+                sticky;
+
+            top:
+                24px;
+
+            display:
+                grid;
+
+            align-self:
+                start;
+
+            gap:
+                14px;
+        }
+
+
+        .mobile-secondary {
+
+            display:
+                none;
+        }
+
+    }
+
+
+    @media (
+        max-width: 1023px
+    ) {
+
+        .desktop-side-panel {
+
+            display:
+                none;
+        }
+
+    }
+
+
+    @media (
+        min-width: 768px
+    ) {
+
+        .delivery-map {
+
+            height:
+                410px;
+        }
+
+
+        .tracking-content {
+
+            padding-left:
+                28px;
+
+            padding-right:
+                28px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="tracking-page">
+
+    <div class="tracking-layout">
+
+
+        <!-- =================================================
+             Main Column
+             ================================================= -->
+
+        <main class="tracking-main">
+
+
+            <!-- =============================================
+                 App Bar
+                 ============================================= -->
+
+            <header
+                class="tracking-app-bar"
+                data-class="app_bar"
+                data-semantic="order_tracking_app_bar"
+                data-occluder="true"
+            >
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="back_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="back_icon"
+                    >
+                        arrow_back
+                    </span>
+                </button>
+
+
+                <div class="tracking-title">
+                    Track order
+                </div>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="more_options_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="more_options_icon"
+                    >
+                        more_vert
+                    </span>
+                </button>
+
+            </header>
+
+
+            <!-- =============================================
+                 Map
+                 ============================================= -->
+
+            <section
+                class="delivery-map"
+                data-class="section"
+                data-semantic="delivery_map"
+            >
+
+                <div class="map-grid"></div>
+
+                <div class="map-road"></div>
+
+                <div class="map-road secondary"></div>
+
+                <div
+                    class="route-line"
+                    data-class="progress_bar"
+                    data-semantic="delivery_route_progress"
+                ></div>
+
+
+                <div
+                    class="
+                        map-marker
+                        restaurant-marker
+                    "
+                    data-class="icon"
+                    data-semantic="restaurant_map_marker"
+                >
+                    <span class="material-symbols-rounded">
+                        storefront
+                    </span>
+                </div>
+
+
+                <div
+                    class="
+                        map-marker
+                        driver-marker
+                    "
+                    data-class="icon"
+                    data-semantic="driver_map_marker"
+                >
+                    <span class="material-symbols-rounded">
+                        delivery_dining
+                    </span>
+                </div>
+
+
+                <div
+                    class="
+                        map-marker
+                        home-marker
+                    "
+                    data-class="icon"
+                    data-semantic="delivery_destination_marker"
+                >
+                    <span class="material-symbols-rounded">
+                        home
+                    </span>
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 Tracking Content
+                 ============================================= -->
+
+            <div class="tracking-content">
+
+
+                <!-- =========================================
+                     Main Status Card
+                     ========================================= -->
+
+                <section
+                    class="status-card"
+                    data-class="card"
+                    data-semantic="delivery_status_card"
+                >
+
+                    <div class="eta-label">
+                        Estimated arrival
+                    </div>
+
+                    <div class="eta-title">
+                        {{ order_tracking.eta.text }}
+                    </div>
+
+                    <div class="eta-range">
+                        {{ order_tracking.eta.time_range }}
+                    </div>
+
+
+                    {% set progress =
+                        ((order_tracking.current_status_index + 1)
+                        / order_tracking.statuses|length * 100)
+                    %}
+
+                    <div
+                        class="progress-track"
+                        data-class="progress_bar"
+                        data-semantic="order_progress_track"
+                    >
+
+                        <div
+                            class="progress-fill"
+                            style="width: {{ progress }}%;"
+                        ></div>
+
+                    </div>
+
+
+                    <div class="status-list">
+
+                        {% for status in order_tracking.statuses %}
+
+                        <div
+                            class="
+                                status-row
+
+                                {% if loop.index0 < order_tracking.current_status_index %}
+                                completed
+                                {% elif loop.index0 == order_tracking.current_status_index %}
+                                current
+                                {% endif %}
+                            "
+                            data-class="list_item"
+                            data-semantic="delivery_status_step"
+                        >
+
+                            <div class="status-indicator-column">
+
+                                <div
+                                    class="status-icon"
+                                    data-class="icon"
+                                    data-semantic="delivery_status_icon"
+                                >
+
+                                    <span class="material-symbols-rounded">
+                                        {{ status.icon }}
+                                    </span>
+
+                                </div>
+
+
+                                {% if not loop.last %}
+
+                                <div class="status-line"></div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="status-copy">
+
+                                <div class="status-title">
+                                    {{ status.title }}
+                                </div>
+
+                                <div class="status-subtitle">
+                                    {{ status.subtitle }}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================================
+                     Driver
+                     ========================================= -->
+
+                <section
+                    class="
+                        info-section
+                        mobile-secondary
+                    "
+                    data-class="card"
+                    data-semantic="driver_card"
+                >
+
+                    <h2 class="section-title">
+                        Your rider
+                    </h2>
+
+
+                    <div class="driver-row">
+
+
+                        <div
+                            class="driver-avatar"
+                            data-class="avatar"
+                            data-semantic="driver_avatar"
+                        >
+
+                            {% if order_tracking.driver.avatar %}
+
+                            <img
+                                src="{{ order_tracking.driver.avatar }}"
+                                alt=""
+                            >
+
+                            {% else %}
+
+                            <span
+                                class="material-symbols-rounded"
+                                style="
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    width:100%;
+                                    height:100%;
+                                "
+                            >
+                                person
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div>
+
+                            <div class="driver-name">
+                                {{ order_tracking.driver.name }}
+                            </div>
+
+                            <div class="driver-meta">
+
+                                <span>
+                                    ★ {{ order_tracking.driver.rating }}
+                                </span>
+
+                                <span>
+                                    {{ order_tracking.driver.vehicle }}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="driver-actions">
+
+                            <button
+                                class="driver-action-button"
+                                data-class="button"
+                                data-semantic="call_driver_button"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="call_driver_icon"
+                                >
+                                    call
+                                </span>
+                            </button>
+
+
+                            <button
+                                class="driver-action-button"
+                                data-class="button"
+                                data-semantic="message_driver_button"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="message_driver_icon"
+                                >
+                                    chat
+                                </span>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================================
+                     Delivery Address
+                     ========================================= -->
+
+                <section
+                    class="
+                        info-section
+                        mobile-secondary
+                    "
+                    data-class="card"
+                    data-semantic="delivery_address_card"
+                >
+
+                    <h2 class="section-title">
+                        Delivery destination
+                    </h2>
+
+
+                    <div class="address-row">
+
+                        <div class="address-icon">
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="delivery_address_icon"
+                            >
+                                location_on
+                            </span>
+
+                        </div>
+
+
+                        <div>
+
+                            <div class="address-title">
+                                {{ order_tracking.delivery_address.title }}
+                            </div>
+
+                            <div class="address-main">
+                                {{ order_tracking.delivery_address.address }}
+                            </div>
+
+                            <div class="address-detail">
+                                {{ order_tracking.delivery_address.detail }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================================
+                     Order Summary
+                     ========================================= -->
+
+                <section
+                    class="
+                        info-section
+                        mobile-secondary
+                    "
+                    data-class="card"
+                    data-semantic="order_summary_card"
+                >
+
+                    <div class="order-header">
+
+                        <div>
+
+                            <div class="order-id">
+                                {{ order_tracking.order_id }}
+                            </div>
+
+                            <div class="order-restaurant">
+                                {{ order_tracking.restaurant.name }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="order-item-list">
+
+                        {% for item in order_tracking.order_items %}
+
+                        <div
+                            class="order-item"
+                            data-class="list_item"
+                            data-semantic="tracked_order_item"
+                        >
+
+                            <span>
+                                {{ item }}
+                            </span>
+
+                            <span>
+                                ×1
+                            </span>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+
+                    <div class="order-total">
+
+                        <span>
+                            Total
+                        </span>
+
+                        <span>
+                            {{ order_tracking.total }}
+                        </span>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =========================================
+                     Support
+                     ========================================= -->
+
+                <section
+                    class="
+                        info-section
+                        mobile-secondary
+                    "
+                    data-class="card"
+                    data-semantic="delivery_support_card"
+                >
+
+                    <div class="support-row">
+
+                        <div class="support-copy">
+                            {{ order_tracking.support_message }}
+                        </div>
+
+
+                        <button
+                            class="support-button"
+                            data-class="button"
+                            data-semantic="contact_support_button"
+                        >
+                            Help
+                        </button>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </main>
+
+
+        <!-- =================================================
+             Desktop Side Panel
+             ================================================= -->
+
+        <aside class="desktop-side-panel">
+
+
+            <section
+                class="info-section"
+                data-class="card"
+                data-semantic="desktop_driver_card"
+            >
+
+                <h2 class="section-title">
+                    Your rider
+                </h2>
+
+
+                <div class="driver-row">
+
+                    <div
+                        class="driver-avatar"
+                        data-class="avatar"
+                        data-semantic="driver_avatar"
+                    >
+
+                        {% if order_tracking.driver.avatar %}
+
+                        <img
+                            src="{{ order_tracking.driver.avatar }}"
+                            alt=""
+                        >
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div>
+
+                        <div class="driver-name">
+                            {{ order_tracking.driver.name }}
+                        </div>
+
+                        <div class="driver-meta">
+                            ★ {{ order_tracking.driver.rating }}
+                            ·
+                            {{ order_tracking.driver.vehicle }}
+                        </div>
+
+                    </div>
+
+
+                    <div class="driver-actions">
+
+                        <button
+                            class="driver-action-button"
+                            data-class="button"
+                            data-semantic="desktop_call_driver_button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="desktop_call_icon"
+                            >
+                                call
+                            </span>
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section
+                class="info-section"
+                data-class="card"
+                data-semantic="desktop_delivery_address"
+            >
+
+                <h2 class="section-title">
+                    Delivery destination
+                </h2>
+
+
+                <div class="address-row">
+
+                    <div class="address-icon">
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="desktop_location_icon"
+                        >
+                            location_on
+                        </span>
+                    </div>
+
+
+                    <div>
+
+                        <div class="address-main">
+                            {{ order_tracking.delivery_address.address }}
+                        </div>
+
+                        <div class="address-detail">
+                            {{ order_tracking.delivery_address.detail }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section
+                class="info-section"
+                data-class="card"
+                data-semantic="desktop_order_summary"
+            >
+
+                <h2 class="section-title">
+                    Order
+                </h2>
+
+
+                <div class="order-id">
+                    {{ order_tracking.order_id }}
+                </div>
+
+                <div class="order-restaurant">
+                    {{ order_tracking.restaurant.name }}
+                </div>
+
+
+                <div class="order-item-list">
+
+                    {% for item in order_tracking.order_items %}
+
+                    <div
+                        class="order-item"
+                        data-class="list_item"
+                        data-semantic="desktop_order_item"
+                    >
+                        <span>
+                            {{ item }}
+                        </span>
+
+                        <span>
+                            ×1
+                        </span>
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <div class="order-total">
+
+                    <span>
+                        Total
+                    </span>
+
+                    <span>
+                        {{ order_tracking.total }}
+                    </span>
+
+                </div>
+
+            </section>
+
+
+            <section
+                class="info-section"
+                data-class="card"
+                data-semantic="desktop_support_card"
+            >
+
+                <div class="support-row">
+
+                    <div class="support-copy">
+                        {{ order_tracking.support_message }}
+                    </div>
+
+                    <button
+                        class="support-button"
+                        data-class="button"
+                        data-semantic="desktop_help_button"
+                    >
+                        Help
+                    </button>
+
+                </div>
+
+            </section>
+
+        </aside>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,1857 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Order History
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Page
+       ====================================================== */
+
+    .orders-page {
+        width: 100%;
+        min-height: 100vh;
+        background: var(--background);
+    }
+
+
+    .orders-layout {
+        width: 100%;
+        max-width: 1500px;
+        margin: 0 auto;
+    }
+
+
+    /* ======================================================
+       Desktop Sidebar
+       ====================================================== */
+
+    .orders-sidebar {
+        display: none;
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .orders-main {
+        min-width: 0;
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .orders-app-bar {
+        position: sticky;
+        top: 0;
+        z-index: 120;
+
+        display: grid;
+        grid-template-columns:
+            44px
+            minmax(0, 1fr)
+            44px;
+
+        align-items: center;
+
+        min-height: 58px;
+
+        padding: 0 10px;
+
+        background: var(--surface);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .orders-title {
+        min-width: 0;
+
+        color: var(--text-primary);
+
+        font-size: 16px;
+        font-weight: 850;
+        text-align: center;
+    }
+
+
+    .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        width: 42px;
+        height: 42px;
+
+        border-radius: 50%;
+
+        color: var(--icon);
+    }
+
+
+    /* ======================================================
+       Intro
+       ====================================================== */
+
+    .orders-intro {
+        padding:
+            22px
+            var(--page-gap)
+            18px;
+
+        background: var(--surface);
+    }
+
+
+    .orders-intro-title {
+        color: var(--text-primary);
+
+        font-size: 23px;
+        font-weight: 900;
+    }
+
+
+    .orders-location {
+        display: flex;
+        align-items: center;
+
+        gap: 5px;
+
+        margin-top: 6px;
+
+        color: var(--text-secondary);
+
+        font-size: 10px;
+    }
+
+
+    /* ======================================================
+       Tabs
+       ====================================================== */
+
+    .orders-tabs {
+        position: sticky;
+        top: 58px;
+        z-index: 100;
+
+        display: grid;
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+
+        background: var(--surface);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .orders-tab {
+        position: relative;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        gap: 6px;
+
+        min-height: 48px;
+
+        color: var(--text-secondary);
+
+        font-size: 12px;
+        font-weight: 750;
+    }
+
+
+    .orders-tab.selected {
+        color: var(--text-primary);
+    }
+
+
+    .tab-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        min-width: 21px;
+        height: 21px;
+
+        padding: 0 6px;
+
+        border-radius: 999px;
+
+        background: var(--surface-variant);
+
+        color: var(--on-surface-variant);
+
+        font-size: 8px;
+        font-weight: 800;
+    }
+
+
+    .orders-tab.selected .tab-count {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+
+    .tab-indicator {
+        position: absolute;
+
+        left: 25%;
+        right: 25%;
+        bottom: 0;
+
+        height: 3px;
+
+        border-radius: 999px;
+
+        background: var(--primary);
+    }
+
+
+    /* ======================================================
+       Content
+       ====================================================== */
+
+    .orders-content {
+        padding:
+            16px
+            var(--page-gap)
+            34px;
+    }
+
+
+    .content-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 12px;
+
+        margin-bottom: 13px;
+    }
+
+
+    .content-title {
+        color: var(--text-primary);
+
+        font-size: 17px;
+        font-weight: 850;
+    }
+
+
+    .content-count {
+        color: var(--text-secondary);
+
+        font-size: 9px;
+    }
+
+
+    /* ======================================================
+       Active Order
+       ====================================================== */
+
+    .active-orders {
+        display: grid;
+        gap: 14px;
+    }
+
+
+    .active-order-card {
+        overflow: hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius: 17px;
+
+        background: var(--surface);
+    }
+
+
+    .active-order-top {
+        display: grid;
+
+        grid-template-columns:
+            88px
+            minmax(0, 1fr);
+
+        gap: 13px;
+
+        padding: 14px;
+    }
+
+
+    .active-order-image {
+        width: 88px;
+        height: 88px;
+
+        overflow: hidden;
+
+        border-radius: 12px;
+
+        background: var(--surface-variant);
+    }
+
+
+    .active-order-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+
+    .active-order-info {
+        min-width: 0;
+    }
+
+
+    .active-status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 8px;
+    }
+
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        min-height: 23px;
+
+        padding: 0 7px;
+
+        border-radius: 7px;
+
+        background: var(--primary-container);
+
+        color: var(--on-primary-container);
+
+        font-size: 9px;
+        font-weight: 800;
+    }
+
+
+    .order-id {
+        color: var(--text-secondary);
+
+        font-size: 8px;
+    }
+
+
+    .active-restaurant {
+        margin-top: 8px;
+
+        color: var(--text-primary);
+
+        font-size: 14px;
+        font-weight: 850;
+    }
+
+
+    .active-menu {
+        margin-top: 5px;
+
+        color: var(--text-secondary);
+
+        font-size: 10px;
+        line-height: 1.4;
+    }
+
+
+    .eta-row {
+        display: flex;
+        align-items: baseline;
+
+        gap: 5px;
+
+        margin-top: 9px;
+    }
+
+
+    .eta-label {
+        color: var(--text-secondary);
+
+        font-size: 9px;
+    }
+
+
+    .eta-value {
+        color: var(--text-primary);
+
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+
+    /* ======================================================
+       Progress
+       ====================================================== */
+
+    .order-progress {
+        width: 100%;
+        height: 6px;
+
+        overflow: hidden;
+
+        background: var(--surface-variant);
+    }
+
+
+    .order-progress-fill {
+        height: 100%;
+
+        border-radius: 999px;
+
+        background: var(--primary);
+    }
+
+
+    /* ======================================================
+       Active Actions
+       ====================================================== */
+
+    .active-order-actions {
+        display: grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr);
+
+        gap: 8px;
+
+        padding: 12px 14px 14px;
+    }
+
+
+    .secondary-button,
+    .primary-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        gap: 5px;
+
+        min-height: 42px;
+
+        border-radius: 10px;
+
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+
+    .secondary-button {
+        border:
+            1px solid
+            var(--border-subtle);
+
+        color: var(--text-primary);
+
+        background: var(--surface);
+    }
+
+
+    .primary-button {
+        background: var(--primary);
+
+        color: var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Empty State
+       ====================================================== */
+
+    .empty-active {
+        display: flex;
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        min-height: 330px;
+
+        padding: 30px;
+
+        text-align: center;
+    }
+
+
+    .empty-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        width: 76px;
+        height: 76px;
+
+        margin-bottom: 17px;
+
+        border-radius: 50%;
+
+        background: var(--surface-variant);
+
+        color: var(--icon-secondary);
+    }
+
+
+    .empty-title {
+        color: var(--text-primary);
+
+        font-size: 16px;
+        font-weight: 850;
+    }
+
+
+    .empty-copy {
+        max-width: 260px;
+
+        margin-top: 6px;
+
+        color: var(--text-secondary);
+
+        font-size: 11px;
+        line-height: 1.5;
+    }
+
+
+    .browse-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        min-height: 42px;
+
+        margin-top: 18px;
+
+        padding: 0 18px;
+
+        border-radius: 10px;
+
+        background: var(--primary);
+
+        color: var(--on-primary);
+
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+
+    /* ======================================================
+       Past Orders
+       ====================================================== */
+
+    .past-order-list {
+        display: grid;
+        gap: 10px;
+    }
+
+
+    .past-order-card {
+        padding: 14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius: 15px;
+
+        background: var(--surface);
+    }
+
+
+    .past-order-main {
+        display: grid;
+
+        grid-template-columns:
+            78px
+            minmax(0, 1fr);
+
+        gap: 12px;
+    }
+
+
+    .past-order-image {
+        width: 78px;
+        height: 78px;
+
+        overflow: hidden;
+
+        border-radius: 11px;
+
+        background: var(--surface-variant);
+    }
+
+
+    .past-order-image img {
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+    }
+
+
+    .past-order-info {
+        min-width: 0;
+    }
+
+
+    .past-order-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+
+        gap: 10px;
+    }
+
+
+    .past-restaurant {
+        min-width: 0;
+
+        color: var(--text-primary);
+
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+
+    .past-status {
+        flex: 0 0 auto;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        min-height: 21px;
+
+        padding: 0 6px;
+
+        border-radius: 6px;
+
+        background: var(--surface-variant);
+
+        color: var(--on-surface-variant);
+
+        font-size: 8px;
+        font-weight: 750;
+    }
+
+
+    .past-status.cancelled,
+    .past-status.refunded {
+        background: var(--error);
+        color: var(--on-error);
+    }
+
+
+    .past-date {
+        margin-top: 4px;
+
+        color: var(--text-secondary);
+
+        font-size: 9px;
+    }
+
+
+    .past-menu {
+        margin-top: 7px;
+
+        color: var(--text-secondary);
+
+        font-size: 10px;
+
+        line-height: 1.4;
+    }
+
+
+    .past-total {
+        margin-top: 8px;
+
+        color: var(--text-primary);
+
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+
+    /* ======================================================
+       Past Actions
+       ====================================================== */
+
+    .past-order-actions {
+        display: flex;
+
+        align-items: center;
+
+        gap: 7px;
+
+        margin-top: 13px;
+
+        padding-top: 12px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .order-action-button {
+        display: inline-flex;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 4px;
+
+        min-height: 34px;
+
+        padding: 0 11px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius: 9px;
+
+        color: var(--text-primary);
+
+        font-size: 9px;
+        font-weight: 750;
+    }
+
+
+    .reorder-button {
+        margin-left: auto;
+
+        border-color: var(--primary);
+
+        background: var(--primary);
+
+        color: var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Bottom Navigation
+       ====================================================== */
+
+    .orders-bottom-nav {
+        position: fixed;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        z-index: 160;
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(0, 1fr)
+            );
+
+        min-height: 68px;
+
+        padding: 7px 6px 8px;
+
+        background: var(--surface);
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .bottom-nav-item {
+        position: relative;
+
+        display: flex;
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 2px;
+
+        color: var(--text-secondary);
+
+        font-size: 8px;
+    }
+
+
+    .bottom-nav-item.selected {
+        color: var(--primary);
+    }
+
+
+    .bottom-nav-indicator {
+        position: absolute;
+
+        top: 0;
+
+        width: 36px;
+        height: 24px;
+
+        border-radius: 999px;
+
+        background: var(--primary-container);
+    }
+
+
+    .bottom-nav-item .material-symbols-rounded {
+        position: relative;
+        z-index: 2;
+
+        font-size: 21px;
+    }
+
+
+    /* ======================================================
+       Tablet
+       ====================================================== */
+
+    @media (
+        min-width: 768px
+    ) {
+
+        .orders-content {
+            padding-left: 28px;
+            padding-right: 28px;
+        }
+
+
+        .active-orders {
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+        }
+
+
+        .past-order-list {
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+
+            gap: 14px;
+        }
+
+    }
+
+
+    /* ======================================================
+       Desktop
+       ====================================================== */
+
+    @media (
+        min-width: 1050px
+    ) {
+
+        .orders-page {
+            padding-bottom: 0;
+        }
+
+
+        .orders-layout {
+            display: grid;
+
+            grid-template-columns:
+                240px
+                minmax(0, 1fr);
+
+            align-items: start;
+        }
+
+
+        .orders-sidebar {
+            position: sticky;
+            top: 0;
+
+            display: flex;
+            flex-direction: column;
+
+            min-height: 100vh;
+
+            padding: 26px 16px;
+
+            border-right:
+                1px solid
+                var(--border-subtle);
+
+            background: var(--surface);
+        }
+
+
+        .sidebar-brand {
+            margin-bottom: 28px;
+
+            color: var(--primary);
+
+            font-size: 21px;
+            font-weight: 900;
+        }
+
+
+        .sidebar-nav {
+            display: grid;
+            gap: 5px;
+        }
+
+
+        .sidebar-item {
+            position: relative;
+
+            display: flex;
+            align-items: center;
+
+            gap: 10px;
+
+            min-height: 44px;
+
+            padding: 0 11px;
+
+            border-radius: 10px;
+
+            color: var(--text-secondary);
+
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+
+        .sidebar-item.selected {
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+        }
+
+
+        .orders-bottom-nav {
+            display: none;
+        }
+
+
+        .orders-app-bar {
+            position: relative;
+        }
+
+
+        .orders-tabs {
+            top: 0;
+        }
+
+
+        .orders-content {
+            padding: 24px 30px 40px;
+        }
+
+
+        .active-orders {
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+        }
+
+
+        .past-order-list {
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(0, 1fr)
+                );
+
+            gap: 16px;
+        }
+
+    }
+
+
+    @media (
+        min-width: 1700px
+    ) {
+
+        .active-orders {
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(0, 1fr)
+                );
+        }
+
+
+        .past-order-list {
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(0, 1fr)
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="orders-page">
+
+    <div class="orders-layout">
+
+
+        <!-- =================================================
+             Desktop Navigation
+             ================================================= -->
+
+        <aside
+            class="orders-sidebar"
+            data-class="navigation_bar"
+            data-semantic="orders_desktop_navigation"
+        >
+
+            <div class="sidebar-brand">
+                Baemin
+            </div>
+
+
+            <nav class="sidebar-nav">
+
+                <div
+                    class="sidebar-item"
+                    data-class="navigation_item"
+                    data-semantic="home_navigation_item"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="home_navigation_icon"
+                    >
+                        home
+                    </span>
+
+                    Home
+
+                </div>
+
+
+                <div
+                    class="sidebar-item"
+                    data-class="navigation_item"
+                    data-semantic="search_navigation_item"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="search_navigation_icon"
+                    >
+                        search
+                    </span>
+
+                    Search
+
+                </div>
+
+
+                <div
+                    class="sidebar-item selected"
+                    data-class="navigation_item"
+                    data-semantic="orders_navigation_item"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="orders_navigation_icon"
+                    >
+                        receipt_long
+                    </span>
+
+                    Orders
+
+
+                    <span
+                        data-class="selection_indicator"
+                        data-semantic="selected_orders_navigation"
+                        style="
+                            position:absolute;
+                            inset:0;
+                            pointer-events:none;
+                        "
+                    ></span>
+
+                </div>
+
+
+                <div
+                    class="sidebar-item"
+                    data-class="navigation_item"
+                    data-semantic="profile_navigation_item"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="profile_navigation_icon"
+                    >
+                        person
+                    </span>
+
+                    Profile
+
+                </div>
+
+            </nav>
+
+        </aside>
+
+
+        <!-- =================================================
+             Main
+             ================================================= -->
+
+        <main class="orders-main">
+
+
+            <!-- =============================================
+                 App Bar
+                 ============================================= -->
+
+            <header
+                class="orders-app-bar"
+                data-class="app_bar"
+                data-semantic="orders_app_bar"
+                data-occluder="true"
+            >
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="orders_back_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="orders_back_icon"
+                    >
+                        arrow_back
+                    </span>
+
+                </button>
+
+
+                <div
+                    class="
+                        orders-title
+                        truncate
+                    "
+                >
+                    {{ order_history.page_title }}
+                </div>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="orders_support_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="orders_support_icon"
+                    >
+                        help
+                    </span>
+
+                </button>
+
+            </header>
+
+
+            <!-- =============================================
+                 Intro
+                 ============================================= -->
+
+            <section
+                class="orders-intro"
+                data-class="section"
+                data-semantic="orders_intro_section"
+            >
+
+                <h1 class="orders-intro-title">
+                    {{ order_history.page_title }}
+                </h1>
+
+
+                <div class="orders-location">
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="orders_location_icon"
+                        style="font-size:15px;"
+                    >
+                        location_on
+                    </span>
+
+                    {{ order_history.user_location }}
+
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 Tabs
+                 ============================================= -->
+
+            <nav
+                class="orders-tabs"
+                data-class="toolbar"
+                data-semantic="order_history_tabs"
+                data-occluder="true"
+            >
+
+                {% for tab in order_history.tabs %}
+
+                <button
+                    class="
+                        orders-tab
+
+                        {% if tab == order_history.selected_tab %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="order_history_tab"
+                >
+
+                    {{ tab }}
+
+
+                    <span
+                        class="tab-count"
+                        data-class="badge"
+                        data-semantic="order_tab_count"
+                    >
+
+                        {% if tab == "Active" %}
+
+                            {{ order_history.active_count }}
+
+                        {% else %}
+
+                            {{ order_history.past_count }}
+
+                        {% endif %}
+
+                    </span>
+
+
+                    {% if tab == order_history.selected_tab %}
+
+                    <span
+                        class="tab-indicator"
+                        data-class="selection_indicator"
+                        data-semantic="selected_order_history_tab"
+                    ></span>
+
+                    {% endif %}
+
+                </button>
+
+                {% endfor %}
+
+            </nav>
+
+
+            <!-- =============================================
+                 Active Orders
+                 ============================================= -->
+
+            {% if order_history.selected_tab == "Active" %}
+
+            <section
+                class="orders-content"
+                data-class="section"
+                data-semantic="active_orders_section"
+            >
+
+                <div class="content-heading">
+
+                    <h2 class="content-title">
+                        Active orders
+                    </h2>
+
+
+                    <span class="content-count">
+                        {{ order_history.active_count }}
+                    </span>
+
+                </div>
+
+
+                {% if order_history.active_orders %}
+
+                <div class="active-orders">
+
+
+                    {% for order in order_history.active_orders %}
+
+                    <article
+                        class="active-order-card"
+                        data-class="card"
+                        data-semantic="active_order_card"
+                    >
+
+
+                        <div class="active-order-top">
+
+
+                            <div class="active-order-image">
+
+                                {% if order.restaurant_image %}
+
+                                <img
+                                    src="{{ order.restaurant_image }}"
+                                    alt=""
+                                    data-class="image"
+                                    data-semantic="active_order_restaurant_image"
+                                >
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="active-order-info">
+
+                                <div class="active-status-row">
+
+                                    <span
+                                        class="status-badge"
+                                        data-class="badge"
+                                        data-semantic="active_order_status"
+                                    >
+                                        {{ order.status }}
+                                    </span>
+
+
+                                    <span class="order-id">
+                                        {{ order.order_id }}
+                                    </span>
+
+                                </div>
+
+
+                                <h3
+                                    class="
+                                        active-restaurant
+                                        truncate
+                                    "
+                                >
+                                    {{ order.restaurant_name }}
+                                </h3>
+
+
+                                <div
+                                    class="
+                                        active-menu
+                                        line-clamp-2
+                                    "
+                                >
+
+                                    {% for menu in order.menu_names %}
+
+                                        {{ menu }}
+
+                                        {% if not loop.last %}
+                                            ·
+                                        {% endif %}
+
+                                    {% endfor %}
+
+                                </div>
+
+
+                                <div class="eta-row">
+
+                                    <span class="eta-label">
+                                        {{ order.eta_label }}
+                                    </span>
+
+                                    <span class="eta-value">
+                                        {{ order.eta }}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="order-progress"
+                            data-class="progress_bar"
+                            data-semantic="active_order_progress"
+                        >
+
+                            <div
+                                class="order-progress-fill"
+                                style="
+                                    width:
+                                    {{ order.progress }}%;
+                                "
+                            ></div>
+
+                        </div>
+
+
+                        <div class="active-order-actions">
+
+                            <button
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="active_order_details_button"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="order_details_icon"
+                                    style="font-size:17px;"
+                                >
+                                    receipt_long
+                                </span>
+
+                                Details
+
+                            </button>
+
+
+                            <button
+                                class="primary-button"
+                                data-class="button"
+                                data-semantic="track_order_button"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="track_order_icon"
+                                    style="font-size:17px;"
+                                >
+                                    location_on
+                                </span>
+
+                                Track order
+
+                            </button>
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+                {% else %}
+
+
+                <!-- =========================================
+                     Empty Active State
+                     ========================================= -->
+
+                <div
+                    class="empty-active"
+                    data-class="card"
+                    data-semantic="empty_active_orders"
+                >
+
+                    <div class="empty-icon">
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="empty_orders_icon"
+                            style="font-size:35px;"
+                        >
+                            shopping_bag
+                        </span>
+
+                    </div>
+
+
+                    <div class="empty-title">
+                        No active orders
+                    </div>
+
+
+                    <div class="empty-copy">
+                        {{ order_history.empty_active_message }}
+                    </div>
+
+
+                    <button
+                        class="browse-button"
+                        data-class="button"
+                        data-semantic="browse_restaurants_button"
+                    >
+                        Browse restaurants
+                    </button>
+
+                </div>
+
+                {% endif %}
+
+            </section>
+
+
+            {% else %}
+
+
+            <!-- =============================================
+                 Past Orders
+                 ============================================= -->
+
+            <section
+                class="orders-content"
+                data-class="section"
+                data-semantic="past_orders_section"
+            >
+
+                <div class="content-heading">
+
+                    <h2 class="content-title">
+                        Past orders
+                    </h2>
+
+
+                    <span class="content-count">
+                        {{ order_history.past_count }}
+                    </span>
+
+                </div>
+
+
+                <div class="past-order-list">
+
+
+                    {% for order in order_history.past_orders %}
+
+                    <article
+                        class="past-order-card"
+                        data-class="card"
+                        data-semantic="past_order_card"
+                    >
+
+
+                        <div class="past-order-main">
+
+
+                            <div class="past-order-image">
+
+                                {% if order.restaurant_image %}
+
+                                <img
+                                    src="{{ order.restaurant_image }}"
+                                    alt=""
+                                    data-class="image"
+                                    data-semantic="past_order_restaurant_image"
+                                >
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="past-order-info">
+
+
+                                <div class="past-order-header">
+
+                                    <h3
+                                        class="
+                                            past-restaurant
+                                            truncate
+                                        "
+                                    >
+                                        {{ order.restaurant_name }}
+                                    </h3>
+
+
+                                    <span
+                                        class="
+                                            past-status
+                                            {{ order.status|lower }}
+                                        "
+                                        data-class="badge"
+                                        data-semantic="past_order_status"
+                                    >
+                                        {{ order.status }}
+                                    </span>
+
+                                </div>
+
+
+                                <div
+                                    class="past-date"
+                                    data-class="timestamp"
+                                    data-semantic="past_order_timestamp"
+                                >
+                                    {{ order.timestamp }}
+                                </div>
+
+
+                                <div
+                                    class="
+                                        past-menu
+                                        line-clamp-2
+                                    "
+                                >
+
+                                    {% for menu in order.menu_names %}
+
+                                        {{ menu }}
+
+                                        {% if not loop.last %}
+                                            ·
+                                        {% endif %}
+
+                                    {% endfor %}
+
+                                </div>
+
+
+                                <div class="past-total">
+                                    {{ order.total }}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="past-order-actions">
+
+
+                            <button
+                                class="order-action-button"
+                                data-class="button"
+                                data-semantic="view_order_details_button"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="view_order_details_icon"
+                                    style="font-size:15px;"
+                                >
+                                    receipt
+                                </span>
+
+                                Details
+
+                            </button>
+
+
+                            {% if not order.reviewed
+                            and order.status == "Delivered" %}
+
+                            <button
+                                class="order-action-button"
+                                data-class="button"
+                                data-semantic="write_review_button"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="write_review_icon"
+                                    style="font-size:15px;"
+                                >
+                                    rate_review
+                                </span>
+
+                                Review
+
+                            </button>
+
+                            {% endif %}
+
+
+                            {% if order.can_reorder %}
+
+                            <button
+                                class="
+                                    order-action-button
+                                    reorder-button
+                                "
+                                data-class="button"
+                                data-semantic="reorder_button"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="reorder_icon"
+                                    style="font-size:15px;"
+                                >
+                                    replay
+                                </span>
+
+                                Reorder
+
+                            </button>
+
+                            {% endif %}
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Mobile Bottom Navigation
+         ===================================================== -->
+
+    <nav
+        class="orders-bottom-nav"
+        data-class="navigation_bar"
+        data-semantic="orders_mobile_navigation"
+        data-occluder="true"
+    >
+
+        <div
+            class="bottom-nav-item"
+            data-class="navigation_item"
+            data-semantic="mobile_home_navigation"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="mobile_home_icon"
+            >
+                home
+            </span>
+
+            Home
+
+        </div>
+
+
+        <div
+            class="bottom-nav-item"
+            data-class="navigation_item"
+            data-semantic="mobile_search_navigation"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="mobile_search_icon"
+            >
+                search
+            </span>
+
+            Search
+
+        </div>
+
+
+        <div
+            class="bottom-nav-item selected"
+            data-class="navigation_item"
+            data-semantic="mobile_orders_navigation"
+        >
+
+            <span
+                class="bottom-nav-indicator"
+                data-class="selection_indicator"
+                data-semantic="mobile_orders_indicator"
+            ></span>
+
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="mobile_orders_icon"
+            >
+                receipt_long
+            </span>
+
+            Orders
+
+        </div>
+
+
+        <div
+            class="bottom-nav-item"
+            data-class="navigation_item"
+            data-semantic="mobile_profile_navigation"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="mobile_profile_icon"
+            >
+                person
+            </span>
+
+            Profile
+
+        </div>
+
+    </nav>
+
+</div>
+
+{% endblock %}
