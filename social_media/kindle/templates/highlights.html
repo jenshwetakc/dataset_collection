@@ -1,0 +1,2137 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Kindle Highlights & Notes
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .highlights-page {
+
+        position:
+            relative;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .highlights-background {
+
+        min-height:
+            100vh;
+
+        padding-bottom:
+            90px;
+
+        background:
+            var(--background);
+    }
+
+
+    .highlights-background.popup-active {
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Backdrop
+       ====================================================== */
+
+    .popup-backdrop {
+
+        position:
+            fixed;
+
+        z-index:
+            800;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.32
+            );
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .notes-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            200;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            68px;
+
+        padding:
+            0
+            var(--page-padding);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .notes-app-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        font-size:
+            19px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .notes-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+    }
+
+
+    /* ======================================================
+       Multi Select App Bar
+       ====================================================== */
+
+    .selection-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            210;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            68px;
+
+        padding:
+            0
+            var(--page-padding);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .selection-count {
+
+        flex:
+            1;
+
+        margin-left:
+            10px;
+
+        font-size:
+            15px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .notes-content {
+
+        width:
+            min(
+                100%,
+                1100px
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            26px
+            var(--page-padding)
+            50px;
+    }
+
+
+    /* ======================================================
+       Search
+       ====================================================== */
+
+    .notes-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            46px;
+
+        padding:
+            0 14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .notes-search input {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Tabs
+       ====================================================== */
+
+    .notes-tabs {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            28px;
+
+        margin-top:
+            22px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .notes-tab {
+
+        position:
+            relative;
+
+        min-height:
+            44px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .notes-tab.active {
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .notes-tab.active::after {
+
+        content:
+            "";
+
+        position:
+            absolute;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        height:
+            3px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Filter Row
+       ====================================================== */
+
+    .notes-filter-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+
+        margin-top:
+            18px;
+    }
+
+
+    .filter-summary {
+
+        min-width:
+            0;
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .filter-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .small-filter-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            38px;
+
+        padding:
+            0 13px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Entry List
+       ====================================================== */
+
+    .entry-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            14px;
+
+        margin-top:
+            24px;
+    }
+
+
+    .note-entry {
+
+        position:
+            relative;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            72px
+            minmax(
+                0,
+                1fr
+            )
+            40px;
+
+        gap:
+            16px;
+
+        padding:
+            16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .note-entry.selected {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .entry-cover {
+
+        position:
+            relative;
+
+        width:
+            72px;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .entry-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .entry-cover-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        height:
+            100%;
+
+        padding:
+            6px;
+
+        text-align:
+            center;
+
+        font-size:
+            9px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .selection-indicator {
+
+        position:
+            absolute;
+
+        top:
+            5px;
+
+        left:
+            5px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .selection-indicator
+    .material-symbols-rounded {
+
+        font-size:
+            16px;
+    }
+
+
+    .entry-main {
+
+        min-width:
+            0;
+    }
+
+
+    .entry-book {
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .note-entry.selected
+    .entry-book {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .entry-meta {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            6px;
+
+        margin-top:
+            4px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .note-entry.selected
+    .entry-meta {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Highlight
+       ====================================================== */
+
+    .highlight-block {
+
+        position:
+            relative;
+
+        margin-top:
+            13px;
+
+        padding:
+            12px 14px;
+
+        border-left:
+            4px solid
+            var(--warning);
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+
+        font-family:
+            Georgia,
+            serif;
+
+        font-size:
+            14px;
+
+        line-height:
+            1.55;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .highlight-block.color-blue {
+
+        border-left-color:
+            var(--info);
+    }
+
+
+    .highlight-block.color-pink {
+
+        border-left-color:
+            var(--error);
+    }
+
+
+    .highlight-block.color-orange {
+
+        border-left-color:
+            var(--warning);
+    }
+
+
+    .note-entry.selected
+    .highlight-block {
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       User Note
+       ====================================================== */
+
+    .user-note {
+
+        margin-top:
+            12px;
+
+        padding:
+            11px 13px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--background);
+    }
+
+
+    .user-note-label {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        font-size:
+            10px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .user-note-text {
+
+        margin-top:
+            6px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.45;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Empty State
+       ====================================================== */
+
+    .notes-empty {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            460px;
+
+        padding:
+            40px;
+
+        text-align:
+            center;
+    }
+
+
+    .notes-empty-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            88px;
+
+        height:
+            88px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .notes-empty-icon
+    .material-symbols-rounded {
+
+        font-size:
+            40px;
+    }
+
+
+    .notes-empty-title {
+
+        margin-top:
+            20px;
+
+        font-size:
+            21px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .notes-empty-description {
+
+        max-width:
+            400px;
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .note-dialog {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        top:
+            50%;
+
+        left:
+            50%;
+
+        width:
+            min(
+                calc(
+                    100%
+                    - 30px
+                ),
+                500px
+            );
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            16px
+            48px
+            rgba(
+                0,
+                0,
+                0,
+                0.30
+            );
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    .dialog-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-description {
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .note-editor {
+
+        min-height:
+            130px;
+
+        margin-top:
+            18px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--background);
+    }
+
+
+    .note-editor textarea {
+
+        width:
+            100%;
+
+        min-height:
+            100px;
+
+        color:
+            var(--text-primary);
+
+        resize:
+            none;
+
+        outline:
+            none;
+
+        border:
+            none;
+
+        background:
+            transparent;
+    }
+
+
+    .dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        margin-top:
+            20px;
+    }
+
+
+    .dialog-button {
+
+        min-height:
+            42px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            var(--pill-radius);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-secondary {
+
+        border:
+            1px solid
+            var(--border);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .dialog-danger {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    /* ======================================================
+       Filter Menu
+       ====================================================== */
+
+    .notes-filter-menu {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        top:
+            82px;
+
+        right:
+            20px;
+
+        width:
+            260px;
+
+        padding:
+            8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            12px
+            34px
+            rgba(
+                0,
+                0,
+                0,
+                .22
+            );
+    }
+
+
+    .filter-menu-heading {
+
+        padding:
+            10px 12px 8px;
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .filter-menu-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        width:
+            100%;
+
+        min-height:
+            44px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            10px;
+
+        font-size:
+            13px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .filter-menu-item.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .notes-content {
+
+            padding-top:
+                18px;
+        }
+
+
+        .notes-filter-row {
+
+            align-items:
+                flex-start;
+        }
+
+
+        .small-filter-button
+        .filter-text {
+
+            display:
+                none;
+        }
+
+
+        .note-entry {
+
+            grid-template-columns:
+                56px
+                minmax(
+                    0,
+                    1fr
+                )
+                34px;
+
+            gap:
+                10px;
+
+            padding:
+                12px;
+        }
+
+
+        .entry-cover {
+
+            width:
+                56px;
+        }
+
+
+        .highlight-block {
+
+            font-size:
+                13px;
+        }
+
+
+        .notes-filter-menu {
+
+            right:
+                12px;
+
+            width:
+                min(
+                    calc(
+                        100%
+                        - 24px
+                    ),
+                    280px
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="highlights-page">
+
+
+    <!-- =====================================================
+         Background UI
+         ===================================================== -->
+
+    <div
+        class="
+            highlights-background
+
+            {% if highlights.popup_open %}
+            popup-active
+            {% endif %}
+        "
+
+        {% if highlights.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+
+        <!-- =================================================
+             Normal App Bar
+             ================================================= -->
+
+        {% if not highlights.multi_select %}
+
+        <header
+            class="notes-app-bar"
+            data-class="app_bar"
+            data-semantic="highlights_app_bar"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="highlights_back_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="highlights_back_icon"
+                >
+                    arrow_back
+                </span>
+
+            </button>
+
+
+            <div
+                class="notes-app-title"
+                data-class="text"
+                data-semantic="highlights_app_title"
+            >
+                Highlights & Notes
+            </div>
+
+
+            <div class="notes-actions">
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="highlights_filter_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="highlights_filter_icon"
+                    >
+                        tune
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="highlights_more_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="highlights_more_icon"
+                    >
+                        more_vert
+                    </span>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             Selection App Bar
+             ================================================= -->
+
+        {% else %}
+
+        <header
+            class="selection-app-bar"
+            data-class="app_bar"
+            data-semantic="highlights_selection_app_bar"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="selection_close_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+
+            <div
+                class="selection-count"
+                data-class="text"
+                data-semantic="selection_count"
+            >
+                {{
+                    highlights.entries
+                    | selectattr(
+                        "selected"
+                    )
+                    | list
+                    | length
+                }}
+                selected
+            </div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="selection_share_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    share
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="selection_delete_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    delete
+                </span>
+
+            </button>
+
+        </header>
+
+        {% endif %}
+
+
+        <!-- =================================================
+             Main
+             ================================================= -->
+
+        <main class="notes-content">
+
+
+            <!-- Search -->
+
+            <div
+                class="notes-search"
+                data-class="search_bar"
+                data-semantic="notes_search"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="notes_search_icon"
+                >
+                    search
+                </span>
+
+
+                <input
+                    type="text"
+                    value="{{ highlights.search_query }}"
+                    placeholder="Search highlights and notes"
+                    data-class="input_field"
+                    data-semantic="notes_search_input"
+                >
+
+                {% if highlights.search_query %}
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="clear_search_icon"
+                >
+                    close
+                </span>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- Tabs -->
+
+            <nav class="notes-tabs">
+
+                <div
+                    class="
+                        notes-tab
+
+                        {% if
+                            highlights.active_tab
+                            == "Highlights"
+                        %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="highlights_tab"
+                >
+                    Highlights
+                </div>
+
+
+                <div
+                    class="
+                        notes-tab
+
+                        {% if
+                            highlights.active_tab
+                            == "Notes"
+                        %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="tab"
+                    data-semantic="notes_tab"
+                >
+                    Notes
+                </div>
+
+            </nav>
+
+
+            <!-- Filter Summary -->
+
+            <section class="notes-filter-row">
+
+                <div
+                    class="filter-summary"
+                    data-class="text"
+                    data-semantic="notes_filter_summary"
+                >
+                    {{ highlights.filter_book }}
+                    ·
+                    {{ highlights.entries | length }}
+                    entries
+                </div>
+
+
+                <div class="filter-controls">
+
+                    <button
+                        class="small-filter-button"
+                        data-class="button"
+                        data-semantic="book_filter_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            menu_book
+                        </span>
+
+
+                        <span
+                            class="filter-text"
+                            data-class="text"
+                        >
+                            Book
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="small-filter-button"
+                        data-class="button"
+                        data-semantic="sort_notes_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            sort
+                        </span>
+
+
+                        <span
+                            class="filter-text"
+                            data-class="text"
+                        >
+                            {{ highlights.sort }}
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 Empty
+                 ================================================= -->
+
+            {% if not highlights.entries %}
+
+            <section
+                class="notes-empty"
+                data-class="section"
+                data-semantic="notes_empty_state"
+            >
+
+                <div
+                    class="notes-empty-icon"
+                    data-class="icon"
+                    data-semantic="notes_empty_icon"
+                >
+
+                    <span class="material-symbols-rounded">
+                        border_color
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="notes-empty-title"
+                    data-class="text"
+                    data-semantic="notes_empty_title"
+                >
+                    No highlights yet
+                </div>
+
+
+                <p
+                    class="notes-empty-description"
+                    data-class="text"
+                    data-semantic="notes_empty_description"
+                >
+                    Highlights and notes you create
+                    while reading will appear here.
+                </p>
+
+            </section>
+
+
+            <!-- =================================================
+                 Entries
+                 ================================================= -->
+
+            {% else %}
+
+            <section class="entry-list">
+
+                {% for entry in highlights.entries %}
+
+                <article
+                    class="
+                        note-entry
+
+                        {% if entry.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="card"
+                    data-semantic="note_entry_{{ entry.id }}"
+                >
+
+
+                    <!-- Cover -->
+
+                    <div class="entry-cover">
+
+                        {% if entry.cover %}
+
+                        <img
+                            src="{{ entry.cover }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="note_cover_{{ entry.id }}"
+                        >
+
+                        {% else %}
+
+                        <div class="entry-cover-placeholder">
+                            {{ entry.book_title }}
+                        </div>
+
+                        {% endif %}
+
+
+                        {% if
+                            highlights.multi_select
+                            and entry.selected
+                        %}
+
+                        <span
+                            class="selection-indicator"
+                            data-class="selection_indicator"
+                            data-semantic="selected_note_{{ entry.id }}"
+                        >
+
+                            <span class="material-symbols-rounded">
+                                check
+                            </span>
+
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- Main -->
+
+                    <div class="entry-main">
+
+                        <div
+                            class="
+                                entry-book
+                                truncate
+                            "
+                            data-class="text"
+                            data-semantic="note_book_title_{{ entry.id }}"
+                        >
+                            {{ entry.book_title }}
+                        </div>
+
+
+                        <div class="entry-meta">
+
+                            <span
+                                data-class="text"
+                                data-semantic="note_chapter_{{ entry.id }}"
+                            >
+                                {{ entry.chapter }}
+                            </span>
+
+                            <span>
+                                •
+                            </span>
+
+                            <span
+                                data-class="text"
+                                data-semantic="note_location_{{ entry.id }}"
+                            >
+                                Location
+                                {{ entry.location }}
+                            </span>
+
+                            <span>
+                                •
+                            </span>
+
+                            <span
+                                data-class="timestamp"
+                                data-semantic="note_created_{{ entry.id }}"
+                            >
+                                {{ entry.created }}
+                            </span>
+
+                        </div>
+
+
+                        <!-- Highlight -->
+
+                        <blockquote
+                            class="
+                                highlight-block
+                                color-{{ entry.highlight_color }}
+                            "
+                            data-class="text"
+                            data-semantic="highlight_text_{{ entry.id }}"
+                        >
+                            {{ entry.highlight }}
+                        </blockquote>
+
+
+                        <!-- Note -->
+
+                        {% if entry.has_note %}
+
+                        <div
+                            class="user-note"
+                            data-class="card"
+                            data-semantic="user_note_{{ entry.id }}"
+                        >
+
+                            <div class="user-note-label">
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    style="
+                                        font-size:
+                                            15px;
+                                    "
+                                >
+                                    sticky_note_2
+                                </span>
+
+
+                                <span
+                                    data-class="text"
+                                >
+                                    Note
+                                </span>
+
+                            </div>
+
+
+                            <div
+                                class="user-note-text"
+                                data-class="text"
+                                data-semantic="user_note_text_{{ entry.id }}"
+                            >
+                                {{ entry.note }}
+                            </div>
+
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    {% if not highlights.multi_select %}
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="note_more_button_{{ entry.id }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            more_vert
+                        </span>
+
+                    </button>
+
+                    {% else %}
+
+                    <div></div>
+
+                    {% endif %}
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Popup Background
+         ===================================================== -->
+
+    {% if highlights.popup_open %}
+
+    <div
+        class="popup-backdrop"
+        data-annotation-skip="true"
+    ></div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Edit Note Dialog
+         ===================================================== -->
+
+    {% if
+        highlights.show_edit_note
+        and highlights.active_entry
+    %}
+
+    <section
+        class="note-dialog"
+        data-class="dialog"
+        data-semantic="edit_note_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="edit_note_title"
+        >
+            Edit note
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="edit_note_book"
+        >
+            {{ highlights.active_entry.book_title }}
+        </p>
+
+
+        <div
+            class="note-editor"
+            data-class="input_field"
+            data-semantic="edit_note_input"
+        >
+
+            <textarea>
+{{ highlights.active_entry.note }}
+            </textarea>
+
+        </div>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="
+                    dialog-button
+                    dialog-secondary
+                "
+                data-class="button"
+                data-semantic="cancel_edit_note"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    dialog-primary
+                "
+                data-class="button"
+                data-semantic="save_edit_note"
+            >
+                Save
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Filter Menu
+         ===================================================== -->
+
+    {% if highlights.show_filter_menu %}
+
+    <section
+        class="notes-filter-menu"
+        data-class="card"
+        data-semantic="notes_filter_menu"
+        data-occluder="true"
+    >
+
+        <div
+            class="filter-menu-heading"
+            data-class="text"
+            data-semantic="filter_menu_title"
+        >
+            Sort by
+        </div>
+
+
+        {% for option in
+            [
+                "Newest",
+                "Oldest",
+                "Book",
+                "Location"
+            ]
+        %}
+
+        <button
+            class="
+                filter-menu-item
+
+                {% if
+                    highlights.sort
+                    == option
+                %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="notes_sort_option_{{ loop.index }}"
+        >
+
+            <span
+                data-class="text"
+                data-semantic="notes_sort_label_{{ loop.index }}"
+            >
+                {{ option }}
+            </span>
+
+
+            {% if highlights.sort == option %}
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="notes_sort_selected_{{ loop.index }}"
+            >
+                check
+            </span>
+
+            {% endif %}
+
+        </button>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Delete Confirmation
+         ===================================================== -->
+
+    {% if highlights.show_delete_confirmation %}
+
+    <section
+        class="note-dialog"
+        data-class="dialog"
+        data-semantic="delete_note_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="delete_note_title"
+        >
+            Delete highlight?
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="delete_note_description"
+        >
+            This highlight and its attached note
+            will be permanently removed.
+        </p>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="
+                    dialog-button
+                    dialog-secondary
+                "
+                data-class="button"
+                data-semantic="cancel_delete_note"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    dialog-primary
+                    dialog-danger
+                "
+                data-class="button"
+                data-semantic="confirm_delete_note"
+            >
+                Delete
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

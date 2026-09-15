@@ -1,0 +1,2284 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Kindle Collections
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .collections-page {
+
+        position:
+            relative;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .collections-background {
+
+        min-height:
+            100vh;
+
+        padding-bottom:
+            92px;
+
+        background:
+            var(--background);
+    }
+
+
+    .collections-background.popup-active {
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Popup Backdrop
+       ====================================================== */
+
+    .popup-backdrop {
+
+        position:
+            fixed;
+
+        z-index:
+            800;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.32
+            );
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .collections-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            200;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            68px;
+
+        padding:
+            0
+            var(--page-padding);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .collections-title {
+
+        flex:
+            1;
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .collections-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    /* ======================================================
+       Multi Select Bar
+       ====================================================== */
+
+    .selection-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            210;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            68px;
+
+        padding:
+            0
+            var(--page-padding);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .selection-count {
+
+        flex:
+            1;
+
+        margin-left:
+            10px;
+
+        font-size:
+            16px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .collections-content {
+
+        width:
+            min(
+                100%,
+                var(--content-max-width)
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            30px
+            var(--page-padding)
+            56px;
+    }
+
+
+    /* ======================================================
+       Heading
+       ====================================================== */
+
+    .page-heading {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        justify-content:
+            space-between;
+
+        gap:
+            20px;
+
+        margin-bottom:
+            26px;
+    }
+
+
+    .page-heading h1 {
+
+        font-size:
+            clamp(
+                28px,
+                4vw,
+                40px
+            );
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .page-heading p {
+
+        margin-top:
+            6px;
+
+        font-size:
+            13px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Collection Grid
+       ====================================================== */
+
+    .collection-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(
+                    220px,
+                    1fr
+                )
+            );
+
+        gap:
+            18px;
+    }
+
+
+    .collection-card {
+
+        min-height:
+            210px;
+
+        padding:
+            16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            18px;
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ======================================================
+       Collection Preview
+       ====================================================== */
+
+    .collection-preview {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                1fr
+            );
+
+        gap:
+            4px;
+
+        width:
+            112px;
+
+        height:
+            112px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .preview-book {
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .preview-book img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .preview-empty {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .preview-empty
+    .material-symbols-rounded {
+
+        font-size:
+            34px;
+    }
+
+
+    /* ======================================================
+       Collection Info
+       ====================================================== */
+
+    .collection-name {
+
+        margin-top:
+            15px;
+
+        font-size:
+            16px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .collection-meta {
+
+        margin-top:
+            5px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Collection Header
+       ====================================================== */
+
+    .collection-open-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            16px;
+
+        margin-bottom:
+            24px;
+    }
+
+
+    .collection-open-title {
+
+        min-width:
+            0;
+    }
+
+
+    .collection-open-title h1 {
+
+        font-size:
+            clamp(
+                26px,
+                4vw,
+                38px
+            );
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .collection-open-title p {
+
+        margin-top:
+            5px;
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .collection-open-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+    }
+
+
+    /* ======================================================
+       Book List
+       ====================================================== */
+
+    .collection-book-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+    }
+
+
+    .collection-book {
+
+        position:
+            relative;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            72px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        min-height:
+            126px;
+
+        padding:
+            12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .collection-book.selected {
+
+        border-radius:
+            12px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .collection-book-cover {
+
+        position:
+            relative;
+
+        width:
+            72px;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .collection-book-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .book-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        height:
+            100%;
+
+        padding:
+            6px;
+
+        text-align:
+            center;
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .book-selection-indicator {
+
+        position:
+            absolute;
+
+        top:
+            6px;
+
+        left:
+            6px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .book-selection-indicator
+    .material-symbols-rounded {
+
+        font-size:
+            16px;
+    }
+
+
+    .collection-book-info {
+
+        min-width:
+            0;
+    }
+
+
+    .collection-book-title {
+
+        font-size:
+            15px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .collection-book.selected
+    .collection-book-title {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .collection-book-author {
+
+        margin-top:
+            4px;
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .collection-book.selected
+    .collection-book-author {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .collection-book-meta {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        margin-top:
+            8px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .collection-book.selected
+    .collection-book-meta {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Progress
+       ====================================================== */
+
+    .book-progress {
+
+        width:
+            160px;
+
+        max-width:
+            100%;
+
+        height:
+            5px;
+
+        margin-top:
+            8px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .book-progress-value {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Empty State
+       ====================================================== */
+
+    .collection-empty {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            440px;
+
+        padding:
+            40px;
+
+        text-align:
+            center;
+    }
+
+
+    .collection-empty-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            88px;
+
+        height:
+            88px;
+
+        border-radius:
+            24px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .collection-empty-icon
+    .material-symbols-rounded {
+
+        font-size:
+            40px;
+    }
+
+
+    .collection-empty-title {
+
+        margin-top:
+            22px;
+
+        font-size:
+            22px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .collection-empty-description {
+
+        max-width:
+            390px;
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .collection-dialog {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        top:
+            50%;
+
+        left:
+            50%;
+
+        width:
+            min(
+                calc(
+                    100%
+                    - 32px
+                ),
+                430px
+            );
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            16px
+            48px
+            rgba(
+                0,
+                0,
+                0,
+                0.28
+            );
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    .dialog-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-description {
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .collection-input {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            48px;
+
+        margin-top:
+            20px;
+
+        padding:
+            0 14px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--background);
+    }
+
+
+    .collection-input input {
+
+        width:
+            100%;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        margin-top:
+            22px;
+    }
+
+
+    .dialog-secondary,
+    .dialog-primary {
+
+        min-height:
+            42px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            var(--pill-radius);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-secondary {
+
+        border:
+            1px solid
+            var(--border);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .dialog-danger {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    /* ======================================================
+       Sort Menu
+       ====================================================== */
+
+    .sort-menu {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        top:
+            84px;
+
+        right:
+            20px;
+
+        width:
+            230px;
+
+        padding:
+            6px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            12px
+            34px
+            rgba(
+                0,
+                0,
+                0,
+                .22
+            );
+    }
+
+
+    .sort-option {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        width:
+            100%;
+
+        min-height:
+            46px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            10px;
+
+        font-size:
+            13px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .sort-option.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .collections-content {
+
+            padding-top:
+                22px;
+        }
+
+
+        .collection-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .collection-card {
+
+            min-height:
+                190px;
+
+            padding:
+                12px;
+        }
+
+
+        .collection-preview {
+
+            width:
+                92px;
+
+            height:
+                92px;
+        }
+
+
+        .collection-open-header {
+
+            align-items:
+                flex-start;
+        }
+
+
+        .collection-open-actions {
+
+            display:
+                none;
+        }
+
+
+        .collection-book {
+
+            grid-template-columns:
+                60px
+                minmax(
+                    0,
+                    1fr
+                )
+                36px;
+
+            gap:
+                12px;
+
+            min-height:
+                108px;
+
+            padding:
+                10px 0;
+        }
+
+
+        .collection-book-cover {
+
+            width:
+                60px;
+        }
+
+    }
+
+
+    @media (
+        min-width: 600px
+    )
+    and (
+        max-width: 839px
+    ) {
+
+        .collection-grid {
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="collections-page">
+
+
+    <!-- =====================================================
+         NORMAL BACKGROUND UI
+         ===================================================== -->
+
+    <div
+        class="
+            collections-background
+
+            {% if collections.popup_open %}
+            popup-active
+            {% endif %}
+        "
+
+        {% if collections.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+
+        <!-- =================================================
+             Normal App Bar
+             ================================================= -->
+
+        {% if not collections.multi_select %}
+
+        <header
+            class="collections-app-bar"
+            data-class="app_bar"
+            data-semantic="collections_app_bar"
+        >
+
+            {% if collections.show_collection_contents %}
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="collections_back_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="collections_back_icon"
+                >
+                    arrow_back
+                </span>
+
+            </button>
+
+            {% endif %}
+
+
+            <div
+                class="collections-title"
+                data-class="text"
+                data-semantic="collections_app_title"
+            >
+
+                {% if collections.show_collection_contents %}
+
+                    {{ collections.active_collection.name }}
+
+                {% else %}
+
+                    Collections
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="collections-actions">
+
+                {% if collections.show_collection_contents %}
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="sort_collection_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="sort_collection_icon"
+                    >
+                        sort
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="collection_more_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="collection_more_icon"
+                    >
+                        more_vert
+                    </span>
+
+                </button>
+
+                {% else %}
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="create_collection_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="create_collection_icon"
+                    >
+                        add
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             Multi Select Bar
+             ================================================= -->
+
+        {% else %}
+
+        <header
+            class="selection-app-bar"
+            data-class="app_bar"
+            data-semantic="collection_selection_app_bar"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="selection_close_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="selection_close_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+
+            <div
+                class="selection-count"
+                data-class="text"
+                data-semantic="selection_count"
+            >
+
+                {{
+                    collections.active_collection.books
+                    | selectattr(
+                        "selected"
+                    )
+                    | list
+                    | length
+                }}
+                selected
+
+            </div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="selection_move_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="selection_move_icon"
+                >
+                    drive_file_move
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="selection_remove_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="selection_remove_icon"
+                >
+                    remove_circle_outline
+                </span>
+
+            </button>
+
+        </header>
+
+        {% endif %}
+
+
+        <!-- =================================================
+             Content
+             ================================================= -->
+
+        <main class="collections-content">
+
+
+            <!-- =============================================
+                 Collections Grid
+                 ============================================= -->
+
+            {% if not collections.show_collection_contents %}
+
+            <section>
+
+                <div class="page-heading">
+
+                    <div>
+
+                        <h1
+                            data-class="text"
+                            data-semantic="collections_heading"
+                        >
+                            Your collections
+                        </h1>
+
+                        <p
+                            data-class="text"
+                            data-semantic="collections_summary"
+                        >
+                            {{
+                                collections.collections
+                                | length
+                            }}
+                            collections
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="collection-grid">
+
+                    {% for collection in collections.collections %}
+
+                    <article
+                        class="collection-card"
+                        data-class="card"
+                        data-semantic="collection_{{ collection.id }}"
+                    >
+
+
+                        <!-- Preview -->
+
+                        <div class="collection-preview">
+
+                            {% if collection.preview_covers %}
+
+                                {% for cover in collection.preview_covers %}
+
+                                <div class="preview-book">
+
+                                    <img
+                                        src="{{ cover }}"
+                                        alt=""
+                                        data-class="image"
+                                        data-semantic="collection_preview_{{ collection.id }}_{{ loop.index }}"
+                                    >
+
+                                </div>
+
+                                {% endfor %}
+
+
+                                {% for _ in range(
+                                    4
+                                    - collection.preview_covers
+                                    | length
+                                ) %}
+
+                                <div class="preview-book"></div>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                            <div
+                                class="preview-empty"
+                                style="
+                                    grid-column:
+                                        1 / -1;
+
+                                    grid-row:
+                                        1 / -1;
+                                "
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="empty_collection_icon_{{ collection.id }}"
+                                >
+                                    collections_bookmark
+                                </span>
+
+                            </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- Name -->
+
+                        <div
+                            class="
+                                collection-name
+                                truncate
+                            "
+                            data-class="text"
+                            data-semantic="collection_name_{{ collection.id }}"
+                        >
+                            {{ collection.name }}
+                        </div>
+
+
+                        <!-- Meta -->
+
+                        <div
+                            class="collection-meta"
+                            data-class="text"
+                            data-semantic="collection_meta_{{ collection.id }}"
+                        >
+                            {{ collection.book_count }}
+                            books ·
+                            {{ collection.updated }}
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 Collection Open
+                 ============================================= -->
+
+            {% else %}
+
+            <section>
+
+                <div class="collection-open-header">
+
+                    <div class="collection-open-title">
+
+                        <h1
+                            data-class="text"
+                            data-semantic="active_collection_title"
+                        >
+                            {{ collections.active_collection.name }}
+                        </h1>
+
+                        <p
+                            data-class="text"
+                            data-semantic="active_collection_count"
+                        >
+                            {{ collections.active_collection.book_count }}
+                            books
+                        </p>
+
+                    </div>
+
+
+                    <div class="collection-open-actions">
+
+                        <button
+                            class="kindle-button"
+                            data-class="button"
+                            data-semantic="add_books_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="add_books_icon"
+                            >
+                                add
+                            </span>
+
+                            <span
+                                data-class="text"
+                                data-semantic="add_books_label"
+                            >
+                                Add books
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================================
+                     Empty Collection
+                     ========================================= -->
+
+                {% if
+                    collections.active_collection.book_count
+                    == 0
+                %}
+
+                <div
+                    class="collection-empty"
+                    data-class="section"
+                    data-semantic="empty_collection"
+                >
+
+                    <div
+                        class="collection-empty-icon"
+                        data-class="icon"
+                        data-semantic="empty_collection_large_icon"
+                    >
+
+                        <span class="material-symbols-rounded">
+                            library_add
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="collection-empty-title"
+                        data-class="text"
+                        data-semantic="empty_collection_title"
+                    >
+                        This collection is empty
+                    </div>
+
+
+                    <p
+                        class="collection-empty-description"
+                        data-class="text"
+                        data-semantic="empty_collection_description"
+                    >
+                        Add books from your library to
+                        organize them in this collection.
+                    </p>
+
+
+                    <button
+                        class="kindle-button"
+                        data-class="button"
+                        data-semantic="empty_collection_add_button"
+                        style="
+                            margin-top:
+                                18px;
+                        "
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            add
+                        </span>
+
+                        Add books
+
+                    </button>
+
+                </div>
+
+
+                <!-- =========================================
+                     Books
+                     ========================================= -->
+
+                {% else %}
+
+                <div class="collection-book-list">
+
+                    {% for book in collections.active_collection.books %}
+
+                    <article
+                        class="
+                            collection-book
+
+                            {% if book.selected %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="collection_book_{{ book.id }}"
+                    >
+
+
+                        <div class="collection-book-cover">
+
+                            {% if book.cover %}
+
+                            <img
+                                src="{{ book.cover }}"
+                                alt=""
+                                data-class="image"
+                                data-semantic="collection_book_cover_{{ book.id }}"
+                            >
+
+                            {% else %}
+
+                            <div class="book-placeholder">
+                                {{ book.title }}
+                            </div>
+
+                            {% endif %}
+
+
+                            {% if
+                                collections.multi_select
+                                and book.selected
+                            %}
+
+                            <span
+                                class="book-selection-indicator"
+                                data-class="selection_indicator"
+                                data-semantic="selected_book_{{ book.id }}"
+                            >
+
+                                <span class="material-symbols-rounded">
+                                    check
+                                </span>
+
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="collection-book-info">
+
+                            <div
+                                class="
+                                    collection-book-title
+                                    truncate
+                                "
+                                data-class="text"
+                                data-semantic="collection_book_title_{{ book.id }}"
+                            >
+                                {{ book.title }}
+                            </div>
+
+
+                            <div
+                                class="
+                                    collection-book-author
+                                    truncate
+                                "
+                                data-class="text"
+                                data-semantic="collection_book_author_{{ book.id }}"
+                            >
+                                {{ book.author }}
+                            </div>
+
+
+                            <div class="collection-book-meta">
+
+                                {% if book.downloaded %}
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="downloaded_icon_{{ book.id }}"
+                                    style="
+                                        font-size:
+                                            16px;
+                                    "
+                                >
+                                    download_done
+                                </span>
+
+                                {% endif %}
+
+
+                                {% if book.progress == 100 %}
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="finished_label_{{ book.id }}"
+                                >
+                                    Finished
+                                </span>
+
+
+                                {% elif book.progress > 0 %}
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="progress_label_{{ book.id }}"
+                                >
+                                    {{ book.progress }}% read
+                                </span>
+
+
+                                {% else %}
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="unread_label_{{ book.id }}"
+                                >
+                                    Unread
+                                </span>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            {% if
+                                book.progress > 0
+                            %}
+
+                            <div
+                                class="book-progress"
+                                data-class="progress_bar"
+                                data-semantic="book_progress_{{ book.id }}"
+                            >
+
+                                <div
+                                    class="book-progress-value"
+                                    style="
+                                        width:
+                                            {{ book.progress }}%;
+                                    "
+                                ></div>
+
+                            </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        {% if not collections.multi_select %}
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="book_more_{{ book.id }}"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="book_more_icon_{{ book.id }}"
+                            >
+                                more_vert
+                            </span>
+
+                        </button>
+
+                        {% else %}
+
+                        <div></div>
+
+                        {% endif %}
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Popup Backdrop
+         ===================================================== -->
+
+    {% if collections.popup_open %}
+
+    <div
+        class="popup-backdrop"
+        data-annotation-skip="true"
+    ></div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Create Collection Dialog
+         ===================================================== -->
+
+    {% if collections.show_create_dialog %}
+
+    <section
+        class="collection-dialog"
+        data-class="dialog"
+        data-semantic="create_collection_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="create_collection_title"
+        >
+            Create collection
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="create_collection_description"
+        >
+            Create a collection to organize books
+            from your Kindle library.
+        </p>
+
+
+        <div
+            class="collection-input"
+            data-class="input_field"
+            data-semantic="collection_name_input"
+        >
+
+            <input
+                type="text"
+                value="{{ collections.new_collection_name }}"
+            >
+
+        </div>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="dialog-secondary"
+                data-class="button"
+                data-semantic="cancel_create_collection"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="dialog-primary"
+                data-class="button"
+                data-semantic="confirm_create_collection"
+            >
+                Create
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Rename Dialog
+         ===================================================== -->
+
+    {% if collections.show_rename_dialog %}
+
+    <section
+        class="collection-dialog"
+        data-class="dialog"
+        data-semantic="rename_collection_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="rename_collection_title"
+        >
+            Rename collection
+        </h2>
+
+
+        <div
+            class="collection-input"
+            data-class="input_field"
+            data-semantic="rename_collection_input"
+        >
+
+            <input
+                type="text"
+                value="{{ collections.active_collection.name }}"
+            >
+
+        </div>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="dialog-secondary"
+                data-class="button"
+                data-semantic="cancel_rename_button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="dialog-primary"
+                data-class="button"
+                data-semantic="save_rename_button"
+            >
+                Save
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Sort Menu
+         ===================================================== -->
+
+    {% if collections.show_sort_menu %}
+
+    <section
+        class="sort-menu"
+        data-class="card"
+        data-semantic="collection_sort_menu"
+        data-occluder="true"
+    >
+
+        {% for option in
+            [
+                "Recent",
+                "Title",
+                "Author",
+                "Progress"
+            ]
+        %}
+
+        <button
+            class="
+                sort-option
+
+                {% if collections.sort == option %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="sort_option_{{ loop.index }}"
+        >
+
+            <span
+                data-class="text"
+                data-semantic="sort_option_label_{{ loop.index }}"
+            >
+                {{ option }}
+            </span>
+
+
+            {% if collections.sort == option %}
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="sort_selected_{{ loop.index }}"
+            >
+                check
+            </span>
+
+            {% endif %}
+
+        </button>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Delete Confirmation
+         ===================================================== -->
+
+    {% if collections.show_delete_confirmation %}
+
+    <section
+        class="collection-dialog"
+        data-class="dialog"
+        data-semantic="delete_collection_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="delete_collection_title"
+        >
+            Delete collection?
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="delete_collection_description"
+        >
+            The collection
+            "{{ collections.active_collection.name }}"
+            will be deleted. Your books will remain
+            in your library.
+        </p>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="dialog-secondary"
+                data-class="button"
+                data-semantic="cancel_delete_collection"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-primary
+                    dialog-danger
+                "
+                data-class="button"
+                data-semantic="confirm_delete_collection"
+            >
+                Delete
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

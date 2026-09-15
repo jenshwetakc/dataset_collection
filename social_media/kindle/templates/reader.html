@@ -1,0 +1,1899 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Kindle Reader
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Reader Root
+       ====================================================== */
+
+    .reader-page {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            100%;
+
+        min-height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        background:
+            var(--background);
+
+        overflow:
+            hidden;
+    }
+
+
+    /* ======================================================
+       Reading Surface
+       ====================================================== */
+
+    .reader-surface {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        flex:
+            1;
+
+        justify-content:
+            center;
+
+        min-height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        padding:
+            54px
+            24px
+            72px;
+    }
+
+
+    .reader-document {
+
+        width:
+            min(
+                100%,
+                760px
+            );
+
+        margin:
+            0 auto;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .reader-document.margin-narrow {
+
+        max-width:
+            880px;
+    }
+
+
+    .reader-document.margin-medium {
+
+        max-width:
+            720px;
+    }
+
+
+    .reader-document.margin-wide {
+
+        max-width:
+            600px;
+    }
+
+
+    /* ======================================================
+       Chapter Heading
+       ====================================================== */
+
+    .chapter-number {
+
+        margin-bottom:
+            10px;
+
+        text-align:
+            center;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        letter-spacing:
+            1px;
+
+        text-transform:
+            uppercase;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .chapter-title {
+
+        margin-bottom:
+            36px;
+
+        text-align:
+            center;
+
+        font-family:
+            Georgia,
+            serif;
+
+        font-size:
+            clamp(
+                24px,
+                4vw,
+                36px
+            );
+
+        font-weight:
+            700;
+
+        line-height:
+            1.25;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Text
+       ====================================================== */
+
+    .reader-paragraph {
+
+        margin-bottom:
+            1.15em;
+
+        font-family:
+            var(
+                --reader-font-family,
+                Georgia
+            );
+
+        font-size:
+            var(
+                --reader-font-size,
+                18px
+            );
+
+        line-height:
+            var(
+                --reader-line-height,
+                1.65
+            );
+
+        color:
+            var(--text-primary);
+
+        text-align:
+            left;
+    }
+
+
+    /* ======================================================
+       Footer Progress
+       ====================================================== */
+
+    .reader-footer-info {
+
+        position:
+            absolute;
+
+        left:
+            20px;
+
+        right:
+            20px;
+
+        bottom:
+            16px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        pointer-events:
+            none;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Top Toolbar
+       ====================================================== */
+
+    .reader-top-toolbar {
+
+        position:
+            fixed;
+
+        z-index:
+            500;
+
+        top:
+            var(--status-bar-height);
+
+        left:
+            0;
+
+        right:
+            0;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            64px;
+
+        padding:
+            0 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .reader-toolbar-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        padding:
+            0 12px;
+    }
+
+
+    .reader-toolbar-book {
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .reader-toolbar-chapter {
+
+        margin-top:
+            2px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .reader-toolbar-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            2px;
+    }
+
+
+    /* ======================================================
+       Bottom Toolbar
+       ====================================================== */
+
+    .reader-bottom-toolbar {
+
+        position:
+            fixed;
+
+        z-index:
+            500;
+
+        left:
+            0;
+
+        right:
+            0;
+
+        bottom:
+            0;
+
+        min-height:
+            112px;
+
+        padding:
+            12px
+            20px
+            16px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .reader-progress-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+    }
+
+
+    .reader-progress-track {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            5px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .reader-progress-value {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    .reader-progress-thumb {
+
+        position:
+            absolute;
+
+        top:
+            50%;
+
+        width:
+            15px;
+
+        height:
+            15px;
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    .progress-text {
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .reader-action-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                1fr
+            );
+
+        margin-top:
+            14px;
+    }
+
+
+    .reader-action {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            4px;
+
+        min-height:
+            52px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .reader-action
+    .material-symbols-rounded {
+
+        font-size:
+            23px;
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Font Settings
+       ====================================================== */
+
+    .font-settings-panel {
+
+        position:
+            fixed;
+
+        z-index:
+            800;
+
+        left:
+            50%;
+
+        bottom:
+            126px;
+
+        width:
+            min(
+                calc(
+                    100%
+                    - 28px
+                ),
+                520px
+            );
+
+        padding:
+            20px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            12px
+            34px
+            rgba(
+                0,
+                0,
+                0,
+                0.22
+            );
+
+        transform:
+            translateX(
+                -50%
+            );
+    }
+
+
+    .settings-title-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        margin-bottom:
+            20px;
+    }
+
+
+    .settings-title {
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .settings-section {
+
+        padding:
+            14px 0;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .settings-label {
+
+        margin-bottom:
+            10px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .font-size-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                1fr
+            );
+
+        gap:
+            8px;
+    }
+
+
+    .font-size-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        height:
+            42px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .font-size-button.active {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .theme-options {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                1fr
+            );
+
+        gap:
+            8px;
+    }
+
+
+    .theme-option {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .theme-preview {
+
+        width:
+            100%;
+
+        height:
+            42px;
+
+        border:
+            2px solid
+            var(--border-subtle);
+
+        border-radius:
+            8px;
+    }
+
+
+    .theme-option.active
+    .theme-preview {
+
+        border-color:
+            var(--primary);
+    }
+
+
+    .theme-light {
+
+        background:
+            #ffffff;
+    }
+
+
+    .theme-sepia {
+
+        background:
+            #f5ecd7;
+    }
+
+
+    .theme-dark {
+
+        background:
+            #202124;
+    }
+
+
+    .theme-system {
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Contents Drawer
+       ====================================================== */
+
+    .contents-drawer {
+
+        position:
+            fixed;
+
+        z-index:
+            800;
+
+        top:
+            var(--status-bar-height);
+
+        left:
+            0;
+
+        bottom:
+            0;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        width:
+            min(
+                86vw,
+                380px
+            );
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            10px
+            0
+            28px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .contents-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            64px;
+
+        padding:
+            0 12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .contents-title {
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .contents-list {
+
+        flex:
+            1;
+
+        overflow-y:
+            auto;
+
+        padding:
+            8px;
+    }
+
+
+    .contents-item {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            32px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            10px;
+
+        align-items:
+            center;
+
+        min-height:
+            58px;
+
+        padding:
+            8px 10px;
+
+        border-radius:
+            10px;
+    }
+
+
+    .contents-item.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .contents-number {
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .contents-item.active
+    .contents-number {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .contents-item-title {
+
+        font-size:
+            13px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ======================================================
+       Selection Popup
+       ====================================================== */
+
+    .selected-reading-text {
+
+        position:
+            relative;
+
+        padding:
+            1px 2px;
+
+        border-radius:
+            2px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .selection-menu {
+
+        position:
+            fixed;
+
+        z-index:
+            900;
+
+        top:
+            36%;
+
+        left:
+            50%;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        padding:
+            5px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            8px
+            26px
+            rgba(
+                0,
+                0,
+                0,
+                0.24
+            );
+
+        transform:
+            translateX(
+                -50%
+            );
+    }
+
+
+    .selection-action {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            64px;
+
+        height:
+            54px;
+
+        gap:
+            3px;
+
+        border-radius:
+            10px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .selection-action
+    .material-symbols-rounded {
+
+        font-size:
+            20px;
+
+        color:
+            var(--icon);
+    }
+
+
+    /* ======================================================
+       Desktop Reader
+       ====================================================== */
+
+    @media (
+        min-width: 1024px
+    ) {
+
+        .reader-surface {
+
+            padding-top:
+                72px;
+
+            padding-bottom:
+                86px;
+        }
+
+
+        .reader-footer-info {
+
+            left:
+                48px;
+
+            right:
+                48px;
+        }
+
+
+        .reader-top-toolbar {
+
+            left:
+                50%;
+
+            width:
+                min(
+                    100%,
+                    1100px
+                );
+
+            border-left:
+                1px solid
+                var(--border-subtle);
+
+            border-right:
+                1px solid
+                var(--border-subtle);
+
+            border-radius:
+                0 0 14px 14px;
+
+            transform:
+                translateX(
+                    -50%
+                );
+        }
+
+
+        .reader-bottom-toolbar {
+
+            left:
+                50%;
+
+            width:
+                min(
+                    100%,
+                    920px
+                );
+
+            border:
+                1px solid
+                var(--border-subtle);
+
+            border-bottom:
+                none;
+
+            border-radius:
+                16px 16px 0 0;
+
+            transform:
+                translateX(
+                    -50%
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="reader-page"
+    style="
+        --reader-font-size:
+            {{ reader.font_size }}px;
+
+        --reader-line-height:
+            {{ reader.line_height }};
+
+        --reader-font-family:
+            {% if reader.font_family == 'Bookerly' %}
+                Georgia, serif
+            {% elif reader.font_family == 'Serif' %}
+                serif
+            {% else %}
+                {{ reader.font_family }}, sans-serif
+            {% endif %};
+    "
+>
+
+
+    <!-- =====================================================
+         Reading Content
+         ===================================================== -->
+
+    <main
+        class="reader-surface"
+        data-class="section"
+        data-semantic="reading_surface"
+    >
+
+        <article
+            class="
+                reader-document
+                margin-{{ reader.margin_width }}
+            "
+        >
+
+            <div
+                class="chapter-number"
+                data-class="text"
+                data-semantic="chapter_number"
+            >
+                Chapter
+                {{ reader.chapter_number }}
+            </div>
+
+
+            <h1
+                class="chapter-title"
+                data-class="text"
+                data-semantic="chapter_title"
+            >
+                {{ reader.chapter_title }}
+            </h1>
+
+
+            {% for paragraph in reader.paragraphs %}
+
+                {% if
+                    reader.show_selection
+                    and loop.index == 3
+                %}
+
+                <p
+                    class="reader-paragraph"
+                    data-class="text"
+                    data-semantic="reader_selected_paragraph"
+                >
+
+                    {{ paragraph[:90] }}
+
+                    <span
+                        class="selected-reading-text"
+                        data-class="text"
+                        data-semantic="selected_text"
+                    >
+                        {{ reader.selected_text }}
+                    </span>
+
+                    {{ paragraph[90:] }}
+
+                </p>
+
+                {% else %}
+
+                <p
+                    class="reader-paragraph"
+                    data-class="text"
+                    data-semantic="reader_paragraph_{{ loop.index }}"
+                >
+                    {{ paragraph }}
+                </p>
+
+                {% endif %}
+
+            {% endfor %}
+
+        </article>
+
+
+        <div class="reader-footer-info">
+
+            <span
+                data-class="text"
+                data-semantic="reader_time_remaining"
+            >
+                {{ reader.time_left }}
+            </span>
+
+            <span
+                data-class="text"
+                data-semantic="reader_progress_percentage"
+            >
+                {{ reader.progress }}%
+            </span>
+
+        </div>
+
+    </main>
+
+
+    <!-- =====================================================
+         Controls
+         ===================================================== -->
+
+    {% if reader.show_controls %}
+
+    <header
+        class="reader-top-toolbar"
+        data-class="app_bar"
+        data-semantic="reader_top_toolbar"
+        data-occluder="true"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="reader_back_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="reader_back_icon"
+            >
+                arrow_back
+            </span>
+        </button>
+
+
+        <div class="reader-toolbar-title">
+
+            <div
+                class="
+                    reader-toolbar-book
+                    truncate
+                "
+                data-class="text"
+                data-semantic="reader_toolbar_book_title"
+            >
+                {{ reader.book_title }}
+            </div>
+
+            <div
+                class="
+                    reader-toolbar-chapter
+                    truncate
+                "
+                data-class="text"
+                data-semantic="reader_toolbar_chapter"
+            >
+                {{ reader.chapter_title }}
+            </div>
+
+        </div>
+
+
+        <div class="reader-toolbar-actions">
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="bookmark_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="bookmark_icon"
+                >
+                    {% if reader.bookmarked %}
+                        bookmark
+                    {% else %}
+                        bookmark_border
+                    {% endif %}
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="reader_more_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="reader_more_icon"
+                >
+                    more_vert
+                </span>
+
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <footer
+        class="reader-bottom-toolbar"
+        data-class="navigation_bar"
+        data-semantic="reader_bottom_toolbar"
+        data-occluder="true"
+    >
+
+        <div class="reader-progress-row">
+
+            <span
+                class="progress-text"
+                data-class="text"
+                data-semantic="current_page"
+            >
+                {{ reader.current_page }}
+            </span>
+
+
+            <div
+                class="reader-progress-track"
+                data-class="slider"
+                data-semantic="reading_progress_slider"
+            >
+
+                <div
+                    class="reader-progress-value"
+                    style="
+                        width:
+                        {{ reader.progress }}%;
+                    "
+                ></div>
+
+
+                <div
+                    class="reader-progress-thumb"
+                    data-class="selection_indicator"
+                    data-semantic="reading_progress_thumb"
+                    style="
+                        left:
+                        {{ reader.progress }}%;
+                    "
+                ></div>
+
+            </div>
+
+
+            <span
+                class="progress-text"
+                data-class="text"
+                data-semantic="total_pages"
+            >
+                {{ reader.total_pages }}
+            </span>
+
+        </div>
+
+
+        <div class="reader-action-row">
+
+            <button
+                class="reader-action"
+                data-class="button"
+                data-semantic="font_settings_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="font_settings_icon"
+                >
+                    text_fields
+                </span>
+
+                <span
+                    data-class="text"
+                    data-semantic="font_settings_label"
+                >
+                    Aa
+                </span>
+
+            </button>
+
+
+            <button
+                class="reader-action"
+                data-class="button"
+                data-semantic="contents_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="contents_icon"
+                >
+                    format_list_bulleted
+                </span>
+
+                <span
+                    data-class="text"
+                    data-semantic="contents_label"
+                >
+                    Contents
+                </span>
+
+            </button>
+
+
+            <button
+                class="reader-action"
+                data-class="button"
+                data-semantic="search_book_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_book_icon"
+                >
+                    search
+                </span>
+
+                <span
+                    data-class="text"
+                    data-semantic="search_book_label"
+                >
+                    Search
+                </span>
+
+            </button>
+
+
+            <button
+                class="reader-action"
+                data-class="button"
+                data-semantic="reader_notes_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="reader_notes_icon"
+                >
+                    sticky_note_2
+                </span>
+
+                <span
+                    data-class="text"
+                    data-semantic="reader_notes_label"
+                >
+                    Notes
+                </span>
+
+            </button>
+
+        </div>
+
+    </footer>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Font Settings State
+         ===================================================== -->
+
+    {% if reader.show_font_settings %}
+
+    <section
+        class="font-settings-panel"
+        data-class="bottom_sheet"
+        data-semantic="reader_font_settings"
+        data-occluder="true"
+    >
+
+        <div class="settings-title-row">
+
+            <h2
+                class="settings-title"
+                data-class="text"
+                data-semantic="reading_settings_title"
+            >
+                Reading settings
+            </h2>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_settings_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_settings_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div class="settings-section">
+
+            <div
+                class="settings-label"
+                data-class="text"
+                data-semantic="font_size_label"
+            >
+                Font size
+            </div>
+
+
+            <div class="font-size-row">
+
+                {% for size in [16, 18, 20, 22] %}
+
+                <button
+                    class="
+                        font-size-button
+                        {% if reader.font_size == size %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="font_size_{{ size }}"
+                >
+                    A
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <div class="settings-section">
+
+            <div
+                class="settings-label"
+                data-class="text"
+                data-semantic="theme_label"
+            >
+                Theme
+            </div>
+
+
+            <div class="theme-options">
+
+                {% for theme_name in
+                    [
+                        "system",
+                        "light",
+                        "sepia",
+                        "dark"
+                    ]
+                %}
+
+                <button
+                    class="
+                        theme-option
+
+                        {% if
+                            reader.reading_theme
+                            == theme_name
+                        %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="reader_theme_{{ theme_name }}"
+                >
+
+                    <span
+                        class="
+                            theme-preview
+                            theme-{{ theme_name }}
+                        "
+                    ></span>
+
+                    <span
+                        data-class="text"
+                        data-semantic="reader_theme_{{ theme_name }}_label"
+                    >
+                        {{ theme_name | title }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Table of Contents
+         ===================================================== -->
+
+    {% if reader.show_contents %}
+
+    <aside
+        class="contents-drawer"
+        data-class="navigation_bar"
+        data-semantic="table_of_contents_drawer"
+        data-occluder="true"
+    >
+
+        <div class="contents-header">
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="contents_close_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="contents_close_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+
+            <div
+                class="contents-title"
+                data-class="text"
+                data-semantic="contents_title"
+            >
+                Contents
+            </div>
+
+        </div>
+
+
+        <div class="contents-list">
+
+            {% for chapter in reader.contents %}
+
+            <div
+                class="
+                    contents-item
+
+                    {% if chapter.active %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="contents_chapter_{{ chapter.number }}"
+            >
+
+                <span
+                    class="contents-number"
+                    data-class="text"
+                    data-semantic="contents_number_{{ chapter.number }}"
+                >
+                    {{ chapter.number }}
+                </span>
+
+
+                <span
+                    class="
+                        contents-item-title
+                        truncate
+                    "
+                    data-class="text"
+                    data-semantic="contents_title_{{ chapter.number }}"
+                >
+                    {{ chapter.title }}
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </aside>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Selected Text State
+         ===================================================== -->
+
+    {% if reader.show_selection %}
+
+    <div
+        class="selection-menu"
+        data-class="card"
+        data-semantic="selected_text_action_menu"
+        data-occluder="true"
+    >
+
+        <button
+            class="selection-action"
+            data-class="button"
+            data-semantic="highlight_action"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="highlight_icon"
+            >
+                ink_highlighter
+            </span>
+
+            <span
+                data-class="text"
+                data-semantic="highlight_label"
+            >
+                Highlight
+            </span>
+
+        </button>
+
+
+        <button
+            class="selection-action"
+            data-class="button"
+            data-semantic="note_action"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="note_icon"
+            >
+                note_add
+            </span>
+
+            <span
+                data-class="text"
+                data-semantic="note_label"
+            >
+                Note
+            </span>
+
+        </button>
+
+
+        <button
+            class="selection-action"
+            data-class="button"
+            data-semantic="dictionary_action"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="dictionary_icon"
+            >
+                dictionary
+            </span>
+
+            <span
+                data-class="text"
+                data-semantic="dictionary_label"
+            >
+                Define
+            </span>
+
+        </button>
+
+
+        <button
+            class="selection-action"
+            data-class="button"
+            data-semantic="copy_action"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="copy_icon"
+            >
+                content_copy
+            </span>
+
+            <span
+                data-class="text"
+                data-semantic="copy_label"
+            >
+                Copy
+            </span>
+
+        </button>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

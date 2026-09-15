@@ -1,0 +1,2453 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Kindle Discover
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .discover-page {
+
+        position:
+            relative;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .discover-background {
+
+        min-height:
+            100vh;
+
+        padding-bottom:
+            92px;
+
+        background:
+            var(--background);
+    }
+
+
+    .discover-background.popup-active {
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Popup Backdrop
+       ====================================================== */
+
+    .popup-backdrop {
+
+        position:
+            fixed;
+
+        z-index:
+            800;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.32
+            );
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .discover-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            200;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            70px;
+
+        padding:
+            10px
+            var(--page-padding);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .discover-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .discover-search {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        flex:
+            1;
+
+        max-width:
+            620px;
+
+        margin-left:
+            auto;
+
+        min-height:
+            44px;
+
+        padding:
+            0 14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .discover-search input {
+
+        width:
+            100%;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .discover-content {
+
+        width:
+            min(
+                100%,
+                var(--content-max-width)
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            28px
+            var(--page-padding)
+            60px;
+    }
+
+
+    /* ======================================================
+       Hero
+       ====================================================== */
+
+    .discover-hero {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                0,
+                1.4fr
+            )
+            minmax(
+                250px,
+                .6fr
+            );
+
+        gap:
+            20px;
+    }
+
+
+    .hero-feature {
+
+        position:
+            relative;
+
+        min-height:
+            320px;
+
+        overflow:
+            hidden;
+
+        padding:
+            36px;
+
+        border-radius:
+            24px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .hero-label {
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+
+        text-transform:
+            uppercase;
+
+        letter-spacing:
+            .8px;
+    }
+
+
+    .hero-title {
+
+        max-width:
+            520px;
+
+        margin-top:
+            16px;
+
+        font-size:
+            clamp(
+                30px,
+                4vw,
+                48px
+            );
+
+        line-height:
+            1.1;
+
+        font-weight:
+            800;
+    }
+
+
+    .hero-description {
+
+        max-width:
+            520px;
+
+        margin-top:
+            14px;
+
+        font-size:
+            14px;
+
+        line-height:
+            1.55;
+    }
+
+
+    .hero-action {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            44px;
+
+        margin-top:
+            22px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Featured Side
+       ====================================================== */
+
+    .featured-side {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                1fr
+            );
+
+        gap:
+            8px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            22px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .featured-cover {
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .featured-cover img {
+
+        height:
+            100%;
+    }
+
+
+    /* ======================================================
+       Categories
+       ====================================================== */
+
+    .discover-section {
+
+        margin-top:
+            36px;
+    }
+
+
+    .section-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+
+        margin-bottom:
+            16px;
+    }
+
+
+    .section-title {
+
+        font-size:
+            22px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .section-action {
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--primary);
+    }
+
+
+    .genre-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            12px;
+    }
+
+
+    .genre-card {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            78px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .genre-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .genre-name {
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Shelf
+       ====================================================== */
+
+    .book-shelf {
+
+        display:
+            flex;
+
+        gap:
+            16px;
+
+        overflow-x:
+            auto;
+
+        padding-bottom:
+            10px;
+    }
+
+
+    .discover-book {
+
+        flex:
+            0 0 150px;
+
+        min-width:
+            0;
+    }
+
+
+    .discover-book-cover {
+
+        position:
+            relative;
+
+        width:
+            150px;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        box-shadow:
+            0
+            3px
+            10px
+            rgba(
+                0,
+                0,
+                0,
+                .13
+            );
+    }
+
+
+    .discover-book-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .book-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        height:
+            100%;
+
+        padding:
+            12px;
+
+        text-align:
+            center;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .book-badge {
+
+        position:
+            absolute;
+
+        top:
+            7px;
+
+        left:
+            7px;
+
+        padding:
+            5px 7px;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--badge-background);
+
+        color:
+            var(--badge-text);
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+    }
+
+
+    .book-discount {
+
+        position:
+            absolute;
+
+        right:
+            7px;
+
+        bottom:
+            7px;
+
+        padding:
+            4px 6px;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+    }
+
+
+    .discover-book-title {
+
+        margin-top:
+            10px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.35;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .discover-book-author {
+
+        margin-top:
+            4px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .discover-book-rating {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        margin-top:
+            6px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .discover-book-rating
+    .material-symbols-rounded {
+
+        font-size:
+            15px;
+
+        color:
+            var(--warning);
+    }
+
+
+    .discover-book-price {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        margin-top:
+            6px;
+    }
+
+
+    .current-price {
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .original-price {
+
+        font-size:
+            10px;
+
+        text-decoration:
+            line-through;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .unlimited {
+
+        margin-top:
+            5px;
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Bestseller List
+       ====================================================== */
+
+    .bestseller-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+    }
+
+
+    .bestseller-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            40px
+            60px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        min-height:
+            102px;
+
+        padding:
+            10px 0;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .bestseller-rank {
+
+        font-size:
+            24px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .bestseller-cover {
+
+        width:
+            60px;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .bestseller-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .bestseller-info {
+
+        min-width:
+            0;
+    }
+
+
+    .bestseller-title {
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .bestseller-author {
+
+        margin-top:
+            4px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Popup Dialog
+       ====================================================== */
+
+    .discover-dialog {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        top:
+            50%;
+
+        left:
+            50%;
+
+        width:
+            min(
+                calc(
+                    100%
+                    - 30px
+                ),
+                500px
+            );
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            16px
+            48px
+            rgba(
+                0,
+                0,
+                0,
+                .30
+            );
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    .dialog-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-description {
+
+        margin-top:
+            7px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        margin-top:
+            20px;
+    }
+
+
+    .dialog-button {
+
+        min-height:
+            42px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            var(--pill-radius);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-secondary {
+
+        border:
+            1px solid
+            var(--border);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Genre Sheet
+       ====================================================== */
+
+    .genre-sheet {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        left:
+            50%;
+
+        bottom:
+            0;
+
+        width:
+            min(
+                100%,
+                620px
+            );
+
+        max-height:
+            80vh;
+
+        overflow-y:
+            auto;
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-bottom:
+            none;
+
+        border-radius:
+            24px
+            24px
+            0
+            0;
+
+        background:
+            var(--surface);
+
+        transform:
+            translateX(
+                -50%
+            );
+    }
+
+
+    .genre-sheet-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                2,
+                1fr
+            );
+
+        gap:
+            8px;
+
+        margin-top:
+            16px;
+    }
+
+
+    .genre-option {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            46px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            10px;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+    }
+
+
+    .genre-option.active {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Preview
+       ====================================================== */
+
+    .preview-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            110px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            18px;
+
+        margin-top:
+            16px;
+    }
+
+
+    .preview-cover {
+
+        width:
+            110px;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .preview-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .preview-title {
+
+        font-size:
+            17px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .preview-author {
+
+        margin-top:
+            5px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .discover-app-bar {
+
+            flex-wrap:
+                wrap;
+        }
+
+
+        .discover-title {
+
+            flex:
+                1;
+        }
+
+
+        .discover-search {
+
+            order:
+                10;
+
+            flex-basis:
+                100%;
+
+            max-width:
+                none;
+        }
+
+
+        .discover-hero {
+
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .hero-feature {
+
+            min-height:
+                280px;
+
+            padding:
+                24px;
+        }
+
+
+        .featured-side {
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    1fr
+                );
+        }
+
+
+        .genre-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    1fr
+                );
+        }
+
+
+        .discover-book {
+
+            flex-basis:
+                128px;
+        }
+
+
+        .discover-book-cover {
+
+            width:
+                128px;
+        }
+
+
+        .bestseller-row {
+
+            grid-template-columns:
+                28px
+                52px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap:
+                10px;
+        }
+
+
+        .bestseller-cover {
+
+            width:
+                52px;
+        }
+
+
+        .bestseller-row
+        > button {
+
+            display:
+                none;
+        }
+
+    }
+
+
+    @media (
+        min-width: 600px
+    )
+    and (
+        max-width: 839px
+    ) {
+
+        .genre-grid {
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    1fr
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="discover-page">
+
+
+    <!-- =====================================================
+         NORMAL BACKGROUND UI
+         ===================================================== -->
+
+    <div
+        class="
+            discover-background
+
+            {% if discover.popup_open %}
+            popup-active
+            {% endif %}
+        "
+
+        {% if discover.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+
+        <!-- =================================================
+             App Bar
+             ================================================= -->
+
+        <header
+            class="discover-app-bar"
+            data-class="app_bar"
+            data-semantic="discover_app_bar"
+        >
+
+            <div
+                class="discover-title"
+                data-class="text"
+                data-semantic="discover_title"
+            >
+                Discover
+            </div>
+
+
+            <div
+                class="discover-search"
+                data-class="search_bar"
+                data-semantic="discover_search"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="discover_search_icon"
+                >
+                    search
+                </span>
+
+
+                <input
+                    type="text"
+                    placeholder="Search Kindle Store"
+                    data-class="input_field"
+                    data-semantic="discover_search_input"
+                >
+
+            </div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="discover_filter_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    tune
+                </span>
+
+            </button>
+
+        </header>
+
+
+        <!-- =================================================
+             Main
+             ================================================= -->
+
+        <main class="discover-content">
+
+
+            <!-- =================================================
+                 Hero
+                 ================================================= -->
+
+            <section class="discover-hero">
+
+                <article
+                    class="hero-feature"
+                    data-class="card"
+                    data-semantic="discover_hero"
+                >
+
+                    <div
+                        class="hero-label"
+                        data-class="text"
+                        data-semantic="hero_label"
+                    >
+                        Kindle picks
+                    </div>
+
+
+                    <h1
+                        class="hero-title"
+                        data-class="text"
+                        data-semantic="hero_title"
+                    >
+                        Find your next great read
+                    </h1>
+
+
+                    <p
+                        class="hero-description"
+                        data-class="text"
+                        data-semantic="hero_description"
+                    >
+                        Explore bestselling books,
+                        limited-time deals and recommendations
+                        selected for your reading interests.
+                    </p>
+
+
+                    <button
+                        class="hero-action"
+                        data-class="button"
+                        data-semantic="hero_browse_button"
+                    >
+
+                        <span
+                            data-class="text"
+                        >
+                            Browse books
+                        </span>
+
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            arrow_forward
+                        </span>
+
+                    </button>
+
+                </article>
+
+
+                <div
+                    class="featured-side"
+                    data-class="card"
+                    data-semantic="featured_books_card"
+                >
+
+                    {% for book in discover.featured %}
+
+                    <div class="featured-cover">
+
+                        {% if book.cover %}
+
+                        <img
+                            src="{{ book.cover }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="featured_cover_{{ book.id }}"
+                        >
+
+                        {% endif %}
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 Genres
+                 ================================================= -->
+
+            <section class="discover-section">
+
+                <div class="section-header">
+
+                    <h2
+                        class="section-title"
+                        data-class="text"
+                        data-semantic="genres_heading"
+                    >
+                        Browse genres
+                    </h2>
+
+
+                    <span
+                        class="section-action"
+                        data-class="text"
+                        data-semantic="genres_see_all"
+                    >
+                        See all
+                    </span>
+
+                </div>
+
+
+                <div class="genre-grid">
+
+                    {% for genre in discover.genres %}
+
+                    <article
+                        class="genre-card"
+                        data-class="card"
+                        data-semantic="genre_{{ loop.index }}"
+                    >
+
+                        <div
+                            class="genre-icon"
+                            data-class="icon"
+                            data-semantic="genre_icon_{{ loop.index }}"
+                        >
+
+                            <span class="material-symbols-rounded">
+                                {{ genre.icon }}
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="genre-name"
+                            data-class="text"
+                            data-semantic="genre_name_{{ loop.index }}"
+                        >
+                            {{ genre.name }}
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 Recommended
+                 ================================================= -->
+
+            <section class="discover-section">
+
+                <div class="section-header">
+
+                    <h2
+                        class="section-title"
+                        data-class="text"
+                        data-semantic="recommended_heading"
+                    >
+                        {{ discover.recommended.title }}
+                    </h2>
+
+
+                    <span
+                        class="section-action"
+                        data-class="text"
+                    >
+                        See all
+                    </span>
+
+                </div>
+
+
+                <div class="book-shelf">
+
+                    {% for book in discover.recommended.books %}
+
+                    <article
+                        class="discover-book"
+                        data-class="card"
+                        data-semantic="recommended_book_{{ book.id }}"
+                    >
+
+                        <div class="discover-book-cover">
+
+                            {% if book.cover %}
+
+                            <img
+                                src="{{ book.cover }}"
+                                alt=""
+                                data-class="image"
+                                data-semantic="recommended_cover_{{ book.id }}"
+                            >
+
+                            {% else %}
+
+                            <div class="book-placeholder">
+                                {{ book.title }}
+                            </div>
+
+                            {% endif %}
+
+
+                            {% if book.editors_pick %}
+
+                            <span
+                                class="book-badge"
+                                data-class="badge"
+                                data-semantic="editors_pick_{{ book.id }}"
+                            >
+                                EDITOR'S PICK
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div
+                            class="
+                                discover-book-title
+                                line-clamp-2
+                            "
+                            data-class="text"
+                            data-semantic="recommended_title_{{ book.id }}"
+                        >
+                            {{ book.title }}
+                        </div>
+
+
+                        <div
+                            class="
+                                discover-book-author
+                                truncate
+                            "
+                            data-class="text"
+                            data-semantic="recommended_author_{{ book.id }}"
+                        >
+                            {{ book.author }}
+                        </div>
+
+
+                        <div class="discover-book-rating">
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                star
+                            </span>
+
+
+                            <span
+                                data-class="text"
+                            >
+                                {{ book.rating }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="discover-book-price">
+
+                            <span
+                                class="current-price"
+                                data-class="text"
+                            >
+                                {{ book.price }}
+                            </span>
+
+                        </div>
+
+
+                        {% if book.kindle_unlimited %}
+
+                        <div
+                            class="unlimited"
+                            data-class="badge"
+                            data-semantic="unlimited_{{ book.id }}"
+                        >
+                            Kindle Unlimited
+                        </div>
+
+                        {% endif %}
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 Deals
+                 ================================================= -->
+
+            <section class="discover-section">
+
+                <div class="section-header">
+
+                    <h2
+                        class="section-title"
+                        data-class="text"
+                        data-semantic="deals_heading"
+                    >
+                        Limited-time deals
+                    </h2>
+
+                </div>
+
+
+                <div class="book-shelf">
+
+                    {% for book in discover.deals.books %}
+
+                    <article
+                        class="discover-book"
+                        data-class="card"
+                        data-semantic="deal_book_{{ book.id }}"
+                    >
+
+                        <div class="discover-book-cover">
+
+                            {% if book.cover %}
+
+                            <img
+                                src="{{ book.cover }}"
+                                alt=""
+                                data-class="image"
+                                data-semantic="deal_cover_{{ book.id }}"
+                            >
+
+                            {% endif %}
+
+
+                            <span
+                                class="book-discount"
+                                data-class="badge"
+                                data-semantic="discount_{{ book.id }}"
+                            >
+                                -{{ book.discount }}%
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="
+                                discover-book-title
+                                line-clamp-2
+                            "
+                            data-class="text"
+                        >
+                            {{ book.title }}
+                        </div>
+
+
+                        <div
+                            class="discover-book-price"
+                        >
+
+                            <span
+                                class="current-price"
+                                data-class="text"
+                            >
+                                {{ book.price }}
+                            </span>
+
+
+                            <span
+                                class="original-price"
+                                data-class="text"
+                            >
+                                {{ book.original_price }}
+                            </span>
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 Bestseller Ranking
+                 ================================================= -->
+
+            <section class="discover-section">
+
+                <div class="section-header">
+
+                    <h2
+                        class="section-title"
+                        data-class="text"
+                        data-semantic="bestsellers_heading"
+                    >
+                        Best sellers
+                    </h2>
+
+                </div>
+
+
+                <div class="bestseller-list">
+
+                    {% for book in discover.bestsellers.books[:6] %}
+
+                    <article
+                        class="bestseller-row"
+                        data-class="card"
+                        data-semantic="bestseller_{{ book.id }}"
+                    >
+
+                        <div
+                            class="bestseller-rank"
+                            data-class="text"
+                            data-semantic="bestseller_rank_{{ loop.index }}"
+                        >
+                            {{ loop.index }}
+                        </div>
+
+
+                        <div class="bestseller-cover">
+
+                            {% if book.cover %}
+
+                            <img
+                                src="{{ book.cover }}"
+                                alt=""
+                                data-class="image"
+                            >
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="bestseller-info">
+
+                            <div
+                                class="
+                                    bestseller-title
+                                    truncate
+                                "
+                                data-class="text"
+                            >
+                                {{ book.title }}
+                            </div>
+
+
+                            <div
+                                class="
+                                    bestseller-author
+                                    truncate
+                                "
+                                data-class="text"
+                            >
+                                {{ book.author }}
+                            </div>
+
+
+                            <div class="discover-book-rating">
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    star
+                                </span>
+
+                                <span
+                                    data-class="text"
+                                >
+                                    {{ book.rating }}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="bestseller_more_{{ book.id }}"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                more_vert
+                            </span>
+
+                        </button>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Popup Backdrop
+         ===================================================== -->
+
+    {% if discover.popup_open %}
+
+    <div
+        class="popup-backdrop"
+        data-annotation-skip="true"
+    ></div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Genre Filter
+         ===================================================== -->
+
+    {% if discover.show_genre_filter %}
+
+    <section
+        class="genre-sheet"
+        data-class="bottom_sheet"
+        data-semantic="genre_filter_sheet"
+        data-occluder="true"
+    >
+
+        <div class="section-header">
+
+            <h2
+                class="section-title"
+                data-class="text"
+                data-semantic="genre_filter_title"
+            >
+                Choose a genre
+            </h2>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="genre_filter_close_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <div class="genre-sheet-grid">
+
+            {% for genre in discover.genres %}
+
+            <button
+                class="
+                    genre-option
+
+                    {% if
+                        discover.selected_genre
+                        == genre.name
+                    %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="genre_filter_option_{{ loop.index }}"
+            >
+
+                <span
+                    data-class="text"
+                >
+                    {{ genre.name }}
+                </span>
+
+
+                {% if
+                    discover.selected_genre
+                    == genre.name
+                %}
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    check
+                </span>
+
+                {% endif %}
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Purchase Options
+         ===================================================== -->
+
+    {% if
+        discover.show_purchase_options
+        and discover.selected_book
+    %}
+
+    <section
+        class="discover-dialog"
+        data-class="dialog"
+        data-semantic="purchase_options_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="purchase_dialog_title"
+        >
+            Get this book
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="purchase_dialog_book"
+        >
+            {{ discover.selected_book.title }}
+        </p>
+
+
+        <div
+            style="
+                margin-top:
+                    18px;
+            "
+        >
+
+            <button
+                class="genre-option"
+                data-class="button"
+                data-semantic="purchase_buy_option"
+                style="
+                    width:
+                        100%;
+                "
+            >
+
+                <span
+                    data-class="text"
+                >
+                    Buy Kindle edition
+                </span>
+
+
+                <span
+                    data-class="text"
+                >
+                    {{ discover.selected_book.price }}
+                </span>
+
+            </button>
+
+
+            {% if
+                discover.selected_book.kindle_unlimited
+            %}
+
+            <button
+                class="genre-option"
+                data-class="button"
+                data-semantic="purchase_unlimited_option"
+                style="
+                    width:
+                        100%;
+
+                    margin-top:
+                        8px;
+                "
+            >
+
+                <span
+                    data-class="text"
+                >
+                    Read with Kindle Unlimited
+                </span>
+
+            </button>
+
+            {% endif %}
+
+
+            {% if
+                discover.selected_book.sample_available
+            %}
+
+            <button
+                class="genre-option"
+                data-class="button"
+                data-semantic="purchase_sample_option"
+                style="
+                    width:
+                        100%;
+
+                    margin-top:
+                        8px;
+                "
+            >
+
+                <span
+                    data-class="text"
+                >
+                    Read sample
+                </span>
+
+            </button>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="
+                    dialog-button
+                    dialog-secondary
+                "
+                data-class="button"
+                data-semantic="purchase_cancel_button"
+            >
+                Cancel
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Preview Popup
+         ===================================================== -->
+
+    {% if
+        discover.show_preview
+        and discover.selected_book
+    %}
+
+    <section
+        class="discover-dialog"
+        data-class="dialog"
+        data-semantic="discover_preview_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+        >
+            Quick preview
+        </h2>
+
+
+        <div class="preview-layout">
+
+            <div class="preview-cover">
+
+                {% if discover.selected_book.cover %}
+
+                <img
+                    src="{{ discover.selected_book.cover }}"
+                    alt=""
+                    data-class="image"
+                    data-semantic="preview_cover"
+                >
+
+                {% endif %}
+
+            </div>
+
+
+            <div>
+
+                <div
+                    class="preview-title"
+                    data-class="text"
+                    data-semantic="preview_title"
+                >
+                    {{ discover.selected_book.title }}
+                </div>
+
+
+                <div
+                    class="preview-author"
+                    data-class="text"
+                    data-semantic="preview_author"
+                >
+                    {{ discover.selected_book.author }}
+                </div>
+
+
+                <div class="discover-book-rating">
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        star
+                    </span>
+
+
+                    <span
+                        data-class="text"
+                    >
+                        {{ discover.selected_book.rating }}
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="current-price"
+                    data-class="text"
+                    style="
+                        margin-top:
+                            10px;
+                    "
+                >
+                    {{ discover.selected_book.price }}
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="dialog-actions">
+
+            {% if
+                discover.selected_book.sample_available
+            %}
+
+            <button
+                class="
+                    dialog-button
+                    dialog-secondary
+                "
+                data-class="button"
+                data-semantic="preview_sample_button"
+            >
+                Read sample
+            </button>
+
+            {% endif %}
+
+
+            <button
+                class="
+                    dialog-button
+                    dialog-primary
+                "
+                data-class="button"
+                data-semantic="preview_details_button"
+            >
+                View details
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,2345 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Kindle Downloads
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .downloads-page {
+
+        position:
+            relative;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .downloads-background {
+
+        min-height:
+            100vh;
+
+        padding-bottom:
+            90px;
+
+        background:
+            var(--background);
+    }
+
+
+    .downloads-background.popup-active {
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Backdrop
+       ====================================================== */
+
+    .popup-backdrop {
+
+        position:
+            fixed;
+
+        z-index:
+            800;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                .32
+            );
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .downloads-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            200;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            68px;
+
+        padding:
+            0
+            var(--page-padding);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .downloads-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .downloads-actions {
+
+        display:
+            flex;
+
+        gap:
+            4px;
+    }
+
+
+    /* ======================================================
+       Selection App Bar
+       ====================================================== */
+
+    .selection-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            210;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            68px;
+
+        padding:
+            0
+            var(--page-padding);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .selection-count {
+
+        flex:
+            1;
+
+        font-size:
+            15px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Offline Banner
+       ====================================================== */
+
+    .offline-banner {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            12px
+            var(--page-padding);
+
+        background:
+            var(--warning);
+
+        color:
+            var(--on-warning);
+    }
+
+
+    .offline-banner
+    .material-symbols-rounded {
+
+        font-size:
+            20px;
+    }
+
+
+    .offline-text {
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .downloads-content {
+
+        width:
+            min(
+                100%,
+                1000px
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            28px
+            var(--page-padding)
+            60px;
+    }
+
+
+    /* ======================================================
+       Storage
+       ====================================================== */
+
+    .storage-card {
+
+        padding:
+            18px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            18px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .storage-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            14px;
+    }
+
+
+    .storage-title {
+
+        font-size:
+            15px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .storage-text {
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .storage-track {
+
+        height:
+            8px;
+
+        margin-top:
+            14px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .storage-progress {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Controls
+       ====================================================== */
+
+    .download-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+
+        margin-top:
+            22px;
+    }
+
+
+    .download-summary {
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .control-actions {
+
+        display:
+            flex;
+
+        gap:
+            8px;
+    }
+
+
+    .control-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            38px;
+
+        padding:
+            0 13px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Download List
+       ====================================================== */
+
+    .download-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        margin-top:
+            18px;
+    }
+
+
+    .download-row {
+
+        position:
+            relative;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            66px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        min-height:
+            118px;
+
+        padding:
+            12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .download-row.selected {
+
+        border-radius:
+            14px;
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .download-cover {
+
+        position:
+            relative;
+
+        width:
+            66px;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .download-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .cover-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        height:
+            100%;
+
+        padding:
+            7px;
+
+        text-align:
+            center;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Selection
+       ====================================================== */
+
+    .download-selection {
+
+        position:
+            absolute;
+
+        top:
+            5px;
+
+        left:
+            5px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        border:
+            2px solid
+            var(--surface);
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .download-selection
+    .material-symbols-rounded {
+
+        font-size:
+            15px;
+    }
+
+
+    /* ======================================================
+       Download Info
+       ====================================================== */
+
+    .download-info {
+
+        min-width:
+            0;
+    }
+
+
+    .download-title {
+
+        font-size:
+            14px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .download-row.selected
+    .download-title {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .download-author {
+
+        margin-top:
+            4px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .download-row.selected
+    .download-author {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .download-status-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            6px;
+
+        margin-top:
+            8px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .download-row.selected
+    .download-status-row {
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Progress
+       ====================================================== */
+
+    .download-progress-track {
+
+        width:
+            min(
+                100%,
+                360px
+            );
+
+        height:
+            6px;
+
+        margin-top:
+            9px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .download-progress-value {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    .download-progress-value.failed {
+
+        background:
+            var(--error);
+    }
+
+
+    /* ======================================================
+       State Chip
+       ====================================================== */
+
+    .state-chip {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        padding:
+            4px 7px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+
+        font-weight:
+            700;
+
+        text-transform:
+            capitalize;
+    }
+
+
+    .state-chip.downloaded {
+
+        background:
+            var(--success);
+
+        color:
+            var(--on-success);
+    }
+
+
+    .state-chip.failed {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    /* ======================================================
+       Empty
+       ====================================================== */
+
+    .downloads-empty {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            460px;
+
+        text-align:
+            center;
+    }
+
+
+    .downloads-empty-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            88px;
+
+        height:
+            88px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .downloads-empty-icon
+    .material-symbols-rounded {
+
+        font-size:
+            40px;
+    }
+
+
+    .downloads-empty-title {
+
+        margin-top:
+            22px;
+
+        font-size:
+            22px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .downloads-empty-description {
+
+        max-width:
+            400px;
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .downloads-dialog {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        top:
+            50%;
+
+        left:
+            50%;
+
+        width:
+            min(
+                calc(
+                    100%
+                    - 30px
+                ),
+                460px
+            );
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            16px
+            48px
+            rgba(
+                0,
+                0,
+                0,
+                .30
+            );
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    .dialog-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-description {
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .dialog-book {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            54px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            12px;
+
+        align-items:
+            center;
+
+        margin-top:
+            18px;
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--background);
+    }
+
+
+    .dialog-cover {
+
+        width:
+            54px;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .dialog-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .dialog-book-title {
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-book-author {
+
+        margin-top:
+            4px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        margin-top:
+            22px;
+    }
+
+
+    .dialog-button {
+
+        min-height:
+            42px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            var(--pill-radius);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-secondary {
+
+        border:
+            1px solid
+            var(--border);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .dialog-danger {
+
+        background:
+            var(--error);
+
+        color:
+            var(--on-error);
+    }
+
+
+    /* ======================================================
+       Sync Conflict
+       ====================================================== */
+
+    .sync-options {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        margin-top:
+            18px;
+    }
+
+
+    .sync-option {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            38px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            10px;
+
+        align-items:
+            center;
+
+        min-height:
+            62px;
+
+        padding:
+            10px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--background);
+    }
+
+
+    .sync-option-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .sync-option-title {
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .sync-option-description {
+
+        margin-top:
+            3px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .downloads-content {
+
+            padding-top:
+                20px;
+        }
+
+
+        .download-controls {
+
+            align-items:
+                flex-start;
+        }
+
+
+        .control-button
+        .control-label {
+
+            display:
+                none;
+        }
+
+
+        .download-row {
+
+            grid-template-columns:
+                56px
+                minmax(
+                    0,
+                    1fr
+                )
+                34px;
+
+            gap:
+                10px;
+
+            min-height:
+                104px;
+
+            padding:
+                10px 0;
+        }
+
+
+        .download-cover {
+
+            width:
+                56px;
+        }
+
+
+        .storage-card {
+
+            padding:
+                15px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="downloads-page">
+
+
+    <!-- =====================================================
+         NORMAL BACKGROUND
+         ===================================================== -->
+
+    <div
+        class="
+            downloads-background
+
+            {% if downloads.popup_open %}
+            popup-active
+            {% endif %}
+        "
+
+        {% if downloads.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+
+        <!-- =================================================
+             App Bar
+             ================================================= -->
+
+        {% if not downloads.multi_select %}
+
+        <header
+            class="downloads-app-bar"
+            data-class="app_bar"
+            data-semantic="downloads_app_bar"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="downloads_back_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    arrow_back
+                </span>
+
+            </button>
+
+
+            <div
+                class="downloads-title"
+                data-class="text"
+                data-semantic="downloads_title"
+            >
+                Downloads
+            </div>
+
+
+            <div class="downloads-actions">
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="sync_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        sync
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="downloads_more_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        more_vert
+                    </span>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             Multi Select
+             ================================================= -->
+
+        {% else %}
+
+        <header
+            class="selection-bar"
+            data-class="app_bar"
+            data-semantic="downloads_selection_bar"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="selection_close_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+
+            <div
+                class="selection-count"
+                data-class="text"
+                data-semantic="downloads_selection_count"
+            >
+                {{
+                    downloads["items"]
+                    | selectattr(
+                        "selected"
+                    )
+                    | list
+                    | length
+                }}
+                selected
+            </div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="pause_selected_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    pause
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="remove_selected_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    delete
+                </span>
+
+            </button>
+
+        </header>
+
+        {% endif %}
+
+
+        <!-- =================================================
+             Offline
+             ================================================= -->
+
+        {% if downloads.offline %}
+
+        <div
+            class="offline-banner"
+            data-class="card"
+            data-semantic="offline_banner"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="offline_icon"
+            >
+                wifi_off
+            </span>
+
+
+            <span
+                class="offline-text"
+                data-class="text"
+                data-semantic="offline_message"
+            >
+                You're offline. Downloads will resume
+                when a connection is available.
+            </span>
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- =================================================
+             Main
+             ================================================= -->
+
+        <main class="downloads-content">
+
+
+            <!-- =============================================
+                 Storage
+                 ============================================= -->
+
+            <section
+                class="storage-card"
+                data-class="card"
+                data-semantic="downloads_storage_card"
+            >
+
+                <div class="storage-header">
+
+                    <div>
+
+                        <div
+                            class="storage-title"
+                            data-class="text"
+                            data-semantic="storage_title"
+                        >
+                            Device storage
+                        </div>
+
+
+                        <div
+                            class="storage-text"
+                            data-class="text"
+                            data-semantic="storage_value"
+                        >
+                            {{ downloads.used_storage_gb }}
+                            GB of
+                            {{ downloads.total_storage_gb }}
+                            GB used
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="storage_icon"
+                    >
+                        storage
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="storage-track"
+                    data-class="progress_bar"
+                    data-semantic="storage_progress"
+                >
+
+                    <div
+                        class="storage-progress"
+                        style="
+                            width:
+                                {{ downloads.storage_percentage }}%;
+                        "
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 Controls
+                 ============================================= -->
+
+            <section class="download-controls">
+
+                <div
+                    class="download-summary"
+                    data-class="text"
+                    data-semantic="download_summary"
+                >
+                    {{ downloads.downloaded_count }}
+                    downloaded ·
+                    {{ downloads["items"] | length }}
+                    total
+                </div>
+
+
+                <div class="control-actions">
+
+                    <button
+                        class="control-button"
+                        data-class="button"
+                        data-semantic="wifi_only_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            wifi
+                        </span>
+
+
+                        <span
+                            class="control-label"
+                            data-class="text"
+                        >
+                            Wi-Fi only
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="control-button"
+                        data-class="button"
+                        data-semantic="sort_downloads_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            sort
+                        </span>
+
+
+                        <span
+                            class="control-label"
+                            data-class="text"
+                        >
+                            Sort
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- =============================================
+                 Empty State
+                 ============================================= -->
+
+            {% if not downloads["items"] %}
+
+            <section
+                class="downloads-empty"
+                data-class="section"
+                data-semantic="downloads_empty_state"
+            >
+
+                <div
+                    class="downloads-empty-icon"
+                    data-class="icon"
+                    data-semantic="downloads_empty_icon"
+                >
+
+                    <span class="material-symbols-rounded">
+                        download_done
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="downloads-empty-title"
+                    data-class="text"
+                    data-semantic="downloads_empty_title"
+                >
+                    No downloaded books
+                </div>
+
+
+                <p
+                    class="downloads-empty-description"
+                    data-class="text"
+                    data-semantic="downloads_empty_description"
+                >
+                    Download books from your library
+                    to read them while you're offline.
+                </p>
+
+            </section>
+
+
+            <!-- =============================================
+                 Downloads
+                 ============================================= -->
+
+            {% else %}
+
+            <section class="download-list">
+
+                {% for item in downloads["items"] %}
+
+                <article
+                    class="
+                        download-row
+
+                        {% if item.selected %}
+                        selected
+                        {% endif %}
+                    "
+                    data-class="card"
+                    data-semantic="download_item_{{ item.id }}"
+                >
+
+
+                    <!-- Cover -->
+
+                    <div class="download-cover">
+
+                        {% if item.cover %}
+
+                        <img
+                            src="{{ item.cover }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="download_cover_{{ item.id }}"
+                        >
+
+                        {% else %}
+
+                        <div class="cover-placeholder">
+                            {{ item.title }}
+                        </div>
+
+                        {% endif %}
+
+
+                        {% if
+                            downloads.multi_select
+                            and item.selected
+                        %}
+
+                        <div
+                            class="download-selection"
+                            data-class="selection_indicator"
+                            data-semantic="download_selected_{{ item.id }}"
+                        >
+
+                            <span class="material-symbols-rounded">
+                                check
+                            </span>
+
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- Info -->
+
+                    <div class="download-info">
+
+                        <div
+                            class="
+                                download-title
+                                truncate
+                            "
+                            data-class="text"
+                            data-semantic="download_title_{{ item.id }}"
+                        >
+                            {{ item.title }}
+                        </div>
+
+
+                        <div
+                            class="
+                                download-author
+                                truncate
+                            "
+                            data-class="text"
+                            data-semantic="download_author_{{ item.id }}"
+                        >
+                            {{ item.author }}
+                        </div>
+
+
+                        <div class="download-status-row">
+
+                            <span
+                                class="
+                                    state-chip
+                                    {{ item.state }}
+                                "
+                                data-class="badge"
+                                data-semantic="download_state_{{ item.id }}"
+                            >
+                                {{ item.state }}
+                            </span>
+
+
+                            <span
+                                data-class="text"
+                                data-semantic="download_size_{{ item.id }}"
+                            >
+                                {{ item.size_mb }}
+                                MB
+                            </span>
+
+
+                            <span>
+                                •
+                            </span>
+
+
+                            <span
+                                data-class="timestamp"
+                                data-semantic="download_updated_{{ item.id }}"
+                            >
+                                {{ item.updated }}
+                            </span>
+
+                        </div>
+
+
+                        {% if item.state in
+                            [
+                                "downloading",
+                                "paused",
+                                "failed"
+                            ]
+                        %}
+
+                        <div
+                            class="download-progress-track"
+                            data-class="progress_bar"
+                            data-semantic="download_progress_{{ item.id }}"
+                        >
+
+                            <div
+                                class="
+                                    download-progress-value
+
+                                    {% if item.state == 'failed' %}
+                                    failed
+                                    {% endif %}
+                                "
+                                style="
+                                    width:
+                                        {{ item.progress }}%;
+                                "
+                            ></div>
+
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- Action -->
+
+                    {% if not downloads.multi_select %}
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="download_action_{{ item.id }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+
+                            {% if item.state == "downloading" %}
+
+                                pause
+
+                            {% elif item.state == "paused" %}
+
+                                play_arrow
+
+                            {% elif item.state == "failed" %}
+
+                                refresh
+
+                            {% elif item.state == "queued" %}
+
+                                schedule
+
+                            {% else %}
+
+                                more_vert
+
+                            {% endif %}
+
+                        </span>
+
+                    </button>
+
+                    {% else %}
+
+                    <div></div>
+
+                    {% endif %}
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Popup Backdrop
+         ===================================================== -->
+
+    {% if downloads.popup_open %}
+
+    <div
+        class="popup-backdrop"
+        data-annotation-skip="true"
+    ></div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Remove Download Dialog
+         ===================================================== -->
+
+    {% if
+        downloads.show_remove_dialog
+        and downloads.active_item
+    %}
+
+    <section
+        class="downloads-dialog"
+        data-class="dialog"
+        data-semantic="remove_download_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="remove_download_title"
+        >
+            Remove download?
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="remove_download_description"
+        >
+            The book will remain in your Kindle
+            library but will no longer be available offline.
+        </p>
+
+
+        <div
+            class="dialog-book"
+            data-class="card"
+            data-semantic="remove_download_book"
+        >
+
+            <div class="dialog-cover">
+
+                {% if downloads.active_item.cover %}
+
+                <img
+                    src="{{ downloads.active_item.cover }}"
+                    alt=""
+                    data-class="image"
+                    data-semantic="remove_download_cover"
+                >
+
+                {% endif %}
+
+            </div>
+
+
+            <div>
+
+                <div
+                    class="dialog-book-title"
+                    data-class="text"
+                    data-semantic="remove_download_book_title"
+                >
+                    {{ downloads.active_item.title }}
+                </div>
+
+
+                <div
+                    class="dialog-book-author"
+                    data-class="text"
+                    data-semantic="remove_download_author"
+                >
+                    {{ downloads.active_item.author }}
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="
+                    dialog-button
+                    dialog-secondary
+                "
+                data-class="button"
+                data-semantic="remove_download_cancel"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    dialog-primary
+                    dialog-danger
+                "
+                data-class="button"
+                data-semantic="remove_download_confirm"
+            >
+                Remove
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Retry Download
+         ===================================================== -->
+
+    {% if
+        downloads.show_retry_dialog
+        and downloads.active_item
+    %}
+
+    <section
+        class="downloads-dialog"
+        data-class="dialog"
+        data-semantic="retry_download_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="retry_download_title"
+        >
+            Download failed
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="retry_download_description"
+        >
+            Kindle couldn't finish downloading
+            this book. Check your connection and try again.
+        </p>
+
+
+        <div
+            class="dialog-book"
+            data-class="card"
+        >
+
+            <div class="dialog-cover">
+
+                {% if downloads.active_item.cover %}
+
+                <img
+                    src="{{ downloads.active_item.cover }}"
+                    alt=""
+                    data-class="image"
+                >
+
+                {% endif %}
+
+            </div>
+
+
+            <div>
+
+                <div
+                    class="dialog-book-title"
+                    data-class="text"
+                >
+                    {{ downloads.active_item.title }}
+                </div>
+
+
+                <div
+                    class="dialog-book-author"
+                    data-class="text"
+                >
+                    {{ downloads.active_item.author }}
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="
+                    dialog-button
+                    dialog-secondary
+                "
+                data-class="button"
+                data-semantic="retry_cancel_button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    dialog-primary
+                "
+                data-class="button"
+                data-semantic="retry_download_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    refresh
+                </span>
+
+                Retry
+
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Sync Conflict
+         ===================================================== -->
+
+    {% if downloads.show_sync_conflict %}
+
+    <section
+        class="downloads-dialog"
+        data-class="dialog"
+        data-semantic="sync_conflict_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="sync_conflict_title"
+        >
+            Reading position conflict
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="sync_conflict_description"
+        >
+            Your reading position differs between
+            this device and another Kindle device.
+            Choose where you want to continue.
+        </p>
+
+
+        <div class="sync-options">
+
+
+            <button
+                class="sync-option"
+                data-class="button"
+                data-semantic="sync_this_device_option"
+            >
+
+                <div
+                    class="sync-option-icon"
+                    data-class="icon"
+                >
+
+                    <span class="material-symbols-rounded">
+                        smartphone
+                    </span>
+
+                </div>
+
+
+                <div>
+
+                    <div
+                        class="sync-option-title"
+                        data-class="text"
+                    >
+                        This device
+                    </div>
+
+
+                    <div
+                        class="sync-option-description"
+                        data-class="text"
+                    >
+                        Continue from page 184
+                    </div>
+
+                </div>
+
+            </button>
+
+
+            <button
+                class="sync-option"
+                data-class="button"
+                data-semantic="sync_cloud_position_option"
+            >
+
+                <div
+                    class="sync-option-icon"
+                    data-class="icon"
+                >
+
+                    <span class="material-symbols-rounded">
+                        cloud
+                    </span>
+
+                </div>
+
+
+                <div>
+
+                    <div
+                        class="sync-option-title"
+                        data-class="text"
+                    >
+                        Latest synced position
+                    </div>
+
+
+                    <div
+                        class="sync-option-description"
+                        data-class="text"
+                    >
+                        Continue from page 197
+                    </div>
+
+                </div>
+
+            </button>
+
+        </div>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="
+                    dialog-button
+                    dialog-secondary
+                "
+                data-class="button"
+                data-semantic="sync_cancel_button"
+            >
+                Cancel
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

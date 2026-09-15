@@ -1,0 +1,2331 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Kindle Audiobook
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .audio-page {
+
+        position:
+            relative;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .audio-background {
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .audio-background.popup-active {
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Backdrop
+       ====================================================== */
+
+    .popup-backdrop {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            800;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                .34
+            );
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .audio-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            200;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            66px;
+
+        padding:
+            0
+            var(--page-padding);
+
+        background:
+            var(--background);
+    }
+
+
+    .audio-app-title {
+
+        flex:
+            1;
+
+        text-align:
+            center;
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Player Layout
+       ====================================================== */
+
+    .audio-content {
+
+        width:
+            min(
+                100%,
+                980px
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            20px
+            var(--page-padding)
+            56px;
+    }
+
+
+    .player-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                260px,
+                390px
+            )
+            minmax(
+                0,
+                1fr
+            );
+
+        align-items:
+            center;
+
+        gap:
+            48px;
+
+        min-height:
+            calc(
+                100vh
+                - 140px
+            );
+    }
+
+
+    /* ======================================================
+       Cover
+       ====================================================== */
+
+    .audio-cover {
+
+        width:
+            min(
+                100%,
+                360px
+            );
+
+        margin:
+            0 auto;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface-variant);
+
+        box-shadow:
+            0
+            14px
+            36px
+            rgba(
+                0,
+                0,
+                0,
+                .22
+            );
+    }
+
+
+    .audio-cover img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .audio-cover-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        padding:
+            20px;
+
+        text-align:
+            center;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+    }
+
+
+    /* ======================================================
+       Player Info
+       ====================================================== */
+
+    .player-info {
+
+        min-width:
+            0;
+    }
+
+
+    .audio-book-title {
+
+        font-size:
+            clamp(
+                24px,
+                4vw,
+                38px
+            );
+
+        line-height:
+            1.15;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .audio-author {
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .audio-narrator {
+
+        margin-top:
+            4px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .chapter-label {
+
+        margin-top:
+            28px;
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--primary);
+    }
+
+
+    .chapter-title {
+
+        margin-top:
+            5px;
+
+        font-size:
+            18px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Timeline
+       ====================================================== */
+
+    .audio-timeline {
+
+        margin-top:
+            22px;
+    }
+
+
+    .audio-progress {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        height:
+            7px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .audio-progress-value {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    .time-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        margin-top:
+            7px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Playback Controls
+       ====================================================== */
+
+    .playback-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            18px;
+
+        margin-top:
+            26px;
+    }
+
+
+    .secondary-control {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            48px;
+
+        height:
+            48px;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--icon);
+    }
+
+
+    .secondary-control
+    .material-symbols-rounded {
+
+        font-size:
+            28px;
+    }
+
+
+    .play-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            72px;
+
+        height:
+            72px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .play-button
+    .material-symbols-rounded {
+
+        font-size:
+            38px;
+    }
+
+
+    /* ======================================================
+       Utility Controls
+       ====================================================== */
+
+    .audio-tools {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+
+        margin-top:
+            30px;
+    }
+
+
+    .audio-tool {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            70px;
+
+        padding:
+            8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .audio-tool
+    .material-symbols-rounded {
+
+        font-size:
+            22px;
+    }
+
+
+    .audio-tool-label {
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Chapter / Queue Panels
+       ====================================================== */
+
+    .panel-section {
+
+        margin-top:
+            28px;
+    }
+
+
+    .panel-title-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        margin-bottom:
+            12px;
+    }
+
+
+    .panel-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .chapter-list,
+    .queue-list {
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        overflow:
+            hidden;
+
+        background:
+            var(--surface);
+    }
+
+
+    .chapter-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            42px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            68px;
+
+        padding:
+            10px 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .chapter-row:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .chapter-row.active {
+
+        background:
+            var(--primary-container);
+    }
+
+
+    .chapter-number {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .chapter-row.active
+    .chapter-number {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .chapter-row-title {
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .chapter-meta {
+
+        margin-top:
+            3px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Queue
+       ====================================================== */
+
+    .queue-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            52px
+            minmax(
+                0,
+                1fr
+            )
+            34px;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            82px;
+
+        padding:
+            10px 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .queue-row:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .queue-cover {
+
+        width:
+            52px;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .queue-cover img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .queue-title {
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .queue-author {
+
+        margin-top:
+            3px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Bottom Sheet
+       ====================================================== */
+
+    .audio-sheet {
+
+        position:
+            fixed;
+
+        left:
+            50%;
+
+        bottom:
+            0;
+
+        z-index:
+            950;
+
+        width:
+            min(
+                100%,
+                560px
+            );
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-bottom:
+            none;
+
+        border-radius:
+            24px
+            24px
+            0
+            0;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            -12px
+            34px
+            rgba(
+                0,
+                0,
+                0,
+                .22
+            );
+
+        transform:
+            translateX(
+                -50%
+            );
+    }
+
+
+    .sheet-handle {
+
+        width:
+            38px;
+
+        height:
+            4px;
+
+        margin:
+            0 auto 18px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border);
+    }
+
+
+    .sheet-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Speed
+       ====================================================== */
+
+    .speed-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                1fr
+            );
+
+        gap:
+            8px;
+
+        margin-top:
+            18px;
+    }
+
+
+    .speed-option {
+
+        min-height:
+            50px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .speed-option.active {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Timer Options
+       ====================================================== */
+
+    .timer-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        margin-top:
+            16px;
+    }
+
+
+    .timer-option {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            48px;
+
+        padding:
+            0 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    .timer-option:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .audio-dialog {
+
+        position:
+            fixed;
+
+        top:
+            50%;
+
+        left:
+            50%;
+
+        z-index:
+            950;
+
+        width:
+            min(
+                calc(
+                    100%
+                    - 30px
+                ),
+                450px
+            );
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            16px
+            48px
+            rgba(
+                0,
+                0,
+                0,
+                .30
+            );
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    .dialog-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-description {
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .bookmark-input {
+
+        margin-top:
+            18px;
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--background);
+    }
+
+
+    .bookmark-input textarea {
+
+        width:
+            100%;
+
+        min-height:
+            90px;
+
+        border:
+            none;
+
+        outline:
+            none;
+
+        resize:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        margin-top:
+            20px;
+    }
+
+
+    .dialog-button {
+
+        min-height:
+            42px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            var(--pill-radius);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-secondary {
+
+        border:
+            1px solid
+            var(--border);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 699px
+    ) {
+
+        .player-layout {
+
+            grid-template-columns:
+                1fr;
+
+            gap:
+                26px;
+
+            min-height:
+                auto;
+        }
+
+
+        .audio-cover {
+
+            width:
+                min(
+                    72vw,
+                    270px
+                );
+        }
+
+
+        .player-info {
+
+            text-align:
+                center;
+        }
+
+
+        .time-row {
+
+            text-align:
+                left;
+        }
+
+
+        .audio-tools {
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    1fr
+                );
+
+            gap:
+                6px;
+        }
+
+
+        .audio-tool {
+
+            min-height:
+                62px;
+        }
+
+
+        .chapter-row {
+
+            grid-template-columns:
+                36px
+                minmax(
+                    0,
+                    1fr
+                )
+                26px;
+
+            padding:
+                9px 10px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="audio-page">
+
+
+    <!-- =====================================================
+         BACKGROUND PLAYER
+
+         Popup state:
+         visible screenshot
+         no annotations
+         ===================================================== -->
+
+    <div
+        class="
+            audio-background
+
+            {% if audio.popup_open %}
+            popup-active
+            {% endif %}
+        "
+
+        {% if audio.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+
+        <!-- =================================================
+             App Bar
+             ================================================= -->
+
+        <header
+            class="audio-app-bar"
+            data-class="app_bar"
+            data-semantic="audiobook_app_bar"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="audio_back_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    keyboard_arrow_down
+                </span>
+
+            </button>
+
+
+            <div
+                class="audio-app-title"
+                data-class="text"
+                data-semantic="audio_app_title"
+            >
+                Now playing
+            </div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="audio_more_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    more_vert
+                </span>
+
+            </button>
+
+        </header>
+
+
+        <main class="audio-content">
+
+
+            <!-- =================================================
+                 Player
+                 ================================================= -->
+
+            <section class="player-layout">
+
+
+                <!-- Cover -->
+
+                <div>
+
+                    <div class="audio-cover">
+
+                        {% if audio.cover %}
+
+                        <img
+                            src="{{ audio.cover }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="audiobook_cover"
+                        >
+
+                        {% else %}
+
+                        <div class="audio-cover-placeholder">
+                            {{ audio.book_title }}
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- Player Information -->
+
+                <div class="player-info">
+
+                    <h1
+                        class="audio-book-title"
+                        data-class="text"
+                        data-semantic="audiobook_title"
+                    >
+                        {{ audio.book_title }}
+                    </h1>
+
+
+                    <div
+                        class="audio-author"
+                        data-class="text"
+                        data-semantic="audiobook_author"
+                    >
+                        {{ audio.author }}
+                    </div>
+
+
+                    <div
+                        class="audio-narrator"
+                        data-class="text"
+                        data-semantic="audiobook_narrator"
+                    >
+                        Narrated by
+                        {{ audio.narrator }}
+                    </div>
+
+
+                    <div
+                        class="chapter-label"
+                        data-class="text"
+                        data-semantic="current_chapter_number"
+                    >
+                        Chapter
+                        {{
+                            audio.current_chapter_index
+                            + 1
+                        }}
+                        of
+                        {{ audio.chapter_count }}
+                    </div>
+
+
+                    <div
+                        class="chapter-title"
+                        data-class="text"
+                        data-semantic="current_chapter_title"
+                    >
+                        {{ audio.current_chapter.title }}
+                    </div>
+
+
+                    <!-- Timeline -->
+
+                    <div class="audio-timeline">
+
+                        <div
+                            class="audio-progress"
+                            data-class="progress_bar"
+                            data-semantic="audio_progress"
+                        >
+
+                            <div
+                                class="audio-progress-value"
+                                style="
+                                    width:
+                                        {{ audio.progress }}%;
+                                "
+                            ></div>
+
+                        </div>
+
+
+                        <div class="time-row">
+
+                            <span
+                                data-class="timestamp"
+                                data-semantic="elapsed_time"
+                            >
+                                {{
+                                    audio.elapsed_seconds
+                                    // 60
+                                }}:
+                                {{
+                                    "%02d"
+                                    | format(
+                                        audio.elapsed_seconds
+                                        % 60
+                                    )
+                                }}
+                            </span>
+
+
+                            <span
+                                data-class="timestamp"
+                                data-semantic="remaining_time"
+                            >
+                                -
+                                {{
+                                    (
+                                        audio.duration_seconds
+                                        - audio.elapsed_seconds
+                                    )
+                                    // 60
+                                }}:
+                                {{
+                                    "%02d"
+                                    | format(
+                                        (
+                                            audio.duration_seconds
+                                            - audio.elapsed_seconds
+                                        )
+                                        % 60
+                                    )
+                                }}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Playback Controls -->
+
+                    <div class="playback-controls">
+
+
+                        <button
+                            class="secondary-control"
+                            data-class="button"
+                            data-semantic="previous_chapter_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                skip_previous
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="secondary-control"
+                            data-class="button"
+                            data-semantic="rewind_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                replay_10
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="play-button"
+                            data-class="button"
+                            data-semantic="play_pause_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="play_pause_icon"
+                            >
+
+                                {% if audio.playing %}
+
+                                    pause
+
+                                {% else %}
+
+                                    play_arrow
+
+                                {% endif %}
+
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="secondary-control"
+                            data-class="button"
+                            data-semantic="forward_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                forward_30
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="secondary-control"
+                            data-class="button"
+                            data-semantic="next_chapter_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                skip_next
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- Tools -->
+
+                    <div class="audio-tools">
+
+
+                        <button
+                            class="audio-tool"
+                            data-class="button"
+                            data-semantic="speed_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                speed
+                            </span>
+
+
+                            <span
+                                class="audio-tool-label"
+                                data-class="text"
+                            >
+                                {{ audio.playback_speed }}×
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="audio-tool"
+                            data-class="button"
+                            data-semantic="sleep_timer_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                bedtime
+                            </span>
+
+
+                            <span
+                                class="audio-tool-label"
+                                data-class="text"
+                            >
+                                Sleep
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="audio-tool"
+                            data-class="button"
+                            data-semantic="bookmark_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                bookmark_add
+                            </span>
+
+
+                            <span
+                                class="audio-tool-label"
+                                data-class="text"
+                            >
+                                Bookmark
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="audio-tool"
+                            data-class="button"
+                            data-semantic="chapters_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                format_list_numbered
+                            </span>
+
+
+                            <span
+                                class="audio-tool-label"
+                                data-class="text"
+                            >
+                                Chapters
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 Chapter List State
+                 ================================================= -->
+
+            {% if audio.show_chapters %}
+
+            <section class="panel-section">
+
+                <div class="panel-title-row">
+
+                    <h2
+                        class="panel-title"
+                        data-class="text"
+                        data-semantic="chapters_heading"
+                    >
+                        Chapters
+                    </h2>
+
+                </div>
+
+
+                <div
+                    class="chapter-list"
+                    data-class="card"
+                    data-semantic="chapter_list"
+                >
+
+                    {% for chapter in audio.chapters %}
+
+                    <div
+                        class="
+                            chapter-row
+
+                            {% if
+                                loop.index0
+                                == audio.current_chapter_index
+                            %}
+                            active
+                            {% endif %}
+                        "
+                        data-class="navigation_item"
+                        data-semantic="chapter_{{ chapter.id }}"
+                    >
+
+                        <div
+                            class="chapter-number"
+                            data-class="badge"
+                            data-semantic="chapter_number_{{ chapter.id }}"
+                        >
+                            {{ chapter.number }}
+                        </div>
+
+
+                        <div>
+
+                            <div
+                                class="chapter-row-title"
+                                data-class="text"
+                                data-semantic="chapter_title_{{ chapter.id }}"
+                            >
+                                {{ chapter.title }}
+                            </div>
+
+
+                            <div
+                                class="chapter-meta"
+                                data-class="text"
+                                data-semantic="chapter_duration_{{ chapter.id }}"
+                            >
+                                {{ chapter.duration_minutes }}
+                                min
+
+                                {% if chapter.downloaded %}
+                                    · Downloaded
+                                {% endif %}
+                            </div>
+
+                        </div>
+
+
+                        {% if
+                            loop.index0
+                            == audio.current_chapter_index
+                        %}
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="currently_playing_icon"
+                        >
+                            graphic_eq
+                        </span>
+
+                        {% else %}
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            play_arrow
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+            {% endif %}
+
+
+            <!-- =================================================
+                 Queue State
+                 ================================================= -->
+
+            {% if audio.show_queue %}
+
+            <section class="panel-section">
+
+                <div class="panel-title-row">
+
+                    <h2
+                        class="panel-title"
+                        data-class="text"
+                        data-semantic="queue_heading"
+                    >
+                        Up next
+                    </h2>
+
+                </div>
+
+
+                <div
+                    class="queue-list"
+                    data-class="card"
+                    data-semantic="audiobook_queue"
+                >
+
+                    {% for queue_book in audio.queue %}
+
+                    <div
+                        class="queue-row"
+                        data-class="navigation_item"
+                        data-semantic="queue_item_{{ queue_book.id }}"
+                    >
+
+                        <div class="queue-cover">
+
+                            {% if queue_book.cover %}
+
+                            <img
+                                src="{{ queue_book.cover }}"
+                                alt=""
+                                data-class="image"
+                                data-semantic="queue_cover_{{ queue_book.id }}"
+                            >
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div>
+
+                            <div
+                                class="
+                                    queue-title
+                                    truncate
+                                "
+                                data-class="text"
+                                data-semantic="queue_title_{{ queue_book.id }}"
+                            >
+                                {{ queue_book.title }}
+                            </div>
+
+
+                            <div
+                                class="
+                                    queue-author
+                                    truncate
+                                "
+                                data-class="text"
+                            >
+                                {{ queue_book.author }}
+                            </div>
+
+                        </div>
+
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            drag_handle
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Popup Backdrop
+         ===================================================== -->
+
+    {% if audio.popup_open %}
+
+    <div
+        class="popup-backdrop"
+        data-annotation-skip="true"
+    ></div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Playback Speed
+         ===================================================== -->
+
+    {% if audio.show_speed_sheet %}
+
+    <section
+        class="audio-sheet"
+        data-class="bottom_sheet"
+        data-semantic="playback_speed_sheet"
+        data-occluder="true"
+    >
+
+        <div class="sheet-handle"></div>
+
+
+        <h2
+            class="sheet-title"
+            data-class="text"
+            data-semantic="speed_sheet_title"
+        >
+            Playback speed
+        </h2>
+
+
+        <div class="speed-grid">
+
+            {% for speed in
+                [
+                    0.75,
+                    1.0,
+                    1.25,
+                    1.5,
+                    1.75,
+                    2.0
+                ]
+            %}
+
+            <button
+                class="
+                    speed-option
+
+                    {% if
+                        audio.playback_speed
+                        == speed
+                    %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="speed_option_{{ loop.index }}"
+            >
+
+                <span
+                    data-class="text"
+                    data-semantic="speed_label_{{ loop.index }}"
+                >
+                    {{ speed }}×
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Sleep Timer
+         ===================================================== -->
+
+    {% if audio.show_sleep_timer %}
+
+    <section
+        class="audio-sheet"
+        data-class="bottom_sheet"
+        data-semantic="sleep_timer_sheet"
+        data-occluder="true"
+    >
+
+        <div class="sheet-handle"></div>
+
+
+        <h2
+            class="sheet-title"
+            data-class="text"
+            data-semantic="sleep_timer_title"
+        >
+            Sleep timer
+        </h2>
+
+
+        <div class="timer-list">
+
+            {% for option in
+                [
+                    "Off",
+                    "15 minutes",
+                    "30 minutes",
+                    "45 minutes",
+                    "End of chapter"
+                ]
+            %}
+
+            <button
+                class="timer-option"
+                data-class="button"
+                data-semantic="timer_option_{{ loop.index }}"
+            >
+
+                <span
+                    data-class="text"
+                >
+                    {{ option }}
+                </span>
+
+
+                {% if
+                    audio.sleep_timer
+                    == option
+                %}
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    check
+                </span>
+
+                {% endif %}
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Bookmark Dialog
+         ===================================================== -->
+
+    {% if audio.show_bookmark_dialog %}
+
+    <section
+        class="audio-dialog"
+        data-class="dialog"
+        data-semantic="audio_bookmark_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="bookmark_dialog_title"
+        >
+            Add bookmark
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="bookmark_dialog_position"
+        >
+            Save this position in
+            {{ audio.current_chapter.title }}.
+        </p>
+
+
+        <div
+            class="bookmark-input"
+            data-class="input_field"
+            data-semantic="bookmark_note_input"
+        >
+
+            <textarea>{{ audio.bookmark_note }}</textarea>
+
+        </div>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="
+                    dialog-button
+                    dialog-secondary
+                "
+                data-class="button"
+                data-semantic="bookmark_cancel_button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    dialog-primary
+                "
+                data-class="button"
+                data-semantic="bookmark_save_button"
+            >
+                Save bookmark
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Playback Error
+         ===================================================== -->
+
+    {% if audio.show_error %}
+
+    <section
+        class="audio-dialog"
+        data-class="dialog"
+        data-semantic="playback_error_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="playback_error_title"
+        >
+            Unable to play audiobook
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="playback_error_description"
+        >
+            Kindle couldn't continue playback.
+            Check your network connection or
+            download this chapter for offline listening.
+        </p>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="
+                    dialog-button
+                    dialog-secondary
+                "
+                data-class="button"
+                data-semantic="playback_error_cancel"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="
+                    dialog-button
+                    dialog-primary
+                "
+                data-class="button"
+                data-semantic="playback_retry_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    refresh
+                </span>
+
+                Retry
+
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

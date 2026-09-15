@@ -1,0 +1,2705 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Kindle Search
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .search-page {
+
+        position:
+            relative;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       Normal Application Background
+       ====================================================== */
+
+    .search-background {
+
+        position:
+            relative;
+
+        min-height:
+            100vh;
+
+        padding-bottom:
+            88px;
+
+        background:
+            var(--background);
+    }
+
+
+    /*
+    Optional visual treatment when a popup is open.
+
+    IMPORTANT:
+    Annotation exclusion is handled through
+    data-annotation-skip on .search-background.
+
+    This class only controls appearance.
+    */
+
+    .search-background.popup-active {
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Popup Backdrop
+
+       Decorative only:
+       - no data-class
+       - therefore no annotation
+       ====================================================== */
+
+    .popup-backdrop {
+
+        position:
+            fixed;
+
+        z-index:
+            800;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.32
+            );
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .search-header {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            200;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        min-height:
+            72px;
+
+        padding:
+            12px
+            var(--page-padding);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .search-input-shell {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        min-height:
+            46px;
+
+        padding:
+            0 14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .search-input-shell input {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        font-size:
+            15px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Content
+       ====================================================== */
+
+    .search-content {
+
+        width:
+            min(
+                100%,
+                var(--content-max-width)
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            28px
+            var(--page-padding)
+            60px;
+    }
+
+
+    /* ======================================================
+       Section
+       ====================================================== */
+
+    .search-section {
+
+        margin-top:
+            34px;
+    }
+
+
+    .search-section:first-child {
+
+        margin-top:
+            0;
+    }
+
+
+    .section-title-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+
+        margin-bottom:
+            16px;
+    }
+
+
+    .section-title {
+
+        font-size:
+            21px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .section-action {
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Recent Searches
+       ====================================================== */
+
+    .recent-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+    }
+
+
+    .recent-item {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            34px
+            minmax(
+                0,
+                1fr
+            )
+            36px;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            54px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .recent-text {
+
+        min-width:
+            0;
+
+        font-size:
+            14px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Suggestions
+       ====================================================== */
+
+    .suggestions-card {
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .suggestion-item {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            36px
+            minmax(
+                0,
+                1fr
+            )
+            28px;
+
+        align-items:
+            center;
+
+        min-height:
+            56px;
+
+        padding:
+            0 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .suggestion-item:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .suggestion-main {
+
+        font-size:
+            14px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .suggestion-type {
+
+        margin-top:
+            2px;
+
+        font-size:
+            10px;
+
+        text-transform:
+            capitalize;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Categories
+       ====================================================== */
+
+    .category-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            12px;
+    }
+
+
+    .category-card {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            flex-start;
+
+        justify-content:
+            space-between;
+
+        min-height:
+            120px;
+
+        padding:
+            16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .category-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .category-name {
+
+        margin-top:
+            18px;
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Result Header
+       ====================================================== */
+
+    .result-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            16px;
+
+        margin-bottom:
+            22px;
+    }
+
+
+    .result-heading {
+
+        min-width:
+            0;
+    }
+
+
+    .result-heading h1 {
+
+        font-size:
+            clamp(
+                24px,
+                3vw,
+                34px
+            );
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .result-heading p {
+
+        margin-top:
+            5px;
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .result-controls {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .filter-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        min-height:
+            40px;
+
+        padding:
+            0 14px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Result Grid
+       ====================================================== */
+
+    .result-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(
+                    145px,
+                    1fr
+                )
+            );
+
+        gap:
+            28px
+            18px;
+    }
+
+
+    .result-card {
+
+        min-width:
+            0;
+    }
+
+
+    .result-cover {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        max-width:
+            190px;
+
+        margin:
+            0 auto;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        box-shadow:
+            0
+            3px
+            10px
+            rgba(
+                0,
+                0,
+                0,
+                0.14
+            );
+    }
+
+
+    .result-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .result-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        padding:
+            14px;
+
+        text-align:
+            center;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            12px;
+
+        font-weight:
+            800;
+    }
+
+
+    .result-badge {
+
+        position:
+            absolute;
+
+        top:
+            7px;
+
+        left:
+            7px;
+
+        padding:
+            5px 7px;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--badge-background);
+
+        color:
+            var(--badge-text);
+
+        font-size:
+            9px;
+
+        font-weight:
+            800;
+    }
+
+
+    .result-info {
+
+        max-width:
+            190px;
+
+        margin:
+            10px auto 0;
+    }
+
+
+    .result-title {
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+
+        line-height:
+            1.35;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .result-author {
+
+        margin-top:
+            4px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .result-rating {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        margin-top:
+            6px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .result-rating
+    .material-symbols-rounded {
+
+        font-size:
+            16px;
+
+        color:
+            var(--warning);
+
+        font-variation-settings:
+            "FILL" 1;
+    }
+
+
+    .result-price {
+
+        margin-top:
+            6px;
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .unlimited-label {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        margin-top:
+            6px;
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       No Results
+       ====================================================== */
+
+    .empty-state {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            420px;
+
+        padding:
+            40px 20px;
+
+        text-align:
+            center;
+    }
+
+
+    .empty-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            82px;
+
+        height:
+            82px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .empty-icon
+    .material-symbols-rounded {
+
+        font-size:
+            38px;
+    }
+
+
+    .empty-title {
+
+        margin-top:
+            22px;
+
+        font-size:
+            21px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .empty-description {
+
+        max-width:
+            420px;
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Filter Sheet
+       ====================================================== */
+
+    .filter-sheet {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        left:
+            50%;
+
+        bottom:
+            0;
+
+        width:
+            min(
+                100%,
+                620px
+            );
+
+        max-height:
+            min(
+                82vh,
+                720px
+            );
+
+        overflow-y:
+            auto;
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-bottom:
+            none;
+
+        border-radius:
+            24px
+            24px
+            0
+            0;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            -10px
+            32px
+            rgba(
+                0,
+                0,
+                0,
+                0.20
+            );
+
+        transform:
+            translateX(
+                -50%
+            );
+    }
+
+
+    .sheet-handle {
+
+        width:
+            38px;
+
+        height:
+            4px;
+
+        margin:
+            0 auto 16px;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--border);
+    }
+
+
+    .sheet-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        margin-bottom:
+            18px;
+    }
+
+
+    .sheet-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .filter-section {
+
+        padding:
+            16px 0;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .filter-label {
+
+        margin-bottom:
+            10px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .filter-options {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            8px;
+    }
+
+
+    .filter-option {
+
+        min-height:
+            38px;
+
+        padding:
+            0 13px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+    }
+
+
+    .filter-option.active {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .filter-sheet-actions {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            1fr
+            1fr;
+
+        gap:
+            10px;
+
+        padding-top:
+            18px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .sheet-secondary-button,
+    .sheet-primary-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            44px;
+
+        border-radius:
+            var(--pill-radius);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sheet-secondary-button {
+
+        border:
+            1px solid
+            var(--border);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .sheet-primary-button {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Preview Popup
+       ====================================================== */
+
+    .preview-card {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        top:
+            50%;
+
+        left:
+            50%;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            125px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            18px;
+
+        width:
+            min(
+                calc(
+                    100%
+                    - 28px
+                ),
+                520px
+            );
+
+        padding:
+            20px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            14px
+            44px
+            rgba(
+                0,
+                0,
+                0,
+                0.28
+            );
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    .preview-close {
+
+        position:
+            absolute;
+
+        top:
+            10px;
+
+        right:
+            10px;
+    }
+
+
+    .preview-cover {
+
+        width:
+            125px;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .preview-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .preview-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        padding:
+            10px;
+
+        text-align:
+            center;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            11px;
+
+        font-weight:
+            800;
+    }
+
+
+    .preview-content {
+
+        min-width:
+            0;
+
+        padding-right:
+            30px;
+    }
+
+
+    .preview-title {
+
+        font-size:
+            19px;
+
+        font-weight:
+            800;
+
+        line-height:
+            1.3;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .preview-author {
+
+        margin-top:
+            6px;
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .preview-actions {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            8px;
+
+        margin-top:
+            18px;
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .search-header {
+
+            padding:
+                10px 12px;
+        }
+
+
+        .search-content {
+
+            padding-top:
+                20px;
+        }
+
+
+        .category-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .result-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .result-header {
+
+            align-items:
+                flex-start;
+        }
+
+
+        .result-controls
+        .filter-button
+        span:last-child {
+
+            display:
+                none;
+        }
+
+
+        .filter-sheet {
+
+            width:
+                100%;
+
+            padding:
+                18px;
+        }
+
+
+        .preview-card {
+
+            grid-template-columns:
+                96px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap:
+                14px;
+
+            padding:
+                18px;
+        }
+
+
+        .preview-cover {
+
+            width:
+                96px;
+        }
+
+
+        .preview-title {
+
+            font-size:
+                17px;
+        }
+
+    }
+
+
+    @media (
+        min-width: 600px
+    )
+    and (
+        max-width: 839px
+    ) {
+
+        .category-grid {
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .result-grid {
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class="search-page">
+
+
+    <!-- =====================================================
+         NORMAL APPLICATION UI
+
+         IMPORTANT:
+         When a popup is active, this entire subtree remains
+         visible but produces ZERO annotations.
+
+         should_skip_annotation() in common_renderer walks
+         ancestor nodes, so every data-class below this div
+         will automatically be skipped.
+         ===================================================== -->
+
+    <div
+        class="
+            search-background
+
+            {% if
+                search.show_filters
+                or search.show_preview
+            %}
+            popup-active
+            {% endif %}
+        "
+
+        {% if
+            search.show_filters
+            or search.show_preview
+        %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+
+        <!-- =================================================
+             Search Header
+             ================================================= -->
+
+        <header
+            class="search-header"
+            data-class="app_bar"
+            data-semantic="search_app_bar"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="back_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="back_icon"
+                >
+                    arrow_back
+                </span>
+
+            </button>
+
+
+            <div
+                class="search-input-shell"
+                data-class="search_bar"
+                data-semantic="kindle_search"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_icon"
+                >
+                    search
+                </span>
+
+
+                <input
+                    type="text"
+                    value="{{ search.query }}"
+                    placeholder="{{ search.placeholder }}"
+                    data-class="input_field"
+                    data-semantic="search_input"
+                >
+
+
+                {% if search.query %}
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="clear_search_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="clear_search_icon"
+                    >
+                        close
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="voice_search_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="voice_search_icon"
+                >
+                    mic
+                </span>
+
+            </button>
+
+        </header>
+
+
+        <!-- =================================================
+             Main Content
+             ================================================= -->
+
+        <main class="search-content">
+
+
+            <!-- =============================================
+                 Recent Searches
+                 ============================================= -->
+
+            {% if search.show_recent %}
+
+            <section class="search-section">
+
+                <div class="section-title-row">
+
+                    <h2
+                        class="section-title"
+                        data-class="text"
+                        data-semantic="recent_searches_title"
+                    >
+                        Recent searches
+                    </h2>
+
+
+                    <span
+                        class="section-action"
+                        data-class="text"
+                        data-semantic="clear_recent_searches"
+                    >
+                        Clear
+                    </span>
+
+                </div>
+
+
+                <div class="recent-list">
+
+                    {% for item in search.recent_searches %}
+
+                    <div
+                        class="recent-item"
+                        data-class="navigation_item"
+                        data-semantic="recent_search_{{ loop.index }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="recent_icon_{{ loop.index }}"
+                        >
+                            history
+                        </span>
+
+
+                        <span
+                            class="
+                                recent-text
+                                truncate
+                            "
+                            data-class="text"
+                            data-semantic="recent_text_{{ loop.index }}"
+                        >
+                            {{ item }}
+                        </span>
+
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="recent_arrow_{{ loop.index }}"
+                        >
+                            north_west
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+            {% endif %}
+
+
+            <!-- =============================================
+                 Search Suggestions
+                 ============================================= -->
+
+            {% if search.show_suggestions %}
+
+            <section class="search-section">
+
+                <div
+                    class="suggestions-card"
+                    data-class="card"
+                    data-semantic="search_suggestions"
+                >
+
+                    {% for suggestion in search.suggestions %}
+
+                    <div
+                        class="suggestion-item"
+                        data-class="navigation_item"
+                        data-semantic="suggestion_{{ loop.index }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="suggestion_icon_{{ loop.index }}"
+                        >
+
+                            {% if suggestion.type == "author" %}
+
+                                person
+
+                            {% elif suggestion.type == "book" %}
+
+                                menu_book
+
+                            {% else %}
+
+                                search
+
+                            {% endif %}
+
+                        </span>
+
+
+                        <div>
+
+                            <div
+                                class="suggestion-main"
+                                data-class="text"
+                                data-semantic="suggestion_text_{{ loop.index }}"
+                            >
+                                {{ suggestion.text }}
+                            </div>
+
+
+                            <div
+                                class="suggestion-type"
+                                data-class="text"
+                                data-semantic="suggestion_type_{{ loop.index }}"
+                            >
+                                {{ suggestion.type }}
+                            </div>
+
+                        </div>
+
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="suggestion_insert_{{ loop.index }}"
+                        >
+                            north_west
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+            {% endif %}
+
+
+            <!-- =============================================
+                 Categories
+                 ============================================= -->
+
+            {% if search.show_categories %}
+
+            <section class="search-section">
+
+                <div class="section-title-row">
+
+                    <h2
+                        class="section-title"
+                        data-class="text"
+                        data-semantic="categories_title"
+                    >
+                        Browse categories
+                    </h2>
+
+                </div>
+
+
+                <div class="category-grid">
+
+                    {% for category in search.categories %}
+
+                    <article
+                        class="category-card"
+                        data-class="card"
+                        data-semantic="category_{{ loop.index }}"
+                    >
+
+                        <div
+                            class="category-icon"
+                            data-class="icon"
+                            data-semantic="category_icon_{{ loop.index }}"
+                        >
+
+                            <span class="material-symbols-rounded">
+                                {{ category.icon }}
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="category-name"
+                            data-class="text"
+                            data-semantic="category_name_{{ loop.index }}"
+                        >
+                            {{ category.name }}
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+            {% endif %}
+
+
+            <!-- =============================================
+                 Search Results
+                 ============================================= -->
+
+            {% if search.show_results %}
+
+            <section class="search-section">
+
+                <div class="result-header">
+
+                    <div class="result-heading">
+
+                        <h1
+                            data-class="text"
+                            data-semantic="search_results_heading"
+                        >
+                            {{ search.query }}
+                        </h1>
+
+
+                        <p
+                            data-class="text"
+                            data-semantic="search_result_count"
+                        >
+                            {{ search.result_count }}
+                            results
+                        </p>
+
+                    </div>
+
+
+                    <div class="result-controls">
+
+                        <button
+                            class="filter-button"
+                            data-class="button"
+                            data-semantic="filter_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="filter_icon"
+                            >
+                                tune
+                            </span>
+
+
+                            <span
+                                data-class="text"
+                                data-semantic="filter_label"
+                            >
+                                Filters
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            class="filter-button"
+                            data-class="button"
+                            data-semantic="sort_button"
+                        >
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="sort_icon"
+                            >
+                                sort
+                            </span>
+
+
+                            <span
+                                data-class="text"
+                                data-semantic="sort_label"
+                            >
+                                {{ search.filters.sort }}
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div class="result-grid">
+
+                    {% for book in search.results %}
+
+                    <article
+                        class="result-card"
+                        data-class="card"
+                        data-semantic="search_result_{{ book.id }}"
+                    >
+
+                        <div class="result-cover">
+
+                            {% if book.cover %}
+
+                            <img
+                                src="{{ book.cover }}"
+                                alt=""
+                                data-class="image"
+                                data-semantic="search_cover_{{ book.id }}"
+                            >
+
+                            {% else %}
+
+                            <div class="result-placeholder">
+                                {{ book.title }}
+                            </div>
+
+                            {% endif %}
+
+
+                            {% if book.bestseller %}
+
+                            <span
+                                class="result-badge"
+                                data-class="badge"
+                                data-semantic="bestseller_{{ book.id }}"
+                            >
+                                BESTSELLER
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="result-info">
+
+                            <div
+                                class="
+                                    result-title
+                                    line-clamp-2
+                                "
+                                data-class="text"
+                                data-semantic="search_title_{{ book.id }}"
+                            >
+                                {{ book.title }}
+                            </div>
+
+
+                            <div
+                                class="
+                                    result-author
+                                    truncate
+                                "
+                                data-class="text"
+                                data-semantic="search_author_{{ book.id }}"
+                            >
+                                {{ book.author }}
+                            </div>
+
+
+                            <div class="result-rating">
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="search_star_{{ book.id }}"
+                                >
+                                    star
+                                </span>
+
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="search_rating_{{ book.id }}"
+                                >
+                                    {{ book.rating }}
+                                </span>
+
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="search_rating_count_{{ book.id }}"
+                                >
+                                    ({{ book.rating_count }})
+                                </span>
+
+                            </div>
+
+
+                            <div
+                                class="result-price"
+                                data-class="text"
+                                data-semantic="search_price_{{ book.id }}"
+                            >
+                                {{ book.price }}
+                            </div>
+
+
+                            {% if book.kindle_unlimited %}
+
+                            <div
+                                class="unlimited-label"
+                                data-class="badge"
+                                data-semantic="kindle_unlimited_{{ book.id }}"
+                            >
+                                Kindle Unlimited
+                            </div>
+
+                            {% endif %}
+
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+            {% endif %}
+
+
+            <!-- =============================================
+                 No Results
+                 ============================================= -->
+
+            {% if search.show_no_results %}
+
+            <section
+                class="empty-state"
+                data-class="section"
+                data-semantic="no_search_results"
+            >
+
+                <div
+                    class="empty-icon"
+                    data-class="icon"
+                    data-semantic="no_results_icon"
+                >
+
+                    <span class="material-symbols-rounded">
+                        search_off
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="empty-title"
+                    data-class="text"
+                    data-semantic="no_results_title"
+                >
+                    No results found
+                </div>
+
+
+                <p
+                    class="empty-description"
+                    data-class="text"
+                    data-semantic="no_results_description"
+                >
+                    We couldn't find anything matching
+                    "{{ search.query }}".
+                    Try another title, author, or category.
+                </p>
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         DIM BACKDROP
+
+         It deliberately has:
+             data-annotation-skip="true"
+
+         and NO data-class.
+
+         Therefore:
+         - visible in screenshot
+         - never annotated
+         ===================================================== -->
+
+    {% if
+        search.show_filters
+        or search.show_preview
+    %}
+
+    <div
+        class="popup-backdrop"
+        data-annotation-skip="true"
+        aria-hidden="true"
+    ></div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         FILTER SHEET POPUP
+
+         This is OUTSIDE .search-background.
+
+         Therefore its components remain annotatable.
+         ===================================================== -->
+
+    {% if search.show_filters %}
+
+    <section
+        class="filter-sheet"
+        data-class="bottom_sheet"
+        data-semantic="search_filter_sheet"
+        data-occluder="true"
+    >
+
+        <div class="sheet-handle"></div>
+
+
+        <div class="sheet-header">
+
+            <h2
+                class="sheet-title"
+                data-class="text"
+                data-semantic="filters_title"
+            >
+                Filters
+            </h2>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_filters_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_filters_icon"
+                >
+                    close
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <!-- =============================================
+             Format
+             ============================================= -->
+
+        <div class="filter-section">
+
+            <div
+                class="filter-label"
+                data-class="text"
+                data-semantic="format_filter_label"
+            >
+                Format
+            </div>
+
+
+            <div class="filter-options">
+
+                {% for option in
+                    [
+                        "All formats",
+                        "Kindle",
+                        "Books"
+                    ]
+                %}
+
+                <button
+                    class="
+                        filter-option
+
+                        {% if
+                            search.filters.format
+                            == option
+                        %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="format_filter_{{ loop.index }}"
+                >
+                    {{ option }}
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- =============================================
+             Rating
+             ============================================= -->
+
+        <div class="filter-section">
+
+            <div
+                class="filter-label"
+                data-class="text"
+                data-semantic="rating_filter_label"
+            >
+                Rating
+            </div>
+
+
+            <div class="filter-options">
+
+                {% for option in
+                    [
+                        "Any rating",
+                        "4 stars & up",
+                        "4.5 stars & up"
+                    ]
+                %}
+
+                <button
+                    class="
+                        filter-option
+
+                        {% if
+                            search.filters.rating
+                            == option
+                        %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="rating_filter_{{ loop.index }}"
+                >
+                    {{ option }}
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- =============================================
+             Price
+             ============================================= -->
+
+        <div class="filter-section">
+
+            <div
+                class="filter-label"
+                data-class="text"
+                data-semantic="price_filter_label"
+            >
+                Price
+            </div>
+
+
+            <div class="filter-options">
+
+                {% for option in
+                    [
+                        "Any price",
+                        "Under $5",
+                        "$5–$10",
+                        "$10–$20"
+                    ]
+                %}
+
+                <button
+                    class="
+                        filter-option
+
+                        {% if
+                            search.filters.price
+                            == option
+                        %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="price_filter_{{ loop.index }}"
+                >
+                    {{ option }}
+                </button>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- =============================================
+             Sheet Actions
+             ============================================= -->
+
+        <div class="filter-sheet-actions">
+
+            <button
+                class="sheet-secondary-button"
+                data-class="button"
+                data-semantic="reset_filters_button"
+            >
+                <span
+                    data-class="text"
+                    data-semantic="reset_filters_label"
+                >
+                    Reset
+                </span>
+            </button>
+
+
+            <button
+                class="sheet-primary-button"
+                data-class="button"
+                data-semantic="apply_filters_button"
+            >
+                <span
+                    data-class="text"
+                    data-semantic="apply_filters_label"
+                >
+                    Show results
+                </span>
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         BOOK PREVIEW POPUP
+
+         Again:
+         - outside background wrapper
+         - popup annotated
+         - background skipped
+         ===================================================== -->
+
+    {% if
+        search.show_preview
+        and search.preview_book
+    %}
+
+    <article
+        class="preview-card"
+        data-class="card"
+        data-semantic="book_preview_popup"
+        data-occluder="true"
+    >
+
+
+        <!-- Close -->
+
+        <button
+            class="
+                icon-button
+                preview-close
+            "
+            data-class="button"
+            data-semantic="preview_close_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="preview_close_icon"
+            >
+                close
+            </span>
+
+        </button>
+
+
+        <!-- Cover -->
+
+        <div class="preview-cover">
+
+            {% if search.preview_book.cover %}
+
+            <img
+                src="{{ search.preview_book.cover }}"
+                alt=""
+                data-class="image"
+                data-semantic="preview_cover"
+            >
+
+            {% else %}
+
+            <div class="preview-placeholder">
+                {{ search.preview_book.title }}
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- Information -->
+
+        <div class="preview-content">
+
+            <div
+                class="preview-title"
+                data-class="text"
+                data-semantic="preview_title"
+            >
+                {{ search.preview_book.title }}
+            </div>
+
+
+            <div
+                class="preview-author"
+                data-class="text"
+                data-semantic="preview_author"
+            >
+                {{ search.preview_book.author }}
+            </div>
+
+
+            <div class="result-rating">
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="preview_rating_star"
+                >
+                    star
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="preview_rating"
+                >
+                    {{ search.preview_book.rating }}
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="preview_rating_count"
+                >
+                    (
+                    {{ search.preview_book.rating_count }}
+                    )
+                </span>
+
+            </div>
+
+
+            <div
+                class="result-price"
+                data-class="text"
+                data-semantic="preview_price"
+            >
+                {{ search.preview_book.price }}
+            </div>
+
+
+            {% if
+                search.preview_book.kindle_unlimited
+            %}
+
+            <div
+                class="unlimited-label"
+                data-class="badge"
+                data-semantic="preview_kindle_unlimited"
+            >
+                Kindle Unlimited
+            </div>
+
+            {% endif %}
+
+
+            <div class="preview-actions">
+
+                {% if
+                    search.preview_book.sample_available
+                %}
+
+                <button
+                    class="kindle-button"
+                    data-class="button"
+                    data-semantic="preview_sample_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="preview_sample_icon"
+                    >
+                        menu_book
+                    </span>
+
+
+                    <span
+                        data-class="text"
+                        data-semantic="preview_sample_label"
+                    >
+                        Read sample
+                    </span>
+
+                </button>
+
+                {% endif %}
+
+
+                <button
+                    class="kindle-button"
+                    data-class="button"
+                    data-semantic="preview_details_button"
+                >
+
+                    <span
+                        data-class="text"
+                        data-semantic="preview_details_label"
+                    >
+                        View details
+                    </span>
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </article>
+
+    {% endif %}
+
+
+</div>
+
+{% endblock %}

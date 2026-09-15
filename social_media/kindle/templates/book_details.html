@@ -1,0 +1,2216 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Kindle Book Details
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .details-page {
+
+        min-height:
+            100vh;
+
+        padding-bottom:
+            90px;
+
+        background:
+            var(--background);
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .details-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            200;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        min-height:
+            64px;
+
+        padding:
+            0 var(--page-padding);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .details-app-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        padding:
+            0 12px;
+
+        font-size:
+            16px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .details-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .details-content {
+
+        width:
+            min(
+                100%,
+                var(--content-max-width)
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            34px
+            var(--page-padding)
+            50px;
+    }
+
+
+    /* ======================================================
+       Hero
+       ====================================================== */
+
+    .book-hero {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            190px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            32px;
+
+        align-items:
+            start;
+    }
+
+
+    .hero-cover {
+
+        position:
+            relative;
+
+        width:
+            100%;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+
+        box-shadow:
+            0
+            8px
+            24px
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .hero-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .hero-cover-placeholder {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        padding:
+            16px;
+
+        text-align:
+            center;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-weight:
+            800;
+    }
+
+
+    /* ======================================================
+       Book Information
+       ====================================================== */
+
+    .book-info {
+
+        min-width:
+            0;
+    }
+
+
+    .book-title {
+
+        font-size:
+            clamp(
+                28px,
+                4vw,
+                44px
+            );
+
+        line-height:
+            1.12;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .book-subtitle {
+
+        margin-top:
+            8px;
+
+        font-size:
+            16px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .book-author-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        margin-top:
+            18px;
+    }
+
+
+    .author-avatar {
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        overflow:
+            hidden;
+
+        flex:
+            0 0 auto;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .author-avatar img {
+
+        height:
+            100%;
+    }
+
+
+    .author-name {
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+
+        color:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Rating
+       ====================================================== */
+
+    .rating-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            8px;
+
+        margin-top:
+            18px;
+    }
+
+
+    .rating-score {
+
+        font-size:
+            16px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .rating-stars {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        color:
+            var(--warning);
+    }
+
+
+    .rating-stars
+    .material-symbols-rounded {
+
+        font-size:
+            18px;
+
+        font-variation-settings:
+            "FILL" 1;
+    }
+
+
+    .rating-count {
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Meta
+       ====================================================== */
+
+    .book-meta {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            8px;
+
+        margin-top:
+            18px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .meta-divider {
+
+        opacity:
+            .6;
+    }
+
+
+    /* ======================================================
+       Actions
+       ====================================================== */
+
+    .book-primary-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            10px;
+
+        margin-top:
+            26px;
+    }
+
+
+    .action-primary {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            46px;
+
+        padding:
+            0 22px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    .action-secondary {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            46px;
+
+        padding:
+            0 20px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Download Progress
+       ====================================================== */
+
+    .download-panel {
+
+        max-width:
+            440px;
+
+        margin-top:
+            22px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .download-heading {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        font-size:
+            12px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .download-track {
+
+        width:
+            100%;
+
+        height:
+            6px;
+
+        margin-top:
+            10px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .download-progress {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Reading Progress
+       ====================================================== */
+
+    .reading-progress-panel {
+
+        max-width:
+            440px;
+
+        margin-top:
+            22px;
+
+        padding:
+            14px;
+
+        border-radius:
+            14px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .reading-progress-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            10px;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .reading-progress-track {
+
+        height:
+            6px;
+
+        margin-top:
+            10px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .reading-progress-value {
+
+        height:
+            100%;
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ======================================================
+       Sections
+       ====================================================== */
+
+    .details-section {
+
+        margin-top:
+            48px;
+    }
+
+
+    .section-title {
+
+        margin-bottom:
+            16px;
+
+        font-size:
+            22px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .description {
+
+        max-width:
+            880px;
+
+        font-size:
+            15px;
+
+        line-height:
+            1.65;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Book Information Grid
+       ====================================================== */
+
+    .info-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            12px;
+
+        max-width:
+            900px;
+    }
+
+
+    .info-card {
+
+        padding:
+            16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .info-label {
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .info-value {
+
+        margin-top:
+            6px;
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Reviews
+       ====================================================== */
+
+    .reviews-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            240px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            34px;
+    }
+
+
+    .rating-large {
+
+        font-size:
+            46px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .rating-breakdown {
+
+        margin-top:
+            16px;
+    }
+
+
+    .rating-breakdown-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            26px
+            minmax(
+                0,
+                1fr
+            )
+            38px;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        margin-top:
+            8px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .review-bar {
+
+        height:
+            6px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .review-bar-value {
+
+        height:
+            100%;
+
+        background:
+            var(--warning);
+    }
+
+
+    .reviews-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            12px;
+    }
+
+
+    .review-card {
+
+        padding:
+            18px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .review-name {
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .review-text {
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.55;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Related
+       ====================================================== */
+
+    .related-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(
+                    130px,
+                    1fr
+                )
+            );
+
+        gap:
+            20px;
+    }
+
+
+    .related-card {
+
+        min-width:
+            0;
+    }
+
+
+    .related-cover {
+
+        width:
+            100%;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .related-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .related-title {
+
+        margin-top:
+            9px;
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+
+        line-height:
+            1.35;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .related-author {
+
+        margin-top:
+            4px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       More Menu
+       ====================================================== */
+
+    .more-menu {
+
+        position:
+            fixed;
+
+        z-index:
+            900;
+
+        top:
+            72px;
+
+        right:
+            18px;
+
+        width:
+            230px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            10px
+            30px
+            rgba(
+                0,
+                0,
+                0,
+                .22
+            );
+    }
+
+
+    .more-menu-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        width:
+            100%;
+
+        min-height:
+            50px;
+
+        padding:
+            0 16px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    .more-menu-item
+    .material-symbols-rounded {
+
+        color:
+            var(--icon);
+
+        font-size:
+            20px;
+    }
+
+
+    /* ======================================================
+       Mobile
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .details-content {
+
+            padding-top:
+                22px;
+        }
+
+
+        .book-hero {
+
+            grid-template-columns:
+                116px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap:
+                18px;
+        }
+
+
+        .book-title {
+
+            font-size:
+                25px;
+        }
+
+
+        .book-subtitle {
+
+            font-size:
+                13px;
+        }
+
+
+        .book-author-row {
+
+            margin-top:
+                12px;
+        }
+
+
+        .rating-row {
+
+            margin-top:
+                12px;
+        }
+
+
+        .book-meta {
+
+            margin-top:
+                12px;
+        }
+
+
+        .book-primary-actions {
+
+            grid-column:
+                1 / -1;
+
+            width:
+                100%;
+        }
+
+
+        .action-primary,
+        .action-secondary {
+
+            flex:
+                1;
+        }
+
+
+        .info-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .reviews-layout {
+
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .related-row {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="details-page">
+
+
+    <!-- =====================================================
+         App Bar
+         ===================================================== -->
+
+    <header
+        class="details-app-bar"
+        data-class="app_bar"
+        data-semantic="book_details_app_bar"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="back_button"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="back_icon"
+            >
+                arrow_back
+            </span>
+
+        </button>
+
+
+        <div
+            class="
+                details-app-title
+                truncate
+            "
+            data-class="text"
+            data-semantic="app_bar_title"
+        >
+            Book details
+        </div>
+
+
+        <div class="details-actions">
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="wishlist_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="wishlist_icon"
+                >
+                    {% if book.wishlist %}
+                        favorite
+                    {% else %}
+                        favorite_border
+                    {% endif %}
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="share_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="share_icon"
+                >
+                    share
+                </span>
+
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="more_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="more_icon"
+                >
+                    more_vert
+                </span>
+
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         Content
+         ===================================================== -->
+
+    <main class="details-content">
+
+
+        <!-- =================================================
+             Hero
+             ================================================= -->
+
+        <section class="book-hero">
+
+            <div class="hero-cover">
+
+                {% if book.cover %}
+
+                <img
+                    src="{{ book.cover }}"
+                    alt=""
+                    data-class="image"
+                    data-semantic="book_cover"
+                >
+
+                {% else %}
+
+                <div class="hero-cover-placeholder">
+                    {{ book.title }}
+                </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="book-info">
+
+                <h1
+                    class="book-title"
+                    data-class="text"
+                    data-semantic="book_title"
+                >
+                    {{ book.title }}
+                </h1>
+
+
+                {% if book.subtitle %}
+
+                <div
+                    class="book-subtitle"
+                    data-class="text"
+                    data-semantic="book_subtitle"
+                >
+                    {{ book.subtitle }}
+                </div>
+
+                {% endif %}
+
+
+                <div class="book-author-row">
+
+                    {% if book.author_image %}
+
+                    <div
+                        class="author-avatar"
+                        data-class="avatar"
+                        data-semantic="author_avatar"
+                    >
+
+                        <img
+                            src="{{ book.author_image }}"
+                            alt=""
+                        >
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <span
+                        class="author-name"
+                        data-class="text"
+                        data-semantic="author_name"
+                    >
+                        {{ book.author }}
+                    </span>
+
+                </div>
+
+
+                <div class="rating-row">
+
+                    <span
+                        class="rating-score"
+                        data-class="text"
+                        data-semantic="rating_score"
+                    >
+                        {{ book.rating }}
+                    </span>
+
+
+                    <div class="rating-stars">
+
+                        {% for _ in range(5) %}
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="rating_star_{{ loop.index }}"
+                        >
+                            star
+                        </span>
+
+                        {% endfor %}
+
+                    </div>
+
+
+                    <span
+                        class="rating-count"
+                        data-class="text"
+                        data-semantic="rating_count"
+                    >
+                        {{ book.rating_count }}
+                        ratings
+                    </span>
+
+                </div>
+
+
+                <div class="book-meta">
+
+                    <span
+                        data-class="text"
+                        data-semantic="genre"
+                    >
+                        {{ book.genre }}
+                    </span>
+
+                    <span class="meta-divider">
+                        •
+                    </span>
+
+                    <span
+                        data-class="text"
+                        data-semantic="page_count"
+                    >
+                        {{ book.pages }}
+                        pages
+                    </span>
+
+                    <span class="meta-divider">
+                        •
+                    </span>
+
+                    <span
+                        data-class="text"
+                        data-semantic="language"
+                    >
+                        {{ book.language }}
+                    </span>
+
+                </div>
+
+
+                <!-- =========================================
+                     State Actions
+                     ========================================= -->
+
+                <div class="book-primary-actions">
+
+
+                    {% if book.reading %}
+
+                    <button
+                        class="action-primary"
+                        data-class="button"
+                        data-semantic="continue_reading_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="continue_reading_icon"
+                        >
+                            menu_book
+                        </span>
+
+                        Continue reading
+
+                    </button>
+
+
+                    {% elif book.finished %}
+
+                    <button
+                        class="action-primary"
+                        data-class="button"
+                        data-semantic="read_again_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="read_again_icon"
+                        >
+                            replay
+                        </span>
+
+                        Read again
+
+                    </button>
+
+
+                    {% elif book.downloaded %}
+
+                    <button
+                        class="action-primary"
+                        data-class="button"
+                        data-semantic="read_now_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="read_now_icon"
+                        >
+                            menu_book
+                        </span>
+
+                        Read now
+
+                    </button>
+
+
+                    {% elif book.downloading %}
+
+                    <button
+                        class="action-secondary"
+                        data-class="button"
+                        data-semantic="cancel_download_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="cancel_download_icon"
+                        >
+                            close
+                        </span>
+
+                        Cancel
+
+                    </button>
+
+
+                    {% elif book.owned %}
+
+                    <button
+                        class="action-primary"
+                        data-class="button"
+                        data-semantic="download_button"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="download_icon"
+                        >
+                            download
+                        </span>
+
+                        Download
+
+                    </button>
+
+
+                    {% else %}
+
+                    <button
+                        class="action-primary"
+                        data-class="button"
+                        data-semantic="buy_button"
+                    >
+                        Buy for
+                        {{ book.price }}
+                    </button>
+
+                    {% endif %}
+
+
+                    {% if book.sample_available %}
+
+                    <button
+                        class="action-secondary"
+                        data-class="button"
+                        data-semantic="sample_button"
+                    >
+                        Read sample
+                    </button>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- =========================================
+                     Download State
+                     ========================================= -->
+
+                {% if book.downloading %}
+
+                <div
+                    class="download-panel"
+                    data-class="card"
+                    data-semantic="download_progress_card"
+                >
+
+                    <div class="download-heading">
+
+                        <span
+                            data-class="text"
+                            data-semantic="download_label"
+                        >
+                            Downloading
+                        </span>
+
+                        <span
+                            data-class="text"
+                            data-semantic="download_percentage"
+                        >
+                            {{ book.download_progress }}%
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="download-track"
+                        data-class="progress_bar"
+                        data-semantic="download_progress"
+                    >
+
+                        <div
+                            class="download-progress"
+                            style="
+                                width:
+                                {{ book.download_progress }}%;
+                            "
+                        ></div>
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+
+                <!-- =========================================
+                     Reading State
+                     ========================================= -->
+
+                {% if
+                    book.reading
+                    or book.finished
+                %}
+
+                <div
+                    class="reading-progress-panel"
+                    data-class="card"
+                    data-semantic="reading_progress_card"
+                >
+
+                    <div class="reading-progress-title">
+
+                        <span
+                            data-class="text"
+                            data-semantic="reading_progress_label"
+                        >
+                            {% if book.finished %}
+                                Finished
+                            {% else %}
+                                Reading progress
+                            {% endif %}
+                        </span>
+
+                        <span
+                            data-class="text"
+                            data-semantic="reading_progress_percentage"
+                        >
+                            {{ book.progress }}%
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="reading-progress-track"
+                        data-class="progress_bar"
+                        data-semantic="reading_progress"
+                    >
+
+                        <div
+                            class="reading-progress-value"
+                            style="
+                                width:
+                                {{ book.progress }}%;
+                            "
+                        ></div>
+
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             Description
+             ================================================= -->
+
+        <section class="details-section">
+
+            <h2
+                class="section-title"
+                data-class="text"
+                data-semantic="about_heading"
+            >
+                About this book
+            </h2>
+
+
+            <p
+                class="description"
+                data-class="text"
+                data-semantic="book_description"
+            >
+                {{ book.description }}
+            </p>
+
+        </section>
+
+
+        <!-- =================================================
+             Information
+             ================================================= -->
+
+        <section class="details-section">
+
+            <h2
+                class="section-title"
+                data-class="text"
+                data-semantic="details_heading"
+            >
+                Book details
+            </h2>
+
+
+            <div class="info-grid">
+
+                <div
+                    class="info-card"
+                    data-class="card"
+                    data-semantic="publication_info"
+                >
+
+                    <div
+                        class="info-label"
+                        data-class="text"
+                    >
+                        Published
+                    </div>
+
+                    <div
+                        class="info-value"
+                        data-class="text"
+                    >
+                        {{ book.publication_year }}
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="info-card"
+                    data-class="card"
+                    data-semantic="publisher_info"
+                >
+
+                    <div
+                        class="info-label"
+                        data-class="text"
+                    >
+                        Publisher
+                    </div>
+
+                    <div
+                        class="info-value"
+                        data-class="text"
+                    >
+                        {{ book.publisher }}
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="info-card"
+                    data-class="card"
+                    data-semantic="length_info"
+                >
+
+                    <div
+                        class="info-label"
+                        data-class="text"
+                    >
+                        Print length
+                    </div>
+
+                    <div
+                        class="info-value"
+                        data-class="text"
+                    >
+                        {{ book.pages }}
+                        pages
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="info-card"
+                    data-class="card"
+                    data-semantic="language_info"
+                >
+
+                    <div
+                        class="info-label"
+                        data-class="text"
+                    >
+                        Language
+                    </div>
+
+                    <div
+                        class="info-value"
+                        data-class="text"
+                    >
+                        {{ book.language }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             Reviews
+             ================================================= -->
+
+        <section class="details-section">
+
+            <h2
+                class="section-title"
+                data-class="text"
+                data-semantic="reviews_heading"
+            >
+                Ratings & reviews
+            </h2>
+
+
+            <div class="reviews-layout">
+
+                <div>
+
+                    <div
+                        class="rating-large"
+                        data-class="text"
+                        data-semantic="reviews_average"
+                    >
+                        {{ book.rating }}
+                    </div>
+
+
+                    <div
+                        class="rating-count"
+                        data-class="text"
+                        data-semantic="reviews_total"
+                    >
+                        {{ book.rating_count }}
+                        ratings
+                    </div>
+
+
+                    <div class="rating-breakdown">
+
+                        {% for rating in book.review_breakdown %}
+
+                        <div class="rating-breakdown-row">
+
+                            <span
+                                data-class="text"
+                                data-semantic="rating_{{ rating.stars }}_label"
+                            >
+                                {{ rating.stars }}
+                            </span>
+
+
+                            <div
+                                class="review-bar"
+                                data-class="progress_bar"
+                                data-semantic="rating_{{ rating.stars }}_bar"
+                            >
+
+                                <div
+                                    class="review-bar-value"
+                                    style="
+                                        width:
+                                        {{ rating.percentage }}%;
+                                    "
+                                ></div>
+
+                            </div>
+
+
+                            <span
+                                data-class="text"
+                                data-semantic="rating_{{ rating.stars }}_percentage"
+                            >
+                                {{ rating.percentage }}%
+                            </span>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="reviews-list">
+
+                    {% for review in book.review_quotes %}
+
+                    <article
+                        class="review-card"
+                        data-class="card"
+                        data-semantic="review_{{ loop.index }}"
+                    >
+
+                        <div
+                            class="review-name"
+                            data-class="text"
+                            data-semantic="reviewer_{{ loop.index }}"
+                        >
+                            {{ review.name }}
+                        </div>
+
+
+                        <div class="rating-stars">
+
+                            {% for _ in range(review.rating) %}
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="review_{{ loop.index }}_star_{{ loop.index }}"
+                            >
+                                star
+                            </span>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        <p
+                            class="review-text"
+                            data-class="text"
+                            data-semantic="review_text_{{ loop.index }}"
+                        >
+                            {{ review.text }}
+                        </p>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             Related Books
+             ================================================= -->
+
+        <section class="details-section">
+
+            <h2
+                class="section-title"
+                data-class="text"
+                data-semantic="related_heading"
+            >
+                You may also like
+            </h2>
+
+
+            <div class="related-row">
+
+                {% for related in book.related_books %}
+
+                <article
+                    class="related-card"
+                    data-class="card"
+                    data-semantic="related_book_{{ related.id }}"
+                >
+
+                    <div class="related-cover">
+
+                        {% if related.cover %}
+
+                        <img
+                            src="{{ related.cover }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="related_cover_{{ related.id }}"
+                        >
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div
+                        class="
+                            related-title
+                            line-clamp-2
+                        "
+                        data-class="text"
+                        data-semantic="related_title_{{ related.id }}"
+                    >
+                        {{ related.title }}
+                    </div>
+
+
+                    <div
+                        class="
+                            related-author
+                            truncate
+                        "
+                        data-class="text"
+                        data-semantic="related_author_{{ related.id }}"
+                    >
+                        {{ related.author }}
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         More Options State
+         ===================================================== -->
+
+    {% if book.show_more_menu %}
+
+    <div
+        class="more-menu"
+        data-class="card"
+        data-semantic="book_more_menu"
+        data-occluder="true"
+    >
+
+        <button
+            class="more-menu-item"
+            data-class="button"
+            data-semantic="add_collection_action"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                create_new_folder
+            </span>
+
+            Add to collection
+
+        </button>
+
+
+        <button
+            class="more-menu-item"
+            data-class="button"
+            data-semantic="mark_unread_action"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                mark_email_unread
+            </span>
+
+            Mark as unread
+
+        </button>
+
+
+        <button
+            class="more-menu-item"
+            data-class="button"
+            data-semantic="remove_download_action"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                delete
+            </span>
+
+            Remove download
+
+        </button>
+
+
+        <button
+            class="more-menu-item"
+            data-class="button"
+            data-semantic="book_info_action"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                info
+            </span>
+
+            Book information
+
+        </button>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

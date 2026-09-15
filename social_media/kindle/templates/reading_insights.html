@@ -1,0 +1,2796 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Kindle Reading Insights
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    /* ======================================================
+       Root
+       ====================================================== */
+
+    .insights-page {
+
+        position:
+            relative;
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+    }
+
+
+    .insights-background {
+
+        min-height:
+            100vh;
+
+        padding-bottom:
+            92px;
+
+        background:
+            var(--background);
+    }
+
+
+    .insights-background.popup-active {
+
+        pointer-events:
+            none;
+    }
+
+
+    /* ======================================================
+       Popup Backdrop
+       ====================================================== */
+
+    .popup-backdrop {
+
+        position:
+            fixed;
+
+        z-index:
+            800;
+
+        inset:
+            0;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.32
+            );
+    }
+
+
+    /* ======================================================
+       App Bar
+       ====================================================== */
+
+    .insights-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            200;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            68px;
+
+        padding:
+            0
+            var(--page-padding);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .insights-app-title {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Main
+       ====================================================== */
+
+    .insights-content {
+
+        width:
+            min(
+                100%,
+                1180px
+            );
+
+        margin:
+            0 auto;
+
+        padding:
+            30px
+            var(--page-padding)
+            56px;
+    }
+
+
+    /* ======================================================
+       Heading
+       ====================================================== */
+
+    .insights-heading {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        justify-content:
+            space-between;
+
+        gap:
+            18px;
+
+        margin-bottom:
+            24px;
+    }
+
+
+    .insights-heading h1 {
+
+        font-size:
+            clamp(
+                28px,
+                4vw,
+                40px
+            );
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .insights-heading p {
+
+        margin-top:
+            6px;
+
+        font-size:
+            13px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .range-button {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        min-height:
+            40px;
+
+        padding:
+            0 14px;
+
+        border:
+            1px solid
+            var(--border);
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ======================================================
+       Summary Cards
+       ====================================================== */
+
+    .summary-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            14px;
+    }
+
+
+    .summary-card {
+
+        min-height:
+            145px;
+
+        padding:
+            18px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            18px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .summary-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        border-radius:
+            12px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .summary-value {
+
+        margin-top:
+            18px;
+
+        font-size:
+            28px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .summary-label {
+
+        margin-top:
+            4px;
+
+        font-size:
+            11px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Section
+       ====================================================== */
+
+    .insights-section {
+
+        margin-top:
+            34px;
+    }
+
+
+    .section-heading {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            12px;
+
+        margin-bottom:
+            16px;
+    }
+
+
+    .section-heading h2 {
+
+        font-size:
+            21px;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Goal Card
+       ====================================================== */
+
+    .goal-card {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            160px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            24px;
+
+        align-items:
+            center;
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .goal-ring {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            148px;
+
+        height:
+            148px;
+
+        border-radius:
+            50%;
+
+        background:
+            conic-gradient(
+                var(--primary)
+                0%
+                var(--goal-progress),
+
+                var(--surface-variant)
+                var(--goal-progress)
+                100%
+            );
+    }
+
+
+    .goal-ring::after {
+
+        content:
+            "";
+
+        position:
+            absolute;
+
+        width:
+            112px;
+
+        height:
+            112px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface);
+    }
+
+
+    .goal-ring-content {
+
+        position:
+            relative;
+
+        z-index:
+            2;
+
+        text-align:
+            center;
+    }
+
+
+    .goal-ring-value {
+
+        font-size:
+            26px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .goal-ring-label {
+
+        margin-top:
+            3px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .goal-info-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .goal-info-text {
+
+        margin-top:
+            7px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .goal-progress-track {
+
+        width:
+            100%;
+
+        height:
+            7px;
+
+        margin-top:
+            18px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            999px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .goal-progress-value {
+
+        height:
+            100%;
+
+        border-radius:
+            inherit;
+
+        background:
+            var(--primary);
+    }
+
+
+    .goal-actions {
+
+        margin-top:
+            16px;
+    }
+
+
+    /* ======================================================
+       Weekly Bars
+       ====================================================== */
+
+    .activity-card {
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .weekly-bars {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                7,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+
+        align-items:
+            end;
+
+        min-height:
+            220px;
+    }
+
+
+    .day-column {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            flex-end;
+
+        height:
+            210px;
+    }
+
+
+    .day-value {
+
+        margin-bottom:
+            6px;
+
+        font-size:
+            9px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .day-bar-shell {
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        width:
+            28px;
+
+        height:
+            150px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .day-bar {
+
+        width:
+            100%;
+
+        min-height:
+            3px;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--primary);
+    }
+
+
+    .day-label {
+
+        margin-top:
+            8px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .goal-dot {
+
+        width:
+            7px;
+
+        height:
+            7px;
+
+        margin-top:
+            6px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--success);
+    }
+
+
+    /* ======================================================
+       Monthly Heatmap
+       ====================================================== */
+
+    .month-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                10,
+                minmax(
+                    22px,
+                    1fr
+                )
+            );
+
+        gap:
+            7px;
+    }
+
+
+    .month-day {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        aspect-ratio:
+            1;
+
+        min-width:
+            0;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            9px;
+    }
+
+
+    .month-day.level-1 {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .month-day.level-2 {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Recent Sessions
+       ====================================================== */
+
+    .session-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+    }
+
+
+    .session-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            54px
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        min-height:
+            92px;
+
+        padding:
+            10px 0;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .session-cover {
+
+        width:
+            54px;
+
+        aspect-ratio:
+            1 / 1.52;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            5px;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .session-cover img {
+
+        height:
+            100%;
+    }
+
+
+    .session-info {
+
+        min-width:
+            0;
+    }
+
+
+    .session-book {
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .session-meta {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            7px;
+
+        margin-top:
+            5px;
+
+        font-size:
+            10px;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .session-duration {
+
+        text-align:
+            right;
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    /* ======================================================
+       Achievements
+       ====================================================== */
+
+    .achievement-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            12px;
+    }
+
+
+    .achievement-card {
+
+        padding:
+            16px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            16px;
+
+        background:
+            var(--surface);
+    }
+
+
+    .achievement-card.locked {
+
+        opacity:
+            .55;
+    }
+
+
+    .achievement-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .achievement-title {
+
+        margin-top:
+            12px;
+
+        font-size:
+            13px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .achievement-description {
+
+        margin-top:
+            5px;
+
+        font-size:
+            10px;
+
+        line-height:
+            1.4;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Empty State
+       ====================================================== */
+
+    .insights-empty {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        min-height:
+            500px;
+
+        text-align:
+            center;
+    }
+
+
+    .insights-empty-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            90px;
+
+        height:
+            90px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--icon-secondary);
+    }
+
+
+    .insights-empty-icon
+    .material-symbols-rounded {
+
+        font-size:
+            42px;
+    }
+
+
+    .insights-empty-title {
+
+        margin-top:
+            22px;
+
+        font-size:
+            22px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .insights-empty-description {
+
+        max-width:
+            420px;
+
+        margin-top:
+            8px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Dialog
+       ====================================================== */
+
+    .insights-dialog {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        top:
+            50%;
+
+        left:
+            50%;
+
+        width:
+            min(
+                calc(
+                    100%
+                    - 30px
+                ),
+                430px
+            );
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            20px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            16px
+            48px
+            rgba(
+                0,
+                0,
+                0,
+                .30
+            );
+
+        transform:
+            translate(
+                -50%,
+                -50%
+            );
+    }
+
+
+    .dialog-title {
+
+        font-size:
+            20px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-description {
+
+        margin-top:
+            7px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .goal-options {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                1fr
+            );
+
+        gap:
+            8px;
+
+        margin-top:
+            20px;
+    }
+
+
+    .goal-option {
+
+        min-height:
+            48px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            11px;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .goal-option.active {
+
+        border-color:
+            var(--primary);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .dialog-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        margin-top:
+            20px;
+    }
+
+
+    .dialog-secondary,
+    .dialog-primary {
+
+        min-height:
+            42px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            var(--pill-radius);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-secondary {
+
+        border:
+            1px solid
+            var(--border);
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .dialog-primary {
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    /* ======================================================
+       Date Range Menu
+       ====================================================== */
+
+    .range-menu {
+
+        position:
+            fixed;
+
+        z-index:
+            950;
+
+        top:
+            82px;
+
+        right:
+            20px;
+
+        width:
+            220px;
+
+        padding:
+            7px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            12px
+            34px
+            rgba(
+                0,
+                0,
+                0,
+                .24
+            );
+    }
+
+
+    .range-option {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        width:
+            100%;
+
+        min-height:
+            46px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            10px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    .range-option.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    /* ======================================================
+       Achievement Popup
+       ====================================================== */
+
+    .achievement-popup-icon {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            82px;
+
+        height:
+            82px;
+
+        margin:
+            0 auto;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+
+    .achievement-popup-icon
+    .material-symbols-rounded {
+
+        font-size:
+            42px;
+    }
+
+
+    .achievement-popup-title {
+
+        margin-top:
+            18px;
+
+        text-align:
+            center;
+
+        font-size:
+            22px;
+
+        font-weight:
+            800;
+
+        color:
+            var(--text-primary);
+    }
+
+
+    .achievement-popup-description {
+
+        margin-top:
+            8px;
+
+        text-align:
+            center;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .insights-content {
+
+            padding-top:
+                20px;
+        }
+
+
+        .insights-heading {
+
+            align-items:
+                flex-start;
+        }
+
+
+        .summary-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .goal-card {
+
+            grid-template-columns:
+                1fr;
+
+            justify-items:
+                center;
+
+            text-align:
+                center;
+        }
+
+
+        .weekly-bars {
+
+            gap:
+                5px;
+        }
+
+
+        .day-bar-shell {
+
+            width:
+                20px;
+        }
+
+
+        .month-grid {
+
+            grid-template-columns:
+                repeat(
+                    6,
+                    minmax(
+                        22px,
+                        1fr
+                    )
+                );
+        }
+
+
+        .achievement-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .session-row {
+
+            grid-template-columns:
+                46px
+                minmax(
+                    0,
+                    1fr
+                );
+
+            gap:
+                10px;
+        }
+
+
+        .session-cover {
+
+            width:
+                46px;
+        }
+
+
+        .session-duration {
+
+            grid-column:
+                2;
+
+            text-align:
+                left;
+        }
+
+    }
+
+
+    @media (
+        min-width: 600px
+    )
+    and (
+        max-width: 839px
+    ) {
+
+        .summary-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+
+        .achievement-grid {
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    minmax(
+                        0,
+                        1fr
+                    )
+                );
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class="insights-page">
+
+
+    <!-- =====================================================
+         NORMAL BACKGROUND
+         ===================================================== -->
+
+    <div
+        class="
+            insights-background
+
+            {% if insights.popup_open %}
+            popup-active
+            {% endif %}
+        "
+
+        {% if insights.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+
+        <!-- =================================================
+             App Bar
+             ================================================= -->
+
+        <header
+            class="insights-app-bar"
+            data-class="app_bar"
+            data-semantic="reading_insights_app_bar"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="insights_back_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="insights_back_icon"
+                >
+                    arrow_back
+                </span>
+
+            </button>
+
+
+            <div
+                class="insights-app-title"
+                data-class="text"
+                data-semantic="insights_app_title"
+            >
+                Reading insights
+            </div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="insights_more_button"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="insights_more_icon"
+                >
+                    more_vert
+                </span>
+
+            </button>
+
+        </header>
+
+
+        <main class="insights-content">
+
+
+            <!-- =================================================
+                 Empty
+                 ================================================= -->
+
+            {% if insights.show_empty %}
+
+            <section
+                class="insights-empty"
+                data-class="section"
+                data-semantic="reading_history_empty"
+            >
+
+                <div
+                    class="insights-empty-icon"
+                    data-class="icon"
+                    data-semantic="reading_history_empty_icon"
+                >
+
+                    <span class="material-symbols-rounded">
+                        menu_book
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="insights-empty-title"
+                    data-class="text"
+                    data-semantic="reading_history_empty_title"
+                >
+                    Start reading to see your insights
+                </div>
+
+
+                <p
+                    class="insights-empty-description"
+                    data-class="text"
+                    data-semantic="reading_history_empty_description"
+                >
+                    Your reading time, streaks,
+                    goals and recent reading activity
+                    will appear here.
+                </p>
+
+            </section>
+
+
+            {% else %}
+
+
+            <!-- =================================================
+                 Heading
+                 ================================================= -->
+
+            <section class="insights-heading">
+
+                <div>
+
+                    <h1
+                        data-class="text"
+                        data-semantic="insights_heading"
+                    >
+                        Your reading activity
+                    </h1>
+
+
+                    <p
+                        data-class="text"
+                        data-semantic="insights_subtitle"
+                    >
+                        Keep track of your reading habits.
+                    </p>
+
+                </div>
+
+
+                <button
+                    class="range-button"
+                    data-class="button"
+                    data-semantic="date_range_button"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="date_range_icon"
+                    >
+                        calendar_month
+                    </span>
+
+
+                    <span
+                        data-class="text"
+                        data-semantic="date_range_label"
+                    >
+                        {{ insights.selected_range }}
+                    </span>
+
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="date_range_expand_icon"
+                    >
+                        expand_more
+                    </span>
+
+                </button>
+
+            </section>
+
+
+            <!-- =================================================
+                 Summary
+                 ================================================= -->
+
+            <section class="summary-grid">
+
+
+                <!-- Today -->
+
+                <article
+                    class="summary-card"
+                    data-class="card"
+                    data-semantic="today_reading_card"
+                >
+
+                    <div
+                        class="summary-icon"
+                        data-class="icon"
+                        data-semantic="today_reading_icon"
+                    >
+
+                        <span class="material-symbols-rounded">
+                            schedule
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="summary-value"
+                        data-class="text"
+                        data-semantic="today_minutes"
+                    >
+                        {{ insights.today_minutes }}
+                    </div>
+
+
+                    <div
+                        class="summary-label"
+                        data-class="text"
+                        data-semantic="today_minutes_label"
+                    >
+                        minutes today
+                    </div>
+
+                </article>
+
+
+                <!-- Streak -->
+
+                <article
+                    class="summary-card"
+                    data-class="card"
+                    data-semantic="reading_streak_card"
+                >
+
+                    <div
+                        class="summary-icon"
+                        data-class="icon"
+                        data-semantic="reading_streak_icon"
+                    >
+
+                        <span class="material-symbols-rounded">
+                            local_fire_department
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="summary-value"
+                        data-class="text"
+                        data-semantic="reading_streak_value"
+                    >
+                        {{ insights.streak }}
+                    </div>
+
+
+                    <div
+                        class="summary-label"
+                        data-class="text"
+                        data-semantic="reading_streak_label"
+                    >
+                        day streak
+                    </div>
+
+                </article>
+
+
+                <!-- Books Finished -->
+
+                <article
+                    class="summary-card"
+                    data-class="card"
+                    data-semantic="finished_books_card"
+                >
+
+                    <div
+                        class="summary-icon"
+                        data-class="icon"
+                        data-semantic="finished_books_icon"
+                    >
+
+                        <span class="material-symbols-rounded">
+                            verified
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="summary-value"
+                        data-class="text"
+                        data-semantic="finished_books_value"
+                    >
+                        {{ insights.books_finished }}
+                    </div>
+
+
+                    <div
+                        class="summary-label"
+                        data-class="text"
+                        data-semantic="finished_books_label"
+                    >
+                        books finished
+                    </div>
+
+                </article>
+
+
+                <!-- Pages -->
+
+                <article
+                    class="summary-card"
+                    data-class="card"
+                    data-semantic="pages_read_card"
+                >
+
+                    <div
+                        class="summary-icon"
+                        data-class="icon"
+                        data-semantic="pages_read_icon"
+                    >
+
+                        <span class="material-symbols-rounded">
+                            auto_stories
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="summary-value"
+                        data-class="text"
+                        data-semantic="pages_read_value"
+                    >
+                        {{ insights.pages_read }}
+                    </div>
+
+
+                    <div
+                        class="summary-label"
+                        data-class="text"
+                        data-semantic="pages_read_label"
+                    >
+                        pages read
+                    </div>
+
+                </article>
+
+            </section>
+
+
+            <!-- =================================================
+                 Goal
+                 ================================================= -->
+
+            <section class="insights-section">
+
+                <div class="section-heading">
+
+                    <h2
+                        data-class="text"
+                        data-semantic="daily_goal_heading"
+                    >
+                        Daily reading goal
+                    </h2>
+
+                </div>
+
+
+                <article
+                    class="goal-card"
+                    data-class="card"
+                    data-semantic="daily_goal_card"
+                >
+
+                    <div
+                        class="goal-ring"
+                        data-class="progress_bar"
+                        data-semantic="daily_goal_ring"
+                        style="
+                            --goal-progress:
+                                {{ insights.goal_progress }}%;
+                        "
+                    >
+
+                        <div class="goal-ring-content">
+
+                            <div
+                                class="goal-ring-value"
+                                data-class="text"
+                                data-semantic="daily_goal_progress"
+                            >
+                                {{ insights.goal_progress }}%
+                            </div>
+
+
+                            <div
+                                class="goal-ring-label"
+                                data-class="text"
+                                data-semantic="daily_goal_progress_label"
+                            >
+                                completed
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div>
+
+                        <div
+                            class="goal-info-title"
+                            data-class="text"
+                            data-semantic="daily_goal_title"
+                        >
+                            {{ insights.today_minutes }}
+                            of
+                            {{ insights.daily_goal }}
+                            minutes
+                        </div>
+
+
+                        <p
+                            class="goal-info-text"
+                            data-class="text"
+                            data-semantic="daily_goal_description"
+                        >
+                            Read for
+                            {{ insights.daily_goal }}
+                            minutes every day to keep
+                            building your reading habit.
+                        </p>
+
+
+                        <div
+                            class="goal-progress-track"
+                            data-class="progress_bar"
+                            data-semantic="daily_goal_progress_bar"
+                        >
+
+                            <div
+                                class="goal-progress-value"
+                                style="
+                                    width:
+                                        {{ insights.goal_progress }}%;
+                                "
+                            ></div>
+
+                        </div>
+
+
+                        <div class="goal-actions">
+
+                            <button
+                                class="kindle-button"
+                                data-class="button"
+                                data-semantic="edit_goal_button"
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="edit_goal_icon"
+                                >
+                                    edit
+                                </span>
+
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="edit_goal_label"
+                                >
+                                    Edit goal
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+            </section>
+
+
+            <!-- =================================================
+                 Weekly Activity
+                 ================================================= -->
+
+            <section class="insights-section">
+
+                <div class="section-heading">
+
+                    <h2
+                        data-class="text"
+                        data-semantic="weekly_activity_heading"
+                    >
+                        Weekly activity
+                    </h2>
+
+
+                    <span
+                        data-class="text"
+                        data-semantic="weekly_activity_total"
+                    >
+                        {{ insights.weekly_minutes }}
+                        min
+                    </span>
+
+                </div>
+
+
+                <article
+                    class="activity-card"
+                    data-class="card"
+                    data-semantic="weekly_activity_card"
+                >
+
+                    <div class="weekly-bars">
+
+                        {% for day in insights.weekly_activity %}
+
+                        <div class="day-column">
+
+                            <div
+                                class="day-value"
+                                data-class="text"
+                                data-semantic="day_minutes_{{ loop.index }}"
+                            >
+                                {{ day.minutes }}
+                            </div>
+
+
+                            <div
+                                class="day-bar-shell"
+                                data-class="progress_bar"
+                                data-semantic="day_activity_{{ loop.index }}"
+                            >
+
+                                <div
+                                    class="day-bar"
+                                    style="
+                                        height:
+                                            {{
+                                                (
+                                                    day.minutes
+                                                    / 95
+                                                    * 100
+                                                )
+                                                | round
+                                            }}%;
+                                    "
+                                ></div>
+
+                            </div>
+
+
+                            <div
+                                class="day-label"
+                                data-class="text"
+                                data-semantic="day_label_{{ loop.index }}"
+                            >
+                                {{ day.day }}
+                            </div>
+
+
+                            {% if day.goal_met %}
+
+                            <div
+                                class="goal-dot"
+                                data-class="selection_indicator"
+                                data-semantic="goal_met_{{ loop.index }}"
+                            ></div>
+
+                            {% endif %}
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </article>
+
+            </section>
+
+
+            <!-- =================================================
+                 Monthly Activity
+                 ================================================= -->
+
+            {% if
+                insights.state == "monthly_activity"
+                or insights.selected_range == "This month"
+            %}
+
+            <section class="insights-section">
+
+                <div class="section-heading">
+
+                    <h2
+                        data-class="text"
+                        data-semantic="monthly_activity_heading"
+                    >
+                        Monthly activity
+                    </h2>
+
+
+                    <span
+                        data-class="text"
+                        data-semantic="monthly_activity_total"
+                    >
+                        {{ insights.monthly_minutes }}
+                        min
+                    </span>
+
+                </div>
+
+
+                <article
+                    class="activity-card"
+                    data-class="card"
+                    data-semantic="monthly_activity_card"
+                >
+
+                    <div class="month-grid">
+
+                        {% for day in insights.monthly_activity %}
+
+                        <div
+                            class="
+                                month-day
+
+                                {% if day.minutes >= 60 %}
+                                level-2
+
+                                {% elif day.minutes > 0 %}
+                                level-1
+                                {% endif %}
+                            "
+                            data-class="card"
+                            data-semantic="month_day_{{ day.day }}"
+                        >
+                            {{ day.day }}
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </article>
+
+            </section>
+
+            {% endif %}
+
+
+            <!-- =================================================
+                 Achievements
+                 ================================================= -->
+
+            <section class="insights-section">
+
+                <div class="section-heading">
+
+                    <h2
+                        data-class="text"
+                        data-semantic="achievements_heading"
+                    >
+                        Achievements
+                    </h2>
+
+                </div>
+
+
+                <div class="achievement-grid">
+
+                    {% for achievement in insights.achievements %}
+
+                    <article
+                        class="
+                            achievement-card
+
+                            {% if not achievement.earned %}
+                            locked
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="achievement_{{ loop.index }}"
+                    >
+
+                        <div
+                            class="achievement-icon"
+                            data-class="icon"
+                            data-semantic="achievement_icon_{{ loop.index }}"
+                        >
+
+                            <span class="material-symbols-rounded">
+                                {{ achievement.icon }}
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="achievement-title"
+                            data-class="text"
+                            data-semantic="achievement_title_{{ loop.index }}"
+                        >
+                            {{ achievement.title }}
+                        </div>
+
+
+                        <p
+                            class="achievement-description"
+                            data-class="text"
+                            data-semantic="achievement_description_{{ loop.index }}"
+                        >
+                            {{ achievement.description }}
+                        </p>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 Recent Sessions
+                 ================================================= -->
+
+            <section class="insights-section">
+
+                <div class="section-heading">
+
+                    <h2
+                        data-class="text"
+                        data-semantic="recent_sessions_heading"
+                    >
+                        Recent reading
+                    </h2>
+
+                </div>
+
+
+                <div class="session-list">
+
+                    {% for session in insights.sessions %}
+
+                    <article
+                        class="session-row"
+                        data-class="card"
+                        data-semantic="reading_session_{{ session.id }}"
+                    >
+
+                        <div class="session-cover">
+
+                            {% if session.cover %}
+
+                            <img
+                                src="{{ session.cover }}"
+                                alt=""
+                                data-class="image"
+                                data-semantic="session_cover_{{ session.id }}"
+                            >
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="session-info">
+
+                            <div
+                                class="
+                                    session-book
+                                    truncate
+                                "
+                                data-class="text"
+                                data-semantic="session_book_{{ session.id }}"
+                            >
+                                {{ session.book_title }}
+                            </div>
+
+
+                            <div class="session-meta">
+
+                                <span
+                                    data-class="timestamp"
+                                    data-semantic="session_date_{{ session.id }}"
+                                >
+                                    {{ session.date }}
+                                </span>
+
+                                <span>
+                                    •
+                                </span>
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="session_pages_{{ session.id }}"
+                                >
+                                    {{ session.pages }}
+                                    pages
+                                </span>
+
+                                <span>
+                                    •
+                                </span>
+
+                                <span
+                                    data-class="text"
+                                    data-semantic="session_progress_{{ session.id }}"
+                                >
+                                    +{{ session.progress_gain }}%
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="session-duration"
+                            data-class="text"
+                            data-semantic="session_duration_{{ session.id }}"
+                        >
+                            {{ session.duration }}
+                            min
+                        </div>
+
+                    </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+
+    <!-- =====================================================
+         Popup Backdrop
+         ===================================================== -->
+
+    {% if insights.popup_open %}
+
+    <div
+        class="popup-backdrop"
+        data-annotation-skip="true"
+    ></div>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Edit Goal
+         ===================================================== -->
+
+    {% if insights.show_edit_goal %}
+
+    <section
+        class="insights-dialog"
+        data-class="dialog"
+        data-semantic="edit_reading_goal_dialog"
+        data-occluder="true"
+    >
+
+        <h2
+            class="dialog-title"
+            data-class="text"
+            data-semantic="edit_goal_dialog_title"
+        >
+            Daily reading goal
+        </h2>
+
+
+        <p
+            class="dialog-description"
+            data-class="text"
+            data-semantic="edit_goal_dialog_description"
+        >
+            Choose how many minutes you want
+            to read each day.
+        </p>
+
+
+        <div class="goal-options">
+
+            {% for goal in
+                [
+                    15,
+                    20,
+                    30,
+                    45,
+                    60,
+                    90
+                ]
+            %}
+
+            <button
+                class="
+                    goal-option
+
+                    {% if
+                        insights.daily_goal
+                        == goal
+                    %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="goal_option_{{ goal }}"
+            >
+
+                <span
+                    data-class="text"
+                    data-semantic="goal_option_label_{{ goal }}"
+                >
+                    {{ goal }}
+                    min
+                </span>
+
+            </button>
+
+            {% endfor %}
+
+        </div>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="dialog-secondary"
+                data-class="button"
+                data-semantic="cancel_goal_button"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="dialog-primary"
+                data-class="button"
+                data-semantic="save_goal_button"
+            >
+                Save
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Date Range Menu
+         ===================================================== -->
+
+    {% if insights.show_date_range_menu %}
+
+    <section
+        class="range-menu"
+        data-class="card"
+        data-semantic="date_range_menu"
+        data-occluder="true"
+    >
+
+        {% for option in
+            [
+                "Today",
+                "This week",
+                "This month",
+                "This year"
+            ]
+        %}
+
+        <button
+            class="
+                range-option
+
+                {% if
+                    insights.selected_range
+                    == option
+                %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="date_range_option_{{ loop.index }}"
+        >
+
+            <span
+                data-class="text"
+                data-semantic="date_range_option_label_{{ loop.index }}"
+            >
+                {{ option }}
+            </span>
+
+
+            {% if
+                insights.selected_range
+                == option
+            %}
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="date_range_selected_{{ loop.index }}"
+            >
+                check
+            </span>
+
+            {% endif %}
+
+        </button>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         Achievement Popup
+         ===================================================== -->
+
+    {% if insights.show_achievement_popup %}
+
+    <section
+        class="insights-dialog"
+        data-class="dialog"
+        data-semantic="achievement_dialog"
+        data-occluder="true"
+    >
+
+        <div
+            class="achievement-popup-icon"
+            data-class="icon"
+            data-semantic="achievement_popup_icon"
+        >
+
+            <span class="material-symbols-rounded">
+                {{ insights.active_achievement.icon }}
+            </span>
+
+        </div>
+
+
+        <div
+            class="achievement-popup-title"
+            data-class="text"
+            data-semantic="achievement_popup_title"
+        >
+            {{ insights.active_achievement.title }}
+        </div>
+
+
+        <p
+            class="achievement-popup-description"
+            data-class="text"
+            data-semantic="achievement_popup_description"
+        >
+            {{ insights.active_achievement.description }}
+        </p>
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="dialog-primary"
+                data-class="button"
+                data-semantic="achievement_done_button"
+            >
+                Done
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
