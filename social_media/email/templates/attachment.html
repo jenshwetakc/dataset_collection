@@ -1,0 +1,1078 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Attachment Preview · Email
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .attachment-page {
+        min-height: calc(100vh - var(--status-bar-height));
+        background: var(--background);
+    }
+
+    /* ==================================================
+       App Bar
+       ================================================== */
+
+    .attachment-app-bar {
+        position: sticky;
+        top: 0;
+        z-index: 120;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        min-height: var(--desktop-header-height);
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .attachment-title-area {
+        min-width: 0;
+    }
+
+    .attachment-title {
+        color: var(--text-primary);
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .attachment-subtitle {
+        margin-top: 2px;
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    .attachment-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* ==================================================
+       Main Layout
+       ================================================== */
+
+    .attachment-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        min-height: calc(100vh - var(--desktop-header-height));
+    }
+
+    .attachment-layout.with-details {
+        grid-template-columns: minmax(0, 1fr) 320px;
+    }
+
+    .viewer-stage {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        min-height: 680px;
+        padding: 24px;
+        background: var(--background);
+    }
+
+    /* ==================================================
+       Image Preview
+       ================================================== */
+
+    .image-preview-frame {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: min(980px, 100%);
+        min-height: 580px;
+        padding: 18px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--large-radius);
+        background: var(--surface);
+    }
+
+    .preview-image {
+        max-width: 100%;
+        max-height: 640px;
+        object-fit: contain;
+    }
+
+    /* ==================================================
+       Document Preview
+       ================================================== */
+
+    .document-preview {
+        width: min(760px, 100%);
+        min-height: 900px;
+        padding: 46px 54px;
+        border: 1px solid var(--border-subtle);
+        background: var(--surface);
+        box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+    }
+
+    .document-heading {
+        color: var(--text-primary);
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .document-line {
+        margin-top: 16px;
+        color: var(--text-primary);
+        font-size: 13px;
+        line-height: 1.7;
+    }
+
+    /* ==================================================
+       Gallery
+       ================================================== */
+
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 14px;
+        width: 100%;
+        max-width: 1200px;
+    }
+
+    .gallery-card {
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--medium-radius);
+        background: var(--surface);
+    }
+
+    .gallery-preview {
+        height: 150px;
+        background: var(--surface-variant);
+    }
+
+    .gallery-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .gallery-file-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        color: var(--icon-secondary);
+        font-size: 44px;
+    }
+
+    .gallery-info {
+        padding: 12px;
+    }
+
+    .gallery-name {
+        color: var(--text-primary);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .gallery-meta {
+        margin-top: 4px;
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    /* ==================================================
+       Details Pane
+       ================================================== */
+
+    .details-pane {
+        padding: 18px;
+        border-left: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .details-title {
+        color: var(--text-primary);
+        font-size: 17px;
+        font-weight: 700;
+    }
+
+    .details-row {
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .details-label {
+        color: var(--text-secondary);
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .details-value {
+        margin-top: 4px;
+        color: var(--text-primary);
+        font-size: 13px;
+    }
+
+    /* ==================================================
+       Download Progress
+       ================================================== */
+
+    .download-card {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        z-index: 350;
+        width: min(360px, calc(100vw - 40px));
+        padding: 14px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--medium-radius);
+        background: var(--surface);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    }
+
+    .download-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .download-name {
+        flex: 1;
+        min-width: 0;
+        color: var(--text-primary);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .download-progress-track {
+        height: 7px;
+        margin-top: 12px;
+        overflow: hidden;
+        border-radius: var(--pill-radius);
+        background: var(--surface-variant);
+    }
+
+    .download-progress-fill {
+        height: 100%;
+        background: var(--primary);
+    }
+
+    .download-progress-text {
+        margin-top: 6px;
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    /* ==================================================
+       Share Menu
+       ================================================== */
+
+    .share-menu {
+        position: fixed;
+        top: 70px;
+        right: 18px;
+        z-index: 700;
+        width: 250px;
+        padding: 8px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--medium-radius);
+        background: var(--surface);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        padding: 0 10px;
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 13px;
+    }
+
+    /* ==================================================
+       Delete Dialog
+       ================================================== */
+
+    .delete-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 760;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(0,0,0,0.18);
+    }
+
+    .delete-dialog {
+        width: min(420px, 100%);
+        padding: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--large-radius);
+        background: var(--surface);
+    }
+
+    .delete-title {
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .delete-text {
+        margin-top: 10px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .delete-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    /* ==================================================
+       Mobile Actions Sheet
+       ================================================== */
+
+    .mobile-actions-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 780;
+        display: flex;
+        align-items: flex-end;
+        background: rgba(0,0,0,0.18);
+    }
+
+    .mobile-actions-sheet {
+        width: 100%;
+        padding: 12px 14px 18px;
+        border-radius: 22px 22px 0 0;
+        background: var(--surface);
+    }
+
+    .sheet-handle {
+        width: 40px;
+        height: 4px;
+        margin: 0 auto 12px;
+        border-radius: var(--pill-radius);
+        background: var(--border);
+    }
+
+    .sheet-file-name {
+        padding: 8px 4px 14px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    /* ==================================================
+       Responsive
+       ================================================== */
+
+    @media (max-width: 839px) {
+
+        .attachment-layout.with-details {
+            grid-template-columns: 1fr;
+        }
+
+        .details-pane {
+            display: none;
+        }
+
+        .viewer-stage {
+            min-height: 600px;
+            padding: 14px;
+        }
+
+        .document-preview {
+            padding: 34px 28px;
+        }
+    }
+
+    @media (max-width: 599px) {
+
+        .attachment-app-bar {
+            min-height: var(--mobile-header-height);
+            padding: 6px 8px;
+        }
+
+        .attachment-subtitle {
+            display: none;
+        }
+
+        .desktop-viewer-action {
+            display: none;
+        }
+
+        .viewer-stage {
+            min-height: calc(
+                100vh
+                - var(--mobile-header-height)
+                - var(--status-bar-height)
+            );
+            padding: 8px;
+        }
+
+        .image-preview-frame {
+            min-height: 460px;
+            padding: 8px;
+            border: none;
+            border-radius: 0;
+        }
+
+        .document-preview {
+            min-height: 760px;
+            padding: 26px 20px;
+        }
+
+        .gallery-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .gallery-preview {
+            height: 120px;
+        }
+
+        .download-card {
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            width: auto;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="attachment-page state-{{ attachment.state }}"
+    data-state="{{ attachment.state }}"
+>
+
+    <!-- ==================================================
+         App Bar
+         ================================================== -->
+
+    <header
+        class="attachment-app-bar"
+        data-class="app_bar"
+        data-semantic="attachment_app_bar"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="attachment_back_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="attachment_back_icon"
+            >
+                arrow_back
+            </span>
+        </button>
+
+
+        <div class="attachment-title-area">
+
+            <div
+                class="attachment-title truncate"
+                data-class="text"
+                data-semantic="attachment_title"
+            >
+                {{ attachment.selected_file.name }}
+            </div>
+
+
+            <div
+                class="attachment-subtitle truncate"
+                data-class="text"
+                data-semantic="attachment_subtitle"
+            >
+                From {{ attachment.sender }}
+                · {{ attachment.message_subject }}
+            </div>
+
+        </div>
+
+
+        <div class="attachment-actions">
+
+            {% for item in [
+                ("download", "download"),
+                ("share", "share"),
+                ("info", "info")
+            ] %}
+
+            <button
+                class="
+                    icon-button
+                    desktop-viewer-action
+                "
+                data-class="button"
+                data-semantic="{{ item[1] }}_attachment_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="{{ item[1] }}_attachment_icon"
+                >
+                    {{ item[0] }}
+                </span>
+            </button>
+
+            {% endfor %}
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="attachment_more_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="attachment_more_icon"
+                >
+                    more_vert
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ==================================================
+         Viewer
+         ================================================== -->
+
+    <div
+        class="
+            attachment-layout
+
+            {% if attachment.show_details %}
+            with-details
+            {% endif %}
+        "
+    >
+
+        <main class="viewer-stage">
+
+            {% if attachment.show_gallery %}
+
+            <section
+                class="gallery-grid"
+                data-class="section"
+                data-semantic="attachment_gallery"
+            >
+
+                {% for file in attachment.files %}
+
+                <article
+                    class="gallery-card"
+                    data-class="card"
+                    data-semantic="{{ file.id }}"
+                >
+
+                    <div class="gallery-preview">
+
+                        {% if file.preview %}
+
+                        <img
+                            src="{{ file.preview }}"
+                            alt=""
+                            data-class="image"
+                            data-semantic="{{ file.id }}_preview"
+                        >
+
+                        {% else %}
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                gallery-file-icon
+                            "
+                            data-class="icon"
+                            data-semantic="{{ file.id }}_file_icon"
+                        >
+                            description
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="gallery-info">
+
+                        <div
+                            class="gallery-name truncate"
+                            data-class="text"
+                            data-semantic="{{ file.id }}_name"
+                        >
+                            {{ file.name }}
+                        </div>
+
+
+                        <div
+                            class="gallery-meta"
+                            data-class="text"
+                            data-semantic="{{ file.id }}_meta"
+                        >
+                            {{ file.type }}
+                            · {{ file.size }}
+                        </div>
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+
+            {% elif attachment.state == "image_preview"
+               and attachment.selected_file.preview %}
+
+            <section
+                class="image-preview-frame"
+                data-class="section"
+                data-semantic="image_preview_section"
+            >
+
+                <img
+                    class="preview-image"
+                    src="{{ attachment.selected_file.preview }}"
+                    alt=""
+                    data-class="image"
+                    data-semantic="selected_attachment_image"
+                >
+
+            </section>
+
+
+            {% else %}
+
+            <article
+                class="document-preview"
+                data-class="section"
+                data-semantic="document_preview"
+            >
+
+                <div
+                    class="document-heading"
+                    data-class="text"
+                    data-semantic="document_heading"
+                >
+                    {{ attachment.selected_file.name }}
+                </div>
+
+
+                {% for line in attachment.document_lines %}
+
+                <p
+                    class="document-line"
+                    data-class="text"
+                    data-semantic="document_line_{{ loop.index }}"
+                >
+                    {{ line }}
+                </p>
+
+                {% endfor %}
+
+            </article>
+
+            {% endif %}
+
+        </main>
+
+
+        {% if attachment.show_details %}
+
+        <aside
+            class="details-pane"
+            data-class="section"
+            data-semantic="attachment_details_pane"
+        >
+
+            <div
+                class="details-title"
+                data-class="text"
+                data-semantic="attachment_details_title"
+            >
+                File details
+            </div>
+
+
+            {% for row in [
+                ("Name", attachment.selected_file.name),
+                ("Type", attachment.selected_file.type),
+                ("Size", attachment.selected_file.size),
+                ("Modified", attachment.selected_file.modified),
+                ("Uploaded by", attachment.selected_file.uploaded_by)
+            ] %}
+
+            <div
+                class="details-row"
+                data-class="list_item"
+                data-semantic="details_row_{{ loop.index }}"
+            >
+
+                <div
+                    class="details-label"
+                    data-class="text"
+                    data-semantic="details_row_{{ loop.index }}_label"
+                >
+                    {{ row[0] }}
+                </div>
+
+
+                <div
+                    class="details-value"
+                    data-class="text"
+                    data-semantic="details_row_{{ loop.index }}_value"
+                >
+                    {{ row[1] }}
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </aside>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ==================================================
+         Download Progress
+         ================================================== -->
+
+    {% if attachment.download_progress is not none %}
+
+    <section
+        class="download-card"
+        data-class="card"
+        data-semantic="download_progress_card"
+    >
+
+        <div class="download-header">
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="download_progress_icon"
+            >
+                download
+            </span>
+
+
+            <div
+                class="download-name truncate"
+                data-class="text"
+                data-semantic="download_progress_name"
+            >
+                {{ attachment.selected_file.name }}
+            </div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="cancel_download_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="cancel_download_icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+
+        <div
+            class="download-progress-track"
+            data-class="progress_bar"
+            data-semantic="download_progress_bar"
+        >
+            <div
+                class="download-progress-fill"
+                style="
+                    width:
+                        {{ attachment.download_progress }}%;
+                "
+            ></div>
+        </div>
+
+
+        <div
+            class="download-progress-text"
+            data-class="text"
+            data-semantic="download_progress_text"
+        >
+            {{ attachment.download_progress }}%
+            downloaded
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Share Menu
+         ================================================== -->
+
+    {% if attachment.share_menu_open %}
+
+    <section
+        class="share-menu"
+        data-popup-focus="true"
+        data-class="dialog"
+        data-semantic="attachment_share_menu"
+    >
+
+        {% for item in [
+            ("person_add", "Share with contact"),
+            ("link", "Copy link"),
+            ("forward", "Forward in email"),
+            ("open_in_new", "Open in new window")
+        ] %}
+
+        <div
+            class="menu-item"
+            data-class="list_item"
+            data-semantic="share_option_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="share_option_{{ loop.index }}_icon"
+            >
+                {{ item[0] }}
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="share_option_{{ loop.index }}_text"
+            >
+                {{ item[1] }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Delete Confirmation
+         Overlay intentionally not annotated.
+         ================================================== -->
+
+    {% if attachment.delete_confirm_open %}
+
+    <div class="delete-overlay">
+
+        <section
+            class="delete-dialog"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="delete_attachment_dialog"
+        >
+
+            <div
+                class="delete-title"
+                data-class="text"
+                data-semantic="delete_attachment_title"
+            >
+                Delete attachment?
+            </div>
+
+
+            <div
+                class="delete-text"
+                data-class="text"
+                data-semantic="delete_attachment_text"
+            >
+                {{ attachment.selected_file.name }}
+                will be removed from this message.
+            </div>
+
+
+            <div class="delete-actions">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_delete_attachment"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_delete_attachment"
+                >
+                    Delete
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Mobile Actions Sheet
+         ================================================== -->
+
+    {% if attachment.mobile_actions_sheet_open %}
+
+    <div class="mobile-actions-overlay">
+
+        <section
+            class="mobile-actions-sheet"
+            data-popup-focus="true"
+            data-class="bottom_sheet"
+            data-semantic="attachment_actions_sheet"
+        >
+
+            <div class="sheet-handle"></div>
+
+
+            <div
+                class="sheet-file-name truncate"
+                data-class="text"
+                data-semantic="sheet_file_name"
+            >
+                {{ attachment.selected_file.name }}
+            </div>
+
+
+            {% for item in [
+                ("download", "Download"),
+                ("share", "Share"),
+                ("info", "View details"),
+                ("delete", "Delete")
+            ] %}
+
+            <div
+                class="menu-item"
+                data-class="list_item"
+                data-semantic="sheet_action_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="sheet_action_{{ loop.index }}_icon"
+                >
+                    {{ item[0] }}
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="sheet_action_{{ loop.index }}_text"
+                >
+                    {{ item[1] }}
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Popup-only annotation handling
+         ================================================== -->
+
+    <script>
+
+        (() => {
+
+            const popupFocus =
+                document.querySelector(
+                    '[data-popup-focus="true"]'
+                );
+
+            if (!popupFocus) {
+                return;
+            }
+
+            document
+                .querySelectorAll(
+                    "[data-class]"
+                )
+                .forEach(
+                    (element) => {
+
+                        const belongsToPopup = (
+                            element === popupFocus
+                            || popupFocus.contains(
+                                element
+                            )
+                        );
+
+                        if (!belongsToPopup) {
+
+                            element.removeAttribute(
+                                "data-class"
+                            );
+
+                            element.removeAttribute(
+                                "data-semantic"
+                            );
+                        }
+                    }
+                );
+
+            document.documentElement.setAttribute(
+                "data-popup-annotation-mode",
+                "popup-only"
+            );
+
+        })();
+
+    </script>
+
+</div>
+
+{% endblock %}

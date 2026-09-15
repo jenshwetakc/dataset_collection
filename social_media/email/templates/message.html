@@ -1,0 +1,942 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ message.subject }}
+{% endblock %}
+
+{% block head %}
+
+<style>
+
+    .message-shell {
+        min-height: calc(100vh - var(--status-bar-height));
+        background: var(--background);
+    }
+
+    .message-app-bar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: var(--desktop-header-height);
+        padding: 8px 16px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .message-app-title {
+        flex: 1;
+        min-width: 0;
+        color: var(--text-primary);
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .message-toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .message-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        min-height: calc(100vh - var(--desktop-header-height));
+    }
+
+    .message-layout.split-pane {
+        grid-template-columns: 360px minmax(0, 1fr);
+    }
+
+    .message-preview-pane {
+        display: none;
+        border-right: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .message-layout.split-pane .message-preview-pane {
+        display: block;
+    }
+
+    .preview-pane-title {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-subtle);
+        color: var(--text-primary);
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .preview-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 4px 12px;
+        min-height: 64px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .preview-row.unread {
+        background: var(--background);
+    }
+
+    .preview-sender {
+        min-width: 0;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .preview-subject {
+        grid-column: 1 / -1;
+        min-width: 0;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .preview-time {
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    .message-pane {
+        min-width: 0;
+        padding: 24px;
+        background: var(--background);
+    }
+
+    .message-content-card {
+        max-width: 980px;
+        margin: 0 auto;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--large-radius);
+        background: var(--surface);
+        overflow: hidden;
+    }
+
+    .message-subject-area {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 20px 20px 16px;
+    }
+
+    .message-subject {
+        flex: 1;
+        min-width: 0;
+        color: var(--text-primary);
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+    .message-labels {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+    }
+
+    .thread-message {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .thread-header {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 16px 20px;
+    }
+
+    .thread-avatar {
+        width: 42px;
+        height: 42px;
+        overflow: hidden;
+        border-radius: 50%;
+        background: var(--surface-variant);
+    }
+
+    .thread-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .thread-avatar-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .thread-sender {
+        min-width: 0;
+    }
+
+    .sender-name {
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .sender-meta {
+        margin-top: 2px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .thread-time {
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .thread-details {
+        margin: 0 20px 12px 74px;
+        padding: 10px 12px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--medium-radius);
+        background: var(--surface-variant);
+        color: var(--text-secondary);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .thread-body {
+        padding: 0 20px 18px 74px;
+        color: var(--text-primary);
+        font-size: 14px;
+        line-height: 1.65;
+    }
+
+    .thread-body p + p {
+        margin-top: 12px;
+    }
+
+    .forwarded-block {
+        margin-top: 18px;
+        padding: 14px;
+        border-left: 3px solid var(--border);
+        background: var(--surface-variant);
+        color: var(--text-secondary);
+    }
+
+    .forwarded-title {
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .attachments {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        padding: 0 20px 20px 74px;
+    }
+
+    .attachment-card {
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--medium-radius);
+        background: var(--surface);
+    }
+
+    .attachment-preview {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        background: var(--surface-variant);
+    }
+
+    .attachment-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .attachment-name {
+        flex: 1;
+        min-width: 0;
+        color: var(--text-primary);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .attachment-size {
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    .message-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 18px 20px 22px 74px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .message-action-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 0 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--pill-radius);
+        background: var(--surface);
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .reply-editor {
+        margin: 0 20px 20px 74px;
+        border: 1px solid var(--border);
+        border-radius: var(--medium-radius);
+        overflow: hidden;
+        background: var(--surface);
+    }
+
+    .reply-body {
+        width: 100%;
+        min-height: 150px;
+        padding: 14px;
+        color: var(--text-primary);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .reply-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 10px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    @media (max-width: 1023px) {
+
+        .message-layout.split-pane {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .message-layout.split-pane .message-preview-pane {
+            display: none;
+        }
+
+        .message-pane {
+            padding: 16px;
+        }
+    }
+
+    @media (max-width: 599px) {
+
+        .message-app-bar {
+            min-height: var(--mobile-header-height);
+            padding: 6px 8px;
+        }
+
+        .message-app-title {
+            font-size: 14px;
+        }
+
+        .desktop-message-action {
+            display: none;
+        }
+
+        .message-pane {
+            padding: 0;
+        }
+
+        .message-content-card {
+            border: none;
+            border-radius: 0;
+        }
+
+        .message-subject-area {
+            padding: 16px 14px 12px;
+        }
+
+        .message-subject {
+            font-size: 19px;
+        }
+
+        .thread-header {
+            padding: 14px;
+        }
+
+        .thread-details {
+            margin: 0 14px 10px;
+        }
+
+        .thread-body {
+            padding: 0 14px 16px;
+        }
+
+        .attachments {
+            grid-template-columns: 1fr;
+            padding: 0 14px 16px;
+        }
+
+        .message-actions {
+            padding: 14px;
+        }
+
+        .reply-editor {
+            margin: 0 14px 16px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="message-shell state-{{ message.state }}"
+    data-state="{{ message.state }}"
+>
+
+    <header
+        class="message-app-bar"
+        data-class="app_bar"
+        data-semantic="message_app_bar"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="back_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="back_icon"
+            >
+                arrow_back
+            </span>
+        </button>
+
+
+        <div
+            class="message-app-title truncate"
+            data-class="text"
+            data-semantic="message_app_title"
+        >
+            {{ message.subject }}
+        </div>
+
+
+        <div class="message-toolbar-actions">
+
+            {% for item in [
+                ("archive", "archive"),
+                ("delete", "delete"),
+                ("mark_email_unread", "mark_unread")
+            ] %}
+
+            <button
+                class="icon-button desktop-message-action"
+                data-class="button"
+                data-semantic="{{ item[1] }}_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="{{ item[1] }}_icon"
+                >
+                    {{ item[0] }}
+                </span>
+            </button>
+
+            {% endfor %}
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="more_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="more_icon"
+                >
+                    more_vert
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <div
+        class="
+            message-layout
+
+            {% if message.show_split_pane %}
+            split-pane
+            {% endif %}
+        "
+    >
+
+        <aside
+            class="message-preview-pane"
+            data-class="section"
+            data-semantic="message_preview_section"
+        >
+
+            <div
+                class="preview-pane-title"
+                data-class="text"
+                data-semantic="preview_pane_title"
+            >
+                Inbox
+            </div>
+
+
+            {% for preview in message.sidebar_messages %}
+
+            <article
+                class="
+                    preview-row
+
+                    {% if preview.unread %}
+                    unread
+                    {% endif %}
+                "
+                data-class="list_item"
+                data-semantic="{{ preview.id }}"
+            >
+
+                <div
+                    class="preview-sender truncate"
+                    data-class="text"
+                    data-semantic="{{ preview.id }}_sender"
+                >
+                    {{ preview.sender }}
+                </div>
+
+
+                <time
+                    class="preview-time"
+                    data-class="timestamp"
+                    data-semantic="{{ preview.id }}_time"
+                >
+                    {{ preview.time }}
+                </time>
+
+
+                <div
+                    class="preview-subject truncate"
+                    data-class="text"
+                    data-semantic="{{ preview.id }}_subject"
+                >
+                    {{ preview.subject }}
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+        </aside>
+
+
+        <main class="message-pane">
+
+            <section
+                class="message-content-card"
+                data-class="section"
+                data-semantic="message_content_section"
+            >
+
+                <div class="message-subject-area">
+
+                    <div style="flex:1; min-width:0">
+
+                        <h1
+                            class="message-subject"
+                            data-class="text"
+                            data-semantic="message_subject"
+                        >
+                            {{ message.subject }}
+                        </h1>
+
+
+                        <div class="message-labels">
+
+                            {% for label in message.labels %}
+
+                            <span
+                                class="chip-button"
+                                data-class="chip"
+                                data-semantic="message_label_{{ loop.index }}"
+                            >
+                                {{ label }}
+                            </span>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="subject_star_button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="subject_star_icon"
+                        >
+                            star_border
+                        </span>
+                    </button>
+
+                </div>
+
+
+                {% for mail in message.thread %}
+
+                <article
+                    class="thread-message"
+                    data-class="card"
+                    data-semantic="{{ mail.id }}"
+                >
+
+                    <div
+                        class="thread-header"
+                        data-class="toolbar"
+                        data-semantic="{{ mail.id }}_header"
+                    >
+
+                        <div
+                            class="thread-avatar"
+                            data-class="avatar"
+                            data-semantic="{{ mail.id }}_avatar"
+                        >
+
+                            {% if mail.sender.avatar %}
+
+                            <img
+                                src="{{ mail.sender.avatar }}"
+                                alt=""
+                            >
+
+                            {% else %}
+
+                            <div class="thread-avatar-fallback">
+                                {{ mail.sender.name[:1] }}
+                            </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="thread-sender">
+
+                            <div
+                                class="sender-name truncate"
+                                data-class="text"
+                                data-semantic="{{ mail.id }}_sender_name"
+                            >
+                                {{ mail.sender.name }}
+                            </div>
+
+
+                            <div
+                                class="sender-meta truncate"
+                                data-class="text"
+                                data-semantic="{{ mail.id }}_sender_meta"
+                            >
+                                {{ mail.sender.email }}
+                                · to
+                                {{ mail.recipient.name }}
+                            </div>
+
+                        </div>
+
+
+                        <time
+                            class="thread-time"
+                            data-class="timestamp"
+                            data-semantic="{{ mail.id }}_time"
+                        >
+                            {{ mail.time }}
+                        </time>
+
+                    </div>
+
+
+                    {% if mail.expanded %}
+
+                    <div
+                        class="thread-details"
+                        data-class="section"
+                        data-semantic="{{ mail.id }}_details"
+                    >
+                        <div>
+                            From:
+                            {{ mail.sender.name }}
+                            &lt;{{ mail.sender.email }}&gt;
+                        </div>
+
+                        <div>
+                            To:
+                            {{ mail.recipient.name }}
+                            &lt;{{ mail.recipient.email }}&gt;
+                        </div>
+
+                        <div>
+                            Date:
+                            {{ mail.time }}
+                        </div>
+                    </div>
+
+                    {% endif %}
+
+
+                    <div class="thread-body">
+
+                        {% for paragraph in mail.body %}
+
+                        <p
+                            data-class="text"
+                            data-semantic="{{ mail.id }}_body_{{ loop.index }}"
+                        >
+                            {{ paragraph }}
+                        </p>
+
+                        {% endfor %}
+
+
+                        {% if mail.forwarded %}
+
+                        <div
+                            class="forwarded-block"
+                            data-class="section"
+                            data-semantic="{{ mail.id }}_forwarded_block"
+                        >
+
+                            <div
+                                class="forwarded-title"
+                                data-class="text"
+                                data-semantic="{{ mail.id }}_forwarded_title"
+                            >
+                                Forwarded message
+                            </div>
+
+
+                            <div
+                                data-class="text"
+                                data-semantic="{{ mail.id }}_forwarded_text"
+                            >
+                                From: {{ message.other_user.name }}<br>
+                                Subject: Previous conversation<br>
+                                This message was forwarded from an earlier thread.
+                            </div>
+
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    {% if mail.attachments %}
+
+                    <div class="attachments">
+
+                        {% for attachment in mail.attachments %}
+
+                        <section
+                            class="attachment-card"
+                            data-class="card"
+                            data-semantic="{{ attachment.id }}"
+                        >
+
+                            {% if attachment.preview %}
+
+                            <img
+                                class="attachment-preview"
+                                src="{{ attachment.preview }}"
+                                alt=""
+                                data-class="image"
+                                data-semantic="{{ attachment.id }}_preview"
+                            >
+
+                            {% endif %}
+
+
+                            <div class="attachment-info">
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="{{ attachment.id }}_icon"
+                                >
+                                    attachment
+                                </span>
+
+
+                                <div style="min-width:0; flex:1">
+
+                                    <div
+                                        class="attachment-name truncate"
+                                        data-class="text"
+                                        data-semantic="{{ attachment.id }}_name"
+                                    >
+                                        {{ attachment.name }}
+                                    </div>
+
+
+                                    <div
+                                        class="attachment-size"
+                                        data-class="text"
+                                        data-semantic="{{ attachment.id }}_size"
+                                    >
+                                        {{ attachment.size }}
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </section>
+
+                        {% endfor %}
+
+                    </div>
+
+                    {% endif %}
+
+                </article>
+
+                {% endfor %}
+
+
+                {% if message.reply_open %}
+
+                <section
+                    class="reply-editor"
+                    data-class="dialog"
+                    data-semantic="reply_editor"
+                >
+
+                    <textarea
+                        class="reply-body"
+                        data-class="input_field"
+                        data-semantic="reply_body"
+                    >{{ message.reply_text }}</textarea>
+
+
+                    <div
+                        class="reply-toolbar"
+                        data-class="toolbar"
+                        data-semantic="reply_toolbar"
+                    >
+
+                        <button
+                            class="primary-button"
+                            data-class="button"
+                            data-semantic="reply_send_button"
+                        >
+                            Send
+                        </button>
+
+
+                        {% for item in [
+                            ("attach_file", "attach"),
+                            ("insert_link", "link"),
+                            ("mood", "emoji")
+                        ] %}
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="reply_{{ item[1] }}_button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="reply_{{ item[1] }}_icon"
+                            >
+                                {{ item[0] }}
+                            </span>
+                        </button>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+                {% else %}
+
+                <div
+                    class="message-actions"
+                    data-class="toolbar"
+                    data-semantic="message_actions"
+                >
+
+                    <button
+                        class="message-action-button"
+                        data-class="button"
+                        data-semantic="reply_button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="reply_icon"
+                        >
+                            reply
+                        </span>
+
+                        Reply
+                    </button>
+
+
+                    <button
+                        class="message-action-button"
+                        data-class="button"
+                        data-semantic="forward_button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="forward_icon"
+                        >
+                            forward
+                        </span>
+
+                        Forward
+                    </button>
+
+                </div>
+
+                {% endif %}
+
+            </section>
+
+        </main>
+
+    </div>
+
+</div>
+
+{% endblock %}

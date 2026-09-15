@@ -1,0 +1,2563 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Calendar · Email
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .calendar-page {
+        min-height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        background:
+            var(--background);
+    }
+
+
+    /* ==================================================
+       Header
+       ================================================== */
+
+    .calendar-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            100;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            var(--desktop-header-height);
+
+        padding:
+            8px 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .calendar-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .calendar-month-title {
+
+        margin-left:
+            18px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            700;
+    }
+
+
+    .calendar-header-spacer {
+
+        flex:
+            1;
+    }
+
+
+    /* ==================================================
+       Main
+       ================================================== */
+
+    .calendar-layout {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            240px
+            minmax(
+                0,
+                1fr
+            );
+
+        min-height:
+            calc(
+                100vh
+                - var(--desktop-header-height)
+            );
+    }
+
+
+    /* ==================================================
+       Sidebar
+       ================================================== */
+
+    .calendar-sidebar {
+
+        padding:
+            16px 12px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .mini-month {
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+    }
+
+
+    .mini-month-title {
+
+        margin-bottom:
+            12px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .calendar-list-button {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            42px;
+
+        margin-top:
+            6px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            var(--pill-radius);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .calendar-list-button.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-weight:
+            700;
+    }
+
+
+    /* ==================================================
+       Calendar Content
+       ================================================== */
+
+    .calendar-content {
+
+        min-width:
+            0;
+
+        padding:
+            18px;
+    }
+
+
+    .calendar-surface {
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ==================================================
+       Month Grid
+       ================================================== */
+
+    .month-weekdays {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                7,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .weekday-label {
+
+        padding:
+            10px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+
+        text-align:
+            center;
+    }
+
+
+    .month-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                7,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+    }
+
+
+    .month-day {
+
+        min-height:
+            120px;
+
+        padding:
+            8px;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .month-day-number {
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        border-radius:
+            50%;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .month-event {
+
+        display:
+            block;
+
+        margin-top:
+            5px;
+
+        padding:
+            5px 7px;
+
+        border-radius:
+            6px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ==================================================
+       Week View
+       ================================================== */
+
+    .week-header {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            64px
+            repeat(
+                7,
+                minmax(
+                    100px,
+                    1fr
+                )
+            );
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .week-day-header {
+
+        padding:
+            12px 8px;
+
+        text-align:
+            center;
+
+        border-left:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .week-day-name {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .week-day-number {
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            16px;
+
+        font-weight:
+            700;
+    }
+
+
+    .week-body {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            64px
+            repeat(
+                7,
+                minmax(
+                    100px,
+                    1fr
+                )
+            );
+
+        min-height:
+            660px;
+    }
+
+
+    .week-time-column {
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--background);
+    }
+
+
+    .week-time-label {
+
+        height:
+            60px;
+
+        padding:
+            4px 8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            10px;
+
+        text-align:
+            right;
+    }
+
+
+    .week-column {
+
+        position:
+            relative;
+
+        border-right:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .week-slot {
+
+        height:
+            60px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .week-event {
+
+        position:
+            relative;
+
+        margin:
+            4px;
+
+        padding:
+            7px;
+
+        border-radius:
+            7px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            10px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ==================================================
+       Event Details
+       ================================================== */
+
+    .event-panel {
+
+        position:
+            fixed;
+
+        top:
+            calc(
+                var(--desktop-header-height)
+                + 18px
+            );
+
+        right:
+            18px;
+
+        z-index:
+            350;
+
+        width:
+            min(
+                390px,
+                calc(
+                    100vw
+                    - 36px
+                )
+            );
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            12px
+            32px
+            rgba(
+                0,
+                0,
+                0,
+                0.14
+            );
+    }
+
+
+    .event-panel-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .event-panel-spacer {
+
+        flex:
+            1;
+    }
+
+
+    .event-panel-body {
+
+        padding:
+            20px;
+    }
+
+
+    .event-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            20px;
+
+        font-weight:
+            700;
+    }
+
+
+    .event-info-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            28px
+            minmax(
+                0,
+                1fr
+            );
+
+        gap:
+            10px;
+
+        margin-top:
+            16px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    .attendee-list {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            8px;
+
+        margin-top:
+            14px;
+    }
+
+
+    .attendee-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+
+    .attendee-avatar {
+
+        width:
+            28px;
+
+        height:
+            28px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .attendee-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    /* ==================================================
+       Event Form
+       ================================================== */
+
+    .event-form-overlay {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            600;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        padding:
+            24px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .event-form {
+
+        width:
+            min(
+                680px,
+                100%
+            );
+
+        max-height:
+            88vh;
+
+        overflow:
+            auto;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .event-form-header {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            16px 18px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .event-form-title {
+
+        flex:
+            1;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .event-form-body {
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        gap:
+            12px;
+
+        padding:
+            18px;
+    }
+
+
+    .event-input {
+
+        min-height:
+            44px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    .event-textarea {
+
+        min-height:
+            130px;
+
+        padding:
+            12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    .event-time-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(
+                    0,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+    }
+
+
+    .event-form-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        padding:
+            14px 18px 18px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    /* ==================================================
+       Popup Menus
+       ================================================== */
+
+    .small-popup {
+
+        position:
+            fixed;
+
+        z-index:
+            720;
+
+        width:
+            260px;
+
+        padding:
+            8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            8px
+            24px
+            rgba(
+                0,
+                0,
+                0,
+                0.15
+            );
+    }
+
+
+    .attendee-popup {
+
+        top:
+            170px;
+
+        left:
+            50%;
+
+        width:
+            min(
+                460px,
+                calc(
+                    100vw
+                    - 30px
+                )
+            );
+
+        transform:
+            translateX(
+                -50%
+            );
+    }
+
+
+    .date-picker-popup {
+
+        top:
+            150px;
+
+        left:
+            50%;
+
+        transform:
+            translateX(
+                -50%
+            );
+    }
+
+
+    .more-menu {
+
+        top:
+            76px;
+
+        right:
+            20px;
+    }
+
+
+    .popup-item {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            42px;
+
+        padding:
+            0 10px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    /* ==================================================
+       Delete Dialog
+       ================================================== */
+
+    .delete-overlay {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            800;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        padding:
+            24px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .delete-dialog {
+
+        width:
+            min(
+                420px,
+                100%
+            );
+
+        padding:
+            22px;
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .delete-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .delete-description {
+
+        margin-top:
+            10px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+    }
+
+
+    .delete-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        margin-top:
+            20px;
+    }
+
+
+    /* ==================================================
+       Mobile Sheet
+       ================================================== */
+
+    .mobile-event-overlay {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            820;
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .mobile-event-sheet {
+
+        width:
+            100%;
+
+        max-height:
+            82vh;
+
+        overflow:
+            auto;
+
+        padding-bottom:
+            18px;
+
+        border-radius:
+            22px
+            22px
+            0
+            0;
+
+        background:
+            var(--surface);
+    }
+
+
+    .sheet-handle {
+
+        width:
+            40px;
+
+        height:
+            4px;
+
+        margin:
+            10px auto;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--border);
+    }
+
+
+    /* ==================================================
+       Responsive
+       ================================================== */
+
+    @media (
+        max-width: 839px
+    ) {
+
+        .calendar-layout {
+
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .calendar-sidebar {
+
+            display:
+                none;
+        }
+
+
+        .calendar-content {
+
+            padding:
+                10px;
+        }
+
+
+        .month-day {
+
+            min-height:
+                90px;
+        }
+
+    }
+
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .calendar-app-bar {
+
+            min-height:
+                var(--mobile-header-height);
+
+            padding:
+                6px 8px;
+        }
+
+
+        .calendar-title {
+
+            display:
+                none;
+        }
+
+
+        .calendar-month-title {
+
+            margin-left:
+                4px;
+
+            font-size:
+                15px;
+        }
+
+
+        .month-day {
+
+            min-height:
+                74px;
+
+            padding:
+                5px;
+        }
+
+
+        .month-day-number {
+
+            width:
+                24px;
+
+            height:
+                24px;
+        }
+
+
+        .month-event {
+
+            padding:
+                3px 4px;
+
+            font-size:
+                8px;
+        }
+
+
+        .event-panel {
+
+            display:
+                none;
+        }
+
+
+        .event-form-overlay {
+
+            align-items:
+                flex-end;
+
+            padding:
+                0;
+        }
+
+
+        .event-form {
+
+            width:
+                100%;
+
+            max-height:
+                92vh;
+
+            border-radius:
+                22px
+                22px
+                0
+                0;
+        }
+
+
+        .event-time-grid {
+
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .week-header,
+        .week-body {
+
+            min-width:
+                850px;
+        }
+
+
+        .calendar-surface {
+
+            overflow-x:
+                auto;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="calendar-page state-{{ calendar.state }}"
+    data-state="{{ calendar.state }}"
+>
+
+    <!-- ==================================================
+         App Bar
+         ================================================== -->
+
+    <header
+        class="calendar-app-bar"
+        data-class="app_bar"
+        data-semantic="calendar_app_bar"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="calendar_menu_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="calendar_menu_icon"
+            >
+                menu
+            </span>
+        </button>
+
+
+        <div
+            class="calendar-title"
+            data-class="text"
+            data-semantic="calendar_title"
+        >
+            {{ calendar.title }}
+        </div>
+
+
+        <div
+            class="calendar-month-title"
+            data-class="text"
+            data-semantic="current_month"
+        >
+            {{ calendar.current_month }}
+        </div>
+
+
+        <div class="calendar-header-spacer"></div>
+
+
+        <button
+            class="secondary-button"
+            data-class="button"
+            data-semantic="today_button"
+        >
+            Today
+        </button>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="previous_period_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="previous_period_icon"
+            >
+                chevron_left
+            </span>
+        </button>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="next_period_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="next_period_icon"
+            >
+                chevron_right
+            </span>
+        </button>
+
+
+        <button
+            class="primary-button"
+            data-class="button"
+            data-semantic="create_event_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="create_event_icon"
+            >
+                add
+            </span>
+
+            Create
+        </button>
+
+    </header>
+
+
+    <!-- ==================================================
+         Main
+         ================================================== -->
+
+    <div class="calendar-layout">
+
+        <aside
+            class="calendar-sidebar"
+            data-class="navigation_bar"
+            data-semantic="calendar_sidebar"
+        >
+
+            <section
+                class="mini-month"
+                data-class="section"
+                data-semantic="mini_calendar"
+            >
+
+                <div
+                    class="mini-month-title"
+                    data-class="text"
+                    data-semantic="mini_calendar_title"
+                >
+                    {{ calendar.current_month }}
+                </div>
+
+                <div
+                    data-class="text"
+                    data-semantic="mini_calendar_hint"
+                    style="
+                        color:
+                            var(--text-secondary);
+                        font-size:
+                            12px;
+                    "
+                >
+                    Select a day to view events
+                </div>
+
+            </section>
+
+
+            <div
+                class="
+                    calendar-list-button
+
+                    {% if not calendar.show_week %}
+                    active
+                    {% endif %}
+                "
+                data-class="navigation_item"
+                data-semantic="month_view_navigation"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="month_view_icon"
+                >
+                    calendar_month
+                </span>
+
+                Month
+
+            </div>
+
+
+            <div
+                class="
+                    calendar-list-button
+
+                    {% if calendar.show_week %}
+                    active
+                    {% endif %}
+                "
+                data-class="navigation_item"
+                data-semantic="week_view_navigation"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="week_view_icon"
+                >
+                    view_week
+                </span>
+
+                Week
+
+            </div>
+
+        </aside>
+
+
+        <main class="calendar-content">
+
+            <section
+                class="calendar-surface"
+                data-class="section"
+                data-semantic="calendar_surface"
+            >
+
+                {% if calendar.show_week %}
+
+                <!-- ======================================
+                     Week
+                     ====================================== -->
+
+                <div class="week-header">
+
+                    <div></div>
+
+                    {% for day in calendar.week_days %}
+
+                    <div
+                        class="week-day-header"
+                        data-class="list_item"
+                        data-semantic="week_day_header_{{ loop.index }}"
+                    >
+
+                        <div
+                            class="week-day-name"
+                            data-class="text"
+                            data-semantic="week_day_name_{{ loop.index }}"
+                        >
+                            {{ day.weekday }}
+                        </div>
+
+
+                        <div
+                            class="week-day-number"
+                            data-class="text"
+                            data-semantic="week_day_number_{{ loop.index }}"
+                        >
+                            {{ day.day }}
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <div class="week-body">
+
+                    <div class="week-time-column">
+
+                        {% for hour in range(8, 19) %}
+
+                        <div
+                            class="week-time-label"
+                            data-class="timestamp"
+                            data-semantic="week_time_{{ hour }}"
+                        >
+                            {{ "%02d:00" | format(hour) }}
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+
+                    {% for day in calendar.week_days %}
+
+                    <div class="week-column">
+
+                        {% for hour in range(8, 19) %}
+
+                        <div class="week-slot"></div>
+
+                        {% endfor %}
+
+
+                        {% for event in calendar.events %}
+
+                            {% if event.date == day.date %}
+
+                            <div
+                                class="week-event"
+                                data-class="card"
+                                data-semantic="{{ event.id }}_week"
+                            >
+
+                                <div
+                                    data-class="text"
+                                    data-semantic="{{ event.id }}_week_title"
+                                >
+                                    {{ event.title }}
+                                </div>
+
+
+                                <div
+                                    data-class="timestamp"
+                                    data-semantic="{{ event.id }}_week_time"
+                                >
+                                    {{ event.start }}
+                                </div>
+
+                            </div>
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                {% else %}
+
+                <!-- ======================================
+                     Month
+                     ====================================== -->
+
+                <div class="month-weekdays">
+
+                    {% for day_name in [
+                        "Sun",
+                        "Mon",
+                        "Tue",
+                        "Wed",
+                        "Thu",
+                        "Fri",
+                        "Sat"
+                    ] %}
+
+                    <div
+                        class="weekday-label"
+                        data-class="text"
+                        data-semantic="weekday_{{ loop.index }}"
+                    >
+                        {{ day_name }}
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <div class="month-grid">
+
+                    {% for day in calendar.month_days %}
+
+                    <div
+                        class="month-day"
+                        data-class="list_item"
+                        data-semantic="month_day_{{ day.day }}"
+                    >
+
+                        <div
+                            class="month-day-number"
+                            data-class="text"
+                            data-semantic="month_day_number_{{ day.day }}"
+                        >
+                            {{ day.day }}
+                        </div>
+
+
+                        {% for event in day.events %}
+
+                        <div
+                            class="month-event truncate"
+                            data-class="card"
+                            data-semantic="{{ event.id }}_month"
+                        >
+                            {{ event.start }}
+                            {{ event.title }}
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- ==================================================
+         Selected Event
+         ================================================== -->
+
+    {% if calendar.show_selected_event %}
+
+    <aside
+        class="event-panel"
+        data-class="section"
+        data-semantic="selected_event_panel"
+    >
+
+        <div
+            class="event-panel-header"
+            data-class="toolbar"
+            data-semantic="selected_event_toolbar"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="edit_event_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="edit_event_icon"
+                >
+                    edit
+                </span>
+            </button>
+
+
+            <div class="event-panel-spacer"></div>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="delete_event_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="delete_event_icon"
+                >
+                    delete
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="event_more_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="event_more_icon"
+                >
+                    more_vert
+                </span>
+            </button>
+
+        </div>
+
+
+        <div class="event-panel-body">
+
+            <div
+                class="event-title"
+                data-class="text"
+                data-semantic="event_title"
+            >
+                {{ calendar.selected_event.title }}
+            </div>
+
+
+            <div class="event-info-row">
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="event_time_icon"
+                >
+                    schedule
+                </span>
+
+                <div>
+                    <div
+                        data-class="text"
+                        data-semantic="event_date"
+                    >
+                        {{ calendar.selected_event.date }}
+                    </div>
+
+                    <div
+                        data-class="timestamp"
+                        data-semantic="event_time_range"
+                    >
+                        {{ calendar.selected_event.time_range }}
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="event-info-row">
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="event_location_icon"
+                >
+                    location_on
+                </span>
+
+                <div
+                    data-class="text"
+                    data-semantic="event_location"
+                >
+                    {{ calendar.selected_event.location }}
+                </div>
+
+            </div>
+
+
+            <div class="event-info-row">
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="event_description_icon"
+                >
+                    notes
+                </span>
+
+                <div
+                    data-class="text"
+                    data-semantic="event_description"
+                >
+                    {{ calendar.selected_event.description }}
+                </div>
+
+            </div>
+
+
+            <div class="attendee-list">
+
+                {% for attendee in calendar.selected_event.attendees %}
+
+                <div
+                    class="attendee-row"
+                    data-class="list_item"
+                    data-semantic="attendee_{{ loop.index }}"
+                >
+
+                    <div
+                        class="attendee-avatar"
+                        data-class="avatar"
+                        data-semantic="attendee_{{ loop.index }}_avatar"
+                    >
+                        {% if attendee.avatar %}
+                        <img
+                            src="{{ attendee.avatar }}"
+                            alt=""
+                        >
+                        {% endif %}
+                    </div>
+
+
+                    <span
+                        data-class="text"
+                        data-semantic="attendee_{{ loop.index }}_name"
+                    >
+                        {{ attendee.name }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </aside>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Create / Edit Event
+         Overlay is deliberately not annotated.
+         ================================================== -->
+
+    {% if calendar.show_create_event or calendar.show_edit_event %}
+
+    <div class="event-form-overlay">
+
+        <section
+            class="event-form"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="event_form_dialog"
+        >
+
+            <div
+                class="event-form-header"
+                data-class="toolbar"
+                data-semantic="event_form_header"
+            >
+
+                <div
+                    class="event-form-title"
+                    data-class="text"
+                    data-semantic="event_form_title"
+                >
+                    {% if calendar.show_edit_event %}
+                        Edit event
+                    {% else %}
+                        New event
+                    {% endif %}
+                </div>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="close_event_form_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_event_form_icon"
+                    >
+                        close
+                    </span>
+                </button>
+
+            </div>
+
+
+            <div class="event-form-body">
+
+                <input
+                    class="event-input"
+                    type="text"
+                    value="{{ calendar.form.title }}"
+                    placeholder="Event title"
+                    data-class="input_field"
+                    data-semantic="event_title_input"
+                >
+
+
+                <div class="event-time-grid">
+
+                    <input
+                        class="event-input"
+                        type="text"
+                        value="{{ calendar.form.date }}"
+                        data-class="input_field"
+                        data-semantic="event_date_input"
+                    >
+
+
+                    <input
+                        class="event-input"
+                        type="text"
+                        value="{{ calendar.form.start }}"
+                        data-class="input_field"
+                        data-semantic="event_start_input"
+                    >
+
+
+                    <input
+                        class="event-input"
+                        type="text"
+                        value="{{ calendar.form.end }}"
+                        data-class="input_field"
+                        data-semantic="event_end_input"
+                    >
+
+                </div>
+
+
+                <input
+                    class="event-input"
+                    type="text"
+                    value="{{ calendar.form.location }}"
+                    placeholder="Location"
+                    data-class="input_field"
+                    data-semantic="event_location_input"
+                >
+
+
+                <input
+                    class="event-input"
+                    type="text"
+                    placeholder="Add attendees"
+                    data-class="input_field"
+                    data-semantic="event_attendee_input"
+                >
+
+
+                <textarea
+                    class="event-textarea"
+                    placeholder="Description"
+                    data-class="input_field"
+                    data-semantic="event_description_input"
+                >{{ calendar.form.description }}</textarea>
+
+            </div>
+
+
+            <div
+                class="event-form-actions"
+                data-class="toolbar"
+                data-semantic="event_form_actions"
+            >
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_event_button"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="save_event_button"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Attendee Suggestions
+         ================================================== -->
+
+    {% if calendar.attendee_suggestions %}
+
+    <section
+        class="
+            small-popup
+            attendee-popup
+        "
+        data-popup-focus="true"
+        data-class="dialog"
+        data-semantic="attendee_suggestions"
+    >
+
+        {% for person in calendar.attendee_suggestions %}
+
+        <div
+            class="popup-item"
+            data-class="list_item"
+            data-semantic="attendee_suggestion_{{ loop.index }}"
+        >
+
+            <div
+                class="attendee-avatar"
+                data-class="avatar"
+                data-semantic="attendee_suggestion_{{ loop.index }}_avatar"
+            >
+                {% if person.avatar %}
+                <img
+                    src="{{ person.avatar }}"
+                    alt=""
+                >
+                {% endif %}
+            </div>
+
+
+            <div>
+                <div
+                    data-class="text"
+                    data-semantic="attendee_suggestion_{{ loop.index }}_name"
+                >
+                    {{ person.name }}
+                </div>
+
+                <div
+                    data-class="text"
+                    data-semantic="attendee_suggestion_{{ loop.index }}_email"
+                    style="
+                        color:
+                            var(--text-secondary);
+                        font-size:
+                            11px;
+                    "
+                >
+                    {{ person.email }}
+                </div>
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Date Picker
+         ================================================== -->
+
+    {% if calendar.date_picker_open %}
+
+    <section
+        class="
+            small-popup
+            date-picker-popup
+        "
+        data-popup-focus="true"
+        data-class="dialog"
+        data-semantic="date_picker_dialog"
+    >
+
+        <div
+            data-class="text"
+            data-semantic="date_picker_title"
+            style="
+                padding:
+                    10px;
+                font-weight:
+                    700;
+            "
+        >
+            Select date
+        </div>
+
+
+        {% for day in calendar.month_days[:7] %}
+
+        <div
+            class="popup-item"
+            data-class="list_item"
+            data-semantic="date_option_{{ day.day }}"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="date_option_{{ day.day }}_icon"
+            >
+                calendar_today
+            </span>
+
+            {{ calendar.current_month }}
+            {{ day.day }}
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Event More Menu
+         ================================================== -->
+
+    {% if calendar.event_more_menu_open %}
+
+    <section
+        class="
+            small-popup
+            more-menu
+        "
+        data-popup-focus="true"
+        data-class="dialog"
+        data-semantic="event_more_menu"
+    >
+
+        {% for item in [
+            ("content_copy", "Duplicate event"),
+            ("forward_to_inbox", "Forward invite"),
+            ("print", "Print"),
+            ("delete", "Delete")
+        ] %}
+
+        <div
+            class="popup-item"
+            data-class="list_item"
+            data-semantic="event_more_option_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="event_more_option_{{ loop.index }}_icon"
+            >
+                {{ item[0] }}
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="event_more_option_{{ loop.index }}_text"
+            >
+                {{ item[1] }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Delete Confirmation
+         ================================================== -->
+
+    {% if calendar.delete_confirm_open %}
+
+    <div class="delete-overlay">
+
+        <section
+            class="delete-dialog"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="delete_event_dialog"
+        >
+
+            <div
+                class="delete-title"
+                data-class="text"
+                data-semantic="delete_event_title"
+            >
+                Delete event?
+            </div>
+
+
+            <div
+                class="delete-description"
+                data-class="text"
+                data-semantic="delete_event_description"
+            >
+                This event will be removed from your calendar.
+            </div>
+
+
+            <div class="delete-actions">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_delete_event_button"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_delete_event_button"
+                >
+                    Delete
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Mobile Event Sheet
+         ================================================== -->
+
+    {% if calendar.mobile_event_sheet_open %}
+
+    <div class="mobile-event-overlay">
+
+        <section
+            class="mobile-event-sheet"
+            data-popup-focus="true"
+            data-class="bottom_sheet"
+            data-semantic="mobile_event_sheet"
+        >
+
+            <div class="sheet-handle"></div>
+
+
+            <div class="event-panel-body">
+
+                <div
+                    class="event-title"
+                    data-class="text"
+                    data-semantic="mobile_event_title"
+                >
+                    {{ calendar.selected_event.title }}
+                </div>
+
+
+                <div class="event-info-row">
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="mobile_event_time_icon"
+                    >
+                        schedule
+                    </span>
+
+
+                    <div
+                        data-class="timestamp"
+                        data-semantic="mobile_event_time"
+                    >
+                        {{ calendar.selected_event.time_range }}
+                    </div>
+
+                </div>
+
+
+                <div class="event-info-row">
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="mobile_event_location_icon"
+                    >
+                        location_on
+                    </span>
+
+
+                    <div
+                        data-class="text"
+                        data-semantic="mobile_event_location"
+                    >
+                        {{ calendar.selected_event.location }}
+                    </div>
+
+                </div>
+
+
+                <div
+                    style="
+                        display:
+                            flex;
+                        gap:
+                            8px;
+                        margin-top:
+                            18px;
+                    "
+                >
+
+                    <button
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="mobile_join_event_button"
+                    >
+                        Join
+                    </button>
+
+
+                    <button
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="mobile_edit_event_button"
+                    >
+                        Edit
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Popup-only Annotation Handling
+         ================================================== -->
+
+    <script>
+
+        (() => {
+
+            const popupFocus =
+                document.querySelector(
+                    '[data-popup-focus="true"]'
+                );
+
+
+            if (!popupFocus) {
+                return;
+            }
+
+
+            document
+                .querySelectorAll(
+                    "[data-class]"
+                )
+                .forEach(
+                    (element) => {
+
+                        const belongsToPopup = (
+                            element === popupFocus
+                            ||
+                            popupFocus.contains(
+                                element
+                            )
+                        );
+
+
+                        if (!belongsToPopup) {
+
+                            element.removeAttribute(
+                                "data-class"
+                            );
+
+                            element.removeAttribute(
+                                "data-semantic"
+                            );
+                        }
+                    }
+                );
+
+
+            document.documentElement.setAttribute(
+                "data-popup-annotation-mode",
+                "popup-only"
+            );
+
+        })();
+
+    </script>
+
+</div>
+
+{% endblock %}

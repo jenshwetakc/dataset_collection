@@ -1,0 +1,1835 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Labels · Email
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .labels-page {
+        min-height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        background:
+            var(--background);
+    }
+
+
+    .labels-app-bar {
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            100;
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            var(--desktop-header-height);
+
+        padding:
+            8px 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .labels-title {
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .labels-content {
+        max-width:
+            1100px;
+
+        margin:
+            0 auto;
+
+        padding:
+            20px;
+    }
+
+
+    .labels-layout {
+        display:
+            grid;
+
+        grid-template-columns:
+            minmax(
+                360px,
+                1fr
+            )
+            minmax(
+                300px,
+                390px
+            );
+
+        gap:
+            18px;
+    }
+
+
+    .labels-layout.list-only {
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .labels-card {
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .labels-toolbar {
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            56px;
+
+        padding:
+            8px 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .labels-count {
+        flex:
+            1;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    .label-row {
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(
+                0,
+                1fr
+            )
+            auto
+            auto;
+
+        gap:
+            10px;
+
+        align-items:
+            center;
+
+        min-height:
+            66px;
+
+        padding:
+            10px 14px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .label-row:last-child {
+        border-bottom:
+            none;
+    }
+
+
+    .label-row.selected {
+        background:
+            var(--primary-container);
+    }
+
+
+    .label-color-dot {
+        width:
+            14px;
+
+        height:
+            14px;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+    }
+
+
+    .label-name {
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+
+    .label-meta {
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    .label-count-chip {
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        min-height:
+            28px;
+
+        padding:
+            0 9px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .label-details {
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .label-details-header {
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            16px 18px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .label-details-title {
+        flex:
+            1;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            17px;
+
+        font-weight:
+            700;
+    }
+
+
+    .label-details-body {
+        padding:
+            18px;
+    }
+
+
+    .detail-stat {
+        padding:
+            14px 0;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .detail-stat:last-child {
+        border-bottom:
+            none;
+    }
+
+
+    .detail-label {
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+
+        font-weight:
+            700;
+    }
+
+
+    .detail-value {
+        margin-top:
+            4px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    .nested-group {
+        padding:
+            10px 0;
+    }
+
+
+    .nested-heading {
+        padding:
+            10px 14px;
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ==================================================
+       Create / Edit
+       ================================================== */
+
+    .form-overlay {
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            650;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        padding:
+            24px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .label-form {
+        width:
+            min(
+                520px,
+                100%
+            );
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .label-form-header {
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            16px 18px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .label-form-title {
+        flex:
+            1;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .label-form-body {
+        padding:
+            18px;
+    }
+
+
+    .form-field + .form-field {
+        margin-top:
+            14px;
+    }
+
+
+    .form-label {
+        margin-bottom:
+            6px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .form-input {
+        width:
+            100%;
+
+        min-height:
+            44px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    .label-form-actions {
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        padding:
+            14px 18px 18px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    /* ==================================================
+       Color Picker
+       ================================================== */
+
+    .color-popup {
+        position:
+            fixed;
+
+        top:
+            84px;
+
+        right:
+            22px;
+
+        z-index:
+            720;
+
+        width:
+            250px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface);
+
+        box-shadow:
+            0
+            8px
+            24px
+            rgba(
+                0,
+                0,
+                0,
+                0.15
+            );
+    }
+
+
+    .color-popup-title {
+        margin-bottom:
+            12px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .color-grid {
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                4,
+                1fr
+            );
+
+        gap:
+            10px;
+    }
+
+
+    .color-option {
+        width:
+            38px;
+
+        height:
+            38px;
+
+        border-radius:
+            50%;
+
+        border:
+            2px solid
+            var(--border-subtle);
+
+        background:
+            var(--primary);
+    }
+
+
+    /* ==================================================
+       Dialog
+       ================================================== */
+
+    .dialog-overlay {
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            760;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        padding:
+            24px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .label-dialog {
+        width:
+            min(
+                460px,
+                100%
+            );
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .dialog-title {
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .dialog-text {
+        margin-top:
+            8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+    }
+
+
+    .move-list {
+        margin-top:
+            14px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        overflow:
+            hidden;
+    }
+
+
+    .move-option {
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            42px;
+
+        padding:
+            0 12px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    .move-option:last-child {
+        border-bottom:
+            none;
+    }
+
+
+    .dialog-actions {
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        margin-top:
+            18px;
+    }
+
+
+    /* ==================================================
+       Mobile Sheet
+       ================================================== */
+
+    .mobile-sheet-overlay {
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            790;
+
+        display:
+            flex;
+
+        align-items:
+            flex-end;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .mobile-label-sheet {
+        width:
+            100%;
+
+        padding:
+            12px 14px 18px;
+
+        border-radius:
+            22px
+            22px
+            0
+            0;
+
+        background:
+            var(--surface);
+    }
+
+
+    .sheet-handle {
+        width:
+            40px;
+
+        height:
+            4px;
+
+        margin:
+            0 auto 12px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--border);
+    }
+
+
+    .sheet-title {
+        padding:
+            8px 4px 12px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            15px;
+
+        font-weight:
+            700;
+    }
+
+
+    .sheet-action {
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            46px;
+
+        padding:
+            0 8px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    @media (
+        max-width: 839px
+    ) {
+
+        .labels-layout {
+            grid-template-columns:
+                1fr;
+        }
+
+        .label-details {
+            display:
+                none;
+        }
+
+    }
+
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .labels-app-bar {
+            min-height:
+                var(--mobile-header-height);
+
+            padding:
+                6px 8px;
+        }
+
+
+        .labels-content {
+            padding:
+                8px;
+        }
+
+
+        .label-row {
+            grid-template-columns:
+                auto
+                minmax(
+                    0,
+                    1fr
+                )
+                auto;
+
+            grid-template-areas:
+                "color name count"
+                "color meta count";
+
+            gap:
+                3px 10px;
+
+            min-height:
+                70px;
+
+            padding:
+                10px;
+        }
+
+
+        .label-color-dot {
+            grid-area:
+                color;
+        }
+
+
+        .label-name {
+            grid-area:
+                name;
+        }
+
+
+        .label-meta {
+            grid-area:
+                meta;
+        }
+
+
+        .label-count-chip {
+            grid-area:
+                count;
+        }
+
+
+        .label-more {
+            display:
+                none;
+        }
+
+
+        .form-overlay {
+            align-items:
+                flex-end;
+
+            padding:
+                0;
+        }
+
+
+        .label-form {
+            width:
+                100%;
+
+            border-radius:
+                22px
+                22px
+                0
+                0;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="labels-page state-{{ labels.state }}"
+    data-state="{{ labels.state }}"
+>
+
+    <header
+        class="labels-app-bar"
+        data-class="app_bar"
+        data-semantic="labels_app_bar"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="labels_back_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="labels_back_icon"
+            >
+                arrow_back
+            </span>
+        </button>
+
+
+        <div
+            class="labels-title"
+            data-class="text"
+            data-semantic="labels_title"
+        >
+            {{ labels.title }}
+        </div>
+
+
+        <button
+            class="primary-button"
+            data-class="button"
+            data-semantic="create_label_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="create_label_icon"
+            >
+                add
+            </span>
+
+            New label
+        </button>
+
+    </header>
+
+
+    <main class="labels-content">
+
+        <div
+            class="
+                labels-layout
+
+                {% if not labels.show_selected %}
+                list-only
+                {% endif %}
+            "
+        >
+
+            <section
+                class="labels-card"
+                data-class="section"
+                data-semantic="labels_list_section"
+            >
+
+                <div
+                    class="labels-toolbar"
+                    data-class="toolbar"
+                    data-semantic="labels_toolbar"
+                >
+
+                    <div
+                        class="labels-count"
+                        data-class="text"
+                        data-semantic="labels_count"
+                    >
+                        {{ labels.labels | length }}
+                        labels
+                    </div>
+
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="labels_sort_button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="labels_sort_icon"
+                        >
+                            sort_by_alpha
+                        </span>
+                    </button>
+
+                </div>
+
+
+                {% if labels.show_nested %}
+
+                    {% for parent in ["Work", "Projects", "Personal"] %}
+
+                    <section
+                        class="nested-group"
+                        data-class="section"
+                        data-semantic="nested_group_{{ loop.index }}"
+                    >
+
+                        <div
+                            class="nested-heading"
+                            data-class="text"
+                            data-semantic="nested_group_{{ loop.index }}_heading"
+                        >
+                            {{ parent }}
+                        </div>
+
+
+                        {% for label in labels.labels %}
+
+                            {% if label.parent == parent %}
+
+                            <article
+                                class="label-row"
+                                data-class="list_item"
+                                data-semantic="{{ label.id }}"
+                            >
+
+                                <div
+                                    class="label-color-dot"
+                                    data-class="selection_indicator"
+                                    data-semantic="{{ label.id }}_color"
+                                ></div>
+
+
+                                <div>
+
+                                    <div
+                                        class="label-name"
+                                        data-class="text"
+                                        data-semantic="{{ label.id }}_name"
+                                    >
+                                        {{ label.name }}
+                                    </div>
+
+
+                                    <div
+                                        class="label-meta"
+                                        data-class="text"
+                                        data-semantic="{{ label.id }}_meta"
+                                    >
+                                        Nested under
+                                        {{ label.parent }}
+                                    </div>
+
+                                </div>
+
+
+                                <span
+                                    class="label-count-chip"
+                                    data-class="chip"
+                                    data-semantic="{{ label.id }}_count"
+                                >
+                                    {{ label.message_count }}
+                                </span>
+
+
+                                <button
+                                    class="
+                                        icon-button
+                                        label-more
+                                    "
+                                    data-class="button"
+                                    data-semantic="{{ label.id }}_more_button"
+                                >
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="{{ label.id }}_more_icon"
+                                    >
+                                        more_vert
+                                    </span>
+                                </button>
+
+                            </article>
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                    </section>
+
+                    {% endfor %}
+
+
+                {% else %}
+
+                    {% for label in labels.labels %}
+
+                    <article
+                        class="
+                            label-row
+
+                            {% if
+                                labels.show_selected
+                                and
+                                label.id
+                                == labels.selected_label.id
+                            %}
+                            selected
+                            {% endif %}
+                        "
+                        data-class="list_item"
+                        data-semantic="{{ label.id }}"
+                    >
+
+                        <div
+                            class="label-color-dot"
+                            data-class="selection_indicator"
+                            data-semantic="{{ label.id }}_color"
+                        ></div>
+
+
+                        <div>
+
+                            <div
+                                class="label-name"
+                                data-class="text"
+                                data-semantic="{{ label.id }}_name"
+                            >
+                                {{ label.name }}
+                            </div>
+
+
+                            <div
+                                class="label-meta"
+                                data-class="text"
+                                data-semantic="{{ label.id }}_meta"
+                            >
+                                {{ label.unread_count }}
+                                unread ·
+                                {{ label.message_count }}
+                                total
+                            </div>
+
+                        </div>
+
+
+                        <span
+                            class="label-count-chip"
+                            data-class="chip"
+                            data-semantic="{{ label.id }}_count"
+                        >
+                            {{ label.message_count }}
+                        </span>
+
+
+                        <button
+                            class="
+                                icon-button
+                                label-more
+                            "
+                            data-class="button"
+                            data-semantic="{{ label.id }}_more_button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="{{ label.id }}_more_icon"
+                            >
+                                more_vert
+                            </span>
+                        </button>
+
+                    </article>
+
+                    {% endfor %}
+
+                {% endif %}
+
+            </section>
+
+
+            {% if labels.show_selected %}
+
+            <aside
+                class="label-details"
+                data-class="section"
+                data-semantic="label_details_section"
+            >
+
+                <div
+                    class="label-details-header"
+                    data-class="toolbar"
+                    data-semantic="label_details_header"
+                >
+
+                    <div
+                        class="label-details-title"
+                        data-class="text"
+                        data-semantic="label_details_title"
+                    >
+                        {{ labels.selected_label.name }}
+                    </div>
+
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="edit_selected_label_button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="edit_selected_label_icon"
+                        >
+                            edit
+                        </span>
+                    </button>
+
+                </div>
+
+
+                <div class="label-details-body">
+
+                    {% for row in [
+                        ("Messages", labels.selected_label.message_count),
+                        ("Unread", labels.selected_label.unread_count),
+                        ("Color", labels.selected_label.color),
+                        ("Parent", labels.selected_label.parent or "None")
+                    ] %}
+
+                    <div
+                        class="detail-stat"
+                        data-class="list_item"
+                        data-semantic="label_detail_{{ loop.index }}"
+                    >
+
+                        <div
+                            class="detail-label"
+                            data-class="text"
+                            data-semantic="label_detail_{{ loop.index }}_label"
+                        >
+                            {{ row[0] }}
+                        </div>
+
+
+                        <div
+                            class="detail-value"
+                            data-class="text"
+                            data-semantic="label_detail_{{ loop.index }}_value"
+                        >
+                            {{ row[1] }}
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </aside>
+
+            {% endif %}
+
+        </div>
+
+    </main>
+
+
+    {% if labels.show_create or labels.show_edit %}
+
+    <div class="form-overlay">
+
+        <section
+            class="label-form"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="label_form_dialog"
+        >
+
+            <div
+                class="label-form-header"
+                data-class="toolbar"
+                data-semantic="label_form_header"
+            >
+
+                <div
+                    class="label-form-title"
+                    data-class="text"
+                    data-semantic="label_form_title"
+                >
+                    {% if labels.show_edit %}
+                        Edit label
+                    {% else %}
+                        Create label
+                    {% endif %}
+                </div>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="close_label_form_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_label_form_icon"
+                    >
+                        close
+                    </span>
+                </button>
+
+            </div>
+
+
+            <div class="label-form-body">
+
+                <div class="form-field">
+
+                    <div
+                        class="form-label"
+                        data-class="text"
+                        data-semantic="label_name_label"
+                    >
+                        Label name
+                    </div>
+
+
+                    <input
+                        class="form-input"
+                        type="text"
+                        value="{{ labels.form.name }}"
+                        data-class="input_field"
+                        data-semantic="label_name_input"
+                    >
+
+                </div>
+
+
+                <div class="form-field">
+
+                    <div
+                        class="form-label"
+                        data-class="text"
+                        data-semantic="parent_label_label"
+                    >
+                        Nest under
+                    </div>
+
+
+                    <input
+                        class="form-input"
+                        type="text"
+                        value="{{ labels.form.parent }}"
+                        placeholder="Optional parent label"
+                        data-class="input_field"
+                        data-semantic="parent_label_input"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="label-form-actions"
+                data-class="toolbar"
+                data-semantic="label_form_actions"
+            >
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_label_button"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="save_label_button"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    {% if labels.color_picker_open %}
+
+    <section
+        class="color-popup"
+        data-popup-focus="true"
+        data-class="dialog"
+        data-semantic="label_color_picker"
+    >
+
+        <div
+            class="color-popup-title"
+            data-class="text"
+            data-semantic="label_color_picker_title"
+        >
+            Choose label color
+        </div>
+
+
+        <div class="color-grid">
+
+            {% for color in labels.colors %}
+
+            <button
+                class="color-option"
+                title="{{ color }}"
+                data-class="button"
+                data-semantic="color_option_{{ loop.index }}"
+            ></button>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    {% if labels.move_messages_open %}
+
+    <div class="dialog-overlay">
+
+        <section
+            class="label-dialog"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="move_messages_dialog"
+        >
+
+            <div
+                class="dialog-title"
+                data-class="text"
+                data-semantic="move_messages_title"
+            >
+                Move messages to label
+            </div>
+
+
+            <div
+                class="dialog-text"
+                data-class="text"
+                data-semantic="move_messages_text"
+            >
+                Choose a destination label.
+            </div>
+
+
+            <div class="move-list">
+
+                {% for target in labels.move_targets %}
+
+                <div
+                    class="move-option"
+                    data-class="list_item"
+                    data-semantic="move_target_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="move_target_{{ loop.index }}_icon"
+                    >
+                        label
+                    </span>
+
+
+                    <span
+                        data-class="text"
+                        data-semantic="move_target_{{ loop.index }}_text"
+                    >
+                        {{ target }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_move_messages"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_move_messages"
+                >
+                    Move
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    {% if labels.delete_confirm_open %}
+
+    <div class="dialog-overlay">
+
+        <section
+            class="label-dialog"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="delete_label_dialog"
+        >
+
+            <div
+                class="dialog-title"
+                data-class="text"
+                data-semantic="delete_label_title"
+            >
+                Delete label?
+            </div>
+
+
+            <div
+                class="dialog-text"
+                data-class="text"
+                data-semantic="delete_label_text"
+            >
+                Messages will not be deleted,
+                but this label will be removed.
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_delete_label"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_delete_label"
+                >
+                    Delete
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    {% if labels.mobile_label_sheet_open %}
+
+    <div class="mobile-sheet-overlay">
+
+        <section
+            class="mobile-label-sheet"
+            data-popup-focus="true"
+            data-class="bottom_sheet"
+            data-semantic="mobile_label_sheet"
+        >
+
+            <div class="sheet-handle"></div>
+
+
+            <div
+                class="sheet-title"
+                data-class="text"
+                data-semantic="mobile_label_sheet_title"
+            >
+                {{ labels.selected_label.name }}
+            </div>
+
+
+            {% for item in [
+                ("edit", "Edit label"),
+                ("palette", "Change color"),
+                ("drive_file_move", "Move messages"),
+                ("delete", "Delete label")
+            ] %}
+
+            <div
+                class="sheet-action"
+                data-class="list_item"
+                data-semantic="mobile_label_action_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="mobile_label_action_{{ loop.index }}_icon"
+                >
+                    {{ item[0] }}
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="mobile_label_action_{{ loop.index }}_text"
+                >
+                    {{ item[1] }}
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <script>
+
+        (() => {
+
+            const popupFocus =
+                document.querySelector(
+                    '[data-popup-focus="true"]'
+                );
+
+            if (!popupFocus) {
+                return;
+            }
+
+            document
+                .querySelectorAll(
+                    "[data-class]"
+                )
+                .forEach(
+                    (element) => {
+
+                        const belongsToPopup = (
+                            element === popupFocus
+                            ||
+                            popupFocus.contains(
+                                element
+                            )
+                        );
+
+                        if (!belongsToPopup) {
+
+                            element.removeAttribute(
+                                "data-class"
+                            );
+
+                            element.removeAttribute(
+                                "data-semantic"
+                            );
+                        }
+                    }
+                );
+
+            document.documentElement.setAttribute(
+                "data-popup-annotation-mode",
+                "popup-only"
+            );
+
+        })();
+
+    </script>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,1469 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+{{ snoozed.title }} · Email
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .snoozed-page {
+        min-height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+        background:
+            var(--background);
+    }
+
+
+    /* ==================================================
+       App Bar
+       ================================================== */
+
+    .snoozed-app-bar {
+        position:
+            sticky;
+        top:
+            0;
+        z-index:
+            100;
+        display:
+            grid;
+        grid-template-columns:
+            auto
+            minmax(
+                0,
+                1fr
+            )
+            auto;
+        align-items:
+            center;
+        gap:
+            10px;
+        min-height:
+            var(--desktop-header-height);
+        padding:
+            8px 14px;
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+        background:
+            var(--surface);
+    }
+
+
+    .snoozed-title {
+        color:
+            var(--text-primary);
+        font-size:
+            18px;
+        font-weight:
+            700;
+    }
+
+
+    .snoozed-actions {
+        display:
+            flex;
+        gap:
+            4px;
+    }
+
+
+    /* ==================================================
+       Content
+       ================================================== */
+
+    .snoozed-content {
+        max-width:
+            1100px;
+        margin:
+            0 auto;
+        padding:
+            18px;
+    }
+
+
+    .snoozed-toolbar {
+        display:
+            flex;
+        align-items:
+            center;
+        gap:
+            8px;
+        min-height:
+            54px;
+        padding:
+            8px 12px;
+        border:
+            1px solid
+            var(--border-subtle);
+        border-bottom:
+            none;
+        border-radius:
+            var(--large-radius)
+            var(--large-radius)
+            0
+            0;
+        background:
+            var(--surface);
+    }
+
+
+    .snoozed-count {
+        flex:
+            1;
+        color:
+            var(--text-secondary);
+        font-size:
+            12px;
+    }
+
+
+    /* ==================================================
+       List
+       ================================================== */
+
+    .snoozed-list {
+        overflow:
+            hidden;
+        border:
+            1px solid
+            var(--border-subtle);
+        border-radius:
+            0
+            0
+            var(--large-radius)
+            var(--large-radius);
+        background:
+            var(--surface);
+    }
+
+
+    .snoozed-row {
+        display:
+            grid;
+        grid-template-columns:
+            auto
+            auto
+            minmax(
+                160px,
+                220px
+            )
+            minmax(
+                220px,
+                1fr
+            )
+            auto;
+        gap:
+            10px;
+        align-items:
+            center;
+        min-height:
+            70px;
+        padding:
+            8px 14px;
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .snoozed-row:last-child {
+        border-bottom:
+            none;
+    }
+
+
+    .snoozed-row.selected {
+        background:
+            var(--primary-container);
+    }
+
+
+    .snoozed-avatar {
+        width:
+            36px;
+        height:
+            36px;
+        overflow:
+            hidden;
+        border-radius:
+            50%;
+        background:
+            var(--surface-variant);
+    }
+
+
+    .snoozed-avatar img {
+        width:
+            100%;
+        height:
+            100%;
+        object-fit:
+            cover;
+    }
+
+
+    .snoozed-sender {
+        min-width:
+            0;
+        color:
+            var(--text-primary);
+        font-size:
+            13px;
+        font-weight:
+            700;
+    }
+
+
+    .snoozed-summary {
+        min-width:
+            0;
+    }
+
+
+    .snoozed-subject {
+        color:
+            var(--text-primary);
+        font-size:
+            13px;
+        font-weight:
+            700;
+    }
+
+
+    .snoozed-snippet {
+        margin-top:
+            3px;
+        color:
+            var(--text-secondary);
+        font-size:
+            12px;
+    }
+
+
+    .target-chip {
+        display:
+            inline-flex;
+        align-items:
+            center;
+        gap:
+            5px;
+        min-height:
+            30px;
+        padding:
+            0 10px;
+        border-radius:
+            var(--pill-radius);
+        background:
+            var(--surface-variant);
+        color:
+            var(--text-secondary);
+        font-size:
+            11px;
+        font-weight:
+            700;
+        white-space:
+            nowrap;
+    }
+
+
+    /* ==================================================
+       Selected Scheduled Message
+       ================================================== */
+
+    .scheduled-details {
+        margin-top:
+            18px;
+        overflow:
+            hidden;
+        border:
+            1px solid
+            var(--border-subtle);
+        border-radius:
+            var(--large-radius);
+        background:
+            var(--surface);
+    }
+
+
+    .scheduled-details-header {
+        display:
+            flex;
+        align-items:
+            center;
+        gap:
+            10px;
+        padding:
+            16px 18px;
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .scheduled-details-title {
+        flex:
+            1;
+        color:
+            var(--text-primary);
+        font-size:
+            16px;
+        font-weight:
+            700;
+    }
+
+
+    .scheduled-details-body {
+        padding:
+            20px;
+    }
+
+
+    .details-subject {
+        color:
+            var(--text-primary);
+        font-size:
+            20px;
+        font-weight:
+            700;
+    }
+
+
+    .details-meta {
+        margin-top:
+            8px;
+        color:
+            var(--text-secondary);
+        font-size:
+            12px;
+    }
+
+
+    .details-preview {
+        margin-top:
+            20px;
+        padding:
+            16px;
+        border:
+            1px solid
+            var(--border-subtle);
+        border-radius:
+            var(--medium-radius);
+        background:
+            var(--background);
+        color:
+            var(--text-primary);
+        font-size:
+            13px;
+        line-height:
+            1.6;
+    }
+
+
+    /* ==================================================
+       Empty State
+       ================================================== */
+
+    .empty-state {
+        display:
+            flex;
+        flex-direction:
+            column;
+        align-items:
+            center;
+        justify-content:
+            center;
+        min-height:
+            440px;
+        gap:
+            12px;
+        text-align:
+            center;
+    }
+
+
+    .empty-icon {
+        color:
+            var(--icon-secondary);
+        font-size:
+            54px;
+    }
+
+
+    .empty-title {
+        color:
+            var(--text-primary);
+        font-size:
+            20px;
+        font-weight:
+            700;
+    }
+
+
+    .empty-text {
+        max-width:
+            460px;
+        color:
+            var(--text-secondary);
+        font-size:
+            13px;
+        line-height:
+            1.5;
+    }
+
+
+    /* ==================================================
+       Snooze Menu
+       ================================================== */
+
+    .snooze-menu {
+        position:
+            fixed;
+        top:
+            72px;
+        right:
+            18px;
+        z-index:
+            700;
+        width:
+            280px;
+        padding:
+            8px;
+        border:
+            1px solid
+            var(--border-subtle);
+        border-radius:
+            var(--medium-radius);
+        background:
+            var(--surface);
+        box-shadow:
+            0
+            8px
+            24px
+            rgba(
+                0,
+                0,
+                0,
+                0.15
+            );
+    }
+
+
+    .snooze-option {
+        display:
+            flex;
+        align-items:
+            center;
+        gap:
+            10px;
+        min-height:
+            44px;
+        padding:
+            0 10px;
+        border-radius:
+            8px;
+        color:
+            var(--text-primary);
+        font-size:
+            13px;
+    }
+
+
+    /* ==================================================
+       Dialog
+       ================================================== */
+
+    .dialog-overlay {
+        position:
+            fixed;
+        inset:
+            0;
+        z-index:
+            760;
+        display:
+            flex;
+        align-items:
+            center;
+        justify-content:
+            center;
+        padding:
+            24px;
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .snooze-dialog {
+        width:
+            min(
+                460px,
+                100%
+            );
+        padding:
+            22px;
+        border:
+            1px solid
+            var(--border-subtle);
+        border-radius:
+            var(--large-radius);
+        background:
+            var(--surface);
+    }
+
+
+    .dialog-title {
+        color:
+            var(--text-primary);
+        font-size:
+            18px;
+        font-weight:
+            700;
+    }
+
+
+    .dialog-description {
+        margin-top:
+            8px;
+        color:
+            var(--text-secondary);
+        font-size:
+            13px;
+        line-height:
+            1.5;
+    }
+
+
+    .datetime-grid {
+        display:
+            grid;
+        grid-template-columns:
+            1fr
+            1fr;
+        gap:
+            10px;
+        margin-top:
+            18px;
+    }
+
+
+    .datetime-input {
+        min-height:
+            44px;
+        padding:
+            0 12px;
+        border:
+            1px solid
+            var(--border-subtle);
+        border-radius:
+            var(--medium-radius);
+        background:
+            var(--background);
+        color:
+            var(--text-primary);
+        font-size:
+            13px;
+    }
+
+
+    .dialog-actions {
+        display:
+            flex;
+        justify-content:
+            flex-end;
+        gap:
+            8px;
+        margin-top:
+            20px;
+    }
+
+
+    /* ==================================================
+       Mobile Sheet
+       ================================================== */
+
+    .mobile-actions-overlay {
+        position:
+            fixed;
+        inset:
+            0;
+        z-index:
+            790;
+        display:
+            flex;
+        align-items:
+            flex-end;
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.18
+            );
+    }
+
+
+    .mobile-actions-sheet {
+        width:
+            100%;
+        padding:
+            12px 14px 18px;
+        border-radius:
+            22px
+            22px
+            0
+            0;
+        background:
+            var(--surface);
+    }
+
+
+    .sheet-handle {
+        width:
+            40px;
+        height:
+            4px;
+        margin:
+            0 auto 12px;
+        border-radius:
+            var(--pill-radius);
+        background:
+            var(--border);
+    }
+
+
+    .sheet-title {
+        padding:
+            8px 4px 12px;
+        color:
+            var(--text-primary);
+        font-size:
+            15px;
+        font-weight:
+            700;
+    }
+
+
+    .sheet-action {
+        display:
+            flex;
+        align-items:
+            center;
+        gap:
+            10px;
+        min-height:
+            46px;
+        padding:
+            0 8px;
+        color:
+            var(--text-primary);
+        font-size:
+            13px;
+    }
+
+
+    /* ==================================================
+       Responsive
+       ================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .snoozed-app-bar {
+            min-height:
+                var(--mobile-header-height);
+            padding:
+                6px 8px;
+        }
+
+
+        .snoozed-content {
+            padding:
+                8px;
+        }
+
+
+        .snoozed-row {
+            grid-template-columns:
+                auto
+                minmax(
+                    0,
+                    1fr
+                )
+                auto;
+            grid-template-areas:
+                "avatar sender target"
+                "avatar summary summary";
+            gap:
+                3px 8px;
+            min-height:
+                78px;
+            padding:
+                9px 10px;
+        }
+
+
+        .snoozed-avatar {
+            grid-area:
+                avatar;
+        }
+
+
+        .snoozed-sender {
+            grid-area:
+                sender;
+        }
+
+
+        .snoozed-summary {
+            grid-area:
+                summary;
+        }
+
+
+        .target-chip {
+            grid-area:
+                target;
+        }
+
+
+        .snoozed-star {
+            display:
+                none;
+        }
+
+
+        .datetime-grid {
+            grid-template-columns:
+                1fr;
+        }
+
+
+        .dialog-overlay {
+            align-items:
+                flex-end;
+            padding:
+                0;
+        }
+
+
+        .snooze-dialog {
+            width:
+                100%;
+            border-radius:
+                22px
+                22px
+                0
+                0;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="snoozed-page state-{{ snoozed.state }}"
+    data-state="{{ snoozed.state }}"
+>
+
+    <header
+        class="snoozed-app-bar"
+        data-class="app_bar"
+        data-semantic="snoozed_app_bar"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="snoozed_back_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="snoozed_back_icon"
+            >
+                arrow_back
+            </span>
+        </button>
+
+
+        <div
+            class="snoozed-title"
+            data-class="text"
+            data-semantic="snoozed_title"
+        >
+            {{ snoozed.title }}
+        </div>
+
+
+        <div class="snoozed-actions">
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="refresh_snoozed_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="refresh_snoozed_icon"
+                >
+                    refresh
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="snoozed_more_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="snoozed_more_icon"
+                >
+                    more_vert
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <main class="snoozed-content">
+
+        <div
+            class="snoozed-toolbar"
+            data-class="toolbar"
+            data-semantic="snoozed_toolbar"
+        >
+
+            <div
+                class="snoozed-count"
+                data-class="text"
+                data-semantic="snoozed_count"
+            >
+                {{ snoozed.message_count }}
+                messages
+            </div>
+
+
+            {% if snoozed.mode == "scheduled" %}
+
+            <button
+                class="secondary-button"
+                data-class="button"
+                data-semantic="new_scheduled_message_button"
+            >
+                Schedule message
+            </button>
+
+            {% else %}
+
+            <button
+                class="secondary-button"
+                data-class="button"
+                data-semantic="snooze_selected_button"
+            >
+                Snooze
+            </button>
+
+            {% endif %}
+
+        </div>
+
+
+        {% if snoozed.messages %}
+
+        <section
+            class="snoozed-list"
+            data-class="section"
+            data-semantic="snoozed_message_list"
+        >
+
+            {% for message in snoozed.messages %}
+
+            <article
+                class="
+                    snoozed-row
+
+                    {% if
+                        snoozed.show_selected
+                        and
+                        snoozed.selected_message
+                        and
+                        message.id
+                        == snoozed.selected_message.id
+                    %}
+                    selected
+                    {% endif %}
+                "
+                data-class="list_item"
+                data-semantic="{{ message.id }}"
+            >
+
+                <button
+                    class="
+                        icon-button
+                        snoozed-star
+                    "
+                    data-class="button"
+                    data-semantic="{{ message.id }}_star_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="{{ message.id }}_star_icon"
+                    >
+                        {% if message.starred %}
+                            star
+                        {% else %}
+                            star_border
+                        {% endif %}
+                    </span>
+                </button>
+
+
+                <div
+                    class="snoozed-avatar"
+                    data-class="avatar"
+                    data-semantic="{{ message.id }}_avatar"
+                >
+                    {% if message.avatar %}
+                    <img
+                        src="{{ message.avatar }}"
+                        alt=""
+                    >
+                    {% endif %}
+                </div>
+
+
+                <div
+                    class="snoozed-sender truncate"
+                    data-class="text"
+                    data-semantic="{{ message.id }}_sender"
+                >
+                    {{ message.sender }}
+                </div>
+
+
+                <div class="snoozed-summary">
+
+                    <div
+                        class="snoozed-subject truncate"
+                        data-class="text"
+                        data-semantic="{{ message.id }}_subject"
+                    >
+                        {{ message.subject }}
+                    </div>
+
+
+                    <div
+                        class="snoozed-snippet truncate"
+                        data-class="text"
+                        data-semantic="{{ message.id }}_snippet"
+                    >
+                        {{ message.snippet }}
+                    </div>
+
+                </div>
+
+
+                <span
+                    class="target-chip"
+                    data-class="chip"
+                    data-semantic="{{ message.id }}_target"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="{{ message.id }}_target_icon"
+                        style="
+                            font-size:
+                                16px;
+                        "
+                    >
+                        {% if snoozed.mode == "scheduled" %}
+                            schedule_send
+                        {% else %}
+                            snooze
+                        {% endif %}
+                    </span>
+
+                    {{ message.target_full }}
+                </span>
+
+            </article>
+
+            {% endfor %}
+
+        </section>
+
+
+        {% else %}
+
+        <section
+            class="snoozed-list"
+            data-class="section"
+            data-semantic="empty_snoozed_section"
+        >
+
+            <div class="empty-state">
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        empty-icon
+                    "
+                    data-class="icon"
+                    data-semantic="empty_snoozed_icon"
+                >
+                    {% if snoozed.mode == "scheduled" %}
+                        schedule_send
+                    {% else %}
+                        snooze
+                    {% endif %}
+                </span>
+
+
+                <div
+                    class="empty-title"
+                    data-class="text"
+                    data-semantic="empty_snoozed_title"
+                >
+                    {{ snoozed.empty_title }}
+                </div>
+
+
+                <div
+                    class="empty-text"
+                    data-class="text"
+                    data-semantic="empty_snoozed_text"
+                >
+                    {{ snoozed.empty_text }}
+                </div>
+
+            </div>
+
+        </section>
+
+        {% endif %}
+
+
+        {% if
+            snoozed.show_selected
+            and
+            snoozed.selected_message
+        %}
+
+        <section
+            class="scheduled-details"
+            data-class="section"
+            data-semantic="scheduled_details_section"
+        >
+
+            <div
+                class="scheduled-details-header"
+                data-class="toolbar"
+                data-semantic="scheduled_details_header"
+            >
+
+                <div
+                    class="scheduled-details-title"
+                    data-class="text"
+                    data-semantic="scheduled_details_title"
+                >
+                    Scheduled message
+                </div>
+
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="reschedule_button"
+                >
+                    Reschedule
+                </button>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="cancel_scheduled_message_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="cancel_scheduled_message_icon"
+                    >
+                        delete
+                    </span>
+                </button>
+
+            </div>
+
+
+            <div class="scheduled-details-body">
+
+                <div
+                    class="details-subject"
+                    data-class="text"
+                    data-semantic="scheduled_message_subject"
+                >
+                    {{ snoozed.selected_message.subject }}
+                </div>
+
+
+                <div
+                    class="details-meta"
+                    data-class="timestamp"
+                    data-semantic="scheduled_message_time"
+                >
+                    Scheduled for
+                    {{ snoozed.selected_message.target_full }}
+                </div>
+
+
+                <div
+                    class="details-preview"
+                    data-class="text"
+                    data-semantic="scheduled_message_preview"
+                >
+                    {{ snoozed.selected_message.snippet }}
+                </div>
+
+            </div>
+
+        </section>
+
+        {% endif %}
+
+    </main>
+
+
+    {% if snoozed.snooze_menu_open %}
+
+    <section
+        class="snooze-menu"
+        data-popup-focus="true"
+        data-class="dialog"
+        data-semantic="snooze_menu"
+    >
+
+        {% for option in snoozed.snooze_options %}
+
+        <div
+            class="snooze-option"
+            data-class="list_item"
+            data-semantic="snooze_option_{{ loop.index }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="snooze_option_{{ loop.index }}_icon"
+            >
+                schedule
+            </span>
+
+
+            <span
+                data-class="text"
+                data-semantic="snooze_option_{{ loop.index }}_text"
+            >
+                {{ option }}
+            </span>
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+    {% endif %}
+
+
+    {% if
+        snoozed.custom_snooze_dialog_open
+        or
+        snoozed.reschedule_dialog_open
+    %}
+
+    <div class="dialog-overlay">
+
+        <section
+            class="snooze-dialog"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="datetime_dialog"
+        >
+
+            <div
+                class="dialog-title"
+                data-class="text"
+                data-semantic="datetime_dialog_title"
+            >
+                {% if snoozed.reschedule_dialog_open %}
+                    Reschedule message
+                {% else %}
+                    Pick date & time
+                {% endif %}
+            </div>
+
+
+            <div
+                class="dialog-description"
+                data-class="text"
+                data-semantic="datetime_dialog_description"
+            >
+                Choose when this message should return or be sent.
+            </div>
+
+
+            <div class="datetime-grid">
+
+                <input
+                    class="datetime-input"
+                    type="text"
+                    value="{{ snoozed.custom_date }}"
+                    data-class="input_field"
+                    data-semantic="datetime_date_input"
+                >
+
+
+                <input
+                    class="datetime-input"
+                    type="text"
+                    value="{{ snoozed.custom_time }}"
+                    data-class="input_field"
+                    data-semantic="datetime_time_input"
+                >
+
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_datetime_button"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_datetime_button"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    {% if snoozed.cancel_send_confirm_open %}
+
+    <div class="dialog-overlay">
+
+        <section
+            class="snooze-dialog"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="cancel_send_dialog"
+        >
+
+            <div
+                class="dialog-title"
+                data-class="text"
+                data-semantic="cancel_send_title"
+            >
+                Cancel scheduled send?
+            </div>
+
+
+            <div
+                class="dialog-description"
+                data-class="text"
+                data-semantic="cancel_send_description"
+            >
+                The message will be returned to Drafts
+                and will no longer be sent automatically.
+            </div>
+
+
+            <div class="dialog-actions">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="keep_scheduled_button"
+                >
+                    Keep scheduled
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_cancel_send_button"
+                >
+                    Cancel send
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    {% if snoozed.mobile_actions_sheet_open %}
+
+    <div class="mobile-actions-overlay">
+
+        <section
+            class="mobile-actions-sheet"
+            data-popup-focus="true"
+            data-class="bottom_sheet"
+            data-semantic="snoozed_mobile_actions_sheet"
+        >
+
+            <div class="sheet-handle"></div>
+
+
+            <div
+                class="sheet-title"
+                data-class="text"
+                data-semantic="snoozed_mobile_sheet_title"
+            >
+                Message actions
+            </div>
+
+
+            {% for item in [
+                ("schedule", "Change time"),
+                ("edit", "Edit message"),
+                ("forward", "Forward"),
+                ("delete", "Cancel")
+            ] %}
+
+            <div
+                class="sheet-action"
+                data-class="list_item"
+                data-semantic="snoozed_sheet_action_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="snoozed_sheet_action_{{ loop.index }}_icon"
+                >
+                    {{ item[0] }}
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="snoozed_sheet_action_{{ loop.index }}_text"
+                >
+                    {{ item[1] }}
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <script>
+
+        (() => {
+
+            const popupFocus =
+                document.querySelector(
+                    '[data-popup-focus="true"]'
+                );
+
+
+            if (!popupFocus) {
+                return;
+            }
+
+
+            document
+                .querySelectorAll(
+                    "[data-class]"
+                )
+                .forEach(
+                    (element) => {
+
+                        const belongsToPopup = (
+                            element === popupFocus
+                            ||
+                            popupFocus.contains(
+                                element
+                            )
+                        );
+
+
+                        if (!belongsToPopup) {
+
+                            element.removeAttribute(
+                                "data-class"
+                            );
+
+                            element.removeAttribute(
+                                "data-semantic"
+                            );
+                        }
+                    }
+                );
+
+
+            document.documentElement.setAttribute(
+                "data-popup-annotation-mode",
+                "popup-only"
+            );
+
+        })();
+
+    </script>
+
+</div>
+
+{% endblock %}

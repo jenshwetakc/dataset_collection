@@ -1,0 +1,1078 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+{{ spam.title }} · Email
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .spam-page {
+        min-height: calc(100vh - var(--status-bar-height));
+        background: var(--background);
+    }
+
+    /* ==================================================
+       App Bar
+       ================================================== */
+
+    .spam-app-bar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        min-height: var(--desktop-header-height);
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .spam-title {
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .spam-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* ==================================================
+       Warning Banner
+       ================================================== */
+
+    .warning-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin: 16px auto 0;
+        max-width: 1080px;
+        padding: 14px 16px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--medium-radius);
+        background: var(--surface-variant);
+    }
+
+    .warning-banner-text {
+        flex: 1;
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    /* ==================================================
+       Content
+       ================================================== */
+
+    .spam-content {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 16px;
+    }
+
+    .spam-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 54px;
+        padding: 8px 12px;
+        border: 1px solid var(--border-subtle);
+        border-bottom: none;
+        border-radius: var(--large-radius) var(--large-radius) 0 0;
+        background: var(--surface);
+    }
+
+    .spam-toolbar-count {
+        margin-right: auto;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .spam-list {
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 0 0 var(--large-radius) var(--large-radius);
+        background: var(--surface);
+    }
+
+    .spam-row {
+        display: grid;
+        grid-template-columns:
+            auto
+            auto
+            auto
+            minmax(160px, 220px)
+            minmax(220px, 1fr)
+            auto;
+        gap: 10px;
+        align-items: center;
+        min-height: 68px;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .spam-row:last-child {
+        border-bottom: none;
+    }
+
+    .spam-row.selected {
+        background: var(--primary-container);
+    }
+
+    .spam-avatar {
+        width: 36px;
+        height: 36px;
+        overflow: hidden;
+        border-radius: 50%;
+        background: var(--surface-variant);
+    }
+
+    .spam-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .spam-sender {
+        min-width: 0;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .spam-summary {
+        min-width: 0;
+    }
+
+    .spam-subject {
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .spam-snippet {
+        margin-top: 2px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .spam-time {
+        color: var(--text-secondary);
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .suspicious-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 0 8px;
+        border-radius: var(--pill-radius);
+        background: var(--surface-variant);
+        color: var(--text-secondary);
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    /* ==================================================
+       Empty State
+       ================================================== */
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 440px;
+        gap: 12px;
+        text-align: center;
+    }
+
+    .empty-icon {
+        color: var(--icon-secondary);
+        font-size: 54px;
+    }
+
+    .empty-title {
+        color: var(--text-primary);
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .empty-text {
+        max-width: 480px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    /* ==================================================
+       Restore Snackbar
+       ================================================== */
+
+    .restore-snackbar-wrap {
+        position: fixed;
+        left: 50%;
+        bottom: 24px;
+        z-index: 420;
+        transform: translateX(-50%);
+    }
+
+    .restore-snackbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 52px;
+        padding: 0 16px;
+        border-radius: var(--pill-radius);
+        background: var(--text-primary);
+        color: var(--surface);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    }
+
+    .restore-snackbar-text {
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    /* ==================================================
+       Dialogs
+       ================================================== */
+
+    .dialog-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(0,0,0,0.18);
+    }
+
+    .spam-dialog {
+        width: min(430px, 100%);
+        padding: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--large-radius);
+        background: var(--surface);
+    }
+
+    .spam-dialog-title {
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .spam-dialog-text {
+        margin-top: 10px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .spam-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    /* ==================================================
+       Mobile Sheet
+       ================================================== */
+
+    .mobile-sheet-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 730;
+        display: flex;
+        align-items: flex-end;
+        background: rgba(0,0,0,0.18);
+    }
+
+    .mobile-sheet {
+        width: 100%;
+        padding: 12px 14px 18px;
+        border-radius: 22px 22px 0 0;
+        background: var(--surface);
+    }
+
+    .sheet-handle {
+        width: 40px;
+        height: 4px;
+        margin: 0 auto 12px;
+        border-radius: var(--pill-radius);
+        background: var(--border);
+    }
+
+    .sheet-title {
+        padding: 8px 4px 12px;
+        color: var(--text-primary);
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .sheet-action {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 46px;
+        padding: 0 8px;
+        color: var(--text-primary);
+        font-size: 13px;
+    }
+
+    /* ==================================================
+       Responsive
+       ================================================== */
+
+    @media (max-width: 599px) {
+
+        .spam-app-bar {
+            min-height: var(--mobile-header-height);
+            padding: 6px 8px;
+        }
+
+        .desktop-spam-action {
+            display: none;
+        }
+
+        .spam-content {
+            padding: 8px;
+        }
+
+        .spam-row {
+            grid-template-columns:
+                auto
+                auto
+                minmax(0, 1fr)
+                auto;
+            grid-template-areas:
+                "select avatar sender time"
+                "select avatar summary summary";
+            gap: 3px 8px;
+            min-height: 78px;
+            padding: 9px 8px;
+        }
+
+        .spam-select {
+            grid-area: select;
+        }
+
+        .spam-avatar {
+            grid-area: avatar;
+        }
+
+        .spam-sender {
+            grid-area: sender;
+        }
+
+        .spam-summary {
+            grid-area: summary;
+        }
+
+        .spam-time {
+            grid-area: time;
+        }
+
+        .spam-star,
+        .spam-warning {
+            display: none;
+        }
+
+        .restore-snackbar-wrap {
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            transform: none;
+        }
+
+        .restore-snackbar {
+            width: 100%;
+            justify-content: space-between;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="spam-page state-{{ spam.state }}"
+    data-state="{{ spam.state }}"
+>
+
+    <!-- ==================================================
+         App Bar
+         ================================================== -->
+
+    <header
+        class="spam-app-bar"
+        data-class="app_bar"
+        data-semantic="spam_app_bar"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="spam_back_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="spam_back_icon"
+            >
+                arrow_back
+            </span>
+        </button>
+
+
+        <div
+            class="spam-title"
+            data-class="text"
+            data-semantic="spam_title"
+        >
+            {{ spam.title }}
+        </div>
+
+
+        <div class="spam-actions">
+
+            <button
+                class="
+                    icon-button
+                    desktop-spam-action
+                "
+                data-class="button"
+                data-semantic="refresh_folder_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="refresh_folder_icon"
+                >
+                    refresh
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="spam_more_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="spam_more_icon"
+                >
+                    more_vert
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ==================================================
+         Warning Banner
+         ================================================== -->
+
+    {% if spam.show_warning_banner %}
+
+    <section
+        class="warning-banner"
+        data-class="section"
+        data-semantic="spam_warning_banner"
+    >
+
+        <span
+            class="material-symbols-rounded"
+            data-class="icon"
+            data-semantic="spam_warning_icon"
+        >
+            info
+        </span>
+
+
+        <div
+            class="warning-banner-text"
+            data-class="text"
+            data-semantic="spam_warning_text"
+        >
+            {{ spam.warning_text }}
+        </div>
+
+
+        <button
+            class="secondary-button"
+            data-class="button"
+            data-semantic="empty_folder_button"
+        >
+            Empty now
+        </button>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Content
+         ================================================== -->
+
+    <main class="spam-content">
+
+        <div
+            class="spam-toolbar"
+            data-class="toolbar"
+            data-semantic="spam_toolbar"
+        >
+
+            <div
+                class="spam-toolbar-count"
+                data-class="text"
+                data-semantic="spam_message_count"
+            >
+                {% if spam.selected_count %}
+                    {{ spam.selected_count }} selected
+                {% else %}
+                    {{ spam.message_count }} messages
+                {% endif %}
+            </div>
+
+
+            {% if spam.selected_count %}
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="bulk_restore_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="bulk_restore_icon"
+                >
+                    restore
+                </span>
+            </button>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="bulk_delete_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="bulk_delete_icon"
+                >
+                    delete_forever
+                </span>
+            </button>
+
+            {% else %}
+
+            <button
+                class="secondary-button"
+                data-class="button"
+                data-semantic="folder_action_button"
+            >
+                {% if spam.folder == "spam" %}
+                    Not spam
+                {% else %}
+                    Restore
+                {% endif %}
+            </button>
+
+            {% endif %}
+
+        </div>
+
+
+        {% if spam.messages %}
+
+        <section
+            class="spam-list"
+            data-class="section"
+            data-semantic="spam_message_list"
+        >
+
+            {% for message in spam.messages %}
+
+            <article
+                class="
+                    spam-row
+                    {% if message.selected %}
+                    selected
+                    {% endif %}
+                "
+                data-class="list_item"
+                data-semantic="{{ message.id }}"
+            >
+
+                <input
+                    class="spam-select"
+                    type="checkbox"
+                    {% if message.selected %}
+                    checked
+                    {% endif %}
+                    data-class="checkbox"
+                    data-semantic="{{ message.id }}_checkbox"
+                >
+
+
+                <button
+                    class="icon-button spam-star"
+                    data-class="button"
+                    data-semantic="{{ message.id }}_star_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="{{ message.id }}_star_icon"
+                    >
+                        {% if message.starred %}
+                            star
+                        {% else %}
+                            star_border
+                        {% endif %}
+                    </span>
+                </button>
+
+
+                <div
+                    class="spam-avatar"
+                    data-class="avatar"
+                    data-semantic="{{ message.id }}_avatar"
+                >
+                    {% if message.avatar %}
+                    <img
+                        src="{{ message.avatar }}"
+                        alt=""
+                    >
+                    {% endif %}
+                </div>
+
+
+                <div
+                    class="spam-sender truncate"
+                    data-class="text"
+                    data-semantic="{{ message.id }}_sender"
+                >
+                    {{ message.sender }}
+                </div>
+
+
+                <div class="spam-summary">
+
+                    <div
+                        class="spam-subject truncate"
+                        data-class="text"
+                        data-semantic="{{ message.id }}_subject"
+                    >
+                        {{ message.subject }}
+                    </div>
+
+
+                    <div
+                        class="spam-snippet truncate"
+                        data-class="text"
+                        data-semantic="{{ message.id }}_snippet"
+                    >
+                        {{ message.snippet }}
+                    </div>
+
+
+                    {% if message.suspicious %}
+
+                    <span
+                        class="suspicious-chip spam-warning"
+                        data-class="chip"
+                        data-semantic="{{ message.id }}_suspicious"
+                    >
+                        Suspicious
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <time
+                    class="spam-time"
+                    data-class="timestamp"
+                    data-semantic="{{ message.id }}_time"
+                >
+                    {{ message.time }}
+                </time>
+
+            </article>
+
+            {% endfor %}
+
+        </section>
+
+
+        {% else %}
+
+        <section
+            class="spam-list"
+            data-class="section"
+            data-semantic="empty_spam_section"
+        >
+
+            <div class="empty-state">
+
+                <span
+                    class="
+                        material-symbols-rounded
+                        empty-icon
+                    "
+                    data-class="icon"
+                    data-semantic="empty_spam_icon"
+                >
+                    {% if spam.folder == "spam" %}
+                        report
+                    {% else %}
+                        delete
+                    {% endif %}
+                </span>
+
+
+                <div
+                    class="empty-title"
+                    data-class="text"
+                    data-semantic="empty_spam_title"
+                >
+                    {{ spam.empty_title }}
+                </div>
+
+
+                <div
+                    class="empty-text"
+                    data-class="text"
+                    data-semantic="empty_spam_text"
+                >
+                    {{ spam.empty_text }}
+                </div>
+
+            </div>
+
+        </section>
+
+        {% endif %}
+
+    </main>
+
+
+    <!-- ==================================================
+         Restore State
+         ================================================== -->
+
+    {% if spam.show_restore_state %}
+
+    <div class="restore-snackbar-wrap">
+
+        <div
+            class="restore-snackbar"
+            data-class="dialog"
+            data-semantic="restore_snackbar"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="restore_snackbar_icon"
+            >
+                restore
+            </span>
+
+
+            <span
+                class="restore-snackbar-text"
+                data-class="text"
+                data-semantic="restore_snackbar_text"
+            >
+                Message restored to Inbox
+            </span>
+
+
+            <button
+                class="save-snackbar-action"
+                data-class="button"
+                data-semantic="undo_restore_button"
+            >
+                Undo
+            </button>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Delete Forever Dialog
+         ================================================== -->
+
+    {% if spam.delete_forever_confirm_open %}
+
+    <div class="dialog-overlay">
+
+        <section
+            class="spam-dialog"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="delete_forever_dialog"
+        >
+
+            <div
+                class="spam-dialog-title"
+                data-class="text"
+                data-semantic="delete_forever_title"
+            >
+                Delete forever?
+            </div>
+
+
+            <div
+                class="spam-dialog-text"
+                data-class="text"
+                data-semantic="delete_forever_text"
+            >
+                This message will be permanently deleted
+                and cannot be recovered.
+            </div>
+
+
+            <div class="spam-dialog-actions">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_delete_forever"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_delete_forever"
+                >
+                    Delete forever
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Not Spam Dialog
+         ================================================== -->
+
+    {% if spam.not_spam_dialog_open %}
+
+    <div class="dialog-overlay">
+
+        <section
+            class="spam-dialog"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="not_spam_dialog"
+        >
+
+            <div
+                class="spam-dialog-title"
+                data-class="text"
+                data-semantic="not_spam_title"
+            >
+                Mark as not spam?
+            </div>
+
+
+            <div
+                class="spam-dialog-text"
+                data-class="text"
+                data-semantic="not_spam_text"
+            >
+                Future messages from this sender may be delivered
+                to your Inbox.
+            </div>
+
+
+            <div class="spam-dialog-actions">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_not_spam_button"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_not_spam_button"
+                >
+                    Not spam
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Mobile Action Sheet
+         ================================================== -->
+
+    {% if spam.mobile_action_sheet_open %}
+
+    <div class="mobile-sheet-overlay">
+
+        <section
+            class="mobile-sheet"
+            data-popup-focus="true"
+            data-class="bottom_sheet"
+            data-semantic="spam_mobile_action_sheet"
+        >
+
+            <div class="sheet-handle"></div>
+
+
+            <div
+                class="sheet-title"
+                data-class="text"
+                data-semantic="spam_mobile_sheet_title"
+            >
+                Message actions
+            </div>
+
+
+            {% for item in [
+                ("restore", "Restore"),
+                ("report", "Not spam"),
+                ("delete_forever", "Delete forever"),
+                ("person_off", "Block sender")
+            ] %}
+
+            <div
+                class="sheet-action"
+                data-class="list_item"
+                data-semantic="spam_sheet_action_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="spam_sheet_action_{{ loop.index }}_icon"
+                >
+                    {{ item[0] }}
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="spam_sheet_action_{{ loop.index }}_text"
+                >
+                    {{ item[1] }}
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Popup-only annotations
+         ================================================== -->
+
+    <script>
+
+        (() => {
+
+            const popupFocus =
+                document.querySelector(
+                    '[data-popup-focus="true"]'
+                );
+
+            if (!popupFocus) {
+                return;
+            }
+
+            document
+                .querySelectorAll(
+                    "[data-class]"
+                )
+                .forEach(
+                    (element) => {
+
+                        const belongsToPopup = (
+                            element === popupFocus
+                            || popupFocus.contains(
+                                element
+                            )
+                        );
+
+                        if (!belongsToPopup) {
+
+                            element.removeAttribute(
+                                "data-class"
+                            );
+
+                            element.removeAttribute(
+                                "data-semantic"
+                            );
+                        }
+                    }
+                );
+
+            document.documentElement.setAttribute(
+                "data-popup-annotation-mode",
+                "popup-only"
+            );
+
+        })();
+
+    </script>
+
+</div>
+
+{% endblock %}

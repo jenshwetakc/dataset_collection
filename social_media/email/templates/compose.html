@@ -1,0 +1,1983 @@
+
+{% extends "base.html" %}
+
+
+{% block title %}
+Compose · Email
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .compose-page {
+
+        min-height:
+            calc(
+                100vh
+                - var(--status-bar-height)
+            );
+
+        background:
+            var(--background);
+    }
+
+
+    /* ==================================================
+       App Bar
+       ================================================== */
+
+    .compose-app-bar {
+
+        position:
+            sticky;
+
+        top:
+            0;
+
+        z-index:
+            100;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        min-height:
+            var(--desktop-header-height);
+
+        padding:
+            8px 16px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+
+        background:
+            var(--surface);
+    }
+
+
+    .compose-page-title {
+
+        flex:
+            1;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            17px;
+
+        font-weight:
+            700;
+    }
+
+
+    .draft-state {
+
+        margin-right:
+            8px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    /* ==================================================
+       Layout
+       ================================================== */
+
+    .compose-stage {
+
+        display:
+            flex;
+
+        justify-content:
+            center;
+
+        padding:
+            32px;
+    }
+
+
+    .compose-card {
+
+        width:
+            min(
+                860px,
+                100%
+            );
+
+        overflow:
+            visible;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    /* ==================================================
+       Header Area
+       ================================================== */
+
+    .compose-account {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            14px 18px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .compose-account-avatar {
+
+        width:
+            36px;
+
+        height:
+            36px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .compose-account-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .compose-account-name {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .compose-account-email {
+
+        margin-top:
+            2px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ==================================================
+       Recipient Rows
+       ================================================== */
+
+    .field-row {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            flex-start;
+
+        gap:
+            8px;
+
+        min-height:
+            48px;
+
+        padding:
+            8px 16px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .field-label {
+
+        width:
+            44px;
+
+        flex:
+            0 0 auto;
+
+        padding-top:
+            7px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+    }
+
+
+    .recipient-area {
+
+        display:
+            flex;
+
+        flex:
+            1;
+
+        flex-wrap:
+            wrap;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-width:
+            0;
+    }
+
+
+    .recipient-chip {
+
+        display:
+            inline-flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            32px;
+
+        max-width:
+            220px;
+
+        padding:
+            0 8px 0 4px;
+
+        border-radius:
+            var(--pill-radius);
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-size:
+            12px;
+    }
+
+
+    .recipient-avatar {
+
+        width:
+            24px;
+
+        height:
+            24px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .recipient-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .recipient-input {
+
+        flex:
+            1;
+
+        min-width:
+            140px;
+
+        min-height:
+            32px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    .cc-bcc-actions {
+
+        display:
+            flex;
+
+        gap:
+            8px;
+
+        padding-top:
+            7px;
+    }
+
+
+    .cc-bcc-button {
+
+        color:
+            var(--primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    /* ==================================================
+       Subject
+       ================================================== */
+
+    .subject-row {
+
+        min-height:
+            48px;
+
+        padding:
+            0 16px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .subject-input {
+
+        width:
+            100%;
+
+        min-height:
+            48px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        font-weight:
+            600;
+    }
+
+
+    /* ==================================================
+       Editor
+       ================================================== */
+
+    .editor {
+
+        width:
+            100%;
+
+        min-height:
+            360px;
+
+        padding:
+            18px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            14px;
+
+        line-height:
+            1.6;
+    }
+
+
+    /* ==================================================
+       Attachments
+       ================================================== */
+
+    .compose-attachments {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fit,
+                minmax(
+                    180px,
+                    1fr
+                )
+            );
+
+        gap:
+            10px;
+
+        padding:
+            0 18px 16px;
+    }
+
+
+    .compose-attachment-card {
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .compose-attachment-preview {
+
+        width:
+            100%;
+
+        height:
+            110px;
+
+        object-fit:
+            cover;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .compose-attachment-info {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            10px;
+    }
+
+
+    .attachment-name {
+
+        flex:
+            1;
+
+        min-width:
+            0;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+    }
+
+
+    .attachment-size {
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ==================================================
+       Footer
+       ================================================== */
+
+    .compose-footer {
+
+        position:
+            relative;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            6px;
+
+        min-height:
+            62px;
+
+        padding:
+            10px 14px;
+
+        border-top:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .send-group {
+
+        display:
+            flex;
+
+        align-items:
+            stretch;
+    }
+
+
+    .send-main {
+
+        min-width:
+            96px;
+
+        border-radius:
+            var(--medium-radius)
+            0
+            0
+            var(--medium-radius);
+    }
+
+
+    .send-dropdown {
+
+        width:
+            38px;
+
+        min-height:
+            44px;
+
+        border-left:
+            1px solid
+            color-mix(
+                in srgb,
+                var(--on-primary) 30%,
+                transparent
+            );
+
+        border-radius:
+            0
+            var(--medium-radius)
+            var(--medium-radius)
+            0;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+    }
+
+
+    .footer-spacer {
+
+        flex:
+            1;
+    }
+
+
+    /* ==================================================
+       Suggestions Popup
+       ================================================== */
+
+    .suggestions-popup {
+
+        position:
+            absolute;
+
+        z-index:
+            400;
+
+        top:
+            calc(
+                100%
+                + 4px
+            );
+
+        left:
+            60px;
+
+        width:
+            min(
+                420px,
+                calc(
+                    100vw
+                    - 100px
+                )
+            );
+
+        max-height:
+            320px;
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .suggestion-row {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            auto
+            minmax(0, 1fr);
+
+        gap:
+            10px;
+
+        align-items:
+            center;
+
+        min-height:
+            52px;
+
+        padding:
+            8px 10px;
+
+        border-bottom:
+            1px solid
+            var(--border-subtle);
+    }
+
+
+    .suggestion-row:last-child {
+
+        border-bottom:
+            none;
+    }
+
+
+    .suggestion-avatar {
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--surface-variant);
+    }
+
+
+    .suggestion-avatar img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+
+    .suggestion-name {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+
+        font-weight:
+            700;
+    }
+
+
+    .suggestion-email {
+
+        margin-top:
+            2px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            11px;
+    }
+
+
+    /* ==================================================
+       Schedule Menu
+       ================================================== */
+
+    .schedule-menu {
+
+        position:
+            absolute;
+
+        z-index:
+            450;
+
+        left:
+            14px;
+
+        bottom:
+            62px;
+
+        width:
+            260px;
+
+        padding:
+            8px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .schedule-option {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        min-height:
+            42px;
+
+        padding:
+            0 10px;
+
+        border-radius:
+            8px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            13px;
+    }
+
+
+    /* ==================================================
+       Draft Saved Banner
+       ================================================== */
+
+    .draft-banner {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        margin:
+            12px 18px 0;
+
+        padding:
+            10px 12px;
+
+        border-radius:
+            var(--medium-radius);
+
+        background:
+            var(--surface-variant);
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            12px;
+    }
+
+
+    /* ==================================================
+       Discard Dialog
+       ================================================== */
+
+    .discard-overlay {
+
+        position:
+            fixed;
+
+        inset:
+            0;
+
+        z-index:
+            700;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        padding:
+            24px;
+
+        background:
+            rgba(
+                0,
+                0,
+                0,
+                0.20
+            );
+    }
+
+
+    .discard-dialog {
+
+        width:
+            min(
+                420px,
+                100%
+            );
+
+        padding:
+            22px;
+
+        border:
+            1px solid
+            var(--border-subtle);
+
+        border-radius:
+            var(--large-radius);
+
+        background:
+            var(--surface);
+    }
+
+
+    .discard-title {
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            18px;
+
+        font-weight:
+            700;
+    }
+
+
+    .discard-text {
+
+        margin-top:
+            10px;
+
+        color:
+            var(--text-secondary);
+
+        font-size:
+            13px;
+
+        line-height:
+            1.5;
+    }
+
+
+    .discard-actions {
+
+        display:
+            flex;
+
+        justify-content:
+            flex-end;
+
+        gap:
+            8px;
+
+        margin-top:
+            20px;
+    }
+
+
+    /* ==================================================
+       Mobile
+       ================================================== */
+
+    @media (
+        max-width: 599px
+    ) {
+
+        .compose-app-bar {
+
+            min-height:
+                var(--mobile-header-height);
+
+            padding:
+                6px 8px;
+        }
+
+
+        .draft-state {
+
+            display:
+                none;
+        }
+
+
+        .compose-stage {
+
+            padding:
+                0;
+        }
+
+
+        .compose-card {
+
+            min-height:
+                calc(
+                    100vh
+                    - var(--mobile-header-height)
+                    - var(--status-bar-height)
+                );
+
+            border:
+                none;
+
+            border-radius:
+                0;
+        }
+
+
+        .compose-account {
+
+            padding:
+                10px 12px;
+        }
+
+
+        .field-row {
+
+            padding:
+                7px 12px;
+        }
+
+
+        .field-label {
+
+            width:
+                30px;
+        }
+
+
+        .cc-bcc-actions {
+
+            flex-direction:
+                column;
+
+            gap:
+                2px;
+        }
+
+
+        .subject-row {
+
+            padding:
+                0 12px;
+        }
+
+
+        .editor {
+
+            min-height:
+                310px;
+
+            padding:
+                14px 12px;
+        }
+
+
+        .compose-attachments {
+
+            grid-template-columns:
+                1fr;
+
+            padding:
+                0 12px 14px;
+        }
+
+
+        .compose-footer {
+
+            position:
+                sticky;
+
+            bottom:
+                0;
+
+            background:
+                var(--surface);
+        }
+
+
+        .desktop-compose-tool {
+
+            display:
+                none;
+        }
+
+
+        .suggestions-popup {
+
+            position:
+                fixed;
+
+            top:
+                146px;
+
+            left:
+                8px;
+
+            right:
+                8px;
+
+            width:
+                auto;
+
+            max-height:
+                360px;
+        }
+
+
+        .schedule-menu {
+
+            position:
+                fixed;
+
+            left:
+                10px;
+
+            right:
+                10px;
+
+            bottom:
+                72px;
+
+            width:
+                auto;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="compose-page state-{{ compose.state }}"
+    data-state="{{ compose.state }}"
+>
+
+    <!-- ==================================================
+         App Bar
+         ================================================== -->
+
+    <header
+        class="compose-app-bar"
+        data-class="app_bar"
+        data-semantic="compose_app_bar"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="close_compose_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="close_compose_icon"
+            >
+                close
+            </span>
+        </button>
+
+
+        <div
+            class="compose-page-title"
+            data-class="text"
+            data-semantic="compose_page_title"
+        >
+            {{ compose.title }}
+        </div>
+
+
+        {% if compose.draft_saved %}
+
+        <span
+            class="draft-state"
+            data-class="text"
+            data-semantic="draft_saved_status"
+        >
+            {{ compose.draft_time }}
+        </span>
+
+        {% endif %}
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="compose_more_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="compose_more_icon"
+            >
+                more_vert
+            </span>
+        </button>
+
+    </header>
+
+
+    <!-- ==================================================
+         Compose Surface
+         ================================================== -->
+
+    <main class="compose-stage">
+
+        <section
+            class="compose-card"
+            data-class="section"
+            data-semantic="compose_section"
+        >
+
+            <div
+                class="compose-account"
+                data-class="toolbar"
+                data-semantic="compose_account_bar"
+            >
+
+                <div
+                    class="compose-account-avatar"
+                    data-class="avatar"
+                    data-semantic="compose_account_avatar"
+                >
+
+                    {% if compose.from_account.avatar %}
+
+                    <img
+                        src="{{ compose.from_account.avatar }}"
+                        alt=""
+                    >
+
+                    {% endif %}
+
+                </div>
+
+
+                <div>
+
+                    <div
+                        class="compose-account-name"
+                        data-class="text"
+                        data-semantic="compose_account_name"
+                    >
+                        {{ compose.from_account.name }}
+                    </div>
+
+
+                    <div
+                        class="compose-account-email"
+                        data-class="text"
+                        data-semantic="compose_account_email"
+                    >
+                        {{ compose.from_account.email }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {% if compose.draft_saved %}
+
+            <div
+                class="draft-banner"
+                data-class="section"
+                data-semantic="draft_saved_banner"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="draft_saved_icon"
+                >
+                    cloud_done
+                </span>
+
+
+                <span
+                    data-class="text"
+                    data-semantic="draft_saved_text"
+                >
+                    Draft saved automatically
+                </span>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- ==========================================
+                 To
+                 ========================================== -->
+
+            <div class="field-row">
+
+                <div
+                    class="field-label"
+                    data-class="text"
+                    data-semantic="to_label"
+                >
+                    To
+                </div>
+
+
+                <div class="recipient-area">
+
+                    {% for recipient in compose.recipients %}
+
+                    <div
+                        class="recipient-chip"
+                        data-class="chip"
+                        data-semantic="{{ recipient.id }}"
+                    >
+
+                        <div
+                            class="recipient-avatar"
+                            data-class="avatar"
+                            data-semantic="{{ recipient.id }}_avatar"
+                        >
+
+                            {% if recipient.avatar %}
+
+                            <img
+                                src="{{ recipient.avatar }}"
+                                alt=""
+                            >
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <span
+                            class="truncate"
+                            data-class="text"
+                            data-semantic="{{ recipient.id }}_name"
+                        >
+                            {{ recipient.name }}
+                        </span>
+
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="{{ recipient.id }}_remove_icon"
+                            style="font-size:16px"
+                        >
+                            close
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+
+                    <input
+                        class="recipient-input"
+                        type="text"
+                        placeholder="Recipients"
+                        data-class="input_field"
+                        data-semantic="recipient_input"
+                    >
+
+                </div>
+
+
+                <div class="cc-bcc-actions">
+
+                    <button
+                        class="cc-bcc-button"
+                        data-class="button"
+                        data-semantic="cc_button"
+                    >
+                        Cc
+                    </button>
+
+
+                    <button
+                        class="cc-bcc-button"
+                        data-class="button"
+                        data-semantic="bcc_button"
+                    >
+                        Bcc
+                    </button>
+
+                </div>
+
+
+                {% if compose.suggestions %}
+
+                <div
+                    class="suggestions-popup"
+                    data-popup-focus="true"
+                    data-class="dialog"
+                    data-semantic="recipient_suggestions"
+                >
+
+                    {% for suggestion in compose.suggestions %}
+
+                    <div
+                        class="suggestion-row"
+                        data-class="list_item"
+                        data-semantic="{{ suggestion.id }}"
+                    >
+
+                        <div
+                            class="suggestion-avatar"
+                            data-class="avatar"
+                            data-semantic="{{ suggestion.id }}_avatar"
+                        >
+
+                            {% if suggestion.avatar %}
+
+                            <img
+                                src="{{ suggestion.avatar }}"
+                                alt=""
+                            >
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div>
+
+                            <div
+                                class="suggestion-name"
+                                data-class="text"
+                                data-semantic="{{ suggestion.id }}_name"
+                            >
+                                {{ suggestion.name }}
+                            </div>
+
+
+                            <div
+                                class="suggestion-email"
+                                data-class="text"
+                                data-semantic="{{ suggestion.id }}_email"
+                            >
+                                {{ suggestion.email }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- ==========================================
+                 CC / BCC
+                 ========================================== -->
+
+            {% if compose.show_cc_bcc %}
+
+            <div class="field-row">
+
+                <div
+                    class="field-label"
+                    data-class="text"
+                    data-semantic="cc_label"
+                >
+                    Cc
+                </div>
+
+
+                <div class="recipient-area">
+
+                    {% for recipient in compose.cc %}
+
+                    <div
+                        class="recipient-chip"
+                        data-class="chip"
+                        data-semantic="cc_{{ loop.index }}"
+                    >
+                        {{ recipient.email }}
+                    </div>
+
+                    {% endfor %}
+
+
+                    <input
+                        class="recipient-input"
+                        type="text"
+                        data-class="input_field"
+                        data-semantic="cc_input"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="field-row">
+
+                <div
+                    class="field-label"
+                    data-class="text"
+                    data-semantic="bcc_label"
+                >
+                    Bcc
+                </div>
+
+
+                <div class="recipient-area">
+
+                    {% for recipient in compose.bcc %}
+
+                    <div
+                        class="recipient-chip"
+                        data-class="chip"
+                        data-semantic="bcc_{{ loop.index }}"
+                    >
+                        {{ recipient.email }}
+                    </div>
+
+                    {% endfor %}
+
+
+                    <input
+                        class="recipient-input"
+                        type="text"
+                        data-class="input_field"
+                        data-semantic="bcc_input"
+                    >
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- ==========================================
+                 Subject
+                 ========================================== -->
+
+            <label
+                class="subject-row"
+                data-class="input_field"
+                data-semantic="subject_field"
+            >
+                <input
+                    class="subject-input"
+                    type="text"
+                    value="{{ compose.subject }}"
+                    placeholder="Subject"
+                >
+            </label>
+
+
+            <!-- ==========================================
+                 Body
+                 ========================================== -->
+
+            <textarea
+                class="editor"
+                data-class="input_field"
+                data-semantic="compose_body"
+                placeholder="Write a message"
+            >{{ compose.body }}</textarea>
+
+
+            <!-- ==========================================
+                 Attachments
+                 ========================================== -->
+
+            {% if compose.attachments %}
+
+            <div class="compose-attachments">
+
+                {% for attachment in compose.attachments %}
+
+                <section
+                    class="compose-attachment-card"
+                    data-class="card"
+                    data-semantic="{{ attachment.id }}"
+                >
+
+                    {% if attachment.preview %}
+
+                    <img
+                        class="compose-attachment-preview"
+                        src="{{ attachment.preview }}"
+                        alt=""
+                        data-class="image"
+                        data-semantic="{{ attachment.id }}_preview"
+                    >
+
+                    {% endif %}
+
+
+                    <div class="compose-attachment-info">
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="{{ attachment.id }}_icon"
+                        >
+                            attachment
+                        </span>
+
+
+                        <div style="min-width:0; flex:1">
+
+                            <div
+                                class="attachment-name truncate"
+                                data-class="text"
+                                data-semantic="{{ attachment.id }}_name"
+                            >
+                                {{ attachment.name }}
+                            </div>
+
+
+                            <div
+                                class="attachment-size"
+                                data-class="text"
+                                data-semantic="{{ attachment.id }}_size"
+                            >
+                                {{ attachment.size }}
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="{{ attachment.id }}_remove_button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="{{ attachment.id }}_remove_icon"
+                            >
+                                close
+                            </span>
+                        </button>
+
+                    </div>
+
+                </section>
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- ==========================================
+                 Footer
+                 ========================================== -->
+
+            <div
+                class="compose-footer"
+                data-class="toolbar"
+                data-semantic="compose_footer"
+            >
+
+                <div class="send-group">
+
+                    <button
+                        class="
+                            primary-button
+                            send-main
+                        "
+                        data-class="button"
+                        data-semantic="send_button"
+                    >
+                        Send
+                    </button>
+
+
+                    <button
+                        class="send-dropdown"
+                        data-class="button"
+                        data-semantic="schedule_send_button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="schedule_send_icon"
+                        >
+                            arrow_drop_down
+                        </span>
+                    </button>
+
+                </div>
+
+
+                {% for item in [
+                    ("attach_file", "attach"),
+                    ("insert_link", "link"),
+                    ("mood", "emoji"),
+                    ("image", "image"),
+                    ("format_color_text", "format")
+                ] %}
+
+                <button
+                    class="
+                        icon-button
+                        {% if loop.index > 3 %}
+                        desktop-compose-tool
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="{{ item[1] }}_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="{{ item[1] }}_icon"
+                    >
+                        {{ item[0] }}
+                    </span>
+                </button>
+
+                {% endfor %}
+
+
+                <div class="footer-spacer"></div>
+
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="discard_button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="discard_icon"
+                    >
+                        delete
+                    </span>
+                </button>
+
+
+                {% if compose.schedule_menu_open %}
+
+                <div
+                    class="schedule-menu"
+                    data-popup-focus="true"
+                    data-class="dialog"
+                    data-semantic="schedule_menu"
+                >
+
+                    {% for option in compose.schedule_options %}
+
+                    <div
+                        class="schedule-option"
+                        data-class="list_item"
+                        data-semantic="schedule_option_{{ loop.index }}"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="schedule_option_{{ loop.index }}_icon"
+                        >
+                            schedule
+                        </span>
+
+
+                        <span
+                            data-class="text"
+                            data-semantic="schedule_option_{{ loop.index }}_text"
+                        >
+                            {{ option }}
+                        </span>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- ==================================================
+         Discard Confirmation
+         Overlay intentionally has no data-class.
+         ================================================== -->
+
+    {% if compose.discard_confirm_open %}
+
+    <div class="discard-overlay">
+
+        <section
+            class="discard-dialog"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="discard_confirmation"
+        >
+
+            <div
+                class="discard-title"
+                data-class="text"
+                data-semantic="discard_title"
+            >
+                Discard draft?
+            </div>
+
+
+            <div
+                class="discard-text"
+                data-class="text"
+                data-semantic="discard_message"
+            >
+                This draft contains unsaved changes.
+                Are you sure you want to discard it?
+            </div>
+
+
+            <div class="discard-actions">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_discard_button"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_discard_button"
+                >
+                    Discard
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ==================================================
+     Popup Annotation Focus
+
+     When one of the popup states is rendered, annotations
+     from the underlying/background UI are removed before
+     the common renderer extracts bounding boxes.
+
+     The popup itself and every annotated descendant inside
+     it remain unchanged.
+
+     Non-popup states are unaffected.
+     ================================================== -->
+
+<script>
+
+    (() => {
+
+        const popupFocus = document.querySelector(
+            '[data-popup-focus="true"]'
+        );
+
+
+        // --------------------------------------------------
+        // Normal page state:
+        // keep all annotations.
+        // --------------------------------------------------
+
+        if (!popupFocus) {
+            return;
+        }
+
+
+        // --------------------------------------------------
+        // Popup state:
+        // remove annotations everywhere except the popup
+        // itself and elements contained inside the popup.
+        // --------------------------------------------------
+
+        document
+            .querySelectorAll(
+                "[data-class]"
+            )
+            .forEach(
+                (element) => {
+
+                    const belongsToPopup = (
+                        element === popupFocus
+                        || popupFocus.contains(
+                            element
+                        )
+                    );
+
+
+                    if (!belongsToPopup) {
+
+                        element.removeAttribute(
+                            "data-class"
+                        );
+
+                        element.removeAttribute(
+                            "data-semantic"
+                        );
+                    }
+                }
+            );
+
+
+        // --------------------------------------------------
+        // Mark document state for debugging.
+        // --------------------------------------------------
+
+        document.documentElement.setAttribute(
+            "data-popup-annotation-mode",
+            "popup-only"
+        );
+
+    })();
+
+</script>
+
+{% endblock %}

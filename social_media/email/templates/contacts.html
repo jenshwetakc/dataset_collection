@@ -1,0 +1,1502 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Contacts · Email
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .contacts-page {
+        min-height: calc(100vh - var(--status-bar-height));
+        background: var(--background);
+    }
+
+    /* ==================================================
+       App Bar
+       ================================================== */
+
+    .contacts-app-bar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: grid;
+        grid-template-columns: auto minmax(220px, 620px) auto;
+        align-items: center;
+        gap: 12px;
+        min-height: var(--desktop-header-height);
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .contacts-title-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .contacts-title {
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .contacts-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 0 14px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--pill-radius);
+        background: var(--surface-variant);
+    }
+
+    .contacts-search input {
+        flex: 1;
+        min-width: 0;
+        color: var(--text-primary);
+        font-size: 14px;
+    }
+
+    /* ==================================================
+       Main Layout
+       ================================================== */
+
+    .contacts-layout {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        min-height: calc(100vh - var(--desktop-header-height));
+    }
+
+    .contacts-sidebar {
+        position: sticky;
+        top: var(--desktop-header-height);
+        align-self: start;
+        min-height: calc(100vh - var(--desktop-header-height));
+        padding: 14px 12px;
+        border-right: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .contacts-sidebar-section + .contacts-sidebar-section {
+        margin-top: 18px;
+    }
+
+    .contacts-sidebar-title {
+        margin: 0 12px 8px;
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .contacts-sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        padding: 0 12px;
+        border-radius: var(--pill-radius);
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .contacts-sidebar-item.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .contacts-main {
+        min-width: 0;
+        padding: 20px;
+    }
+
+    .contacts-content-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .contacts-content-grid.with-details {
+        grid-template-columns: minmax(360px, 1fr) minmax(320px, 420px);
+    }
+
+    /* ==================================================
+       List
+       ================================================== */
+
+    .contacts-list-card {
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--large-radius);
+        background: var(--surface);
+    }
+
+    .contacts-list-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 54px;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .contacts-count {
+        margin-right: auto;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .contact-row {
+        display: grid;
+        grid-template-columns: auto minmax(160px, 220px) minmax(180px, 1fr) auto auto;
+        gap: 10px;
+        align-items: center;
+        min-height: 66px;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .contact-row:last-child {
+        border-bottom: none;
+    }
+
+    .contact-row.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .contact-avatar {
+        width: 38px;
+        height: 38px;
+        overflow: hidden;
+        border-radius: 50%;
+        background: var(--surface-variant);
+    }
+
+    .contact-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .contact-name {
+        min-width: 0;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .contact-email {
+        min-width: 0;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .contact-group {
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    .favorite-icon {
+        color: var(--warning);
+    }
+
+    /* ==================================================
+       Grouped
+       ================================================== */
+
+    .group-section + .group-section {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .group-heading {
+        padding: 12px 14px;
+        background: var(--surface-variant);
+        color: var(--text-primary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    /* ==================================================
+       Details
+       ================================================== */
+
+    .contact-details {
+        align-self: start;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--large-radius);
+        background: var(--surface);
+    }
+
+    .contact-details-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px 20px 18px;
+        text-align: center;
+    }
+
+    .details-avatar {
+        width: 82px;
+        height: 82px;
+        overflow: hidden;
+        border-radius: 50%;
+        background: var(--surface-variant);
+    }
+
+    .details-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .details-name {
+        margin-top: 12px;
+        color: var(--text-primary);
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .details-role {
+        margin-top: 4px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .details-actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    .details-row {
+        display: grid;
+        grid-template-columns: 110px minmax(0, 1fr);
+        gap: 10px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .details-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .details-value {
+        min-width: 0;
+        color: var(--text-primary);
+        font-size: 13px;
+    }
+
+    /* ==================================================
+       Contact Form
+       ================================================== */
+
+    .contact-form {
+        max-width: 760px;
+        margin: 0 auto;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--large-radius);
+        background: var(--surface);
+    }
+
+    .contact-form-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .contact-form-title {
+        flex: 1;
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .contact-form-body {
+        padding: 18px 20px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .form-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .form-input {
+        min-height: 44px;
+        padding: 0 12px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--medium-radius);
+        background: var(--background);
+        color: var(--text-primary);
+        font-size: 13px;
+    }
+
+    .form-textarea {
+        min-height: 120px;
+        padding: 12px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--medium-radius);
+        background: var(--background);
+        color: var(--text-primary);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .contact-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 16px 20px 20px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    /* ==================================================
+       Delete Confirmation
+       ================================================== */
+
+    .delete-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(0,0,0,0.18);
+    }
+
+    .delete-dialog {
+        width: min(420px, 100%);
+        padding: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--large-radius);
+        background: var(--surface);
+    }
+
+    .delete-title {
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .delete-text {
+        margin-top: 10px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .delete-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    /* ==================================================
+       Mobile Sheet
+       ================================================== */
+
+    .mobile-details-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 720;
+        display: flex;
+        align-items: flex-end;
+        background: rgba(0,0,0,0.18);
+    }
+
+    .mobile-details-sheet {
+        width: 100%;
+        max-height: 82vh;
+        overflow: auto;
+        border-radius: 22px 22px 0 0;
+        background: var(--surface);
+    }
+
+    .sheet-handle {
+        width: 40px;
+        height: 4px;
+        margin: 10px auto 2px;
+        border-radius: var(--pill-radius);
+        background: var(--border);
+    }
+
+    /* ==================================================
+       Mobile
+       ================================================== */
+
+    @media (max-width: 599px) {
+
+        .contacts-app-bar {
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            min-height: var(--mobile-header-height);
+            padding: 6px 8px;
+        }
+
+        .contacts-title {
+            display: none;
+        }
+
+        .contacts-layout {
+            display: block;
+        }
+
+        .contacts-sidebar {
+            display: none;
+        }
+
+        .contacts-main {
+            padding: 8px;
+        }
+
+        .contacts-content-grid.with-details {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .contact-details {
+            display: none;
+        }
+
+        .contact-row {
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            grid-template-areas:
+                "avatar name favorite"
+                "avatar email group";
+            gap: 3px 10px;
+            min-height: 74px;
+            padding: 9px 10px;
+        }
+
+        .contact-avatar {
+            grid-area: avatar;
+        }
+
+        .contact-name {
+            grid-area: name;
+        }
+
+        .contact-email {
+            grid-area: email;
+        }
+
+        .contact-group {
+            grid-area: group;
+        }
+
+        .contact-favorite-button {
+            grid-area: favorite;
+        }
+
+        .contact-email-action {
+            display: none;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-field.full {
+            grid-column: auto;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div
+    class="contacts-page state-{{ contacts.state }}"
+    data-state="{{ contacts.state }}"
+>
+
+    <!-- ==================================================
+         App Bar
+         ================================================== -->
+
+    <header
+        class="contacts-app-bar"
+        data-class="app_bar"
+        data-semantic="contacts_app_bar"
+    >
+
+        <div class="contacts-title-group">
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="contacts_back_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="contacts_back_icon"
+                >
+                    arrow_back
+                </span>
+            </button>
+
+
+            <div
+                class="contacts-title"
+                data-class="text"
+                data-semantic="contacts_title"
+            >
+                {{ contacts.title }}
+            </div>
+
+        </div>
+
+
+        <label
+            class="contacts-search"
+            data-class="search_bar"
+            data-semantic="contacts_search"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="contacts_search_icon"
+            >
+                search
+            </span>
+
+
+            <input
+                type="text"
+                value="{{ contacts.search_query }}"
+                placeholder="Search contacts"
+                data-class="input_field"
+                data-semantic="contacts_search_input"
+            >
+
+        </label>
+
+
+        <button
+            class="primary-button"
+            data-class="button"
+            data-semantic="add_contact_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="add_contact_icon"
+            >
+                person_add
+            </span>
+
+            <span
+                data-class="text"
+                data-semantic="add_contact_label"
+            >
+                Add
+            </span>
+        </button>
+
+    </header>
+
+
+    <div class="contacts-layout">
+
+        <!-- ==============================================
+             Sidebar
+             ============================================== -->
+
+        <aside
+            class="contacts-sidebar"
+            data-class="navigation_bar"
+            data-semantic="contacts_sidebar"
+        >
+
+            <div class="contacts-sidebar-section">
+
+                {% for tab in contacts.tabs %}
+
+                <div
+                    class="
+                        contacts-sidebar-item
+
+                        {% if
+                            (tab == "Favorites" and contacts.state == "favorites")
+                            or
+                            (tab == "Groups" and contacts.state == "grouped")
+                            or
+                            (tab == "All" and contacts.state not in ["favorites", "grouped"])
+                        %}
+                        active
+                        {% endif %}
+                    "
+                    data-class="navigation_item"
+                    data-semantic="contacts_tab_{{ loop.index }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="contacts_tab_{{ loop.index }}_icon"
+                    >
+                        {% if tab == "Favorites" %}
+                            star
+                        {% elif tab == "Groups" %}
+                            group
+                        {% else %}
+                            contacts
+                        {% endif %}
+                    </span>
+
+
+                    <span
+                        data-class="text"
+                        data-semantic="contacts_tab_{{ loop.index }}_label"
+                    >
+                        {{ tab }}
+                    </span>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <div class="contacts-sidebar-section">
+
+                <div
+                    class="contacts-sidebar-title"
+                    data-class="text"
+                    data-semantic="groups_heading"
+                >
+                    Groups
+                </div>
+
+
+                {% for group_name in ["Work", "Family", "Friends", "Other"] %}
+
+                <div
+                    class="contacts-sidebar-item"
+                    data-class="navigation_item"
+                    data-semantic="group_nav_{{ loop.index }}"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="group_nav_{{ loop.index }}_icon"
+                    >
+                        label
+                    </span>
+
+                    <span
+                        data-class="text"
+                        data-semantic="group_nav_{{ loop.index }}_label"
+                    >
+                        {{ group_name }}
+                    </span>
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </aside>
+
+
+        <main class="contacts-main">
+
+            {% if contacts.show_add_contact or contacts.show_edit_contact %}
+
+            <!-- ==========================================
+                 Add / Edit Form
+                 ========================================== -->
+
+            <section
+                class="contact-form"
+                data-class="section"
+                data-semantic="contact_form_section"
+            >
+
+                <div
+                    class="contact-form-header"
+                    data-class="toolbar"
+                    data-semantic="contact_form_header"
+                >
+
+                    <div
+                        class="contact-form-title"
+                        data-class="text"
+                        data-semantic="contact_form_title"
+                    >
+                        {% if contacts.show_edit_contact %}
+                            Edit contact
+                        {% else %}
+                            Add contact
+                        {% endif %}
+                    </div>
+
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="close_contact_form_button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="close_contact_form_icon"
+                        >
+                            close
+                        </span>
+                    </button>
+
+                </div>
+
+
+                <div class="contact-form-body">
+
+                    <div class="form-grid">
+
+                        {% for field in [
+                            ("name", "Name"),
+                            ("email", "Email"),
+                            ("phone", "Phone"),
+                            ("company", "Company"),
+                            ("role", "Role")
+                        ] %}
+
+                        <label class="form-field">
+
+                            <span
+                                class="form-label"
+                                data-class="text"
+                                data-semantic="form_{{ field[0] }}_label"
+                            >
+                                {{ field[1] }}
+                            </span>
+
+
+                            <input
+                                class="form-input"
+                                type="text"
+                                value="{{ contacts.form[field[0]] }}"
+                                data-class="input_field"
+                                data-semantic="form_{{ field[0] }}_input"
+                            >
+
+                        </label>
+
+                        {% endfor %}
+
+
+                        <label class="form-field full">
+
+                            <span
+                                class="form-label"
+                                data-class="text"
+                                data-semantic="form_notes_label"
+                            >
+                                Notes
+                            </span>
+
+
+                            <textarea
+                                class="form-textarea"
+                                data-class="input_field"
+                                data-semantic="form_notes_input"
+                            >{{ contacts.form.notes }}</textarea>
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="contact-form-actions"
+                    data-class="toolbar"
+                    data-semantic="contact_form_actions"
+                >
+
+                    <button
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="cancel_contact_button"
+                    >
+                        Cancel
+                    </button>
+
+
+                    <button
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="save_contact_button"
+                    >
+                        Save contact
+                    </button>
+
+                </div>
+
+            </section>
+
+            {% else %}
+
+            <!-- ==========================================
+                 Contact List + Optional Details
+                 ========================================== -->
+
+            <div
+                class="
+                    contacts-content-grid
+
+                    {% if contacts.show_selected %}
+                    with-details
+                    {% endif %}
+                "
+            >
+
+                <section
+                    class="contacts-list-card"
+                    data-class="section"
+                    data-semantic="contacts_list_section"
+                >
+
+                    <div
+                        class="contacts-list-header"
+                        data-class="toolbar"
+                        data-semantic="contacts_list_header"
+                    >
+
+                        <span
+                            class="contacts-count"
+                            data-class="text"
+                            data-semantic="contacts_count"
+                        >
+                            {{ contacts.contacts | length }} contacts
+                        </span>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="sort_contacts_button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="sort_contacts_icon"
+                            >
+                                sort_by_alpha
+                            </span>
+                        </button>
+
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="contacts_more_button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="contacts_more_icon"
+                            >
+                                more_vert
+                            </span>
+                        </button>
+
+                    </div>
+
+
+                    {% if contacts.state == "grouped" %}
+
+                        {% for group_name, group_contacts in contacts.groups.items() %}
+
+                        <section
+                            class="group-section"
+                            data-class="section"
+                            data-semantic="group_{{ loop.index }}"
+                        >
+
+                            <div
+                                class="group-heading"
+                                data-class="text"
+                                data-semantic="group_{{ loop.index }}_heading"
+                            >
+                                {{ group_name }}
+                            </div>
+
+
+                            {% for contact in group_contacts %}
+
+                                {% include "contact_row.html" ignore missing %}
+
+                                <article
+                                    class="contact-row"
+                                    data-class="list_item"
+                                    data-semantic="{{ contact.id }}"
+                                >
+
+                                    <div
+                                        class="contact-avatar"
+                                        data-class="avatar"
+                                        data-semantic="{{ contact.id }}_avatar"
+                                    >
+                                        {% if contact.avatar %}
+                                        <img
+                                            src="{{ contact.avatar }}"
+                                            alt=""
+                                        >
+                                        {% endif %}
+                                    </div>
+
+
+                                    <div
+                                        class="contact-name truncate"
+                                        data-class="text"
+                                        data-semantic="{{ contact.id }}_name"
+                                    >
+                                        {{ contact.name }}
+                                    </div>
+
+
+                                    <div
+                                        class="contact-email truncate"
+                                        data-class="text"
+                                        data-semantic="{{ contact.id }}_email"
+                                    >
+                                        {{ contact.email }}
+                                    </div>
+
+
+                                    <div
+                                        class="contact-group"
+                                        data-class="chip"
+                                        data-semantic="{{ contact.id }}_group"
+                                    >
+                                        {{ contact.group }}
+                                    </div>
+
+
+                                    <button
+                                        class="icon-button contact-favorite-button"
+                                        data-class="button"
+                                        data-semantic="{{ contact.id }}_favorite_button"
+                                    >
+                                        <span
+                                            class="
+                                                material-symbols-rounded
+                                                {% if contact.favorite %}
+                                                favorite-icon
+                                                {% endif %}
+                                            "
+                                            data-class="icon"
+                                            data-semantic="{{ contact.id }}_favorite_icon"
+                                        >
+                                            {% if contact.favorite %}
+                                                star
+                                            {% else %}
+                                                star_border
+                                            {% endif %}
+                                        </span>
+                                    </button>
+
+                                </article>
+
+                            {% endfor %}
+
+                        </section>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                        {% for contact in contacts.contacts %}
+
+                        <article
+                            class="
+                                contact-row
+                                {% if
+                                    contacts.selected_contact
+                                    and
+                                    contact.id == contacts.selected_contact.id
+                                    and
+                                    contacts.show_selected
+                                %}
+                                selected
+                                {% endif %}
+                            "
+                            data-class="list_item"
+                            data-semantic="{{ contact.id }}"
+                        >
+
+                            <div
+                                class="contact-avatar"
+                                data-class="avatar"
+                                data-semantic="{{ contact.id }}_avatar"
+                            >
+                                {% if contact.avatar %}
+                                <img
+                                    src="{{ contact.avatar }}"
+                                    alt=""
+                                >
+                                {% endif %}
+                            </div>
+
+
+                            <div
+                                class="contact-name truncate"
+                                data-class="text"
+                                data-semantic="{{ contact.id }}_name"
+                            >
+                                {{ contact.name }}
+                            </div>
+
+
+                            <div
+                                class="contact-email truncate"
+                                data-class="text"
+                                data-semantic="{{ contact.id }}_email"
+                            >
+                                {{ contact.email }}
+                            </div>
+
+
+                            <div
+                                class="contact-group"
+                                data-class="chip"
+                                data-semantic="{{ contact.id }}_group"
+                            >
+                                {{ contact.group }}
+                            </div>
+
+
+                            <button
+                                class="icon-button contact-favorite-button"
+                                data-class="button"
+                                data-semantic="{{ contact.id }}_favorite_button"
+                            >
+                                <span
+                                    class="
+                                        material-symbols-rounded
+                                        {% if contact.favorite %}
+                                        favorite-icon
+                                        {% endif %}
+                                    "
+                                    data-class="icon"
+                                    data-semantic="{{ contact.id }}_favorite_icon"
+                                >
+                                    {% if contact.favorite %}
+                                        star
+                                    {% else %}
+                                        star_border
+                                    {% endif %}
+                                </span>
+                            </button>
+
+                        </article>
+
+                        {% endfor %}
+
+                    {% endif %}
+
+                </section>
+
+
+                {% if contacts.show_selected and contacts.selected_contact %}
+
+                <aside
+                    class="contact-details"
+                    data-class="section"
+                    data-semantic="contact_details_section"
+                >
+
+                    <div class="contact-details-header">
+
+                        <div
+                            class="details-avatar"
+                            data-class="avatar"
+                            data-semantic="details_avatar"
+                        >
+                            {% if contacts.selected_contact.avatar %}
+                            <img
+                                src="{{ contacts.selected_contact.avatar }}"
+                                alt=""
+                            >
+                            {% endif %}
+                        </div>
+
+
+                        <div
+                            class="details-name"
+                            data-class="text"
+                            data-semantic="details_name"
+                        >
+                            {{ contacts.selected_contact.name }}
+                        </div>
+
+
+                        <div
+                            class="details-role"
+                            data-class="text"
+                            data-semantic="details_role"
+                        >
+                            {{ contacts.selected_contact.role }}
+                        </div>
+
+
+                        <div class="details-actions">
+
+                            <button
+                                class="primary-button"
+                                data-class="button"
+                                data-semantic="email_contact_button"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                    data-semantic="email_contact_icon"
+                                >
+                                    mail
+                                </span>
+                                Email
+                            </button>
+
+
+                            <button
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="edit_contact_button"
+                            >
+                                Edit
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    {% for row in [
+                        ("Email", contacts.selected_contact.email),
+                        ("Phone", contacts.selected_contact.phone),
+                        ("Company", contacts.selected_contact.company),
+                        ("Group", contacts.selected_contact.group),
+                        ("Notes", contacts.selected_contact.notes)
+                    ] %}
+
+                    <div
+                        class="details-row"
+                        data-class="list_item"
+                        data-semantic="details_row_{{ loop.index }}"
+                    >
+
+                        <div
+                            class="details-label"
+                            data-class="text"
+                            data-semantic="details_row_{{ loop.index }}_label"
+                        >
+                            {{ row[0] }}
+                        </div>
+
+
+                        <div
+                            class="details-value"
+                            data-class="text"
+                            data-semantic="details_row_{{ loop.index }}_value"
+                        >
+                            {{ row[1] }}
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </aside>
+
+                {% endif %}
+
+            </div>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+
+    <!-- ==================================================
+         Delete Confirmation
+         ================================================== -->
+
+    {% if contacts.show_delete_confirm and contacts.selected_contact %}
+
+    <div class="delete-overlay">
+
+        <section
+            class="delete-dialog"
+            data-popup-focus="true"
+            data-class="dialog"
+            data-semantic="delete_contact_dialog"
+        >
+
+            <div
+                class="delete-title"
+                data-class="text"
+                data-semantic="delete_contact_title"
+            >
+                Delete contact?
+            </div>
+
+
+            <div
+                class="delete-text"
+                data-class="text"
+                data-semantic="delete_contact_text"
+            >
+                {{ contacts.selected_contact.name }}
+                will be removed from your contacts.
+                This action cannot be undone.
+            </div>
+
+
+            <div class="delete-actions">
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_delete_contact"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_delete_contact"
+                >
+                    Delete
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Mobile Contact Details Sheet
+         ================================================== -->
+
+    {% if contacts.show_mobile_details_sheet and contacts.selected_contact %}
+
+    <div class="mobile-details-overlay">
+
+        <section
+            class="mobile-details-sheet"
+            data-popup-focus="true"
+            data-class="bottom_sheet"
+            data-semantic="mobile_contact_details_sheet"
+        >
+
+            <div class="sheet-handle"></div>
+
+
+            <div class="contact-details-header">
+
+                <div
+                    class="details-avatar"
+                    data-class="avatar"
+                    data-semantic="mobile_details_avatar"
+                >
+                    {% if contacts.selected_contact.avatar %}
+                    <img
+                        src="{{ contacts.selected_contact.avatar }}"
+                        alt=""
+                    >
+                    {% endif %}
+                </div>
+
+
+                <div
+                    class="details-name"
+                    data-class="text"
+                    data-semantic="mobile_details_name"
+                >
+                    {{ contacts.selected_contact.name }}
+                </div>
+
+
+                <div
+                    class="details-role"
+                    data-class="text"
+                    data-semantic="mobile_details_role"
+                >
+                    {{ contacts.selected_contact.role }}
+                </div>
+
+            </div>
+
+
+            {% for row in [
+                ("Email", contacts.selected_contact.email),
+                ("Phone", contacts.selected_contact.phone),
+                ("Company", contacts.selected_contact.company),
+                ("Group", contacts.selected_contact.group)
+            ] %}
+
+            <div
+                class="details-row"
+                data-class="list_item"
+                data-semantic="mobile_details_row_{{ loop.index }}"
+            >
+
+                <div
+                    class="details-label"
+                    data-class="text"
+                    data-semantic="mobile_details_row_{{ loop.index }}_label"
+                >
+                    {{ row[0] }}
+                </div>
+
+
+                <div
+                    class="details-value"
+                    data-class="text"
+                    data-semantic="mobile_details_row_{{ loop.index }}_value"
+                >
+                    {{ row[1] }}
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+
+            <div
+                class="details-actions"
+                style="padding:16px"
+            >
+
+                <button
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="mobile_email_contact_button"
+                >
+                    Email
+                </button>
+
+
+                <button
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="mobile_edit_contact_button"
+                >
+                    Edit
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         Popup-only annotation mode
+         ================================================== -->
+
+    <script>
+
+        (() => {
+
+            const popupFocus =
+                document.querySelector(
+                    '[data-popup-focus="true"]'
+                );
+
+            if (!popupFocus) {
+                return;
+            }
+
+            document
+                .querySelectorAll(
+                    "[data-class]"
+                )
+                .forEach(
+                    (element) => {
+
+                        const belongsToPopup = (
+                            element === popupFocus
+                            || popupFocus.contains(
+                                element
+                            )
+                        );
+
+                        if (!belongsToPopup) {
+
+                            element.removeAttribute(
+                                "data-class"
+                            );
+
+                            element.removeAttribute(
+                                "data-semantic"
+                            );
+                        }
+                    }
+                );
+
+            document.documentElement.setAttribute(
+                "data-popup-annotation-mode",
+                "popup-only"
+            );
+
+        })();
+
+    </script>
+
+</div>
+
+{% endblock %}
