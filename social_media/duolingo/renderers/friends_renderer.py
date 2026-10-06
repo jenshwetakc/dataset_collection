@@ -3,74 +3,27 @@ from __future__ import annotations
 import asyncio
 import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.common.system_generator import (
     generate_system_data,
 )
-
 from social_media.common.viewport import (
     get_viewports_by_names,
 )
-
 from social_media.duolingo.generators.friends_generator import (
     generate_friends_data,
 )
-
 from social_media.duolingo.renderers.common_renderer import (
     render_duolingo_page,
 )
 
 
-# ==========================================================
-# Configuration
-# ==========================================================
+NUM_SAMPLES = 20
 
-# NUM_SAMPLES = 50
-#
-#
-# SELECTED_VIEWPORTS = [
-#     "small_mobile",
-#     "desktop_fhd",
-# ]
-#
-#
-# ANNOTATION_PROFILES = [
-#     "big_components",
-#     "components",
-#     "small_elements",
-#     "icons_only",
-# ]
-#
-#
-# THEME_MODE = "random"
-#
-#
-# CAPTURE_FULL_PAGE = True
-#
-# CAPTURE_VIEWPORTS = True
-#
-#
-# SCROLL_PERCENTAGES = [
-#     0,
-#     10,
-#     20,
-#     30,
-#     40,
-#     50,
-#     60,
-#     70,
-#     80,
-#     90,
-#     100,
-# ]
-NUM_SAMPLES = 50
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -90,19 +43,14 @@ SELECTED_VIEWPORTS = [
     "ultrawide",
 ]
 
-# ANNOTATION_PROFILES = [
-#     "big_components",
-#     "icons_only",
-# ]
 ANNOTATION_PROFILES = [
+    "big_components",
     "small_elements",
 ]
 
 THEME_MODE = "random"
 
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
-
 CAPTURE_VIEWPORTS = True
 
 SCROLL_PERCENTAGES = [
@@ -113,155 +61,129 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
-def generate_theme():
+MAX_CONCURRENT_WORKERS = 4
 
+
+def generate_theme() -> dict:
     mode = (
-        random.choice(
-            [
-                "light",
-                "dark",
-            ]
-        )
-        if THEME_MODE
-        == "random"
+        random.choice(["light", "dark"])
+        if THEME_MODE == "random"
         else THEME_MODE
     )
-
-    return generate_accessible_theme(
-        mode=mode
-    )
+    return generate_accessible_theme(mode=mode)
 
 
-async def main():
-
-    viewports = (
-        get_viewports_by_names(
-            SELECTED_VIEWPORTS
-        )
-    )
-
-
-    async with async_playwright() as playwright:
-
-        browser = await playwright.chromium.launch(
-            headless=True
-        )
-
-
+async def render_friends_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    friends_data: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
         try:
+            print(
+                f"[DUOLINGO FRIENDS] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"theme={theme['mode']}"
+            )
 
-            for sample_index in range(
-                1,
-                NUM_SAMPLES + 1,
-            ):
+            await render_duolingo_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="friends",
+                template_name="friends.html",
+                context_key="friends",
+                page_data=friends_data,
+                system=system,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="friends",
+                annotation_profiles=ANNOTATION_PROFILES,
+                capture_full_page=CAPTURE_FULL_PAGE,
+                capture_viewports=CAPTURE_VIEWPORTS,
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
 
-                friends_data = (
-                    generate_friends_data()
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
+        except Exception as error:
+            print(
+                f"[DUOLINGO FRIENDS FAILED] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
+
+
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(SELECTED_VIEWPORTS)
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
+
+    for sample_index in range(1, NUM_SAMPLES + 1):
+        friends_data = generate_friends_data()
+        system = generate_system_data()
+        theme = generate_theme()
+
+        print("\n======================================")
+        print("DUOLINGO FRIENDS")
+        print("Sample:", sample_index)
+        print("Requests:", len(friends_data["requests"]))
+        print("Theme:", theme["mode"])
+        print("======================================")
+
+        for viewport in viewports:
+            jobs.append(
+                render_friends_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    friends_data=friends_data,
+                    system=system,
+                    theme=theme,
+                    viewport=viewport,
                 )
+            )
 
-                theme = (
-                    generate_theme()
-                )
+    results = await asyncio.gather(*jobs)
 
-                system = (
-                    generate_system_data()
-                )
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
 
-
-                print(
-                    "\n"
-                    "======================================"
-                )
-
-                print(
-                    "DUOLINGO FRIENDS"
-                )
-
-                print(
-                    "Sample:",
-                    sample_index
-                )
-
-                print(
-                    "Requests:",
-                    len(
-                        friends_data[
-                            "requests"
-                        ]
-                    )
-                )
-
-                print(
-                    "Theme:",
-                    theme["mode"]
-                )
-
-                print(
-                    "======================================"
-                )
+    print(
+        f"[DUOLINGO FRIENDS COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
 
 
-                for viewport in viewports:
-
-                    print(
-                        "Rendering:",
-                        viewport["name"]
-                    )
-
-
-                    await render_duolingo_page(
-
-                        browser=
-                            browser,
-
-                        sample_index=
-                            sample_index,
-
-                        page_type=
-                            "friends",
-
-                        template_name=
-                            "friends.html",
-
-                        context_key=
-                            "friends",
-
-                        page_data=
-                            friends_data,
-
-                        system=
-                            system,
-
-                        theme=
-                            theme,
-
-                        viewport=
-                            viewport,
-
-                        output_subdir=
-                            "friends",
-
-                        annotation_profiles=
-                            ANNOTATION_PROFILES,
-
-                        capture_full_page=
-                            CAPTURE_FULL_PAGE,
-
-                        capture_viewports=
-                            CAPTURE_VIEWPORTS,
-
-                        scroll_percentages=
-                            SCROLL_PERCENTAGES,
-                    )
-
-
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
+        try:
+            await main(browser)
         finally:
-
             await browser.close()
 
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())

@@ -3,93 +3,27 @@ from __future__ import annotations
 import asyncio
 import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
-from social_media.common.viewport import (
-    get_viewports_by_names,
-)
-
 from social_media.common.system_generator import (
     generate_system_data,
 )
-
+from social_media.common.viewport import (
+    get_viewports_by_names,
+)
 from social_media.duolingo.generators.home_generator import (
     generate_home_data,
 )
-
 from social_media.duolingo.renderers.common_renderer import (
     render_duolingo_page,
 )
 
 
-# ==========================================================
-# Configuration
-# ==========================================================
+NUM_SAMPLES = 20
 
-# NUM_SAMPLES = 3
-#
-#
-# SELECTED_VIEWPORTS = [
-#
-#     "small_mobile",
-#
-#     "laptop",
-#
-#     "desktop_fhd",
-# ]
-#
-#
-# ANNOTATION_PROFILES = [
-#
-#     "big_components",
-#
-#     "components",
-#
-#     "small_elements",
-#
-#     "icons_only",
-# ]
-#
-#
-# THEME_MODE = "random"
-#
-#
-# CAPTURE_FULL_PAGE = True
-#
-# CAPTURE_VIEWPORTS = True
-#
-#
-# SCROLL_PERCENTAGES = [
-#
-#     0,
-#
-#     10,
-#
-#     20,
-#
-#     30,
-#
-#     40,
-#
-#     50,
-#
-#     60,
-#
-#     70,
-#
-#     80,
-#
-#     90,
-#
-#     100,
-# ]
-NUM_SAMPLES = 50
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -111,15 +45,12 @@ SELECTED_VIEWPORTS = [
 
 ANNOTATION_PROFILES = [
     "big_components",
-    "icons_only",
+    "small_elements",
 ]
-
 
 THEME_MODE = "random"
 
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
-
 CAPTURE_VIEWPORTS = True
 
 SCROLL_PERCENTAGES = [
@@ -130,173 +61,128 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
-# ==========================================================
-# Resolve Theme
-# ==========================================================
+MAX_CONCURRENT_WORKERS = 4
 
-def generate_theme():
 
-    if THEME_MODE == "random":
-
-        mode = random.choice(
-            [
-                "light",
-                "dark",
-            ]
-        )
-
-    else:
-
-        mode = THEME_MODE
-
-    return generate_accessible_theme(
-        mode=mode
+def generate_theme() -> dict:
+    mode = (
+        random.choice(["light", "dark"])
+        if THEME_MODE == "random"
+        else THEME_MODE
     )
+    return generate_accessible_theme(mode=mode)
 
 
-# ==========================================================
-# Main
-# ==========================================================
-
-async def main():
-
-    viewports = (
-        get_viewports_by_names(
-            SELECTED_VIEWPORTS
-        )
-    )
-
-
-    async with async_playwright() as playwright:
-
-        browser = await playwright.chromium.launch(
-            headless=True
-        )
-
-
+async def render_home_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    home_data: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
         try:
+            print(
+                f"[DUOLINGO HOME] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"theme={theme['mode']}"
+            )
 
-            for sample_index in range(
-                1,
-                NUM_SAMPLES + 1,
-            ):
+            await render_duolingo_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="home",
+                template_name="home.html",
+                context_key="home",
+                page_data=home_data,
+                system=system,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="home",
+                annotation_profiles=ANNOTATION_PROFILES,
+                capture_full_page=CAPTURE_FULL_PAGE,
+                capture_viewports=CAPTURE_VIEWPORTS,
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
 
-                # ==========================================
-                # Generate Page Data
-                # ==========================================
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
+        except Exception as error:
+            print(
+                f"[DUOLINGO HOME FAILED] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
 
-                home_data = (
-                    generate_home_data()
+
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(SELECTED_VIEWPORTS)
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
+
+    for sample_index in range(1, NUM_SAMPLES + 1):
+        home_data = generate_home_data()
+        system = generate_system_data()
+        theme = generate_theme()
+
+        print("\n======================================")
+        print("DUOLINGO HOME")
+        print("Sample:", sample_index)
+        print("Theme:", theme["mode"])
+        print("======================================")
+
+        for viewport in viewports:
+            jobs.append(
+                render_home_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    home_data=home_data,
+                    system=system,
+                    theme=theme,
+                    viewport=viewport,
                 )
+            )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[DUOLINGO HOME COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
 
 
-                # ==========================================
-                # Theme
-                # ==========================================
-
-                theme = (
-                    generate_theme()
-                )
-
-
-                # ==========================================
-                # System
-                # ==========================================
-
-                system = (
-                    generate_system_data()
-                )
-
-
-                # ==========================================
-                # Viewports
-                # ==========================================
-
-                for viewport in viewports:
-
-                    print(
-                        "\n"
-                        "======================================"
-                    )
-
-                    print(
-                        "Rendering Duolingo home"
-                    )
-
-                    print(
-                        "Sample:",
-                        sample_index
-                    )
-
-                    print(
-                        "Viewport:",
-                        viewport["name"]
-                    )
-
-                    print(
-                        "Theme:",
-                        theme["mode"]
-                    )
-
-                    print(
-                        "======================================"
-                    )
-
-
-                    await render_duolingo_page(
-
-                        browser=
-                            browser,
-
-                        sample_index=
-                            sample_index,
-
-                        page_type=
-                            "home",
-
-                        template_name=
-                            "home.html",
-
-                        context_key=
-                            "home",
-
-                        page_data=
-                            home_data,
-
-                        system=
-                            system,
-
-                        theme=
-                            theme,
-
-                        viewport=
-                            viewport,
-
-                        annotation_profiles=
-                            ANNOTATION_PROFILES,
-
-                        capture_full_page=
-                            CAPTURE_FULL_PAGE,
-
-                        capture_viewports=
-                            CAPTURE_VIEWPORTS,
-
-                        scroll_percentages=
-                            SCROLL_PERCENTAGES,
-                    )
-
-
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
+        try:
+            await main(browser)
         finally:
-
             await browser.close()
 
 
-# ==========================================================
-# Entrypoint
-# ==========================================================
-
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())
