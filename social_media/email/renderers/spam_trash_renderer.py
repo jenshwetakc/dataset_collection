@@ -3,68 +3,27 @@ from __future__ import annotations
 import asyncio
 import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.common.system_generator import (
     generate_system_data,
 )
-
 from social_media.common.viewport import (
     get_viewports_by_names,
 )
-
 from social_media.email.generators.spam_trash_generator import (
     generate_spam_trash_data,
 )
-
 from social_media.email.renderers.common_renderer import (
     render_email_page,
 )
 
 
-# ==========================================================
-# Configuration
-# ==========================================================
+NUM_SAMPLES = 20
 
-# NUM_SAMPLES = 3
-#
-# SELECTED_VIEWPORTS = [
-#     "standard_iphone",
-#     "desktop_fhd",
-# ]
-#
-# # ANNOTATION_PROFILES = [
-# #     "big_components",
-# #     "components",
-# #     "small_elements",
-# #     "icons_only",
-# # ]
-# ANNOTATION_PROFILES = [
-#     "big_components",
-#     "small_elements",
-# ]
-#
-#
-# THEME_MODE = "random"
-#
-# CAPTURE_FULL_PAGE = True
-# CAPTURE_VIEWPORTS = True
-#
-# SCROLL_PERCENTAGES = [
-#     0,
-#     25,
-#     50,
-#     75,
-#     100,
-# ]
-
-NUM_SAMPLES = 25
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -86,15 +45,12 @@ SELECTED_VIEWPORTS = [
 
 ANNOTATION_PROFILES = [
     "big_components",
-    "icons_only",
+    "small_elements",
 ]
-
 
 THEME_MODE = "random"
 
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
-
 CAPTURE_VIEWPORTS = True
 
 SCROLL_PERCENTAGES = [
@@ -105,89 +61,132 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
-# ==========================================================
-# Theme
-# ==========================================================
+MAX_CONCURRENT_WORKERS = 4
+
 
 def generate_theme() -> dict:
-
     mode = (
-        random.choice([
-            "light",
-            "dark",
-        ])
+        random.choice(["light", "dark"])
         if THEME_MODE == "random"
         else THEME_MODE
     )
-
-    return generate_accessible_theme(
-        mode=mode
-    )
+    return generate_accessible_theme(mode=mode)
 
 
-# ==========================================================
-# Main
-# ==========================================================
-
-async def main():
-
-    viewports = get_viewports_by_names(
-        SELECTED_VIEWPORTS
-    )
-
-    async with async_playwright() as playwright:
-
-        browser = await playwright.chromium.launch()
-
-        for sample_index in range(
-            NUM_SAMPLES
-        ):
-
-            spam = (
-                generate_spam_trash_data()
-            )
-
-            system = (
-                generate_system_data()
-            )
-
-            theme = (
-                generate_theme()
-            )
-
+async def render_spam_trash_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    spam: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
             print(
                 f"[EMAIL SPAM/TRASH] "
                 f"sample={sample_index} "
+                f"viewport={viewport['name']} "
                 f"state={spam['state']} "
-                f"folder={spam['folder']} "
-                f"theme={theme['mode']} "
-                f"messages={spam['message_count']}"
+                f"theme={theme['mode']}"
             )
 
-            for viewport in viewports:
+            await render_email_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="spam_trash",
+                template_name="spam_trash.html",
+                context_key="spam",
+                page_data=spam,
+                system=system,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="spam_trash",
+                annotation_profiles=ANNOTATION_PROFILES,
+                capture_full_page=CAPTURE_FULL_PAGE,
+                capture_viewports=CAPTURE_VIEWPORTS,
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
 
-                await render_email_page(
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
+        except Exception as error:
+            print(
+                f"[EMAIL SPAM/TRASH FAILED] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
+
+
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(SELECTED_VIEWPORTS)
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
+
+    for sample_index in range(NUM_SAMPLES):
+        spam = generate_spam_trash_data()
+        system = generate_system_data()
+        theme = generate_theme()
+
+        print(
+            f"[EMAIL SPAM/TRASH] "
+            f"sample={sample_index} "
+            f"state={spam['state']} "
+            f"folder={spam['folder']} "
+            f"theme={theme['mode']} "
+            f"messages={spam['message_count']}"
+        )
+
+        for viewport in viewports:
+            jobs.append(
+                render_spam_trash_job(
                     browser=browser,
+                    semaphore=semaphore,
                     sample_index=sample_index,
-                    page_type="spam_trash",
-                    template_name="spam_trash.html",
-                    context_key="spam",
-                    page_data=spam,
+                    spam=spam,
                     system=system,
                     theme=theme,
                     viewport=viewport,
-                    output_subdir="spam_trash",
-                    annotation_profiles=ANNOTATION_PROFILES,
-                    capture_full_page=CAPTURE_FULL_PAGE,
-                    capture_viewports=CAPTURE_VIEWPORTS,
-                    scroll_percentages=SCROLL_PERCENTAGES,
                 )
+            )
 
-        await browser.close()
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[EMAIL SPAM/TRASH COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
+
+
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
 
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())
