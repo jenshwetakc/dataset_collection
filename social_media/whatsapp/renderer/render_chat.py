@@ -1,45 +1,27 @@
+from __future__ import annotations
+
 import asyncio
 import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
+from social_media.common.palette_generator import (
+    generate_accessible_theme,
+)
+from social_media.whatsapp.generators.chat_generator import (
+    generate_chat_page,
+    generate_system_status,
+)
 from social_media.whatsapp.renderer.common_renderer import (
     render_page,
     resolve_viewports,
 )
 
-from social_media.whatsapp.generators.chat_generator import (
-    generate_chat_page,
-    generate_system_status,
-)
-
-from social_media.common.palette_generator import (
-    generate_accessible_theme,
-)
-
-
-# ==========================================================
-# Configuration
-# ==========================================================
 
 NUM_SAMPLES = 50
 
-
-# ==========================================================
-# Viewport Configuration
-# ==========================================================
-
 VIEWPORT_MODE = "selected"
 
-
-# SELECTED_VIEWPORTS = [
-#     "standard_iphone",
-#     "tablet_landscape",
-#     "laptop",
-#     "desktop_fhd",
-# ]
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -59,201 +41,150 @@ SELECTED_VIEWPORTS = [
     "ultrawide",
 ]
 
-# ==========================================================
-# Main
-# ==========================================================
+MAX_CONCURRENT_WORKERS = 4
 
-async def main():
 
-    # ------------------------------------------------------
-    # Resolve Viewports
-    # ------------------------------------------------------
+async def render_chats_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    page_data: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                f"[WHATSAPP CHATS] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"theme={theme['mode']}"
+            )
 
+            await render_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="chats",
+                template_name="chats.html",
+                context_key="page",
+                page_data=page_data,
+                system=system,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="chats",
+            )
+
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
+        except Exception as error:
+            print(
+                f"[WHATSAPP CHATS FAILED] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
+
+
+async def main(browser) -> None:
     viewports = resolve_viewports(
         mode=VIEWPORT_MODE,
         selected=SELECTED_VIEWPORTS,
     )
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
 
-
-    print(
-        "\nRendering Chats page"
-    )
-
-    print(
-        "Viewports:"
-    )
-
+    print("\nRendering Chats page")
+    print("Viewports:")
 
     for viewport in viewports:
-
         print(
             f"  {viewport['name']} | "
             f"{viewport['category']} | "
             f"{viewport.get('orientation', 'unknown')} | "
             f"{viewport.get('size_class', 'unknown')} | "
-            f"{viewport['width']}x"
-            f"{viewport['height']} | "
+            f"{viewport['width']}x{viewport['height']} | "
             f"DPR={viewport.get('dpr', 1)}"
         )
 
-
-    # ------------------------------------------------------
-    # Start Playwright
-    # ------------------------------------------------------
-
-    async with async_playwright() as p:
-
-        browser = await p.chromium.launch(
-            headless=True
+    for sample_index in range(1, NUM_SAMPLES + 1):
+        print(
+            f"\nGenerating sample "
+            f"{sample_index}/{NUM_SAMPLES}"
         )
 
+        page_data = generate_chat_page()
+        system = generate_system_status()
 
-        # ==================================================
-        # Generate Samples
-        # ==================================================
+        theme_mode = random.choice(
+            ["light", "dark"]
+        )
+        theme = generate_accessible_theme(
+            mode=theme_mode,
+        )
 
-        for sample_index in range(
-            1,
-            NUM_SAMPLES + 1,
-        ):
+        print("Theme:", theme_mode)
 
+        if "selected_filter" in page_data:
             print(
-                f"\nGenerating sample "
-                f"{sample_index}/{NUM_SAMPLES}"
+                "Selected filter:",
+                page_data["selected_filter"],
             )
 
-
-            # ----------------------------------------------
-            # Generate ONE Chats state
-            #
-            # The same generated state is used across
-            # every selected viewport.
-            # ----------------------------------------------
-
-            page_data = (
-                generate_chat_page()
-            )
-
-
-            # ----------------------------------------------
-            # System Status
-            # ----------------------------------------------
-
-            system = (
-                generate_system_status()
-            )
-
-
-            # ----------------------------------------------
-            # Theme
-            # ----------------------------------------------
-
-            theme_mode = random.choice(
-                [
-                    "light",
-                    "dark",
-                ]
-            )
-
-
-            theme = (
-                generate_accessible_theme(
-                    mode=theme_mode
-                )
-            )
-
-
-            # ----------------------------------------------
-            # Debug
-            # ----------------------------------------------
-
+        if "chats" in page_data:
             print(
-                "Theme:",
-                theme_mode
+                "Chat count:",
+                len(page_data["chats"]),
             )
 
-
-            if "selected_filter" in page_data:
-
-                print(
-                    "Selected filter:",
-                    page_data[
-                        "selected_filter"
-                    ]
+        for viewport in viewports:
+            jobs.append(
+                render_chats_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    page_data=page_data,
+                    system=system,
+                    theme=theme,
+                    viewport=viewport,
                 )
+            )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[WHATSAPP CHATS COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
 
 
-            if "chats" in page_data:
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
 
-                print(
-                    "Chat count:",
-                    len(
-                        page_data[
-                            "chats"
-                        ]
-                    )
-                )
-
-
-            # ----------------------------------------------
-            # Render SAME page across all viewports
-            # ----------------------------------------------
-
-            for viewport in viewports:
-
-                print(
-                    f"  Rendering "
-                    f"{viewport['name']}"
-                )
-
-
-                await render_page(
-
-                    browser=
-                        browser,
-
-                    sample_index=
-                        sample_index,
-
-                    page_type=
-                        "chats",
-
-                    template_name=
-                        "chats.html",
-
-                    context_key=
-                        "page",
-
-                    page_data=
-                        page_data,
-
-                    system=
-                        system,
-
-                    theme=
-                        theme,
-
-                    viewport=
-                        viewport,
-
-                    output_subdir=
-                        "chats",
-                )
-
-
-        # ==================================================
-        # Close Browser
-        # ==================================================
-
-        await browser.close()
-
-
-# ==========================================================
-# Entry
-# ==========================================================
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())

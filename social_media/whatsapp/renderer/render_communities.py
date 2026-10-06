@@ -1,48 +1,29 @@
+from __future__ import annotations
+
 import asyncio
 import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
+from social_media.common.palette_generator import (
+    generate_accessible_theme,
+)
+from social_media.whatsapp.generators.chat_generator import (
+    generate_system_status,
+)
+from social_media.whatsapp.generators.communities_generator import (
+    generate_communities_page,
+)
 from social_media.whatsapp.renderer.common_renderer import (
     render_page,
     resolve_viewports,
 )
 
-from social_media.whatsapp.generators.communities_generator import (
-    generate_communities_page,
-)
-
-from social_media.whatsapp.generators.chat_generator import (
-    generate_system_status,
-)
-
-from social_media.common.palette_generator import (
-    generate_accessible_theme,
-)
-
-
-# ==========================================================
-# Configuration
-# ==========================================================
 
 NUM_SAMPLES = 50
 
-
-# ==========================================================
-# Viewport Configuration
-# ==========================================================
-
 VIEWPORT_MODE = "selected"
 
-
-# SELECTED_VIEWPORTS = [
-#     "standard_iphone",
-#     "tablet_landscape",
-#     "laptop",
-#     "desktop_fhd",
-# ]
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -62,217 +43,156 @@ SELECTED_VIEWPORTS = [
     "ultrawide",
 ]
 
+MAX_CONCURRENT_WORKERS = 4
 
-# ==========================================================
-# Main
-# ==========================================================
 
-async def main():
+async def render_communities_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    communities: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                f"[WHATSAPP COMMUNITIES] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"theme={theme['mode']}"
+            )
 
-    # ------------------------------------------------------
-    # Resolve viewport list
-    # ------------------------------------------------------
+            await render_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="communities",
+                template_name="communities.html",
+                context_key="communities",
+                page_data=communities,
+                system=system,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="communities",
+            )
 
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
+        except Exception as error:
+            print(
+                f"[WHATSAPP COMMUNITIES FAILED] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
+
+
+async def main(browser) -> None:
     viewports = resolve_viewports(
         mode=VIEWPORT_MODE,
         selected=SELECTED_VIEWPORTS,
     )
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
 
-
-    print(
-        "\nRendering Communities page"
-    )
-
-    print(
-        "Viewports:"
-    )
-
+    print("\nRendering Communities page")
+    print("Viewports:")
 
     for viewport in viewports:
-
         print(
             f"  {viewport['name']} | "
             f"{viewport['category']} | "
             f"{viewport.get('orientation', 'unknown')} | "
             f"{viewport.get('size_class', 'unknown')} | "
-            f"{viewport['width']}x"
-            f"{viewport['height']} | "
+            f"{viewport['width']}x{viewport['height']} | "
             f"DPR={viewport.get('dpr', 1)}"
         )
 
-
-    # ------------------------------------------------------
-    # Playwright
-    # ------------------------------------------------------
-
-    async with async_playwright() as p:
-
-        browser = await p.chromium.launch(
-            headless=True
+    for sample_index in range(1, NUM_SAMPLES + 1):
+        print(
+            f"\nGenerating sample "
+            f"{sample_index}/{NUM_SAMPLES}"
         )
 
+        communities = generate_communities_page()
+        system = generate_system_status()
 
-        # ==================================================
-        # Generate Samples
-        # ==================================================
+        theme_mode = random.choice(
+            ["light", "dark"]
+        )
+        theme = generate_accessible_theme(
+            mode=theme_mode,
+        )
 
-        for sample_index in range(
-            1,
-            NUM_SAMPLES + 1,
-        ):
+        print("Theme:", theme_mode)
 
+        if "community_count" in communities:
             print(
-                f"\nGenerating sample "
-                f"{sample_index}/{NUM_SAMPLES}"
+                "Community count:",
+                communities["community_count"],
             )
 
-
-            # ----------------------------------------------
-            # Generate ONE Communities state
-            #
-            # Same content will be reused across all
-            # selected viewports.
-            # ----------------------------------------------
-
-            communities = (
-                generate_communities_page()
-            )
-
-
-            # ----------------------------------------------
-            # System Status
-            # ----------------------------------------------
-
-            system = (
-                generate_system_status()
-            )
-
-
-            # ----------------------------------------------
-            # Light / Dark Theme
-            # ----------------------------------------------
-
-            theme_mode = random.choice(
-                [
-                    "light",
-                    "dark",
-                ]
-            )
-
-
-            theme = (
-                generate_accessible_theme(
-                    mode=theme_mode
-                )
-            )
-
-
+        if "communities" in communities:
             print(
-                "Theme:",
-                theme_mode
+                "Communities:",
+                len(communities["communities"]),
             )
 
+        if "selected_navigation" in communities:
+            print(
+                "Selected navigation:",
+                communities["selected_navigation"],
+            )
 
-            # ----------------------------------------------
-            # Optional Debug
-            # ----------------------------------------------
-
-            if isinstance(
-                communities,
-                dict,
-            ):
-
-                if "community_count" in communities:
-
-                    print(
-                        "Community count:",
-                        communities[
-                            "community_count"
-                        ]
-                    )
-
-
-                if "communities" in communities:
-
-                    print(
-                        "Communities:",
-                        len(
-                            communities[
-                                "communities"
-                            ]
-                        )
-                    )
-
-
-                if "selected_navigation" in communities:
-
-                    print(
-                        "Selected navigation:",
-                        communities[
-                            "selected_navigation"
-                        ]
-                    )
-
-
-            # ----------------------------------------------
-            # Render SAME generated UI across every viewport
-            # ----------------------------------------------
-
-            for viewport in viewports:
-
-                print(
-                    f"  Rendering "
-                    f"{viewport['name']}"
+        for viewport in viewports:
+            jobs.append(
+                render_communities_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    communities=communities,
+                    system=system,
+                    theme=theme,
+                    viewport=viewport,
                 )
+            )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[WHATSAPP COMMUNITIES COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
 
 
-                await render_page(
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
 
-                    browser=
-                        browser,
-
-                    sample_index=
-                        sample_index,
-
-                    page_type=
-                        "communities",
-
-                    template_name=
-                        "communities.html",
-
-                    context_key=
-                        "communities",
-
-                    page_data=
-                        communities,
-
-                    system=
-                        system,
-
-                    theme=
-                        theme,
-
-                    viewport=
-                        viewport,
-
-                    output_subdir=
-                        "communities",
-                )
-
-
-        # ==================================================
-        # Close Browser
-        # ==================================================
-
-        await browser.close()
-
-
-# ==========================================================
-# Entry
-# ==========================================================
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())

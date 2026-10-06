@@ -63,9 +63,7 @@ print(OUTPUT_ROOT)
 
 DEFAULT_ANNOTATION_PROFILES = [
     "big_components",
-    "components",
     "small_elements",
-    "icons_only",
 
 ]
 
