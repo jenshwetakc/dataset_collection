@@ -2,7 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from social_media.common.common_renderer import (
+# from social_media.common.common_renderer import (
+#     DEFAULT_CAPTURE_FULL_PAGE,
+#     DEFAULT_CAPTURE_VIEWPORTS,
+#     DEFAULT_MIN_SCROLL_DELTA,
+#     DEFAULT_MIN_VISIBLE_RATIO,
+#     DEFAULT_SCROLL_SETTLE_MS,
+#     render_page as common_render_page,
+# )
+
+from social_media.common.all_common import (
     DEFAULT_CAPTURE_FULL_PAGE,
     DEFAULT_CAPTURE_VIEWPORTS,
     DEFAULT_MIN_SCROLL_DELTA,
@@ -10,8 +19,6 @@ from social_media.common.common_renderer import (
     DEFAULT_SCROLL_SETTLE_MS,
     render_page as common_render_page,
 )
-
-
 # ==========================================================
 # Google Fit Paths
 # ==========================================================
