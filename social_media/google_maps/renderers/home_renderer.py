@@ -3,79 +3,30 @@ from __future__ import annotations
 import asyncio
 import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
-from social_media.common.viewport import (
-    get_viewports_by_names,
-)
-
-from social_media.google_maps.generators.home_generator import (
-    generate_home_data,
-)
-
 from social_media.common.system_generator import (
     generate_system_data,
 )
-
+from social_media.common.viewport import (
+    get_viewports_by_names,
+)
+from social_media.google_maps.generators.home_generator import (
+    generate_home_data,
+)
 from social_media.google_maps.renderers.common_renderer import (
     render_google_maps_page,
 )
-
 
 # ==========================================================
 # Configuration
 # ==========================================================
 
-# NUM_SAMPLES = 3
-#
-#
-VIEWPORT_MODE = "selected"
-#
-#
-# SELECTED_VIEWPORTS = [
-#     "standard_iphone",
-#     # "tablet_portrait",
-#     # "laptop",
-#     "desktop_fhd",
-# ]
-#
-#
-# ANNOTATION_PROFILES = [
-#     "big_components",
-#     "components",
-#     "small_elements",
-#     "icons_only",
-# ]
-#
-#
-# THEME_MODE = "random"
-#
-#
-# CAPTURE_FULL_PAGE = True
-#
-# CAPTURE_VIEWPORTS = True
-#
-#
-# SCROLL_PERCENTAGES = [
-#     0,
-#     10,
-#     20,
-#     30,
-#     40,
-#     50,
-#     60,
-#     70,
-#     80,
-#     90,
-#     100,
-# ]
 NUM_SAMPLES = 20
+
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -97,15 +48,12 @@ SELECTED_VIEWPORTS = [
 
 ANNOTATION_PROFILES = [
     "big_components",
-    "icons_only",
+    "small_elements",
 ]
-
 
 THEME_MODE = "random"
 
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
-
 CAPTURE_VIEWPORTS = True
 
 SCROLL_PERCENTAGES = [
@@ -116,157 +64,153 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
+MAX_CONCURRENT_WORKERS = 4
+
+
 # ==========================================================
 # Theme
 # ==========================================================
 
 def generate_page_theme() -> dict:
-
-    if THEME_MODE == "light":
-
-        return generate_accessible_theme(
-            mode="light"
-        )
-
-    if THEME_MODE == "dark":
-
-        return generate_accessible_theme(
-            mode="dark"
-        )
-
-    return generate_accessible_theme(
-        mode=random.choice(
-            [
-                "light",
-                "dark",
-            ]
-        )
+    mode = (
+        random.choice(["light", "dark"])
+        if THEME_MODE == "random"
+        else THEME_MODE
     )
+    return generate_accessible_theme(mode=mode)
 
 
 # ==========================================================
-# Viewports
+# Render Job
 # ==========================================================
 
-def resolve_render_viewports():
-
-    if VIEWPORT_MODE == "selected":
-
-        return get_viewports_by_names(
-            SELECTED_VIEWPORTS
-        )
-
-    raise ValueError(
-        f"Unsupported VIEWPORT_MODE: "
-        f"{VIEWPORT_MODE}"
-    )
-
-
-# ==========================================================
-# Render
-# ==========================================================
-
-async def render_samples():
-
-    viewports = (
-        resolve_render_viewports()
-    )
-
-    async with async_playwright() as playwright:
-
-        browser = (
-            await playwright.chromium.launch(
-                headless=True
-            )
-        )
-
+async def render_home_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    home_data: dict,
+    system_data: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
         try:
+            print(
+                "[GOOGLE MAPS HOME]",
+                "sample=",
+                sample_index,
+                "viewport=",
+                viewport["name"],
+                "theme=",
+                theme["mode"],
+            )
 
-            for sample_index in range(
-                1,
-                NUM_SAMPLES + 1,
-            ):
+            await render_google_maps_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="home",
+                template_name="home.html",
+                context_key="home",
+                page_data=home_data,
+                system=system_data,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="home",
+                annotation_profiles=ANNOTATION_PROFILES,
+                capture_full_page=CAPTURE_FULL_PAGE,
+                capture_viewports=CAPTURE_VIEWPORTS,
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
 
-                # ------------------------------------------
-                # Generate once per sample
-                # ------------------------------------------
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
 
-                home_data = (
-                    generate_home_data()
-                )
+        except Exception as error:
+            print(
+                "[GOOGLE MAPS HOME FAILED]",
+                "sample=",
+                sample_index,
+                "viewport=",
+                viewport["name"],
+                "error=",
+                error,
+            )
 
-                system_data = (
-                    generate_system_data()
-                )
-
-
-                # ------------------------------------------
-                # Render each viewport
-                # ------------------------------------------
-
-                for viewport in viewports:
-
-                    theme = (
-                        generate_page_theme()
-                    )
-
-
-                    await render_google_maps_page(
-
-                        browser=
-                            browser,
-
-                        sample_index=
-                            sample_index,
-
-                        page_type=
-                            "home",
-
-                        template_name=
-                            "home.html",
-
-                        context_key=
-                            "home",
-
-                        page_data=
-                            home_data,
-
-                        system=
-                            system_data,
-
-                        theme=
-                            theme,
-
-                        viewport=
-                            viewport,
-
-                        output_subdir=
-                            "home",
-
-                        annotation_profiles=
-                            ANNOTATION_PROFILES,
-
-                        capture_full_page=
-                            CAPTURE_FULL_PAGE,
-
-                        capture_viewports=
-                            CAPTURE_VIEWPORTS,
-
-                        scroll_percentages=
-                            SCROLL_PERCENTAGES,
-                    )
-
-        finally:
-
-            await browser.close()
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
 
 
 # ==========================================================
 # Main
 # ==========================================================
 
-if __name__ == "__main__":
-
-    asyncio.run(
-        render_samples()
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(
+        SELECTED_VIEWPORTS
     )
+    semaphore = asyncio.Semaphore(
+        MAX_CONCURRENT_WORKERS
+    )
+    jobs = []
+
+    for sample_index in range(1, NUM_SAMPLES + 1):
+        home_data = generate_home_data()
+        system_data = generate_system_data()
+        theme = generate_page_theme()
+
+        for viewport in viewports:
+            jobs.append(
+                render_home_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    home_data=home_data,
+                    system_data=system_data,
+                    theme=theme,
+                    viewport=viewport,
+                )
+            )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        "[GOOGLE MAPS HOME COMPLETE]",
+        "successful=",
+        successful,
+        "failed=",
+        failed,
+    )
+
+
+# ==========================================================
+# Entry
+# ==========================================================
+
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True
+        )
+
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(run())
