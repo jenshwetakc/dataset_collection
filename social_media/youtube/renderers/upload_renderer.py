@@ -3,21 +3,23 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from playwright.async_api import async_playwright
-from tqdm import tqdm
-
-from social_media.youtube.renderers.common_renderer import (
-    render_page,
-    resolve_viewports,
+from playwright.async_api import (
+    async_playwright,
 )
+from tqdm import tqdm
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.youtube.generators.upload_generator import (
     UPLOAD_STATES,
     generate_upload_video_page,
+)
+from social_media.youtube.renderers.common_new import (
+   render_youtube_page
+)
+from social_media.common.viewport import (
+    get_viewports_by_names,
 )
 
 
@@ -31,22 +33,16 @@ YOUTUBE_ROOT = (
     .parents[1]
 )
 
-TEMPLATE_DIR = (
-    YOUTUBE_ROOT
-    / "templates"
-)
-
-OUTPUT_ROOT = (
-    YOUTUBE_ROOT
-    / "output"
-)
+TEMPLATE_DIR = YOUTUBE_ROOT / "templates"
+OUTPUT_ROOT = YOUTUBE_ROOT / "output"
 
 
 # ==========================================================
 # Dataset Configuration
 # ==========================================================
 
-NUM_SAMPLES = 50
+NUM_SAMPLES = 5
+MAX_CONCURRENT_WORKERS = 4
 
 
 # ==========================================================
@@ -79,20 +75,33 @@ THEME_MODES = [
 VIEWPORT_MODE = "selected"
 
 SELECTED_VIEWPORTS = [
-    "standard_iphone",
-    "tablet_landscape",
-    "laptop",
-    "desktop_fhd",
+    "small_mobile",
+    # "standard_android",
+    # "standard_iphone",
+    # "large_mobile",
+    # "mobile_landscape",
+    # "tablet_portrait",
+    # "large_tablet_portrait",
+    # "tablet_landscape",
+    # "foldable",
+    # "small_laptop",
+    # "laptop",
+    # "large_laptop",
+    # "desktop_fhd",
+    # "desktop_qhd",
+    # "desktop_4k",
+    "ultrawide",
 ]
 
-# ==========================================================
-# Scroll Configuration
-# ==========================================================
+ANNOTATION_PROFILES = [
+    "big_components",
+    "small_elements",
+]
 
-# Unlike fullscreen/editor pages, the details portion of
-# the upload UI can become taller than the viewport.
-#
-# Therefore we keep scroll captures for this UI.
+
+# ==========================================================
+# Scroll and Capture Configuration
+# ==========================================================
 
 SCROLL_PERCENTAGES = [
     0,
@@ -102,22 +111,11 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
-
-# ==========================================================
-# Capture Configuration
-# ==========================================================
-
 SAVE_FULL_PAGE = True
-
 SAVE_VIEWPORTS = True
 
 
-# ==========================================================
-# Validate Upload States
-# ==========================================================
-
 def validate_upload_states() -> None:
-
     unknown_states = [
         state
         for state in UPLOAD_STATES_TO_RENDER
@@ -125,7 +123,6 @@ def validate_upload_states() -> None:
     ]
 
     if unknown_states:
-
         raise ValueError(
             "Unknown upload states: "
             f"{unknown_states}. "
@@ -133,142 +130,112 @@ def validate_upload_states() -> None:
         )
 
 
-# ==========================================================
-# Debug
-# ==========================================================
-
-def print_page_debug(
-    page: dict,
-) -> None:
-
-    print(
-        f"File: "
-        f"{page['file']['filename']}"
-    )
-
-    print(
-        f"Size: "
-        f"{page['file']['size_text']}"
-    )
-
-    print(
-        f"Duration: "
-        f"{page['file']['duration_text']}"
-    )
-
-    print(
-        f"Resolution: "
-        f"{page['file']['resolution']}"
-    )
-
-    print(
-        f"Upload status: "
-        f"{page['progress']['status']}"
-    )
-
-    print(
-        f"Upload percent: "
-        f"{page['progress']['percent']}%"
-    )
-
-    print(
-        f"Visibility: "
-        f"{page['visibility']['selected']}"
-    )
-
-    print(
-        f"Made for kids: "
-        f"{page['audience']['made_for_kids']}"
-    )
-
-    print(
-        "Layout:"
-    )
+def print_page_debug(page: dict) -> None:
+    print(f"File: {page['file']['filename']}")
+    print(f"Size: {page['file']['size_text']}")
+    print(f"Duration: {page['file']['duration_text']}")
+    print(f"Resolution: {page['file']['resolution']}")
+    print(f"Upload status: {page['progress']['status']}")
+    print(f"Upload percent: {page['progress']['percent']}%")
+    print(f"Visibility: {page['visibility']['selected']}")
+    print(f"Made for kids: {page['audience']['made_for_kids']}")
+    print("Layout:")
 
     for key, value in page["layout"].items():
-
-        print(
-            f"  {key}: "
-            f"{value}"
-        )
+        print(f"  {key}: {value}")
 
 
-# ==========================================================
-# Main
-# ==========================================================
+async def render_upload_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    upload_state: str,
+    upload_page: dict,
+    theme_mode: str,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                f"[YOUTUBE UPLOAD] "
+                f"sample={sample_index} "
+                f"state={upload_state} "
+                f"theme={theme_mode} "
+                f"viewport={viewport['name']}"
+            )
 
-async def main():
+            await render_youtube_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type=f"upload{upload_state}",
+                template_name="pages/upload.html",
+                context_key="page",
+                page_data=upload_page,
+                system=None,
+                theme=theme,
+                viewport=viewport,
 
-    # ======================================================
-    # Validation
-    # ======================================================
+                output_subdir="upload",
+                # (
+                #     f"upload/"
+                #     f"{theme_mode}/"
+                #     f"{upload_state}"
+                # ),
+                scroll_percentages=SCROLL_PERCENTAGES,
+                annotation_profiles=ANNOTATION_PROFILES,
+            )
 
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "state": upload_state,
+                "theme": theme_mode,
+                "viewport": viewport["name"],
+            }
+
+        except Exception as error:
+            print(
+                f"[YOUTUBE UPLOAD FAILED] "
+                f"sample={sample_index} "
+                f"state={upload_state} "
+                f"theme={theme_mode} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
+
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "state": upload_state,
+                "theme": theme_mode,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
+
+
+async def main(browser) -> None:
     validate_upload_states()
 
-
-    # ======================================================
-    # Resolve Viewports
-    # ======================================================
-
-    viewports = resolve_viewports(
-        mode=VIEWPORT_MODE,
-        selected=SELECTED_VIEWPORTS,
+    viewports = get_viewports_by_names(
+        SELECTED_VIEWPORTS,
     )
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
 
-
-    # ======================================================
-    # Configuration
-    # ======================================================
-
-    print(
-        "\n"
-        "=========================================="
-    )
-
-    print(
-        "YOUTUBE UPLOAD VIDEO"
-    )
-
-    print(
-        "=========================================="
-    )
-
-    print(
-        f"Samples: "
-        f"{NUM_SAMPLES}"
-    )
-
-    print(
-        f"Upload states: "
-        f"{UPLOAD_STATES_TO_RENDER}"
-    )
-
-    print(
-        f"Themes: "
-        f"{THEME_MODES}"
-    )
-
-    print(
-        f"Full-page capture: "
-        f"{SAVE_FULL_PAGE}"
-    )
-
-    print(
-        f"Viewport capture: "
-        f"{SAVE_VIEWPORTS}"
-    )
-
-    print(
-        f"Scroll positions: "
-        f"{SCROLL_PERCENTAGES}"
-    )
-
-    print(
-        "\nTesting viewports:"
-    )
+    print("\n==========================================")
+    print("YOUTUBE UPLOAD VIDEO")
+    print("==========================================")
+    print(f"Samples: {NUM_SAMPLES}")
+    print(f"Upload states: {UPLOAD_STATES_TO_RENDER}")
+    print(f"Themes: {THEME_MODES}")
+    print(f"Full-page capture: {SAVE_FULL_PAGE}")
+    print(f"Viewport capture: {SAVE_VIEWPORTS}")
+    print(f"Scroll positions: {SCROLL_PERCENTAGES}")
+    print("\nTesting viewports:")
 
     for viewport in viewports:
-
         orientation = (
             "landscape"
             if viewport["width"] > viewport["height"]
@@ -276,263 +243,77 @@ async def main():
         )
 
         print(
-            f"  - "
-            f"{viewport['name']}"
-            f" | "
-            f"{viewport['width']}x{viewport['height']}"
-            f" | "
-            f"{orientation}"
-            f" | "
+            f"  - {viewport['name']} | "
+            f"{viewport['width']}x{viewport['height']} | "
+            f"{orientation} | "
             f"DPR={viewport.get('dpr', 1)}"
         )
 
+    for sample_index in tqdm(
+        range(NUM_SAMPLES),
+        desc="YouTube Upload",
+    ):
+        print("\n------------------------------------------")
+        print(f"Sample: {sample_index}")
 
-    # ======================================================
-    # Playwright
-    # ======================================================
+        for upload_state in UPLOAD_STATES_TO_RENDER:
+            upload_page = generate_upload_video_page(
+                state=upload_state,
+            )
 
-    async with async_playwright() as p:
+            print("\n======================================")
+            print(f"Upload state: {upload_state}")
+            print_page_debug(upload_page)
 
-        browser = await p.chromium.launch(
-            headless=True
+            for theme_mode in THEME_MODES:
+                theme = generate_accessible_theme(
+                    mode=theme_mode,
+                )
+
+                print(f"\nTheme: {theme_mode}")
+                print(f"Seed: {theme.get('seed')}")
+                print(f"WCAG pass: {theme.get('wcag_pass')}")
+
+                for viewport in viewports:
+                    jobs.append(
+                        render_upload_job(
+                            browser=browser,
+                            semaphore=semaphore,
+                            sample_index=sample_index,
+                            upload_state=upload_state,
+                            upload_page=upload_page,
+                            theme_mode=theme_mode,
+                            theme=theme,
+                            viewport=viewport,
+                        )
+                    )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[YOUTUBE UPLOAD COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
+
+
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
         )
 
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
 
-        # ==================================================
-        # Sample Loop
-        # ==================================================
-
-        for sample_index in tqdm(
-            range(NUM_SAMPLES),
-            desc="YouTube Upload",
-        ):
-
-            print(
-                "\n"
-                "------------------------------------------"
-            )
-
-            print(
-                f"Sample: "
-                f"{sample_index}"
-            )
-
-
-            # ==============================================
-            # State Loop
-            # ==============================================
-
-            for upload_state in UPLOAD_STATES_TO_RENDER:
-
-                # ==========================================
-                # Generate state ONCE
-                #
-                # This exact same page data is reused for:
-                #
-                # - light
-                # - dark
-                # - mobile
-                # - tablet
-                # - laptop
-                # - desktop
-                #
-                # Therefore comparisons are controlled.
-                # ==========================================
-
-                upload_page = (
-                    generate_upload_video_page(
-                        state=upload_state
-                    )
-                )
-
-
-                print(
-                    "\n"
-                    "======================================"
-                )
-
-                print(
-                    f"Upload state: "
-                    f"{upload_state}"
-                )
-
-                print_page_debug(
-                    upload_page
-                )
-
-
-                # ==========================================
-                # Theme Loop
-                # ==========================================
-
-                for theme_mode in THEME_MODES:
-
-                    theme = (
-                        generate_accessible_theme(
-                            mode=theme_mode
-                        )
-                    )
-
-
-                    print(
-                        "\n"
-                        f"Theme: "
-                        f"{theme_mode}"
-                    )
-
-                    print(
-                        f"Seed: "
-                        f"{theme.get('seed')}"
-                    )
-
-                    print(
-                        f"WCAG pass: "
-                        f"{theme.get('wcag_pass')}"
-                    )
-
-
-                    # ======================================
-                    # Viewport Loop
-                    # ======================================
-
-                    for viewport in viewports:
-
-                        print(
-                            "Rendering: "
-                            f"{upload_state}"
-                            f" | "
-                            f"{theme_mode}"
-                            f" | "
-                            f"{viewport['name']}"
-                            f" "
-                            f"("
-                            f"{viewport['width']}"
-                            f"x"
-                            f"{viewport['height']}"
-                            f")"
-                        )
-
-
-                        await render_page(
-
-                            # ==============================
-                            # Browser
-                            # ==============================
-
-                            browser=browser,
-
-
-                            # ==============================
-                            # Sample
-                            # ==============================
-
-                            sample_index=sample_index,
-
-                            page_type="upload",
-
-
-                            # ==============================
-                            # Template
-                            # ==============================
-
-                            template_name=(
-                                "pages/upload.html"
-                            ),
-
-                            context_key="page",
-
-                            page_data=upload_page,
-
-
-                            # ==============================
-                            # System
-                            # ==============================
-
-                            system=None,
-
-
-                            # ==============================
-                            # Theme
-                            # ==============================
-
-                            theme=theme,
-
-
-                            # ==============================
-                            # Viewport
-                            # ==============================
-
-                            viewport=viewport,
-
-
-                            # ==============================
-                            # Paths
-                            # ==============================
-
-                            template_dir=TEMPLATE_DIR,
-
-                            output_root=OUTPUT_ROOT,
-
-
-                            # ==============================
-                            # State + Theme Separation
-                            #
-                            # This prevents:
-                            #
-                            # select_file sample 0
-                            # uploading sample 0
-                            #
-                            # from overwriting each other.
-                            # ==============================
-
-                            output_subdir=(
-                                f"upload/"
-                                f"{theme_mode}/"
-                                f"{upload_state}"
-                            ),
-
-
-                            # ==============================
-                            # Scroll
-                            # ==============================
-
-                            scroll_percentages=(
-                                SCROLL_PERCENTAGES
-                            ),
-
-
-                            # ==============================
-                            # Full Page
-                            # ==============================
-
-                            save_full_page=(
-                                SAVE_FULL_PAGE
-                            ),
-
-
-                            # ==============================
-                            # Viewports
-                            # ==============================
-
-                            save_viewports=(
-                                SAVE_VIEWPORTS
-                            ),
-                        )
-
-
-        # ==================================================
-        # Close Browser
-        # ==================================================
-
-        await browser.close()
-
-
-# ==========================================================
-# Entry Point
-# ==========================================================
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())

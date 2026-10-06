@@ -3,21 +3,23 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from playwright.async_api import async_playwright
-from tqdm import tqdm
-
-from social_media.youtube.renderers.common_renderer import (
-    render_page,
-    resolve_viewports,
+from playwright.async_api import (
+    async_playwright,
 )
+from tqdm import tqdm
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.youtube.generators.live_chat_generator import (
     LIVE_CHAT_STATES,
     generate_live_chat_page,
+)
+from social_media.youtube.renderers.common_new import (
+   render_youtube_page
+)
+from social_media.common.viewport import (
+    get_viewports_by_names,
 )
 
 
@@ -31,22 +33,16 @@ YOUTUBE_ROOT = (
     .parents[1]
 )
 
-TEMPLATE_DIR = (
-    YOUTUBE_ROOT
-    / "templates"
-)
-
-OUTPUT_ROOT = (
-    YOUTUBE_ROOT
-    / "output"
-)
+TEMPLATE_DIR = YOUTUBE_ROOT / "templates"
+OUTPUT_ROOT = YOUTUBE_ROOT / "output"
 
 
 # ==========================================================
 # Dataset Configuration
 # ==========================================================
 
-NUM_SAMPLES = 50
+NUM_SAMPLES = 5
+MAX_CONCURRENT_WORKERS = 4
 
 
 # ==========================================================
@@ -79,47 +75,44 @@ THEME_MODES = [
 VIEWPORT_MODE = "selected"
 
 SELECTED_VIEWPORTS = [
-    "standard_iphone",
-    "tablet_landscape",
-    "laptop",
-    "desktop_fhd",
+    "small_mobile",
+    # "standard_android",
+    # "standard_iphone",
+    # "large_mobile",
+    # "mobile_landscape",
+    # "tablet_portrait",
+    # "large_tablet_portrait",
+    # "tablet_landscape",
+    # "foldable",
+    # "small_laptop",
+    # "laptop",
+    # "large_laptop",
+    # "desktop_fhd",
+    # "desktop_qhd",
+    # "desktop_4k",
+    "ultrawide",
+]
+
+
+ANNOTATION_PROFILES = [
+    "big_components",
+    "small_elements",
 ]
 
 
 # ==========================================================
-# Scroll Configuration
+# Scroll and Capture Configuration
 # ==========================================================
-
-# The outer page is mostly a compact watch/live layout.
-# The chat itself scrolls internally, so repeated outer-page
-# scroll captures do not add much value here.
 
 SCROLL_PERCENTAGES = [
     0,
 ]
 
-
-# ==========================================================
-# Capture Configuration
-# ==========================================================
-
 SAVE_FULL_PAGE = True
-
 SAVE_VIEWPORTS = True
-import inspect
-print(
-    "RENDER_PAGE SIGNATURE:",
-    inspect.signature(
-        render_page
-    ),
-)
 
-# ==========================================================
-# Validate States
-# ==========================================================
 
 def validate_live_chat_states() -> None:
-
     unknown_states = [
         state
         for state in LIVE_CHAT_STATES_TO_RENDER
@@ -127,419 +120,200 @@ def validate_live_chat_states() -> None:
     ]
 
     if unknown_states:
-
         raise ValueError(
             "Unknown live chat states: "
             f"{unknown_states}. "
-            f"Available states: "
-            f"{LIVE_CHAT_STATES}"
+            f"Available states: {LIVE_CHAT_STATES}"
         )
 
 
-# ==========================================================
-# Debug
-# ==========================================================
-
-def print_page_debug(
-    page: dict,
-) -> None:
-
+def print_page_debug(page: dict) -> None:
+    print(f"State: {page['state']}")
+    print(f"Title: {page['livestream']['title']}")
+    print(f"Channel: {page['livestream']['channel']['name']}")
+    print(f"Viewers: {page['livestream']['viewer_count_text']}")
+    print(f"Messages: {len(page['chat_messages'])}")
     print(
-        f"State: "
-        f"{page['state']}"
-    )
-
-    print(
-        f"Title: "
-        f"{page['livestream']['title']}"
-    )
-
-    print(
-        f"Channel: "
-        f"{page['livestream']['channel']['name']}"
-    )
-
-    print(
-        f"Viewers: "
-        f"{page['livestream']['viewer_count_text']}"
-    )
-
-    print(
-        f"Messages: "
-        f"{len(page['chat_messages'])}"
-    )
-
-    print(
-        f"Pinned message: "
+        "Pinned message: "
         f"{page['pinned_message'].get('enabled', False)}"
     )
-
-    print(
-        f"Chat paused: "
-        f"{page['chat_header']['paused']}"
-    )
-
-    print(
-        f"Members only: "
-        f"{page['chat_input']['members_only']}"
-    )
-
-    print(
-        f"Chat input enabled: "
-        f"{page['chat_input']['enabled']}"
-    )
+    print(f"Chat paused: {page['chat_header']['paused']}")
+    print(f"Members only: {page['chat_input']['members_only']}")
+    print(f"Chat input enabled: {page['chat_input']['enabled']}")
 
     super_chat_count = sum(
-        1
+        message["type"] == "super_chat"
         for message in page["chat_messages"]
-        if message["type"] == "super_chat"
     )
-
-    print(
-        f"Super chats: "
-        f"{super_chat_count}"
-    )
+    print(f"Super chats: {super_chat_count}")
 
 
-# ==========================================================
-# Main
-# ==========================================================
+async def render_live_chat_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    live_chat_state: str,
+    live_chat_page: dict,
+    theme_mode: str,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                f"[YOUTUBE LIVE CHAT] "
+                f"sample={sample_index} "
+                f"state={live_chat_state} "
+                f"theme={theme_mode} "
+                f"viewport={viewport['name']}"
+            )
 
-async def main():
+            await render_youtube_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type=f"live_chat{live_chat_state}",
+                template_name="pages/live_chat.html",
+                context_key="page",
+                page_data=live_chat_page,
+                system=None,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="live_chat",
+                # (
+                #     f"live_chat/"
+                #     f"{theme_mode}/"
+                #     f"{live_chat_state}"
+                # ),
+                scroll_percentages=SCROLL_PERCENTAGES,
+                annotation_profiles=ANNOTATION_PROFILES,
 
-    # ======================================================
-    # Validate Configuration
-    # ======================================================
+            )
 
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "state": live_chat_state,
+                "theme": theme_mode,
+                "viewport": viewport["name"],
+            }
+
+        except Exception as error:
+            print(
+                f"[YOUTUBE LIVE CHAT FAILED] "
+                f"sample={sample_index} "
+                f"state={live_chat_state} "
+                f"theme={theme_mode} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
+
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "state": live_chat_state,
+                "theme": theme_mode,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
+
+
+async def main(browser) -> None:
     validate_live_chat_states()
 
+    viewports = get_viewports_by_names(SELECTED_VIEWPORTS)
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
 
-    # ======================================================
-    # Resolve Viewports
-    # ======================================================
-
-    viewports = resolve_viewports(
-        mode=VIEWPORT_MODE,
-        selected=SELECTED_VIEWPORTS,
-    )
-
-
-    # ======================================================
-    # Configuration Debug
-    # ======================================================
-
-    print(
-        "\n"
-        "=========================================="
-    )
-
-    print(
-        "YOUTUBE LIVE CHAT"
-    )
-
-    print(
-        "=========================================="
-    )
-
-    print(
-        f"Samples: "
-        f"{NUM_SAMPLES}"
-    )
-
-    print(
-        f"States: "
-        f"{LIVE_CHAT_STATES_TO_RENDER}"
-    )
-
-    print(
-        f"Themes: "
-        f"{THEME_MODES}"
-    )
-
-    print(
-        f"Full-page capture: "
-        f"{SAVE_FULL_PAGE}"
-    )
-
-    print(
-        f"Viewport capture: "
-        f"{SAVE_VIEWPORTS}"
-    )
-
-    print(
-        f"Scroll positions: "
-        f"{SCROLL_PERCENTAGES}"
-    )
-
-    print(
-        "\nTesting viewports:"
-    )
+    print("\n==========================================")
+    print("YOUTUBE LIVE CHAT")
+    print("==========================================")
+    print(f"Samples: {NUM_SAMPLES}")
+    print(f"States: {LIVE_CHAT_STATES_TO_RENDER}")
+    print(f"Themes: {THEME_MODES}")
+    print(f"Full-page capture: {SAVE_FULL_PAGE}")
+    print(f"Viewport capture: {SAVE_VIEWPORTS}")
+    print(f"Scroll positions: {SCROLL_PERCENTAGES}")
+    print("\nTesting viewports:")
 
     for viewport in viewports:
-
         orientation = (
             "landscape"
-            if viewport["width"]
-            > viewport["height"]
+            if viewport["width"] > viewport["height"]
             else "portrait"
         )
 
         print(
-            f"  - "
-            f"{viewport['name']}"
-            f" | "
-            f"{viewport['width']}"
-            f"x"
-            f"{viewport['height']}"
-            f" | "
-            f"{orientation}"
-            f" | "
-            f"DPR="
-            f"{viewport.get('dpr', 1)}"
+            f"  - {viewport['name']} | "
+            f"{viewport['width']}x{viewport['height']} | "
+            f"{orientation} | "
+            f"DPR={viewport.get('dpr', 1)}"
         )
 
+    for sample_index in tqdm(
+        range(NUM_SAMPLES),
+        desc="YouTube Live Chat",
+    ):
+        print("\n------------------------------------------")
+        print(f"Sample: {sample_index}")
 
-    # ======================================================
-    # Playwright
-    # ======================================================
-
-    async with async_playwright() as p:
-
-        browser = (
-            await p.chromium.launch(
-                headless=True
+        for live_chat_state in LIVE_CHAT_STATES_TO_RENDER:
+            live_chat_page = generate_live_chat_page(
+                state=live_chat_state,
             )
+
+            print("\n======================================")
+            print_page_debug(live_chat_page)
+
+            for theme_mode in THEME_MODES:
+                theme = generate_accessible_theme(
+                    mode=theme_mode,
+                )
+
+                print(f"\nTheme: {theme_mode}")
+                print(f"Seed: {theme.get('seed')}")
+                print(f"WCAG pass: {theme.get('wcag_pass')}")
+
+                for viewport in viewports:
+                    jobs.append(
+                        render_live_chat_job(
+                            browser=browser,
+                            semaphore=semaphore,
+                            sample_index=sample_index,
+                            live_chat_state=live_chat_state,
+                            live_chat_page=live_chat_page,
+                            theme_mode=theme_mode,
+                            theme=theme,
+                            viewport=viewport,
+                        )
+                    )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[YOUTUBE LIVE CHAT COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
+
+
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
         )
 
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
 
-        # ==================================================
-        # Sample Loop
-        # ==================================================
-
-        for sample_index in tqdm(
-            range(NUM_SAMPLES),
-            desc="YouTube Live Chat",
-        ):
-
-            print(
-                "\n"
-                "------------------------------------------"
-            )
-
-            print(
-                f"Sample: "
-                f"{sample_index}"
-            )
-
-
-            # ==============================================
-            # State Loop
-            # ==============================================
-
-            for live_chat_state in (
-                LIVE_CHAT_STATES_TO_RENDER
-            ):
-
-                # ==========================================
-                # Generate This State ONCE
-                #
-                # Important:
-                # the exact same livestream/chat data is
-                # reused across every theme and viewport.
-                # ==========================================
-
-                live_chat_page = (
-                    generate_live_chat_page(
-                        state=live_chat_state
-                    )
-                )
-
-
-                print(
-                    "\n"
-                    "======================================"
-                )
-
-                print_page_debug(
-                    live_chat_page
-                )
-
-
-                # ==========================================
-                # Theme Loop
-                # ==========================================
-
-                for theme_mode in THEME_MODES:
-
-                    theme = (
-                        generate_accessible_theme(
-                            mode=theme_mode
-                        )
-                    )
-
-
-                    print(
-                        "\n"
-                        f"Theme: "
-                        f"{theme_mode}"
-                    )
-
-                    print(
-                        f"Seed: "
-                        f"{theme.get('seed')}"
-                    )
-
-                    print(
-                        f"WCAG pass: "
-                        f"{theme.get('wcag_pass')}"
-                    )
-
-
-                    # ======================================
-                    # Viewport Loop
-                    # ======================================
-
-                    for viewport in viewports:
-
-                        print(
-                            "Rendering: "
-                            f"{live_chat_state}"
-                            f" | "
-                            f"{theme_mode}"
-                            f" | "
-                            f"{viewport['name']}"
-                            f" "
-                            f"("
-                            f"{viewport['width']}"
-                            f"x"
-                            f"{viewport['height']}"
-                            f")"
-                        )
-
-
-                        await render_page(
-
-                            # ==============================
-                            # Browser
-                            # ==============================
-
-                            browser=
-                                browser,
-
-
-                            # ==============================
-                            # Sample
-                            # ==============================
-
-                            sample_index=
-                                sample_index,
-
-                            page_type=
-                                "live_chat",
-
-
-                            # ==============================
-                            # Template
-                            # ==============================
-
-                            template_name=
-                                "pages/live_chat.html",
-
-                            context_key=
-                                "page",
-
-                            page_data=
-                                live_chat_page,
-
-
-                            # ==============================
-                            # System
-                            # ==============================
-
-                            system=
-                                None,
-
-
-                            # ==============================
-                            # Theme
-                            # ==============================
-
-                            theme=
-                                theme,
-
-
-                            # ==============================
-                            # Viewport
-                            # ==============================
-
-                            viewport=
-                                viewport,
-
-
-                            # ==============================
-                            # Paths
-                            # ==============================
-
-                            template_dir=
-                                TEMPLATE_DIR,
-
-                            output_root=
-                                OUTPUT_ROOT,
-
-
-                            # ==============================
-                            # Output Separation
-                            #
-                            # Every state needs its own
-                            # directory to avoid overwriting
-                            # the same sample index.
-                            # ==============================
-
-                            output_subdir=(
-                                f"live_chat/"
-                                f"{theme_mode}/"
-                                f"{live_chat_state}"
-                            ),
-
-
-                            # ==============================
-                            # Outer Page Scroll
-                            # ==============================
-
-                            scroll_percentages=
-                                SCROLL_PERCENTAGES,
-
-
-                            # ==============================
-                            # Full Page
-                            # ==============================
-
-                            save_full_page=
-                                SAVE_FULL_PAGE,
-
-
-                            # ==============================
-                            # Viewport
-                            # ==============================
-
-                            save_viewports=
-                                SAVE_VIEWPORTS,
-                        )
-
-
-        # ==================================================
-        # Close Browser
-        # ==================================================
-
-        await browser.close()
-
-
-# ==========================================================
-# Entry Point
-# ==========================================================
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())

@@ -1,27 +1,25 @@
 from __future__ import annotations
 
 import asyncio
-
+import random
 from pathlib import Path
 
 from playwright.async_api import (
     async_playwright,
 )
-
 from tqdm import tqdm
-
-
-from social_media.youtube.renderers.common_renderer import (
-    render_page,
-    resolve_viewports,
-)
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.youtube.generators.search_generator import (
     generate_search_page,
+)
+from social_media.youtube.renderers.common_new import (
+   render_youtube_page
+)
+from social_media.common.viewport import (
+    get_viewports_by_names,
 )
 
 
@@ -35,52 +33,43 @@ YOUTUBE_ROOT = (
     .parents[1]
 )
 
-
-TEMPLATE_DIR = (
-    YOUTUBE_ROOT
-    / "templates"
-)
-
-
-OUTPUT_ROOT = (
-    YOUTUBE_ROOT
-    / "output"
-)
+TEMPLATE_DIR = YOUTUBE_ROOT / "templates"
+OUTPUT_ROOT = YOUTUBE_ROOT / "output"
 
 
 # ==========================================================
 # Dataset Configuration
 # ==========================================================
 
-NUM_SAMPLES = 50
-
-
-# ----------------------------------------------------------
-# Viewport mode options:
-#
-# "all"
-# "mobile"
-# "tablet"
-# "laptop"
-# "desktop"
-# "selected"
-# "random"
-# ----------------------------------------------------------
+NUM_SAMPLES = 5
+MAX_CONCURRENT_WORKERS = 4
 
 VIEWPORT_MODE = "selected"
 
-
 SELECTED_VIEWPORTS = [
-    "standard_iphone",
-    "tablet_landscape",
-    "laptop",
-    "desktop_fhd",
+    "small_mobile",
+    # "standard_android",
+    # "standard_iphone",
+    # "large_mobile",
+    # "mobile_landscape",
+    # "tablet_portrait",
+    # "large_tablet_portrait",
+    # "tablet_landscape",
+    # "foldable",
+    # "small_laptop",
+    # "laptop",
+    # "large_laptop",
+    # "desktop_fhd",
+    # "desktop_qhd",
+    # "desktop_4k",
+    "ultrawide",
 ]
 
 
-# ==========================================================
-# Scroll / Capture Configuration
-# ==========================================================
+ANNOTATION_PROFILES = [
+    "big_components",
+    "small_elements",
+]
 
 SCROLL_PERCENTAGES = [
     0,
@@ -90,295 +79,144 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
-
 SAVE_FULL_PAGE = True
-
 SAVE_VIEWPORTS = True
 
 
-# ==========================================================
-# Main
-# ==========================================================
+async def render_search_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    search_page: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                f"[YOUTUBE SEARCH] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"theme={theme['mode']}"
+            )
 
-async def main():
+            await render_youtube_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="search",
+                template_name="pages/search.html",
+                context_key="page",
+                page_data=search_page,
+                system=None,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="search",
+                scroll_percentages=SCROLL_PERCENTAGES,
+                annotation_profiles=ANNOTATION_PROFILES,
 
-    # ======================================================
-    # Resolve Viewports
-    # ======================================================
+            )
 
-    viewports = resolve_viewports(
-        mode=VIEWPORT_MODE,
-        selected=SELECTED_VIEWPORTS,
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
+
+        except Exception as error:
+            print(
+                f"[YOUTUBE SEARCH FAILED] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
+
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
+
+
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(
+        SELECTED_VIEWPORTS,
     )
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
 
-
-    # ======================================================
-    # Debug Information
-    # ======================================================
-
-    print(
-        "\n=============================="
-    )
-
-    print(
-        "YOUTUBE SEARCH DATASET"
-    )
-
-    print(
-        "=============================="
-    )
-
-
-    print(
-        f"Samples: "
-        f"{NUM_SAMPLES}"
-    )
-
-
-    print(
-        f"Full page capture: "
-        f"{SAVE_FULL_PAGE}"
-    )
-
-
-    print(
-        f"Viewport capture: "
-        f"{SAVE_VIEWPORTS}"
-    )
-
-
-    print(
-        f"Scroll positions: "
-        f"{SCROLL_PERCENTAGES}"
-    )
-
-
-    print(
-        "\nViewports:"
-    )
-
+    print("\n==============================")
+    print("YOUTUBE SEARCH DATASET")
+    print("==============================")
+    print(f"Samples: {NUM_SAMPLES}")
+    print(f"Full page capture: {SAVE_FULL_PAGE}")
+    print(f"Viewport capture: {SAVE_VIEWPORTS}")
+    print(f"Scroll positions: {SCROLL_PERCENTAGES}")
+    print("\nViewports:")
 
     for viewport in viewports:
-
         print(
-
-            f"  - "
-            f"{viewport['name']} "
-
-            f"("
-            f"{viewport['width']}x"
-            f"{viewport['height']}, "
-
-            f"DPR="
-            f"{viewport.get('dpr', 1)}"
-            f")"
+            f"  - {viewport['name']} "
+            f"({viewport['width']}x{viewport['height']}, "
+            f"DPR={viewport.get('dpr', 1)})"
         )
 
+    for sample_index in tqdm(
+        range(NUM_SAMPLES),
+        desc="YouTube Search",
+    ):
+        search_page = generate_search_page()
 
-    # ======================================================
-    # Playwright
-    # ======================================================
+        theme_mode = random.choice(["light", "dark"])
+        theme = generate_accessible_theme(mode=theme_mode)
 
-    async with async_playwright() as p:
+        print("\n------------------------------")
+        print(f"Sample: {sample_index}")
+        print(f"Query: {search_page['query']}")
+        print(f"Results: {len(search_page['results'])}")
+        print(f"Theme: {theme['mode']}")
+        print(f"Seed: {theme.get('seed')}")
+        print(f"WCAG: {theme.get('wcag_pass')}")
 
-        browser = (
-            await p.chromium.launch(
-                headless=True
-            )
-        )
-
-
-        # ==================================================
-        # Generate Samples
-        # ==================================================
-
-        for sample_index in tqdm(
-            range(NUM_SAMPLES),
-            desc="YouTube Search",
-        ):
-
-            # ==============================================
-            # Generate Search Page
-            #
-            # Generate exactly ONCE per sample.
-            #
-            # Every viewport and scroll position for this
-            # sample will therefore use the same:
-            #
-            # - search query
-            # - search results
-            # - channels
-            # - thumbnails
-            # - text
-            # - theme
-            # ==============================================
-
-            search_page = (
-                generate_search_page()
-            )
-
-
-            # ==============================================
-            # Accessible Theme
-            #
-            # mode=None means our palette generator can
-            # randomly choose light or dark.
-            # ==============================================
-
-            theme = (
-                generate_accessible_theme()
-            )
-
-
-            # ==============================================
-            # Debug Current Sample
-            # ==============================================
-
-            print(
-                "\n------------------------------"
-            )
-
-            print(
-                f"Sample: "
-                f"{sample_index}"
-            )
-
-            print(
-                f"Query: "
-                f"{search_page['query']}"
-            )
-
-            print(
-                f"Results: "
-                f"{len(search_page['results'])}"
-            )
-
-            print(
-                f"Theme: "
-                f"{theme.get('mode')}"
-            )
-
-            print(
-                f"Seed: "
-                f"{theme.get('seed')}"
-            )
-
-            print(
-                f"WCAG: "
-                f"{theme.get('wcag_pass')}"
-            )
-
-
-            # ==============================================
-            # Render Every Selected Viewport
-            # ==============================================
-
-            for viewport in viewports:
-
-                await render_page(
-
-                    # --------------------------------------
-                    # Browser
-                    # --------------------------------------
-
-                    browser=
-                        browser,
-
-
-                    # --------------------------------------
-                    # Sample
-                    # --------------------------------------
-
-                    sample_index=
-                        sample_index,
-
-                    page_type=
-                        "search",
-
-
-                    # --------------------------------------
-                    # Template
-                    # --------------------------------------
-
-                    template_name=
-                        "pages/search.html",
-
-                    context_key=
-                        "page",
-
-                    page_data=
-                        search_page,
-
-
-                    # --------------------------------------
-                    # System information
-                    #
-                    # Search currently has no separate
-                    # synthetic mobile system bar.
-                    # --------------------------------------
-
-                    system=
-                        None,
-
-
-                    # --------------------------------------
-                    # Theme
-                    # --------------------------------------
-
-                    theme=
-                        theme,
-
-
-                    # --------------------------------------
-                    # Viewport
-                    # --------------------------------------
-
-                    viewport=
-                        viewport,
-
-
-                    # --------------------------------------
-                    # Paths
-                    # --------------------------------------
-
-                    template_dir=
-                        TEMPLATE_DIR,
-
-                    output_root=
-                        OUTPUT_ROOT,
-
-                    output_subdir=
-                        "search",
-
-
-                    # --------------------------------------
-                    # Full Page + Scroll Capture
-                    # --------------------------------------
-
-                    scroll_percentages=
-                        SCROLL_PERCENTAGES,
-
-                    save_full_page=
-                        SAVE_FULL_PAGE,
-
-                    save_viewports=
-                        SAVE_VIEWPORTS,
+        for viewport in viewports:
+            jobs.append(
+                render_search_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    search_page=search_page,
+                    theme=theme,
+                    viewport=viewport,
                 )
+            )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[YOUTUBE SEARCH COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
 
 
-        # ==================================================
-        # Close Browser
-        # ==================================================
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
 
-        await browser.close()
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
 
-
-# ==========================================================
-# Entry Point
-# ==========================================================
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())

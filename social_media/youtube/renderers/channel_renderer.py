@@ -1,58 +1,35 @@
 from __future__ import annotations
 
 import asyncio
-
 from pathlib import Path
 
 from playwright.async_api import (
     async_playwright,
 )
-
 from tqdm import tqdm
-
-
-from social_media.youtube.renderers.common_renderer import (
-    render_page,
-    resolve_viewports,
-)
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.youtube.generators.channel_generator import (
     generate_channel_page,
 )
 
-
-# ==========================================================
-# Paths
-# ==========================================================
-
-YOUTUBE_ROOT = (
-    Path(__file__)
-    .resolve()
-    .parents[1]
+from social_media.youtube.renderers.common_new import (
+   render_youtube_page
+)
+from social_media.common.viewport import (
+    get_viewports_by_names,
 )
 
-
-TEMPLATE_DIR = (
-    YOUTUBE_ROOT
-    / "templates"
-)
-
-
-OUTPUT_ROOT = (
-    YOUTUBE_ROOT
-    / "output"
-)
 
 
 # ==========================================================
 # Dataset Configuration
 # ==========================================================
 
-NUM_SAMPLES = 50
+NUM_SAMPLES = 5
+MAX_CONCURRENT_WORKERS = 4
 
 
 # ==========================================================
@@ -71,18 +48,39 @@ THEME_MODES = [
 
 VIEWPORT_MODE = "selected"
 
-
-
+# SELECTED_VIEWPORTS = [
+#     "standard_iphone",
+#     "tablet_landscape",
+#     "laptop",
+#     "desktop_fhd",
+# ]
 SELECTED_VIEWPORTS = [
-    "standard_iphone",
-    "tablet_landscape",
-    "laptop",
-    "desktop_fhd",
+    "small_mobile",
+    # "standard_android",
+    # "standard_iphone",
+    # "large_mobile",
+    # "mobile_landscape",
+    # "tablet_portrait",
+    # "large_tablet_portrait",
+    # "tablet_landscape",
+    # "foldable",
+    # "small_laptop",
+    # "laptop",
+    # "large_laptop",
+    # "desktop_fhd",
+    # "desktop_qhd",
+    # "desktop_4k",
+    "ultrawide",
 ]
 
 
+ANNOTATION_PROFILES = [
+    "big_components",
+    "small_elements",
+]
+
 # ==========================================================
-# Scroll Configuration
+# Scroll and Capture Configuration
 # ==========================================================
 
 SCROLL_PERCENTAGES = [
@@ -93,380 +91,157 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
-
-# ==========================================================
-# Capture Configuration
-# ==========================================================
-
-SAVE_FULL_PAGE = True
-
+SAVE_FULL_PAGE = False
 SAVE_VIEWPORTS = True
 
 
-# ==========================================================
-# Main
-# ==========================================================
+async def render_channel_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    channel_page: dict,
+    theme_mode: str,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                f"[YOUTUBE CHANNEL] "
+                f"sample={sample_index} "
+                f"theme={theme_mode} "
+                f"viewport={viewport['name']}"
+            )
 
-async def main():
+            await render_youtube_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="channel",
+                template_name="pages/channel.html",
+                context_key="page",
+                page_data=channel_page,
+                system=None,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="channel",
+                annotation_profiles=ANNOTATION_PROFILES,
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
 
-    # ======================================================
-    # Resolve Viewports
-    # ======================================================
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "theme": theme_mode,
+                "viewport": viewport["name"],
+            }
 
-    viewports = resolve_viewports(
-        mode=VIEWPORT_MODE,
-        selected=SELECTED_VIEWPORTS,
-    )
+        except Exception as error:
+            print(
+                f"[YOUTUBE CHANNEL FAILED] "
+                f"sample={sample_index} "
+                f"theme={theme_mode} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
 
-
-    # ======================================================
-    # Debug Configuration
-    # ======================================================
-
-    print(
-        "\n"
-        "=========================================="
-    )
-
-    print(
-        "YOUTUBE CHANNEL PAGE"
-    )
-
-    print(
-        "=========================================="
-    )
-
-
-    print(
-        f"Samples: "
-        f"{NUM_SAMPLES}"
-    )
-
-
-    print(
-        f"Themes: "
-        f"{THEME_MODES}"
-    )
-
-
-    print(
-        f"Full page capture: "
-        f"{SAVE_FULL_PAGE}"
-    )
-
-
-    print(
-        f"Viewport capture: "
-        f"{SAVE_VIEWPORTS}"
-    )
-
-
-    print(
-        f"Scroll positions: "
-        f"{SCROLL_PERCENTAGES}"
-    )
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "theme": theme_mode,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
 
 
-    print(
-        "\nTesting viewports:"
-    )
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(SELECTED_VIEWPORTS)
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
 
+    print("\n==========================================")
+    print("YOUTUBE CHANNEL PAGE")
+    print("==========================================")
+    print(f"Samples: {NUM_SAMPLES}")
+    print(f"Themes: {THEME_MODES}")
+    print(f"Full page capture: {SAVE_FULL_PAGE}")
+    print(f"Viewport capture: {SAVE_VIEWPORTS}")
+    print(f"Scroll positions: {SCROLL_PERCENTAGES}")
+    print("\nTesting viewports:")
 
     for viewport in viewports:
-
         print(
-            f"  - "
-            f"{viewport['name']}"
-            f" | "
-            f"{viewport['width']}"
-            f"x"
-            f"{viewport['height']}"
-            f" | DPR="
-            f"{viewport.get('dpr', 1)}"
+            f"  - {viewport['name']} | "
+            f"{viewport['width']}x{viewport['height']} | "
+            f"DPR={viewport.get('dpr', 1)}"
         )
 
+    for sample_index in tqdm(
+        range(NUM_SAMPLES),
+        desc="YouTube Channel",
+    ):
+        channel_page = generate_channel_page()
+        channel = channel_page["channel"]
 
-    # ======================================================
-    # Playwright
-    # ======================================================
+        print("\n------------------------------------------")
+        print(f"Sample: {sample_index}")
+        print(f"Channel: {channel['name']}")
+        print(f"Handle: {channel['handle']}")
+        print(f"Subscribers: {channel['subscribers_text']}")
+        print(f"Videos: {len(channel_page['videos'])}")
+        print(f"Shorts: {len(channel_page['shorts'])}")
+        print(f"Playlists: {len(channel_page['playlists'])}")
+        print(f"Subscribed: {channel['subscribed']}")
 
-    async with async_playwright() as p:
+        for theme_mode in THEME_MODES:
+            theme = generate_accessible_theme(
+                mode=theme_mode,
+            )
 
-        browser = await p.chromium.launch(
-            headless=True
+            print("\n======================================")
+            print(f"Theme: {theme_mode}")
+            print(f"Seed: {theme.get('seed')}")
+            print(f"WCAG pass: {theme.get('wcag_pass')}")
+
+            for viewport in viewports:
+                jobs.append(
+                    render_channel_job(
+                        browser=browser,
+                        semaphore=semaphore,
+                        sample_index=sample_index,
+                        channel_page=channel_page,
+                        theme_mode=theme_mode,
+                        theme=theme,
+                        viewport=viewport,
+                    )
+                )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[YOUTUBE CHANNEL COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
+
+
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
         )
 
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
 
-        # ==================================================
-        # Samples
-        # ==================================================
-
-        for sample_index in tqdm(
-            range(NUM_SAMPLES),
-            desc="YouTube Channel",
-        ):
-
-            # ==============================================
-            # Generate Channel Page ONCE
-            #
-            # The exact same channel data is used for:
-            #
-            # light
-            # dark
-            # mobile
-            # tablet
-            # laptop
-            # desktop
-            #
-            # This gives us a clean comparison of theme and
-            # responsive layout.
-            # ==============================================
-
-            channel_page = (
-                generate_channel_page()
-            )
-
-
-            channel = (
-                channel_page["channel"]
-            )
-
-
-            # ==============================================
-            # Sample Debug
-            # ==============================================
-
-            print(
-                "\n"
-                "------------------------------------------"
-            )
-
-
-            print(
-                f"Sample: "
-                f"{sample_index}"
-            )
-
-
-            print(
-                f"Channel: "
-                f"{channel['name']}"
-            )
-
-
-            print(
-                f"Handle: "
-                f"{channel['handle']}"
-            )
-
-
-            print(
-                f"Subscribers: "
-                f"{channel['subscribers_text']}"
-            )
-
-
-            print(
-                f"Videos: "
-                f"{len(channel_page['videos'])}"
-            )
-
-
-            print(
-                f"Shorts: "
-                f"{len(channel_page['shorts'])}"
-            )
-
-
-            print(
-                f"Playlists: "
-                f"{len(channel_page['playlists'])}"
-            )
-
-
-            print(
-                f"Subscribed: "
-                f"{channel['subscribed']}"
-            )
-
-
-            # ==============================================
-            # Light + Dark
-            # ==============================================
-
-            for theme_mode in THEME_MODES:
-
-                # ==========================================
-                # Generate Explicit Theme
-                # ==========================================
-
-                theme = (
-                    generate_accessible_theme(
-                        mode=theme_mode
-                    )
-                )
-
-
-                print(
-                    "\n"
-                    "======================================"
-                )
-
-
-                print(
-                    f"Theme: "
-                    f"{theme_mode}"
-                )
-
-
-                print(
-                    f"Seed: "
-                    f"{theme.get('seed')}"
-                )
-
-
-                print(
-                    f"WCAG pass: "
-                    f"{theme.get('wcag_pass')}"
-                )
-
-
-                # ==========================================
-                # Render Every Viewport
-                # ==========================================
-
-                for viewport in viewports:
-
-                    print(
-                        "\nRendering: "
-                        f"{theme_mode} | "
-                        f"{viewport['name']} "
-                        f"("
-                        f"{viewport['width']}"
-                        f"x"
-                        f"{viewport['height']}"
-                        f")"
-                    )
-
-
-                    await render_page(
-
-                        # ==================================
-                        # Browser
-                        # ==================================
-
-                        browser=
-                            browser,
-
-
-                        # ==================================
-                        # Sample
-                        # ==================================
-
-                        sample_index=
-                            sample_index,
-
-                        page_type=
-                            "channel",
-
-
-                        # ==================================
-                        # Template
-                        # ==================================
-
-                        template_name=
-                            "pages/channel.html",
-
-                        context_key=
-                            "page",
-
-                        page_data=
-                            channel_page,
-
-
-                        # ==================================
-                        # System
-                        # ==================================
-
-                        system=
-                            None,
-
-
-                        # ==================================
-                        # Theme
-                        # ==================================
-
-                        theme=
-                            theme,
-
-
-                        # ==================================
-                        # Viewport
-                        # ==================================
-
-                        viewport=
-                            viewport,
-
-
-                        # ==================================
-                        # Paths
-                        # ==================================
-
-                        template_dir=
-                            TEMPLATE_DIR,
-
-                        output_root=
-                            OUTPUT_ROOT,
-
-
-                        # ==================================
-                        # Keep light/dark separate
-                        # ==================================
-
-                        output_subdir=(
-                            f"channel/"
-                            f"{theme_mode}"
-                        ),
-
-
-                        # ==================================
-                        # Scroll Captures
-                        # ==================================
-
-                        scroll_percentages=
-                            SCROLL_PERCENTAGES,
-
-
-                        # ==================================
-                        # Full Page Capture
-                        # ==================================
-
-                        save_full_page=
-                            SAVE_FULL_PAGE,
-
-
-                        # ==================================
-                        # Viewport Captures
-                        # ==================================
-
-                        save_viewports=
-                            SAVE_VIEWPORTS,
-                    )
-
-
-        # ==================================================
-        # Close Browser
-        # ==================================================
-
-        await browser.close()
-
-
-# ==========================================================
-# Entry Point
-# ==========================================================
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())

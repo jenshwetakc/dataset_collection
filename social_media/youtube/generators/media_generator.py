@@ -18,19 +18,20 @@ from pathlib import Path
 SOCIAL_MEDIA_ROOT = (
     Path(__file__)
     .resolve()
-    .parents[2]
+    .parents[3]
 )
 
 
 COMMON_ROOT = (
     SOCIAL_MEDIA_ROOT
-    / "aimg"
+    / "assets"
+
 )
 
 
 ASSETS_ROOT = (
     COMMON_ROOT
-    / "assets"
+    / "backgrounds"
 )
 
 
@@ -54,7 +55,7 @@ BANNER_DIR = (
 
 SHORTS_DIR = (
     COMMON_ROOT
-    / "shorts"
+    / "landmarks"
 )
 
 

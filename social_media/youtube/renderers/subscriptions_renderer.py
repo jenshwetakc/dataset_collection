@@ -1,27 +1,26 @@
+
 from __future__ import annotations
 
 import asyncio
-
+import random
 from pathlib import Path
 
 from playwright.async_api import (
     async_playwright,
 )
-
 from tqdm import tqdm
-
-
-from social_media.youtube.renderers.common_renderer import (
-    render_page,
-    resolve_viewports,
-)
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.youtube.generators.subscriptions_generator import (
     generate_subscriptions_page,
+)
+from social_media.youtube.renderers.common_new import (
+   render_youtube_page
+)
+from social_media.common.viewport import (
+    get_viewports_by_names,
 )
 
 
@@ -35,27 +34,16 @@ YOUTUBE_ROOT = (
     .parents[1]
 )
 
-
-TEMPLATE_DIR = (
-    YOUTUBE_ROOT
-    / "templates"
-)
-
-
-OUTPUT_ROOT = (
-    YOUTUBE_ROOT
-    / "output"
-)
+TEMPLATE_DIR = YOUTUBE_ROOT / "templates"
+OUTPUT_ROOT = YOUTUBE_ROOT / "output"
 
 
 # ==========================================================
 # Dataset Configuration
 # ==========================================================
 
-# One synthetic page for responsive-layout testing.
-# The same content is reused for every selected viewport.
-
-NUM_SAMPLES = 50
+NUM_SAMPLES = 5
+MAX_CONCURRENT_WORKERS = 4
 
 
 # ==========================================================
@@ -64,382 +52,192 @@ NUM_SAMPLES = 50
 
 VIEWPORT_MODE = "selected"
 
-
 SELECTED_VIEWPORTS = [
-    "standard_iphone",
-    "tablet_landscape",
-    "laptop",
-    "desktop_fhd",
+    "small_mobile",
+    # "standard_android",
+    # "standard_iphone",
+    # "large_mobile",
+    # "mobile_landscape",
+    # "tablet_portrait",
+    # "large_tablet_portrait",
+    # "tablet_landscape",
+    # "foldable",
+    # "small_laptop",
+    # "laptop",
+    # "large_laptop",
+    # "desktop_fhd",
+    # "desktop_qhd",
+    # "desktop_4k",
+    "ultrawide",
 ]
 
+ANNOTATION_PROFILES = [
+    "big_components",
+    "small_elements",
+]
 
 # ==========================================================
-# Scroll Configuration
+# Scroll and Capture Configuration
 # ==========================================================
 
 SCROLL_PERCENTAGES = [
-
     0,
-
     25,
-
     50,
-
     75,
-
     100,
 ]
 
-
-# ==========================================================
-# Capture Configuration
-# ==========================================================
-
 SAVE_FULL_PAGE = True
-
 SAVE_VIEWPORTS = True
 
 
-# ==========================================================
-# Main
-# ==========================================================
+async def render_subscriptions_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    subscriptions_page: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                f"[YOUTUBE SUBSCRIPTIONS] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"theme={theme['mode']}"
+            )
 
-async def main():
+            await render_youtube_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="subscriptions",
+                template_name="pages/subscriptions.html",
+                context_key="page",
+                page_data=subscriptions_page,
+                system=None,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="subscriptions",
+                scroll_percentages=SCROLL_PERCENTAGES,
+                annotation_profiles=ANNOTATION_PROFILES,
+            )
 
-    # ======================================================
-    # Resolve Viewports
-    # ======================================================
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
 
-    viewports = resolve_viewports(
+        except Exception as error:
+            print(
+                f"[YOUTUBE SUBSCRIPTIONS FAILED] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
 
-        mode=
-            VIEWPORT_MODE,
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
 
-        selected=
-            SELECTED_VIEWPORTS,
+
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(
+        SELECTED_VIEWPORTS,
     )
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
 
-
-    # ======================================================
-    # Configuration Debug
-    # ======================================================
-
-    print(
-        "\n"
-        "=========================================="
-    )
-
-    print(
-        "YOUTUBE SUBSCRIPTIONS PAGE"
-    )
-
-    print(
-        "=========================================="
-    )
-
-
-    print(
-        f"Samples: "
-        f"{NUM_SAMPLES}"
-    )
-
-
-    print(
-        f"Full page capture: "
-        f"{SAVE_FULL_PAGE}"
-    )
-
-
-    print(
-        f"Viewport capture: "
-        f"{SAVE_VIEWPORTS}"
-    )
-
-
-    print(
-        f"Scroll positions: "
-        f"{SCROLL_PERCENTAGES}"
-    )
-
-
-    print(
-        "\nTesting viewports:"
-    )
-
+    print("\n==========================================")
+    print("YOUTUBE SUBSCRIPTIONS PAGE")
+    print("==========================================")
+    print(f"Samples: {NUM_SAMPLES}")
+    print(f"Full page capture: {SAVE_FULL_PAGE}")
+    print(f"Viewport capture: {SAVE_VIEWPORTS}")
+    print(f"Scroll positions: {SCROLL_PERCENTAGES}")
+    print("\nTesting viewports:")
 
     for viewport in viewports:
-
         print(
-
-            f"  - "
-            f"{viewport['name']}"
-
-            f" | "
-
-            f"{viewport['width']}"
-            f"x"
-            f"{viewport['height']}"
-
-            f" | DPR="
-            f"{viewport.get('dpr', 1)}"
+            f"  - {viewport['name']} | "
+            f"{viewport['width']}x{viewport['height']} | "
+            f"DPR={viewport.get('dpr', 1)}"
         )
 
+    for sample_index in tqdm(
+        range(NUM_SAMPLES),
+        desc="YouTube Subscriptions",
+    ):
+        subscriptions_page = generate_subscriptions_page()
 
-    # ======================================================
-    # Playwright
-    # ======================================================
+        theme_mode = random.choice(["light", "dark"])
+        theme = generate_accessible_theme(mode=theme_mode)
 
-    async with async_playwright() as p:
-
-        browser = (
-            await p.chromium.launch(
-                headless=True
-            )
+        total_videos = sum(
+            len(section["videos"])
+            for section in subscriptions_page["sections"]
         )
 
+        print("\n------------------------------------------")
+        print(f"Sample: {sample_index}")
+        print(
+            "Subscribed channels: "
+            f"{len(subscriptions_page['channels'])}"
+        )
+        print(f"Sections: {len(subscriptions_page['sections'])}")
+        print(f"Total videos: {total_videos}")
+        print(
+            "View mode: "
+            f"{subscriptions_page['controls']['view_mode']}"
+        )
+        print(f"Theme: {theme['mode']}")
+        print(f"Seed: {theme.get('seed')}")
+        print(f"WCAG pass: {theme.get('wcag_pass')}")
 
-        # ==================================================
-        # Samples
-        # ==================================================
-
-        for sample_index in tqdm(
-
-            range(
-                NUM_SAMPLES
-            ),
-
-            desc=
-                "YouTube Subscriptions",
-        ):
-
-            # ==============================================
-            # Generate Page Once
-            #
-            # The same:
-            #
-            # - channels
-            # - videos
-            # - thumbnails
-            # - section structure
-            # - theme
-            #
-            # is rendered on all four screen sizes.
-            # ==============================================
-
-            subscriptions_page = (
-                generate_subscriptions_page()
-            )
-
-
-            # ==============================================
-            # Generate Theme Once
-            # ==============================================
-
-            theme = (
-                generate_accessible_theme()
-            )
-
-
-            # ==============================================
-            # Debug Current Sample
-            # ==============================================
-
-            print(
-                "\n"
-                "------------------------------------------"
-            )
-
-
-            print(
-                f"Sample: "
-                f"{sample_index}"
-            )
-
-
-            print(
-                f"Subscribed channels: "
-                f"{len(subscriptions_page['channels'])}"
-            )
-
-
-            print(
-                f"Sections: "
-                f"{len(subscriptions_page['sections'])}"
-            )
-
-
-            total_videos = sum(
-
-                len(
-                    section["videos"]
+        for viewport in viewports:
+            jobs.append(
+                render_subscriptions_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    subscriptions_page=subscriptions_page,
+                    theme=theme,
+                    viewport=viewport,
                 )
-
-                for section
-                in subscriptions_page["sections"]
             )
 
+    results = await asyncio.gather(*jobs)
 
-            print(
-                f"Total videos: "
-                f"{total_videos}"
-            )
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
 
-
-            print(
-                f"View mode: "
-                f"{subscriptions_page['controls']['view_mode']}"
-            )
-
-
-            print(
-                f"Theme: "
-                f"{theme.get('mode')}"
-            )
+    print(
+        f"[YOUTUBE SUBSCRIPTIONS COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
 
 
-            print(
-                f"Seed: "
-                f"{theme.get('seed')}"
-            )
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
 
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
 
-            print(
-                f"WCAG pass: "
-                f"{theme.get('wcag_pass')}"
-            )
-
-
-            # ==============================================
-            # Render Same Page at Every Screen Size
-            # ==============================================
-
-            for viewport in viewports:
-
-                print(
-
-                    "\nRendering: "
-
-                    f"{viewport['name']} "
-
-                    f"("
-                    f"{viewport['width']}"
-                    f"x"
-                    f"{viewport['height']}"
-                    f")"
-                )
-
-
-                await render_page(
-
-                    # ======================================
-                    # Browser
-                    # ======================================
-
-                    browser=
-                        browser,
-
-
-                    # ======================================
-                    # Sample
-                    # ======================================
-
-                    sample_index=
-                        sample_index,
-
-                    page_type=
-                        "subscriptions",
-
-
-                    # ======================================
-                    # Template
-                    # ======================================
-
-                    template_name=
-                        "pages/subscriptions.html",
-
-                    context_key=
-                        "page",
-
-                    page_data=
-                        subscriptions_page,
-
-
-                    # ======================================
-                    # System
-                    # ======================================
-
-                    system=
-                        None,
-
-
-                    # ======================================
-                    # Theme
-                    # ======================================
-
-                    theme=
-                        theme,
-
-
-                    # ======================================
-                    # Viewport
-                    # ======================================
-
-                    viewport=
-                        viewport,
-
-
-                    # ======================================
-                    # Paths
-                    # ======================================
-
-                    template_dir=
-                        TEMPLATE_DIR,
-
-                    output_root=
-                        OUTPUT_ROOT,
-
-                    output_subdir=
-                        "subscriptions",
-
-
-                    # ======================================
-                    # Scroll Captures
-                    # ======================================
-
-                    scroll_percentages=
-                        SCROLL_PERCENTAGES,
-
-
-                    # ======================================
-                    # Full Page Capture
-                    # ======================================
-
-                    save_full_page=
-                        SAVE_FULL_PAGE,
-
-
-                    # ======================================
-                    # Viewport Captures
-                    # ======================================
-
-                    save_viewports=
-                        SAVE_VIEWPORTS,
-                )
-
-
-        # ==================================================
-        # Close Browser
-        # ==================================================
-
-        await browser.close()
-
-
-# ==========================================================
-# Entry Point
-# ==========================================================
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())

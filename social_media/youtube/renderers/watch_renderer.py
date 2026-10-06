@@ -1,29 +1,26 @@
 from __future__ import annotations
 
 import asyncio
-
+import random
 from pathlib import Path
 
 from playwright.async_api import (
     async_playwright,
 )
-
 from tqdm import tqdm
-
-
-from social_media.youtube.renderers.common_renderer import (
-    render_page,
-    resolve_viewports,
-)
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.youtube.generators.watch_generator import (
     generate_watch_page,
 )
-
+from social_media.youtube.renderers.common_new import (
+   render_youtube_page
+)
+from social_media.common.viewport import (
+    get_viewports_by_names,
+)
 
 # ==========================================================
 # Paths
@@ -35,33 +32,16 @@ YOUTUBE_ROOT = (
     .parents[1]
 )
 
-
-TEMPLATE_DIR = (
-    YOUTUBE_ROOT
-    / "templates"
-)
-
-
-OUTPUT_ROOT = (
-    YOUTUBE_ROOT
-    / "output"
-)
+TEMPLATE_DIR = YOUTUBE_ROOT / "templates"
+OUTPUT_ROOT = YOUTUBE_ROOT / "output"
 
 
 # ==========================================================
 # Dataset Configuration
 # ==========================================================
 
-# ----------------------------------------------------------
-# For UI testing:
-#
-# Generate ONE synthetic page and render that exact same
-# page on each selected screen size.
-#
-# This allows us to visually compare responsive behavior.
-# ----------------------------------------------------------
-
-NUM_SAMPLES = 50
+NUM_SAMPLES = 5
+MAX_CONCURRENT_WORKERS = 4
 
 
 # ==========================================================
@@ -70,377 +50,187 @@ NUM_SAMPLES = 50
 
 VIEWPORT_MODE = "selected"
 
-
-# ----------------------------------------------------------
-# Test each major screen category exactly once.
-#
-# Same synthetic content:
-#
-# mobile
-# tablet
-# laptop
-# desktop
-# ----------------------------------------------------------
-
 SELECTED_VIEWPORTS = [
-    "standard_iphone",
-    "tablet_landscape",
-    "laptop",
-    "desktop_fhd",
+    "small_mobile",
+    # "standard_android",
+    # "standard_iphone",
+    # "large_mobile",
+    # "mobile_landscape",
+    # "tablet_portrait",
+    # "large_tablet_portrait",
+    # "tablet_landscape",
+    # "foldable",
+    # "small_laptop",
+    # "laptop",
+    # "large_laptop",
+    # "desktop_fhd",
+    # "desktop_qhd",
+    # "desktop_4k",
+    "ultrawide",
 ]
 
+ANNOTATION_PROFILES = [
+    "big_components",
+    "small_elements",
+]
+
+
 # ==========================================================
-# Scroll Configuration
+# Scroll and Capture Configuration
 # ==========================================================
 
 SCROLL_PERCENTAGES = [
-
     0,
-
     25,
-
     50,
-
     75,
-
     100,
 ]
 
-
-# ==========================================================
-# Capture Configuration
-# ==========================================================
-
 SAVE_FULL_PAGE = True
-
 SAVE_VIEWPORTS = True
 
 
-# ==========================================================
-# Main
-# ==========================================================
+async def render_watch_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    watch_page: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                f"[YOUTUBE WATCH] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"theme={theme['mode']}"
+            )
 
-async def main():
+            await render_youtube_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="watch",
+                template_name="pages/watch.html",
+                context_key="page",
+                page_data=watch_page,
+                system=None,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="watch",
+                scroll_percentages=SCROLL_PERCENTAGES,
+                annotation_profiles=ANNOTATION_PROFILES,
+            )
 
-    # ======================================================
-    # Resolve Selected Viewports
-    # ======================================================
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
 
-    viewports = resolve_viewports(
+        except Exception as error:
+            print(
+                f"[YOUTUBE WATCH FAILED] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
 
-        mode=
-            VIEWPORT_MODE,
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
 
-        selected=
-            SELECTED_VIEWPORTS,
+
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(
+       SELECTED_VIEWPORTS,
     )
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
 
-
-    # ======================================================
-    # Configuration Debug
-    # ======================================================
-
-    print(
-        "\n"
-        "=========================================="
-    )
-
-    print(
-        "YOUTUBE WATCH PAGE"
-    )
-
-    print(
-        "=========================================="
-    )
-
-
-    print(
-        f"Samples: "
-        f"{NUM_SAMPLES}"
-    )
-
-
-    print(
-        f"Full page: "
-        f"{SAVE_FULL_PAGE}"
-    )
-
-
-    print(
-        f"Viewport screenshots: "
-        f"{SAVE_VIEWPORTS}"
-    )
-
-
-    print(
-        f"Scroll positions: "
-        f"{SCROLL_PERCENTAGES}"
-    )
-
-
-    print(
-        "\nTesting viewports:"
-    )
-
+    print("\n==========================================")
+    print("YOUTUBE WATCH PAGE")
+    print("==========================================")
+    print(f"Samples: {NUM_SAMPLES}")
+    print(f"Full page: {SAVE_FULL_PAGE}")
+    print(f"Viewport screenshots: {SAVE_VIEWPORTS}")
+    print(f"Scroll positions: {SCROLL_PERCENTAGES}")
+    print("\nTesting viewports:")
 
     for viewport in viewports:
-
         print(
-
-            f"  - "
-            f"{viewport['name']}"
-
-            f" | "
-
-            f"{viewport['width']}"
-            f"x"
-            f"{viewport['height']}"
-
-            f" | DPR="
-            f"{viewport.get('dpr', 1)}"
+            f"  - {viewport['name']} | "
+            f"{viewport['width']}x{viewport['height']} | "
+            f"DPR={viewport.get('dpr', 1)}"
         )
 
+    for sample_index in tqdm(
+        range(NUM_SAMPLES),
+        desc="YouTube Watch",
+    ):
+        watch_page = generate_watch_page()
 
-    # ======================================================
-    # Playwright
-    # ======================================================
+        theme_mode = random.choice(["light", "dark"])
+        theme = generate_accessible_theme(mode=theme_mode)
 
-    async with async_playwright() as p:
+        print("\n------------------------------------------")
+        print(f"Sample: {sample_index}")
+        print(f"Title: {watch_page['video']['title']}")
+        print(f"Channel: {watch_page['video']['channel']['name']}")
+        print(
+            "Comments generated: "
+            f"{len(watch_page['comments']['items'])}"
+        )
+        print(
+            "Recommendations generated: "
+            f"{len(watch_page['recommendations'])}"
+        )
+        print(f"Theme: {theme['mode']}")
+        print(f"WCAG pass: {theme.get('wcag_pass')}")
 
-        browser = (
-            await p.chromium.launch(
-                headless=True
+        for viewport in viewports:
+            jobs.append(
+                render_watch_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    watch_page=watch_page,
+                    theme=theme,
+                    viewport=viewport,
+                )
             )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[YOUTUBE WATCH COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
+
+
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
         )
 
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
 
-        # ==================================================
-        # Samples
-        # ==================================================
-
-        for sample_index in tqdm(
-
-            range(
-                NUM_SAMPLES
-            ),
-
-            desc=
-                "YouTube Watch",
-        ):
-
-            # ==============================================
-            # Generate Watch Page
-            #
-            # IMPORTANT:
-            #
-            # Generate ONCE here.
-            #
-            # Do NOT generate separately inside the
-            # viewport loop.
-            #
-            # This guarantees that mobile/tablet/laptop/
-            # desktop all show exactly the same content.
-            # ==============================================
-
-            watch_page = (
-                generate_watch_page()
-            )
-
-
-            # ==============================================
-            # Generate Theme Once
-            #
-            # Same theme for every viewport belonging
-            # to this sample.
-            # ==============================================
-
-            theme = (
-                generate_accessible_theme()
-            )
-
-
-            # ==============================================
-            # Sample Debug
-            # ==============================================
-
-            print(
-                "\n"
-                "------------------------------------------"
-            )
-
-            print(
-                f"Sample: "
-                f"{sample_index}"
-            )
-
-
-            print(
-                f"Title: "
-                f"{watch_page['video']['title']}"
-            )
-
-
-            print(
-                f"Channel: "
-                f"{watch_page['video']['channel']['name']}"
-            )
-
-
-            print(
-                f"Comments generated: "
-                f"{len(watch_page['comments']['items'])}"
-            )
-
-
-            print(
-                f"Recommendations generated: "
-                f"{len(watch_page['recommendations'])}"
-            )
-
-
-            print(
-                f"Theme: "
-                f"{theme.get('mode')}"
-            )
-
-
-            print(
-                f"WCAG pass: "
-                f"{theme.get('wcag_pass')}"
-            )
-
-
-            # ==============================================
-            # Render Same Page on Every Screen
-            # ==============================================
-
-            for viewport in viewports:
-
-                print(
-
-                    "\nRendering: "
-
-                    f"{viewport['name']} "
-
-                    f"("
-                    f"{viewport['width']}"
-                    f"x"
-                    f"{viewport['height']}"
-                    f")"
-                )
-
-
-                await render_page(
-
-                    # ======================================
-                    # Browser
-                    # ======================================
-
-                    browser=
-                        browser,
-
-
-                    # ======================================
-                    # Sample
-                    # ======================================
-
-                    sample_index=
-                        sample_index,
-
-                    page_type=
-                        "watch",
-
-
-                    # ======================================
-                    # Template
-                    # ======================================
-
-                    template_name=
-                        "pages/watch.html",
-
-                    context_key=
-                        "page",
-
-                    page_data=
-                        watch_page,
-
-
-                    # ======================================
-                    # System Data
-                    # ======================================
-
-                    system=
-                        None,
-
-
-                    # ======================================
-                    # Theme
-                    # ======================================
-
-                    theme=
-                        theme,
-
-
-                    # ======================================
-                    # Current Viewport
-                    # ======================================
-
-                    viewport=
-                        viewport,
-
-
-                    # ======================================
-                    # Paths
-                    # ======================================
-
-                    template_dir=
-                        TEMPLATE_DIR,
-
-                    output_root=
-                        OUTPUT_ROOT,
-
-                    output_subdir=
-                        "watch",
-
-
-                    # ======================================
-                    # Scroll Capture
-                    # ======================================
-
-                    scroll_percentages=
-                        SCROLL_PERCENTAGES,
-
-
-                    # ======================================
-                    # Full Page
-                    # ======================================
-
-                    save_full_page=
-                        SAVE_FULL_PAGE,
-
-
-                    # ======================================
-                    # Viewport Captures
-                    # ======================================
-
-                    save_viewports=
-                        SAVE_VIEWPORTS,
-                )
-
-
-        # ==================================================
-        # Close Browser
-        # ==================================================
-
-        await browser.close()
-
-
-# ==========================================================
-# Entry Point
-# ==========================================================
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())

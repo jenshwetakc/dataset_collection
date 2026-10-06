@@ -1,27 +1,25 @@
 from __future__ import annotations
 
 import asyncio
-
+import random
 from pathlib import Path
 
 from playwright.async_api import (
     async_playwright,
 )
-
 from tqdm import tqdm
-
-
-from social_media.youtube.renderers.common_renderer import (
-    render_page,
-    resolve_viewports,
-)
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.youtube.generators.home_generator import (
     generate_home_page,
+)
+from social_media.youtube.renderers.common_new import (
+   render_youtube_page
+)
+from social_media.common.viewport import (
+    get_viewports_by_names,
 )
 
 
@@ -35,52 +33,43 @@ YOUTUBE_ROOT = (
     .parents[1]
 )
 
-
-TEMPLATE_DIR = (
-    YOUTUBE_ROOT
-    / "templates"
-)
-
-
-OUTPUT_ROOT = (
-    YOUTUBE_ROOT
-    / "output"
-)
+TEMPLATE_DIR = YOUTUBE_ROOT / "templates"
+OUTPUT_ROOT = YOUTUBE_ROOT / "output"
 
 
 # ==========================================================
 # Config
 # ==========================================================
 
-NUM_SAMPLES = 50
-
-
-# ----------------------------------------------------------
-# Viewport mode:
-#
-# "all"
-# "mobile"
-# "tablet"
-# "laptop"
-# "desktop"
-# "selected"
-# "random"
-# ----------------------------------------------------------
+NUM_SAMPLES = 5
+MAX_CONCURRENT_WORKERS = 4
 
 VIEWPORT_MODE = "selected"
 
-
 SELECTED_VIEWPORTS = [
-    "standard_iphone",
-    "tablet_landscape",
-    "laptop",
-    "desktop_fhd",
+    "small_mobile",
+    # "standard_android",
+    # "standard_iphone",
+    # "large_mobile",
+    # "mobile_landscape",
+    # "tablet_portrait",
+    # "large_tablet_portrait",
+    # "tablet_landscape",
+    # "foldable",
+    # "small_laptop",
+    # "laptop",
+    # "large_laptop",
+    # "desktop_fhd",
+    # "desktop_qhd",
+    # "desktop_4k",
+    "ultrawide",
 ]
 
 
-# ==========================================================
-# Scroll / Capture Config
-# ==========================================================
+ANNOTATION_PROFILES = [
+    "big_components",
+    "small_elements",
+]
 
 SCROLL_PERCENTAGES = [
     0,
@@ -90,234 +79,140 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
-
-SAVE_FULL_PAGE = True
-
+SAVE_FULL_PAGE = False
 SAVE_VIEWPORTS = True
 
 
-# ==========================================================
-# Main
-# ==========================================================
+async def render_home_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    home: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                f"[YOUTUBE HOME] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"theme={theme['mode']}"
+            )
 
-async def main():
+            await render_youtube_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="home",
+                template_name="pages/home.html",
+                context_key="page",
+                page_data=home,
+                system=None,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="home",
+                scroll_percentages=SCROLL_PERCENTAGES,
+                annotation_profiles=ANNOTATION_PROFILES,
+            )
 
-    # ======================================================
-    # Resolve Viewports
-    # ======================================================
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
 
-    viewports = resolve_viewports(
-        mode=VIEWPORT_MODE,
-        selected=SELECTED_VIEWPORTS,
-    )
+        except Exception as error:
+            print(
+                f"[YOUTUBE HOME FAILED] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
 
-
-    print(
-        "\n=============================="
-    )
-
-    print(
-        "YOUTUBE HOME DATASET"
-    )
-
-    print(
-        "=============================="
-    )
-
-
-    print(
-        f"Samples: {NUM_SAMPLES}"
-    )
-
-
-    print(
-        f"Full page capture: "
-        f"{SAVE_FULL_PAGE}"
-    )
-
-
-    print(
-        f"Viewport capture: "
-        f"{SAVE_VIEWPORTS}"
-    )
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
 
 
-    print(
-        f"Scroll positions: "
-        f"{SCROLL_PERCENTAGES}"
-    )
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(SELECTED_VIEWPORTS)
 
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
 
-    print(
-        "\nViewports:"
-    )
-
+    print("\n==============================")
+    print("YOUTUBE HOME DATASET")
+    print("==============================")
+    print(f"Samples: {NUM_SAMPLES}")
+    print(f"Full page capture: {SAVE_FULL_PAGE}")
+    print(f"Viewport capture: {SAVE_VIEWPORTS}")
+    print(f"Scroll positions: {SCROLL_PERCENTAGES}")
+    print("\nViewports:")
 
     for viewport in viewports:
-
         print(
-            f"  - "
-            f"{viewport['name']} "
-            f"({viewport['width']}x"
-            f"{viewport['height']}, "
+            f"  - {viewport['name']} "
+            f"({viewport['width']}x{viewport['height']}, "
             f"DPR={viewport.get('dpr', 1)})"
         )
 
+    for sample_index in tqdm(
+        range(NUM_SAMPLES),
+        desc="YouTube Home",
+    ):
+        home = generate_home_page()
 
-    # ======================================================
-    # Playwright
-    # ======================================================
+        theme_mode = random.choice(["light", "dark"])
+        theme = generate_accessible_theme(mode=theme_mode)
 
-    async with async_playwright() as p:
-
-        browser = (
-            await p.chromium.launch(
-                headless=True
-            )
+        print(
+            f"[YOUTUBE HOME SAMPLE] "
+            f"sample={sample_index} "
+            f"theme={theme_mode}"
         )
 
-
-        # ==================================================
-        # Samples
-        # ==================================================
-
-        for sample_index in tqdm(
-            range(NUM_SAMPLES),
-            desc="YouTube Home",
-        ):
-
-            # ==============================================
-            # Generate Page Content
-            #
-            # Generate once so every viewport for this
-            # sample uses the SAME content.
-            # ==============================================
-
-            home = (
-                generate_home_page()
-            )
-
-
-            # ==============================================
-            # Generate Accessible Theme
-            #
-            # No mode specified:
-            # palette generator randomly chooses
-            # light or dark.
-            # ==============================================
-
-            theme = (
-                generate_accessible_theme()
-            )
-
-
-            # ==============================================
-            # Render Viewports
-            # ==============================================
-
-            for viewport in viewports:
-
-                await render_page(
-
-                    # --------------------------------------
-                    # Browser
-                    # --------------------------------------
-
-                    browser=
-                        browser,
-
-
-                    # --------------------------------------
-                    # Sample
-                    # --------------------------------------
-
-                    sample_index=
-                        sample_index,
-
-                    page_type=
-                        "home",
-
-
-                    # --------------------------------------
-                    # Template
-                    # --------------------------------------
-
-                    template_name=
-                        "pages/home.html",
-
-                    context_key=
-                        "page",
-
-                    page_data=
-                        home,
-
-
-                    # --------------------------------------
-                    # Optional system information
-                    # --------------------------------------
-
-                    system=
-                        None,
-
-
-                    # --------------------------------------
-                    # Theme
-                    # --------------------------------------
-
-                    theme=
-                        theme,
-
-
-                    # --------------------------------------
-                    # Viewport
-                    # --------------------------------------
-
-                    viewport=
-                        viewport,
-
-
-                    # --------------------------------------
-                    # Paths
-                    # --------------------------------------
-
-                    template_dir=
-                        TEMPLATE_DIR,
-
-                    output_root=
-                        OUTPUT_ROOT,
-
-                    output_subdir=
-                        "home",
-
-
-                    # --------------------------------------
-                    # Capture Configuration
-                    # --------------------------------------
-
-                    scroll_percentages=
-                        SCROLL_PERCENTAGES,
-
-                    save_full_page=
-                        SAVE_FULL_PAGE,
-
-                    save_viewports=
-                        SAVE_VIEWPORTS,
+        for viewport in viewports:
+            jobs.append(
+                render_home_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    home=home,
+                    theme=theme,
+                    viewport=viewport,
                 )
+            )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[YOUTUBE HOME COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
+    )
 
 
-        # ==================================================
-        # Close Browser
-        # ==================================================
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
 
-        await browser.close()
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
 
-
-# ==========================================================
-# Entry Point
-# ==========================================================
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())
