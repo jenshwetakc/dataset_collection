@@ -1,43 +1,29 @@
 from __future__ import annotations
 
 import asyncio
+import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
 from social_media.amazon.generators.returns_generator import (
     generate_returns_data,
 )
-
 from social_media.amazon.renderers.common_renderer import (
     render_amazon_page,
 )
-
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.common.system_generator import (
     generate_system_data,
 )
-
 from social_media.common.viewport import (
     get_viewports_by_names,
 )
 
 
-# ==========================================================
-# Configuration
-# ==========================================================
+NUM_SAMPLES = 20
 
-NUM_SAMPLES = 50
-
-
-# SELECTED_VIEWPORTS = [
-#     "standard_iphone",
-#     "desktop_fhd",
-# ]
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -57,26 +43,15 @@ SELECTED_VIEWPORTS = [
     "ultrawide",
 ]
 
-# ANNOTATION_PROFILES = [
-#     "big_components",
-#     "components",
-#     "small_elements",
-#     "icons_only",
-# ]
 ANNOTATION_PROFILES = [
     "big_components",
     "small_elements",
 ]
 
-
 THEME_MODE = "random"
 
-
-CAPTURE_FULL_PAGE = True
-
-
+CAPTURE_FULL_PAGE = False
 CAPTURE_VIEWPORTS = True
-
 
 SCROLL_PERCENTAGES = [
     0,
@@ -86,162 +61,131 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
+MAX_CONCURRENT_WORKERS = 4
 
-# ==========================================================
-# Theme
-# ==========================================================
 
 def generate_theme() -> dict:
-
-    if THEME_MODE == "light":
-
-        return generate_accessible_theme(
-            mode="light"
-        )
-
-    if THEME_MODE == "dark":
-
-        return generate_accessible_theme(
-            mode="dark"
-        )
-
-    return generate_accessible_theme()
+    mode = (
+        random.choice(["light", "dark"])
+        if THEME_MODE == "random"
+        else THEME_MODE
+    )
+    return generate_accessible_theme(mode=mode)
 
 
-# ==========================================================
-# Main
-# ==========================================================
+async def render_returns_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    amazon: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                f"[AMAZON RETURNS] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"theme={theme['mode']}"
+            )
 
-async def main():
+            await render_amazon_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="returns",
+                template_name="returns.html",
+                context_key="amazon",
+                page_data=amazon,
+                system=system,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="returns",
+                annotation_profiles=ANNOTATION_PROFILES,
+                capture_full_page=CAPTURE_FULL_PAGE,
+                capture_viewports=CAPTURE_VIEWPORTS,
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
 
-    viewports = get_viewports_by_names(
-        SELECTED_VIEWPORTS
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
+        except Exception as error:
+            print(
+                f"[AMAZON RETURNS FAILED] "
+                f"sample={sample_index} "
+                f"viewport={viewport['name']} "
+                f"error={error}"
+            )
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
+
+
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(SELECTED_VIEWPORTS)
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
+
+    for sample_index in range(NUM_SAMPLES):
+        amazon = generate_returns_data()
+        system = generate_system_data()
+        theme = generate_theme()
+
+        print("\n==========================================")
+        print("AMAZON RETURNS SAMPLE", sample_index)
+        print("State:", amazon["state"])
+        print("Items:", len(amazon["items"]))
+        print("Confirmation:", amazon["show_confirmation"])
+        print("Refund progress:", amazon["refund_progress"])
+        print("Theme:", theme["mode"])
+        print("==========================================")
+
+        for viewport in viewports:
+            jobs.append(
+                render_returns_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    amazon=amazon,
+                    system=system,
+                    theme=theme,
+                    viewport=viewport,
+                )
+            )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        f"[AMAZON RETURNS COMPLETE] "
+        f"successful={successful} "
+        f"failed={failed}"
     )
 
+
+async def run() -> None:
     async with async_playwright() as playwright:
-
         browser = await playwright.chromium.launch(
-            headless=True
+            headless=True,
         )
-
         try:
-
-            for sample_index in range(
-                NUM_SAMPLES
-            ):
-
-                amazon = generate_returns_data()
-
-                system = generate_system_data()
-
-                theme = generate_theme()
-
-
-                print(
-                    "\n"
-                    "=========================================="
-                )
-
-                print(
-                    "AMAZON RETURNS SAMPLE",
-                    sample_index,
-                )
-
-                print(
-                    "=========================================="
-                )
-
-                print(
-                    "State:",
-                    amazon["state"],
-                )
-
-                print(
-                    "Items:",
-                    len(
-                        amazon["items"]
-                    ),
-                )
-
-                print(
-                    "Confirmation:",
-                    amazon[
-                        "show_confirmation"
-                    ],
-                )
-
-                print(
-                    "Refund progress:",
-                    amazon[
-                        "refund_progress"
-                    ],
-                )
-
-
-                for viewport in viewports:
-
-                    print(
-                        "Rendering:",
-                        viewport["name"],
-                    )
-
-
-                    await render_amazon_page(
-
-                        browser=
-                            browser,
-
-                        sample_index=
-                            sample_index,
-
-                        page_type=
-                            "returns",
-
-                        template_name=
-                            "returns.html",
-
-                        context_key=
-                            "amazon",
-
-                        page_data=
-                            amazon,
-
-                        system=
-                            system,
-
-                        theme=
-                            theme,
-
-                        viewport=
-                            viewport,
-
-                        output_subdir=
-                            "returns",
-
-                        annotation_profiles=
-                            ANNOTATION_PROFILES,
-
-                        capture_full_page=
-                            CAPTURE_FULL_PAGE,
-
-                        capture_viewports=
-                            CAPTURE_VIEWPORTS,
-
-                        scroll_percentages=
-                            SCROLL_PERCENTAGES,
-                    )
-
+            await main(browser)
         finally:
-
             await browser.close()
 
 
-# ==========================================================
-# Entry
-# ==========================================================
-
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())
