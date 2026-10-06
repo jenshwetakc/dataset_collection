@@ -31,63 +31,9 @@ from social_media.steam.renderers.common_renderer import (
 # ==========================================================
 # Configuration
 # ==========================================================
-#
-# NUM_SAMPLES = 3
-#
-#
-# SELECTED_VIEWPORTS = [
-#
-#     "laptop",
-#
-#     "desktop_fhd",
-# ]
-#
-#
-# ANNOTATION_PROFILES = [
-#
-#     "big_components",
-#
-#     "components",
-#
-#     "small_elements",
-#
-#     "icons_only",
-# ]
-#
-#
-# THEME_MODE = "random"
-#
-#
-# CAPTURE_FULL_PAGE = True
-#
-# CAPTURE_VIEWPORTS = True
-#
-#
-# SCROLL_PERCENTAGES = [
-#
-#     0,
-#
-#     10,
-#
-#     20,
-#
-#     30,
-#
-#     40,
-#
-#     50,
-#
-#     60,
-#
-#     70,
-#
-#     80,
-#
-#     90,
-#
-#     100,
-# ]
-NUM_SAMPLES = 18
+
+NUM_SAMPLES = 20
+
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -109,13 +55,11 @@ SELECTED_VIEWPORTS = [
 
 ANNOTATION_PROFILES = [
     "big_components",
-    "icons_only",
+    "small_elements",
 ]
-
 
 THEME_MODE = "random"
 
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
 
 CAPTURE_VIEWPORTS = True
@@ -128,23 +72,27 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
+MAX_CONCURRENT_WORKERS = 4
+
+
 # ==========================================================
 # Theme
 # ==========================================================
 
-def generate_theme():
+def generate_theme() -> dict:
 
     if THEME_MODE == "random":
 
-        mode = random.choice([
-            "light",
-            "dark",
-        ])
+        mode = random.choice(
+            [
+                "light",
+                "dark",
+            ]
+        )
 
     else:
 
         mode = THEME_MODE
-
 
     return generate_accessible_theme(
         mode=mode
@@ -152,114 +100,208 @@ def generate_theme():
 
 
 # ==========================================================
-# Main
+# Render One Parallel Steam Market Job
 # ==========================================================
 
-async def main():
+async def render_one_market_job(
+    browser,
+    semaphore,
+    sample_index: int,
+    market_data: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
 
-    viewports = (
-        get_viewports_by_names(
-            SELECTED_VIEWPORTS
-        )
-    )
-
-
-    async with async_playwright() as playwright:
-
-        browser = (
-            await playwright.chromium.launch(
-                headless=True
-            )
-        )
-
+    async with semaphore:
 
         try:
 
-            for sample_index in range(
-                NUM_SAMPLES
-            ):
+            print(
+                "\n"
+                "========================================"
+            )
 
-                print(
-                    "\n"
-                    "========================================"
+            print("STEAM COMMUNITY MARKET")
+            print("Sample:", sample_index)
+            print("Theme:", theme["mode"])
+            print("Viewport:", viewport["name"])
+
+            print(
+                "========================================"
+            )
+
+            await render_steam_page(
+
+                browser=browser,
+
+                sample_index=sample_index,
+
+                page_type="community_market",
+
+                template_name="community_market.html",
+
+                context_key="market",
+
+                page_data=market_data,
+
+                system=system,
+
+                theme=theme,
+
+                viewport=viewport,
+
+                output_subdir="community_market",
+
+                annotation_profiles=ANNOTATION_PROFILES,
+
+                capture_full_page=CAPTURE_FULL_PAGE,
+
+                capture_viewports=CAPTURE_VIEWPORTS,
+
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
+
+            return {
+
+                "status": "success",
+
+                "sample_index": sample_index,
+
+                "theme": theme["mode"],
+
+                "viewport": viewport["name"],
+            }
+
+        except Exception as error:
+
+            return {
+
+                "status": "failed",
+
+                "sample_index": sample_index,
+
+                "theme": theme["mode"],
+
+                "viewport": viewport["name"],
+
+                "error": str(error),
+            }
+
+
+# ==========================================================
+# Main Generation
+# ==========================================================
+
+async def main(
+    browser,
+):
+
+    viewports = get_viewports_by_names(
+        SELECTED_VIEWPORTS
+    )
+
+    semaphore = asyncio.Semaphore(
+        MAX_CONCURRENT_WORKERS
+    )
+
+    jobs = []
+
+    print(
+        "Steam Community Market Dataset Generation | "
+        f"jobs={NUM_SAMPLES * len(viewports)} | "
+        f"workers={MAX_CONCURRENT_WORKERS}"
+    )
+
+
+    # One market UI variation and theme per sample.
+    # It is then captured at every selected viewport.
+    for sample_index in range(
+        1,
+        NUM_SAMPLES + 1,
+    ):
+
+        market_data = (
+            generate_community_market_data()
+        )
+
+        system = generate_system_data()
+
+        theme = generate_theme()
+
+        for viewport in viewports:
+
+            jobs.append(
+
+                render_one_market_job(
+
+                    browser=browser,
+
+                    semaphore=semaphore,
+
+                    sample_index=sample_index,
+
+                    market_data=market_data,
+
+                    system=system,
+
+                    theme=theme,
+
+                    viewport=viewport,
                 )
-
-                print(
-                    "STEAM COMMUNITY MARKET"
-                )
-
-                print(
-                    "Sample:",
-                    sample_index,
-                )
-
-                print(
-                    "========================================"
-                )
+            )
 
 
-                market_data = (
-                    generate_community_market_data()
-                )
+    results = await asyncio.gather(
+        *jobs
+    )
+
+    successful_results = [
+        result
+        for result in results
+        if result["status"] == "success"
+    ]
+
+    failed_results = [
+        result
+        for result in results
+        if result["status"] == "failed"
+    ]
+
+    print(
+        "Generation complete | "
+        f"successful={len(successful_results)} | "
+        f"failed={len(failed_results)}"
+    )
+
+    for result in failed_results:
+
+        print(
+            "[FAILED]",
+            "Sample:", result["sample_index"],
+            "| Theme:", result["theme"],
+            "| Viewport:", result["viewport"],
+            "| Error:", result["error"],
+        )
 
 
-                system = (
-                    generate_system_data()
-                )
+# ==========================================================
+# Browser Lifecycle
+# ==========================================================
 
+async def run():
 
-                theme = (
-                    generate_theme()
-                )
+    async with async_playwright() as playwright:
 
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
 
-                for viewport in viewports:
+        try:
 
-                    await render_steam_page(
-
-                        browser=
-                            browser,
-
-                        sample_index=
-                            sample_index,
-
-                        page_type=
-                            "community_market",
-
-                        template_name=
-                            "community_market.html",
-
-                        context_key=
-                            "market",
-
-                        page_data=
-                            market_data,
-
-                        system=
-                            system,
-
-                        theme=
-                            theme,
-
-                        viewport=
-                            viewport,
-
-                        output_subdir=
-                            "community_market",
-
-                        annotation_profiles=
-                            ANNOTATION_PROFILES,
-
-                        capture_full_page=
-                            CAPTURE_FULL_PAGE,
-
-                        capture_viewports=
-                            CAPTURE_VIEWPORTS,
-
-                        scroll_percentages=
-                            SCROLL_PERCENTAGES,
-                    )
-
+            await main(
+                browser
+            )
 
         finally:
 
@@ -273,5 +315,5 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(
-        main()
+        run()
     )
