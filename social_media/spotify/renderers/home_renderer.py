@@ -3,26 +3,20 @@ from __future__ import annotations
 import asyncio
 import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.common.renderer import (
     resolve_viewports,
 )
-
 from social_media.spotify.generators.home_generator import (
     generate_home_page,
 )
-
 from social_media.spotify.generators.system_generator import (
     generate_system_data,
 )
-
 from social_media.spotify.renderers.common_renderer import (
     render_spotify_page,
 )
@@ -31,36 +25,11 @@ from social_media.spotify.renderers.common_renderer import (
 # ==========================================================
 # Configuration
 # ==========================================================
-#
-# NUM_SAMPLES = 3
-#
-#
-# # ==========================================================
-# # Viewport Configuration
-# # ==========================================================
-#
+
+NUM_SAMPLES = 20
+
 VIEWPORT_MODE = "selected"
-#
-#
-# SELECTED_VIEWPORTS = [
-#     "standard_iphone",
-#     "tablet_portrait",
-#     "laptop",
-#     "desktop_fhd",
-# ]
-#
-#
-# # ==========================================================
-# # Annotation Profiles
-# # ==========================================================
-#
-# ANNOTATION_PROFILES = [
-#     "big_components",
-#     "components",
-#     "small_elements",
-#     "icons_only",
-# ]
-NUM_SAMPLES = 18
+
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -82,15 +51,12 @@ SELECTED_VIEWPORTS = [
 
 ANNOTATION_PROFILES = [
     "big_components",
-    "icons_only",
+    "small_elements",
 ]
 
+THEME_MODE = "random"
 
-THEME_MODES = "random"
-
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
-
 CAPTURE_VIEWPORTS = True
 
 SCROLL_PERCENTAGES = [
@@ -101,13 +67,12 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
+MAX_CONCURRENT_WORKERS = 4
+
 
 # ==========================================================
-# Theme Configuration
+# Theme
 # ==========================================================
-
-THEME_MODE = "random"
-
 
 def generate_spotify_theme() -> dict:
 
@@ -130,8 +95,7 @@ def generate_spotify_theme() -> dict:
     else:
 
         raise ValueError(
-            f"Unknown THEME_MODE: "
-            f"{THEME_MODE}"
+            f"Unknown THEME_MODE: {THEME_MODE}"
         )
 
     return generate_accessible_theme(
@@ -140,159 +104,197 @@ def generate_spotify_theme() -> dict:
 
 
 # ==========================================================
-# Main
+# Render One Parallel Home Job
 # ==========================================================
 
-async def main() -> None:
+async def render_one_home_job(
+    browser,
+    semaphore,
+    sample_index: int,
+    home_data: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
 
-    # ------------------------------------------------------
-    # Resolve viewports once
-    # ------------------------------------------------------
+    async with semaphore:
+
+        try:
+
+            print(
+                "\n"
+                "=========================================="
+            )
+
+            print("SPOTIFY HOME")
+            print("Sample:", sample_index)
+            print("Theme:", theme["mode"])
+            print("Viewport:", viewport["name"])
+
+            print(
+                "=========================================="
+            )
+
+            await render_spotify_page(
+
+                browser=browser,
+
+                sample_index=sample_index,
+
+                page_type="home",
+
+                template_name="home.html",
+
+                context_key="home",
+
+                page_data=home_data,
+
+                system=system,
+
+                theme=theme,
+
+                viewport=viewport,
+
+                annotation_profiles=ANNOTATION_PROFILES,
+
+                capture_full_page=CAPTURE_FULL_PAGE,
+
+                capture_viewports=CAPTURE_VIEWPORTS,
+
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
+
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "theme": theme["mode"],
+                "viewport": viewport["name"],
+            }
+
+        except Exception as error:
+
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "theme": theme["mode"],
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
+
+
+# ==========================================================
+# Main Generation
+# ==========================================================
+
+async def main(
+    browser,
+) -> None:
 
     viewports = resolve_viewports(
+
         mode=VIEWPORT_MODE,
+
         selected=SELECTED_VIEWPORTS,
     )
 
+    semaphore = asyncio.Semaphore(
+        MAX_CONCURRENT_WORKERS
+    )
 
-    async with async_playwright() as p:
+    jobs = []
 
-        browser = await p.chromium.launch(
+    print(
+        "Spotify Home Dataset Generation | "
+        f"jobs={NUM_SAMPLES * len(viewports)} | "
+        f"workers={MAX_CONCURRENT_WORKERS}"
+    )
+
+    for sample_index in range(
+        1,
+        NUM_SAMPLES + 1,
+    ):
+
+        # One logical Spotify screen per sample.
+        home_data = generate_home_page()
+
+        # Shared across all viewport captures for this sample.
+        system = generate_system_data()
+
+        # One random light/dark theme per sample.
+        theme = generate_spotify_theme()
+
+        for viewport in viewports:
+
+            jobs.append(
+
+                render_one_home_job(
+
+                    browser=browser,
+
+                    semaphore=semaphore,
+
+                    sample_index=sample_index,
+
+                    home_data=home_data,
+
+                    system=system,
+
+                    theme=theme,
+
+                    viewport=viewport,
+                )
+            )
+
+    results = await asyncio.gather(
+        *jobs
+    )
+
+    successful_results = [
+        result
+        for result in results
+        if result["status"] == "success"
+    ]
+
+    failed_results = [
+        result
+        for result in results
+        if result["status"] == "failed"
+    ]
+
+    print(
+        "Generation complete | "
+        f"successful={len(successful_results)} | "
+        f"failed={len(failed_results)}"
+    )
+
+    for result in failed_results:
+
+        print(
+            "[FAILED]",
+            "Sample:", result["sample_index"],
+            "| Theme:", result["theme"],
+            "| Viewport:", result["viewport"],
+            "| Error:", result["error"],
+        )
+
+
+# ==========================================================
+# Browser Lifecycle
+# ==========================================================
+
+async def run() -> None:
+
+    async with async_playwright() as playwright:
+
+        browser = await playwright.chromium.launch(
             headless=True
         )
 
         try:
 
-            for sample_index in range(
-                NUM_SAMPLES
-            ):
-
-                # ==================================================
-                # Generate ONE logical Spotify screen
-                #
-                # This content is reused for every viewport.
-                # ==================================================
-
-                home_data = (
-                    generate_home_page()
-                )
-
-
-                # ==================================================
-                # Generate ONE system state
-                #
-                # Shared status-bar state:
-                # - time
-                # - notifications
-                # - Wi-Fi
-                # - cellular
-                # - battery
-                # - system icons
-                #
-                # Reused across every viewport for this sample.
-                # ==================================================
-
-                system = (
-                    generate_system_data()
-                )
-
-
-                # ==================================================
-                # Theme
-                # ==================================================
-
-                theme = (
-                    generate_spotify_theme()
-                )
-
-
-                # ==================================================
-                # Debug
-                # ==================================================
-
-                print(
-                    "\n"
-                    "=========================================="
-                )
-
-                print(
-                    f"Spotify Home Sample: "
-                    f"{sample_index}"
-                )
-
-                print(
-                    f"Theme: "
-                    f"{theme['mode']}"
-                )
-
-                print(
-                    f"Seed: "
-                    f"{theme['seed']}"
-                )
-
-                print(
-                    f"Time: "
-                    f"{system['time_text']}"
-                )
-
-                print(
-                    f"Status Bar: "
-                    f"{system['status_bar_variant']}"
-                )
-
-                print(
-                    f"Notifications: "
-                    f"{system['notifications']['count']}"
-                )
-
-                print(
-                    f"Battery: "
-                    f"{system['battery']['level']}%"
-                )
-
-                print(
-                    "=========================================="
-                )
-
-
-                # ==================================================
-                # Render same logical screen at every viewport
-                # ==================================================
-
-                for viewport in viewports:
-
-                    await render_spotify_page(
-
-                        browser=browser,
-
-                        sample_index=
-                            sample_index,
-
-                        page_type=
-                            "home",
-
-                        template_name=
-                            "home.html",
-
-                        context_key=
-                            "home",
-
-                        page_data=
-                            home_data,
-
-                        system=
-                            system,
-
-                        theme=
-                            theme,
-
-                        viewport=
-                            viewport,
-
-                        annotation_profiles=
-                            ANNOTATION_PROFILES,
-                    )
-
+            await main(
+                browser
+            )
 
         finally:
 
@@ -306,5 +308,5 @@ async def main() -> None:
 if __name__ == "__main__":
 
     asyncio.run(
-        main()
+        run()
     )
