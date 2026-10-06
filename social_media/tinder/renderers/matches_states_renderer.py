@@ -1,3 +1,321 @@
+# from __future__ import annotations
+#
+# import asyncio
+# import random
+#
+# from playwright.async_api import (
+#     async_playwright,
+# )
+#
+# from social_media.common.palette_generator import (
+#     generate_accessible_theme,
+# )
+#
+# from social_media.common.system_generator import (
+#     generate_system_data,
+# )
+#
+# from social_media.common.viewport import (
+#     get_viewports_by_names,
+# )
+#
+# from social_media.tinder.generators.matches_states_generator import (
+#     MATCHES_STATES,
+#     generate_matches_states_data,
+# )
+#
+# from social_media.tinder.renderers.common_renderer import (
+#     render_tinder_page,
+# )
+#
+#
+# # ==========================================================
+# # Configuration
+# # ==========================================================
+# #
+# # NUM_SAMPLES_PER_STATE = 2
+# #
+# #
+# # SELECTED_VIEWPORTS = [
+# #
+# #     "small_mobile",
+# #
+# #     "foldable",
+# #
+# #     "desktop_fhd",
+# #
+# # ]
+# #
+# #
+# # ANNOTATION_PROFILES = [
+# #
+# #     "big_components",
+# #
+# #     "components",
+# #
+# #     "small_elements",
+# #
+# #     "icons_only",
+# #
+# # ]
+# #
+# #
+# THEME_MODES = [
+#
+#     "light",
+#
+#     "dark",
+#
+# ]
+# NUM_SAMPLES_PER_STATE = 18
+# SELECTED_VIEWPORTS = [
+#     "small_mobile",
+#     "standard_android",
+#     "standard_iphone",
+#     "large_mobile",
+#     "mobile_landscape",
+#     "tablet_portrait",
+#     "large_tablet_portrait",
+#     "tablet_landscape",
+#     "foldable",
+#     "small_laptop",
+#     "laptop",
+#     "large_laptop",
+#     "desktop_fhd",
+#     "desktop_qhd",
+#     "desktop_4k",
+#     "ultrawide",
+# ]
+#
+# ANNOTATION_PROFILES = [
+#     "big_components",
+#     "small_elements",
+# ]
+#
+#
+# # THEME_MODES = "random"
+#
+# # CAPTURE_FULL_PAGE = True
+# CAPTURE_FULL_PAGE = False
+#
+# CAPTURE_VIEWPORTS = True
+#
+# SCROLL_PERCENTAGES = [
+#     0,
+#     25,
+#     50,
+#     75,
+#     100,
+# ]
+#
+# TINDER_SEEDS = [
+#
+#     "#FD5068",
+#
+#     "#FF4458",
+#
+#     "#FE3C72",
+#
+#     "#E94057",
+#
+# ]
+#
+#
+# # ==========================================================
+# # Main
+# # ==========================================================
+#
+# async def main():
+#
+#     viewports = (
+#         get_viewports_by_names(
+#             SELECTED_VIEWPORTS
+#         )
+#     )
+#
+#
+#     async with async_playwright() as playwright:
+#
+#         browser = (
+#             await playwright.chromium.launch(
+#                 headless=True,
+#             )
+#         )
+#
+#
+#         try:
+#
+#             global_sample_index = 0
+#
+#
+#             for state in MATCHES_STATES:
+#
+#                 for state_sample_index in range(
+#                     NUM_SAMPLES_PER_STATE
+#                 ):
+#
+#                     matches_data = (
+#                         generate_matches_states_data(
+#                             state=state,
+#                         )
+#                     )
+#
+#
+#                     system = (
+#                         generate_system_data()
+#                     )
+#
+#
+#                     for theme_mode in THEME_MODES:
+#
+#                         theme = (
+#                             generate_accessible_theme(
+#
+#                                 seed=random.choice(
+#                                     TINDER_SEEDS
+#                                 ),
+#
+#                                 mode=
+#                                     theme_mode,
+#                             )
+#                         )
+#
+#
+#                         for viewport in viewports:
+#
+#                             print(
+#                                 "\n"
+#                                 "===================================="
+#                             )
+#
+#                             print(
+#                                 "TINDER MATCHES STATE"
+#                             )
+#
+#                             print(
+#                                 "state:",
+#                                 state,
+#                             )
+#
+#                             print(
+#                                 "state sample:",
+#                                 state_sample_index,
+#                             )
+#
+#                             print(
+#                                 "global sample:",
+#                                 global_sample_index,
+#                             )
+#
+#                             print(
+#                                 "theme:",
+#                                 theme_mode,
+#                             )
+#
+#                             print(
+#                                 "viewport:",
+#                                 viewport["name"],
+#                             )
+#
+#                             print(
+#                                 "===================================="
+#                             )
+#
+#
+#                             # Long populated lists benefit
+#                             # from the normal scroll sequence.
+#                             if state in [
+#                                 "normal",
+#                                 "search_results",
+#                             ]:
+#
+#                                 scroll_percentages = [
+#
+#                                     0,
+#                                     10,
+#                                     20,
+#                                     30,
+#                                     40,
+#                                     50,
+#                                     60,
+#                                     70,
+#                                     80,
+#                                     90,
+#                                     100,
+#
+#                                 ]
+#
+#                             else:
+#
+#                                 scroll_percentages = [
+#                                     0
+#                                 ]
+#
+#
+#                             await render_tinder_page(
+#
+#                                 browser=
+#                                     browser,
+#
+#                                 sample_index=
+#                                     global_sample_index,
+#
+#                                 page_type=
+#                                     f"matches_{state}",
+#
+#                                 template_name=
+#                                     "matches_states.html",
+#
+#                                 context_key=
+#                                     "matches",
+#
+#                                 page_data=
+#                                     matches_data,
+#
+#                                 system=
+#                                     system,
+#
+#                                 theme=
+#                                     theme,
+#
+#                                 viewport=
+#                                     viewport,
+#
+#                                 output_subdir=
+#                                     "matches_states",
+#
+#                                 annotation_profiles=
+#                                     ANNOTATION_PROFILES,
+#
+#                                 capture_full_page=
+#                                     True,
+#
+#                                 capture_viewports=
+#                                     True,
+#
+#                                 scroll_percentages=
+#                                     scroll_percentages,
+#                             )
+#
+#
+#                     global_sample_index += 1
+#
+#
+#         finally:
+#
+#             await browser.close()
+#
+#
+# # ==========================================================
+# # Entry Point
+# # ==========================================================
+#
+# if __name__ == "__main__":
+#
+#     asyncio.run(
+#         main()
+#     )
+
 from __future__ import annotations
 
 import asyncio
@@ -32,42 +350,9 @@ from social_media.tinder.renderers.common_renderer import (
 # ==========================================================
 # Configuration
 # ==========================================================
-#
-# NUM_SAMPLES_PER_STATE = 2
-#
-#
-# SELECTED_VIEWPORTS = [
-#
-#     "small_mobile",
-#
-#     "foldable",
-#
-#     "desktop_fhd",
-#
-# ]
-#
-#
-# ANNOTATION_PROFILES = [
-#
-#     "big_components",
-#
-#     "components",
-#
-#     "small_elements",
-#
-#     "icons_only",
-#
-# ]
-#
-#
-THEME_MODES = [
 
-    "light",
+NUM_SAMPLES_PER_STATE = 20
 
-    "dark",
-
-]
-NUM_SAMPLES_PER_STATE = 18
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -89,18 +374,19 @@ SELECTED_VIEWPORTS = [
 
 ANNOTATION_PROFILES = [
     "big_components",
-    "icons_only",
+    "small_elements",
 ]
 
+THEME_MODES = [
+    "light",
+    "dark",
+]
 
-# THEME_MODES = "random"
-
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
 
 CAPTURE_VIEWPORTS = True
 
-SCROLL_PERCENTAGES = [
+LONG_SCROLL_PERCENTAGES = [
     0,
     25,
     50,
@@ -108,198 +394,343 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
-TINDER_SEEDS = [
-
-    "#FD5068",
-
-    "#FF4458",
-
-    "#FE3C72",
-
-    "#E94057",
-
+POPUP_SCROLL_PERCENTAGES = [
+    0,
 ]
 
+SCROLLABLE_STATES = {
+    "normal",
+    "search_results",
+}
+
+TINDER_SEEDS = [
+    "#FD5068",
+    "#FF4458",
+    "#FE3C72",
+    "#E94057",
+]
+
+MAX_CONCURRENT_WORKERS = 4
+
 
 # ==========================================================
-# Main
+# Render One Parallel Matches-State Job
 # ==========================================================
 
-async def main():
+async def render_one_matches_state_job(
+    browser,
+    semaphore,
+    state: str,
+    state_sample_index: int,
+    global_sample_index: int,
+    matches_data: dict,
+    system: dict,
+    theme: dict,
+    theme_mode: str,
+    viewport: dict,
+    scroll_percentages: list[int],
+) -> dict:
 
-    viewports = (
-        get_viewports_by_names(
-            SELECTED_VIEWPORTS
-        )
-    )
-
-
-    async with async_playwright() as playwright:
-
-        browser = (
-            await playwright.chromium.launch(
-                headless=True,
-            )
-        )
-
+    async with semaphore:
 
         try:
 
-            global_sample_index = 0
+            print(
+                "\n"
+                "===================================="
+            )
+
+            print("TINDER MATCHES STATE")
+            print("State:", state)
+            print("State sample:", state_sample_index)
+            print("Global sample:", global_sample_index)
+            print("Theme:", theme_mode)
+            print("Viewport:", viewport["name"])
+
+            print(
+                "===================================="
+            )
+
+            await render_tinder_page(
+
+                browser=browser,
+
+                sample_index=global_sample_index,
+
+                page_type=f"matches_{state}",
+
+                template_name="matches_states.html",
+
+                context_key="matches",
+
+                page_data=matches_data,
+
+                system=system,
+
+                theme=theme,
+
+                viewport=viewport,
+
+                output_subdir="matches_states",
+
+                annotation_profiles=ANNOTATION_PROFILES,
+
+                capture_full_page=CAPTURE_FULL_PAGE,
+
+                capture_viewports=CAPTURE_VIEWPORTS,
+
+                scroll_percentages=scroll_percentages,
+            )
+
+            return {
+
+                "status": "success",
+
+                "state": state,
+
+                "state_sample_index": state_sample_index,
+
+                "global_sample_index": global_sample_index,
+
+                "theme": theme_mode,
+
+                "viewport": viewport["name"],
+            }
+
+        except Exception as error:
+
+            return {
+
+                "status": "failed",
+
+                "state": state,
+
+                "state_sample_index": state_sample_index,
+
+                "global_sample_index": global_sample_index,
+
+                "theme": theme_mode,
+
+                "viewport": viewport["name"],
+
+                "error": str(error),
+            }
 
 
-            for state in MATCHES_STATES:
+# ==========================================================
+# Main Generation
+# ==========================================================
 
-                for state_sample_index in range(
-                    NUM_SAMPLES_PER_STATE
-                ):
+async def main(
+    browser,
+):
 
-                    matches_data = (
-                        generate_matches_states_data(
+    viewports = get_viewports_by_names(
+        SELECTED_VIEWPORTS
+    )
+
+    semaphore = asyncio.Semaphore(
+        MAX_CONCURRENT_WORKERS
+    )
+
+    jobs = []
+
+    total_jobs = (
+
+        len(MATCHES_STATES)
+
+        * NUM_SAMPLES_PER_STATE
+
+        * len(THEME_MODES)
+
+        * len(viewports)
+    )
+
+    print(
+        "\n"
+        "===================================="
+    )
+
+    print("Tinder Matches States Dataset Generation")
+    print("States:", len(MATCHES_STATES))
+
+    print(
+        "Samples per state:",
+        NUM_SAMPLES_PER_STATE,
+    )
+
+    print("Themes:", len(THEME_MODES))
+    print("Viewports:", len(viewports))
+    print("Base jobs:", total_jobs)
+
+    print(
+        "Parallel workers:",
+        MAX_CONCURRENT_WORKERS,
+    )
+
+    print(
+        "===================================="
+    )
+
+
+    global_sample_index = 0
+
+
+    for state in MATCHES_STATES:
+
+        for state_sample_index in range(
+            NUM_SAMPLES_PER_STATE,
+        ):
+
+            matches_data = generate_matches_states_data(
+                state=state,
+            )
+
+            system = generate_system_data()
+
+            if state in SCROLLABLE_STATES:
+
+                scroll_percentages = (
+                    LONG_SCROLL_PERCENTAGES
+                )
+
+            else:
+
+                scroll_percentages = (
+                    POPUP_SCROLL_PERCENTAGES
+                )
+
+            for theme_mode in THEME_MODES:
+
+                theme = generate_accessible_theme(
+
+                    seed=random.choice(
+                        TINDER_SEEDS
+                    ),
+
+                    mode=theme_mode,
+                )
+
+                for viewport in viewports:
+
+                    jobs.append(
+
+                        render_one_matches_state_job(
+
+                            browser=browser,
+
+                            semaphore=semaphore,
+
                             state=state,
+
+                            state_sample_index=state_sample_index,
+
+                            global_sample_index=global_sample_index,
+
+                            matches_data=matches_data,
+
+                            system=system,
+
+                            theme=theme,
+
+                            theme_mode=theme_mode,
+
+                            viewport=viewport,
+
+                            scroll_percentages=scroll_percentages,
                         )
                     )
 
-
-                    system = (
-                        generate_system_data()
-                    )
+            global_sample_index += 1
 
 
-                    for theme_mode in THEME_MODES:
-
-                        theme = (
-                            generate_accessible_theme(
-
-                                seed=random.choice(
-                                    TINDER_SEEDS
-                                ),
-
-                                mode=
-                                    theme_mode,
-                            )
-                        )
+    results = await asyncio.gather(
+        *jobs
+    )
 
 
-                        for viewport in viewports:
+    successful_results = [
 
-                            print(
-                                "\n"
-                                "===================================="
-                            )
+        result
 
-                            print(
-                                "TINDER MATCHES STATE"
-                            )
+        for result in results
 
-                            print(
-                                "state:",
-                                state,
-                            )
-
-                            print(
-                                "state sample:",
-                                state_sample_index,
-                            )
-
-                            print(
-                                "global sample:",
-                                global_sample_index,
-                            )
-
-                            print(
-                                "theme:",
-                                theme_mode,
-                            )
-
-                            print(
-                                "viewport:",
-                                viewport["name"],
-                            )
-
-                            print(
-                                "===================================="
-                            )
+        if result["status"] == "success"
+    ]
 
 
-                            # Long populated lists benefit
-                            # from the normal scroll sequence.
-                            if state in [
-                                "normal",
-                                "search_results",
-                            ]:
+    failed_results = [
 
-                                scroll_percentages = [
+        result
 
-                                    0,
-                                    10,
-                                    20,
-                                    30,
-                                    40,
-                                    50,
-                                    60,
-                                    70,
-                                    80,
-                                    90,
-                                    100,
+        for result in results
 
-                                ]
-
-                            else:
-
-                                scroll_percentages = [
-                                    0
-                                ]
+        if result["status"] == "failed"
+    ]
 
 
-                            await render_tinder_page(
+    print(
+        "\n"
+        "===================================="
+    )
 
-                                browser=
-                                    browser,
+    print("Generation complete")
 
-                                sample_index=
-                                    global_sample_index,
+    print(
+        "Successful jobs:",
+        len(successful_results),
+    )
 
-                                page_type=
-                                    f"matches_{state}",
+    print(
+        "Failed jobs:",
+        len(failed_results),
+    )
 
-                                template_name=
-                                    "matches_states.html",
-
-                                context_key=
-                                    "matches",
-
-                                page_data=
-                                    matches_data,
-
-                                system=
-                                    system,
-
-                                theme=
-                                    theme,
-
-                                viewport=
-                                    viewport,
-
-                                output_subdir=
-                                    "matches_states",
-
-                                annotation_profiles=
-                                    ANNOTATION_PROFILES,
-
-                                capture_full_page=
-                                    True,
-
-                                capture_viewports=
-                                    True,
-
-                                scroll_percentages=
-                                    scroll_percentages,
-                            )
+    print(
+        "===================================="
+    )
 
 
-                    global_sample_index += 1
+    for result in failed_results:
 
+        print(
+
+            "[FAILED]",
+
+            "State:",
+            result["state"],
+
+            "| Global sample:",
+            result["global_sample_index"],
+
+            "| Theme:",
+            result["theme"],
+
+            "| Viewport:",
+            result["viewport"],
+
+            "| Error:",
+            result["error"],
+        )
+
+
+# ==========================================================
+# Browser Lifecycle
+# ==========================================================
+
+async def run():
+
+    async with async_playwright() as playwright:
+
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
+
+        try:
+
+            await main(
+                browser
+            )
 
         finally:
 
@@ -313,5 +744,5 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(
-        main()
+        run()
     )

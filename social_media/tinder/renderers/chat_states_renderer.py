@@ -32,40 +32,9 @@ from social_media.tinder.renderers.common_renderer import (
 # ==========================================================
 # Configuration
 # ==========================================================
-#
-# NUM_SAMPLES_PER_STATE = 2
-#
-#
-# SELECTED_VIEWPORTS = [
-#
-#     "laptop",
-#
-#     "desktop_fhd",
-#
-# ]
-#
-#
-# ANNOTATION_PROFILES = [
-#
-#     "big_components",
-#
-#     "components",
-#
-#     "small_elements",
-#
-#     "icons_only",
-#
-# ]
-#
-#
-THEME_MODES = [
 
-    "light",
+NUM_SAMPLES_PER_STATE = 30
 
-    "dark",
-
-]
-NUM_SAMPLES_PER_STATE = 18
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -87,17 +56,18 @@ SELECTED_VIEWPORTS = [
 
 ANNOTATION_PROFILES = [
     "big_components",
-    "icons_only",
+    "small_elements",
 ]
 
+THEME_MODES = [
+    "light",
+    "dark",
+]
 
-# THEME_MODES = "random"
-
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
 
 CAPTURE_VIEWPORTS = True
-
+DEFAULT_SAVE_VISUALIZATIONS = True
 SCROLL_PERCENTAGES = [
     0,
     25,
@@ -107,168 +77,325 @@ SCROLL_PERCENTAGES = [
 ]
 
 TINDER_SEEDS = [
-
     "#FD5068",
-
     "#FF4458",
-
     "#FE3C72",
-
     "#E94057",
-
 ]
 
+# Begin with 4 concurrent rendering jobs.
+MAX_CONCURRENT_WORKERS = 4
+
 
 # ==========================================================
-# Main
+# Render One Parallel Tinder State Job
 # ==========================================================
 
-async def main():
+async def render_one_tinder_state_job(
+    browser,
+    semaphore,
+    state: str,
+    state_sample_index: int,
+    global_sample_index: int,
+    chat_data: dict,
+    system: dict,
+    theme: dict,
+    theme_mode: str,
+    viewport: dict,
+) -> dict:
 
-    viewports = (
-        get_viewports_by_names(
-            SELECTED_VIEWPORTS
-        )
-    )
-
-
-    async with async_playwright() as playwright:
-
-        browser = (
-            await playwright.chromium.launch(
-                headless=True,
-            )
-        )
-
+    async with semaphore:
 
         try:
 
-            global_sample_index = 0
+            print(
+                "\n"
+                "===================================="
+            )
+
+            print("TINDER CHAT STATE")
+            print("State:", state)
+            print("State sample:", state_sample_index)
+            print("Global sample:", global_sample_index)
+            print("Theme:", theme_mode)
+            print("Viewport:", viewport["name"])
+
+            print(
+                "===================================="
+            )
+
+            # Pass the shared Browser directly.
+            # The common renderer creates one page per job
+            # and closes it after that job finishes.
+            await render_tinder_page(
+
+                browser=browser,
+
+                sample_index=global_sample_index,
+
+                page_type=f"chat_{state}",
+
+                template_name="chat_states.html",
+
+                context_key="chat",
+
+                page_data=chat_data,
+
+                system=system,
+
+                theme=theme,
+
+                viewport=viewport,
+
+                output_subdir="chat_states",
+
+                annotation_profiles=ANNOTATION_PROFILES,
+
+                capture_full_page=CAPTURE_FULL_PAGE,
+
+                capture_viewports=CAPTURE_VIEWPORTS,
+
+                scroll_percentages=SCROLL_PERCENTAGES,
+
+            )
+
+            return {
+
+                "status": "success",
+
+                "state": state,
+
+                "state_sample_index": state_sample_index,
+
+                "global_sample_index": global_sample_index,
+
+                "theme": theme_mode,
+
+                "viewport": viewport["name"],
+            }
+
+        except Exception as error:
+
+            return {
+
+                "status": "failed",
+
+                "state": state,
+
+                "state_sample_index": state_sample_index,
+
+                "global_sample_index": global_sample_index,
+
+                "theme": theme_mode,
+
+                "viewport": viewport["name"],
+
+                "error": str(error),
+            }
 
 
-            for state in CHAT_STATES:
+# ==========================================================
+# Main Generation
+# ==========================================================
 
-                for state_sample_index in range(
-                    NUM_SAMPLES_PER_STATE
-                ):
+async def main(
+    browser,
+):
 
-                    chat_data = (
-                        generate_chat_states_data(
+    viewports = get_viewports_by_names(
+        SELECTED_VIEWPORTS
+    )
+
+    semaphore = asyncio.Semaphore(
+        MAX_CONCURRENT_WORKERS
+    )
+
+    jobs = []
+
+    total_jobs = (
+
+        len(CHAT_STATES)
+
+        * NUM_SAMPLES_PER_STATE
+
+        * len(THEME_MODES)
+
+        * len(viewports)
+    )
+
+    print(
+        "\n"
+        "===================================="
+    )
+
+    print("Tinder Chat States Dataset Generation")
+    print("States:", len(CHAT_STATES))
+    print(
+        "Samples per state:",
+        NUM_SAMPLES_PER_STATE,
+    )
+    print("Themes:", len(THEME_MODES))
+    print("Viewports:", len(viewports))
+    print("Total jobs:", total_jobs)
+
+    print(
+        "Parallel workers:",
+        MAX_CONCURRENT_WORKERS,
+    )
+
+    print(
+        "===================================="
+    )
+
+
+    # One state UI variation is generated per state/sample.
+    # It is then captured in both themes and all viewports.
+    global_sample_index = 0
+
+
+    for state in CHAT_STATES:
+
+        for state_sample_index in range(
+            NUM_SAMPLES_PER_STATE,
+        ):
+
+            chat_data = generate_chat_states_data(
+                state=state,
+            )
+
+            system = generate_system_data()
+
+            for theme_mode in THEME_MODES:
+
+                theme = generate_accessible_theme(
+
+                    seed=random.choice(
+                        TINDER_SEEDS
+                    ),
+
+                    mode=theme_mode,
+                )
+
+                for viewport in viewports:
+
+                    jobs.append(
+
+                        render_one_tinder_state_job(
+
+                            browser=browser,
+
+                            semaphore=semaphore,
+
                             state=state,
+
+                            state_sample_index=state_sample_index,
+
+                            global_sample_index=global_sample_index,
+
+                            chat_data=chat_data,
+
+                            system=system,
+
+                            theme=theme,
+
+                            theme_mode=theme_mode,
+
+                            viewport=viewport,
                         )
                     )
 
-
-                    system = (
-                        generate_system_data()
-                    )
-
-
-                    for theme_mode in THEME_MODES:
-
-                        theme = (
-                            generate_accessible_theme(
-
-                                seed=random.choice(
-                                    TINDER_SEEDS
-                                ),
-
-                                mode=
-                                    theme_mode,
-                            )
-                        )
+            # Increment only after all themes and viewports
+            # for this one state variation are scheduled.
+            global_sample_index += 1
 
 
-                        for viewport in viewports:
-
-                            print(
-                                "\n"
-                                "===================================="
-                            )
-
-                            print(
-                                "TINDER CHAT STATE"
-                            )
-
-                            print(
-                                "state:",
-                                state,
-                            )
-
-                            print(
-                                "state sample:",
-                                state_sample_index,
-                            )
-
-                            print(
-                                "global sample:",
-                                global_sample_index,
-                            )
-
-                            print(
-                                "theme:",
-                                theme_mode,
-                            )
-
-                            print(
-                                "viewport:",
-                                viewport["name"],
-                            )
-
-                            print(
-                                "===================================="
-                            )
+    results = await asyncio.gather(
+        *jobs
+    )
 
 
-                            await render_tinder_page(
+    successful_results = [
 
-                                browser=
-                                    browser,
+        result
 
-                                sample_index=
-                                    global_sample_index,
+        for result in results
 
-                                page_type=
-                                    f"chat_{state}",
-
-                                template_name=
-                                    "chat_states.html",
-
-                                context_key=
-                                    "chat",
-
-                                page_data=
-                                    chat_data,
-
-                                system=
-                                    system,
-
-                                theme=
-                                    theme,
-
-                                viewport=
-                                    viewport,
-
-                                output_subdir=
-                                    "chat_states",
-
-                                annotation_profiles=
-                                    ANNOTATION_PROFILES,
-
-                                capture_full_page=
-                                    True,
-
-                                capture_viewports=
-                                    True,
-
-                                scroll_percentages=[
-                                    0
-                                ],
-                            )
+        if result["status"] == "success"
+    ]
 
 
-                    global_sample_index += 1
+    failed_results = [
 
+        result
+
+        for result in results
+
+        if result["status"] == "failed"
+    ]
+
+
+    print(
+        "\n"
+        "===================================="
+    )
+
+    print("Generation complete")
+
+    print(
+        "Successful jobs:",
+        len(successful_results),
+    )
+
+    print(
+        "Failed jobs:",
+        len(failed_results),
+    )
+
+    print(
+        "===================================="
+    )
+
+
+    for result in failed_results:
+
+        print(
+
+            "[FAILED]",
+
+            "State:",
+            result["state"],
+
+            "| Global sample:",
+            result["global_sample_index"],
+
+            "| Theme:",
+            result["theme"],
+
+            "| Viewport:",
+            result["viewport"],
+
+            "| Error:",
+            result["error"],
+        )
+
+
+# ==========================================================
+# Browser Lifecycle
+# ==========================================================
+
+async def run():
+
+    async with async_playwright() as playwright:
+
+        browser = await playwright.chromium.launch(
+            headless=True,
+        )
+
+        try:
+
+            await main(
+                browser
+            )
 
         finally:
 
@@ -282,5 +409,5 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(
-        main()
+        run()
     )
