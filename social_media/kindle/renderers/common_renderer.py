@@ -10,7 +10,7 @@ from pathlib import Path
 #     DEFAULT_SCROLL_SETTLE_MS,
 #     render_page as common_render_page,
 # )
-from social_media.common.cc import (
+from social_media.common.all_common import (
     DEFAULT_CAPTURE_FULL_PAGE,
     DEFAULT_CAPTURE_VIEWPORTS,
     DEFAULT_MIN_SCROLL_DELTA,

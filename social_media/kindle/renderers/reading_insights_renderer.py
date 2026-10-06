@@ -3,75 +3,23 @@ from __future__ import annotations
 import asyncio
 import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
-from social_media.common.palette_generator import (
-    generate_accessible_theme,
-)
-
-from social_media.common.system_generator import (
-    generate_system_data,
-)
-
-from social_media.common.viewport import (
-    get_viewports_by_names,
-)
-
+from social_media.common.palette_generator import generate_accessible_theme
+from social_media.common.system_generator import generate_system_data
+from social_media.common.viewport import get_viewports_by_names
 from social_media.kindle.generators.reading_insights_generator import (
     generate_reading_insights_page,
 )
-
-from social_media.kindle.renderers.common_renderer import (
-    render_kindle_page,
-)
+from social_media.kindle.renderers.common_renderer import render_kindle_page
 
 
 # ==========================================================
 # Configuration
 # ==========================================================
 
-# NUM_SAMPLES = 2
-#
-#
-# SELECTED_VIEWPORTS = [
-#     "standard_iphone",
-#     "tablet_portrait",
-#     "laptop",
-#     "desktop_fhd",
-# ]
-#
-#
-# # ANNOTATION_PROFILES = [
-# #     "big_components",
-# #     "components",
-# #     "small_elements",
-# #     "icons_only",
-# # ]
-#
-# ANNOTATION_PROFILES = [
-#     "big_components",
-#     "small_elements",
-# ]
-#
-#
-# THEME_MODE = "random"
-#
-#
-# CAPTURE_FULL_PAGE = True
-#
-# CAPTURE_VIEWPORTS = True
-#
-#
-# SCROLL_PERCENTAGES = [
-#     0,
-#     25,
-#     50,
-#     75,
-#     100,
-# ]
-NUM_SAMPLES = 18
+NUM_SAMPLES = 20
+
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -93,15 +41,12 @@ SELECTED_VIEWPORTS = [
 
 ANNOTATION_PROFILES = [
     "big_components",
-    "icons_only",
+    "small_elements",
 ]
-
 
 THEME_MODE = "random"
 
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
-
 CAPTURE_VIEWPORTS = True
 
 SCROLL_PERCENTAGES = [
@@ -112,177 +57,154 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
+MAX_CONCURRENT_WORKERS = 4
+
+
 # ==========================================================
 # Theme
 # ==========================================================
 
-def generate_theme():
-
-    if THEME_MODE == "random":
-
-        mode = random.choice(
-            [
-                "light",
-                "dark",
-            ]
-        )
-
-    else:
-
-        mode = THEME_MODE
-
-    return generate_accessible_theme(
-        mode=mode
+def generate_theme() -> dict:
+    mode = (
+        random.choice(["light", "dark"])
+        if THEME_MODE == "random"
+        else THEME_MODE
     )
+
+    return generate_accessible_theme(mode=mode)
+
+
+# ==========================================================
+# Render Job
+# ==========================================================
+
+async def render_one_reading_insights_job(
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    page_data: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                "[KINDLE READING INSIGHTS]",
+                "sample=",
+                sample_index,
+                "state=",
+                page_data["state"],
+                "viewport=",
+                viewport["name"],
+                "theme=",
+                theme["mode"],
+                "today_minutes=",
+                page_data["today_minutes"],
+                "daily_goal=",
+                page_data["daily_goal"],
+                "popup=",
+                page_data["popup_open"],
+            )
+
+            await render_kindle_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="reading_insights",
+                template_name="reading_insights.html",
+                context_key="insights",
+                page_data=page_data,
+                system=system,
+                theme=theme,
+                viewport=viewport,
+                annotation_profiles=ANNOTATION_PROFILES,
+                capture_full_page=CAPTURE_FULL_PAGE,
+                capture_viewports=CAPTURE_VIEWPORTS,
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
+
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
+
+        except Exception as error:
+            print(
+                "[KINDLE READING INSIGHTS FAILED]",
+                "sample=",
+                sample_index,
+                "viewport=",
+                viewport["name"],
+                "error=",
+                error,
+            )
+
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
 
 
 # ==========================================================
 # Main
 # ==========================================================
 
-async def main():
+async def main(browser) -> None:
+    viewports = get_viewports_by_names(SELECTED_VIEWPORTS)
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+    jobs = []
 
-    viewports = (
-        get_viewports_by_names(
-            SELECTED_VIEWPORTS
-        )
+    for sample_index in range(NUM_SAMPLES):
+        page_data = generate_reading_insights_page()
+        system = generate_system_data()
+        theme = generate_theme()
+
+        for viewport in viewports:
+            jobs.append(
+                render_one_reading_insights_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    page_data=page_data,
+                    system=system,
+                    theme=theme,
+                    viewport=viewport,
+                )
+            )
+
+    results = await asyncio.gather(*jobs)
+
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
+
+    print(
+        "\n[KINDLE READING INSIGHTS COMPLETE]",
+        f"successful={successful}",
+        f"failed={failed}",
     )
 
 
-    async with async_playwright() as playwright:
+# ==========================================================
+# Entry Point
+# ==========================================================
 
-        browser = (
-            await playwright.chromium.launch(
-                headless=True
-            )
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True,
         )
 
-
         try:
-
-            for sample_index in range(
-                NUM_SAMPLES
-            ):
-
-                page_data = (
-                    generate_reading_insights_page()
-                )
-
-                system = (
-                    generate_system_data()
-                )
-
-                theme = (
-                    generate_theme()
-                )
-
-
-                print(
-                    "\n"
-                    "======================================"
-                )
-
-                print(
-                    "KINDLE READING INSIGHTS",
-                    sample_index,
-                )
-
-                print(
-                    "State:",
-                    page_data[
-                        "state"
-                    ],
-                )
-
-                print(
-                    "Today:",
-                    page_data[
-                        "today_minutes"
-                    ],
-                )
-
-                print(
-                    "Goal:",
-                    page_data[
-                        "daily_goal"
-                    ],
-                )
-
-                print(
-                    "Popup:",
-                    page_data[
-                        "popup_open"
-                    ],
-                )
-
-                print(
-                    "Theme:",
-                    theme[
-                        "mode"
-                    ],
-                )
-
-                print(
-                    "======================================"
-                )
-
-
-                for viewport in viewports:
-
-                    await render_kindle_page(
-
-                        browser=
-                            browser,
-
-                        sample_index=
-                            sample_index,
-
-                        page_type=
-                            "reading_insights",
-
-                        template_name=
-                            "reading_insights.html",
-
-                        context_key=
-                            "insights",
-
-                        page_data=
-                            page_data,
-
-                        system=
-                            system,
-
-                        theme=
-                            theme,
-
-                        viewport=
-                            viewport,
-
-                        annotation_profiles=
-                            ANNOTATION_PROFILES,
-
-                        capture_full_page=
-                            CAPTURE_FULL_PAGE,
-
-                        capture_viewports=
-                            CAPTURE_VIEWPORTS,
-
-                        scroll_percentages=
-                            SCROLL_PERCENTAGES,
-                    )
-
-
+            await main(browser)
         finally:
-
             await browser.close()
 
 
-# ==========================================================
-# Run
-# ==========================================================
-
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())
