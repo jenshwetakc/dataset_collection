@@ -5,26 +5,20 @@ from __future__ import annotations
 import asyncio
 import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.common.system_generator import (
     generate_system_data,
 )
-
 from social_media.common.common_renderer import (
     resolve_viewports,
 )
-
 from social_media.slack.generators.create_channel_generator import (
     generate_create_channel_data,
 )
-
 from social_media.slack.renderers.common_renderer import (
     render_slack_page,
 )
@@ -34,71 +28,10 @@ from social_media.slack.renderers.common_renderer import (
 # Configuration
 # ==========================================================
 
-# NUM_SAMPLES = 3
-#
-#
+NUM_SAMPLES = 20
+
 VIEWPORT_MODE = "selected"
-#
-#
-# SELECTED_VIEWPORTS = [
-#
-#     "small_mobile",
-#
-#     "tablet_landscape",
-#
-#     "desktop_fhd",
-#
-# ]
-#
-#
-# ANNOTATION_PROFILES = [
-#
-#     "big_components",
-#
-#     "components",
-#
-#     "small_elements",
-#
-#     "icons_only",
-#
-# ]
-#
-#
-# THEME_MODE = "random"
-#
-#
-# CAPTURE_FULL_PAGE = True
-#
-#
-# CAPTURE_VIEWPORTS = True
-#
-#
-# SCROLL_PERCENTAGES = [
-#
-#     0,
-#
-#     10,
-#
-#     20,
-#
-#     30,
-#
-#     40,
-#
-#     50,
-#
-#     60,
-#
-#     70,
-#
-#     80,
-#
-#     90,
-#
-#     100,
-#
-# ]
-NUM_SAMPLES = 18
+
 SELECTED_VIEWPORTS = [
     "small_mobile",
     "standard_android",
@@ -120,15 +53,12 @@ SELECTED_VIEWPORTS = [
 
 ANNOTATION_PROFILES = [
     "big_components",
-    "icons_only",
+    "small_elements",
 ]
-
 
 THEME_MODE = "random"
 
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
-
 CAPTURE_VIEWPORTS = True
 
 SCROLL_PERCENTAGES = [
@@ -139,24 +69,25 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
+MAX_CONCURRENT_WORKERS = 4
+
+
 # ==========================================================
 # Theme
 # ==========================================================
 
-def generate_theme():
+def generate_theme() -> dict:
 
-    if THEME_MODE == "random":
-
-        mode = random.choice(
+    mode = (
+        random.choice(
             [
                 "light",
                 "dark",
             ]
         )
-
-    else:
-
-        mode = THEME_MODE
+        if THEME_MODE == "random"
+        else THEME_MODE
+    )
 
     return generate_accessible_theme(
         mode=mode
@@ -164,20 +95,184 @@ def generate_theme():
 
 
 # ==========================================================
-# Main
+# Render One Parallel Create-Channel Job
 # ==========================================================
 
-async def main():
+async def render_one_create_channel_job(
+    browser,
+    semaphore,
+    sample_index: int,
+    create_channel: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+
+    async with semaphore:
+
+        try:
+
+            print(
+                "[SLACK CREATE CHANNEL]",
+                "sample=",
+                sample_index,
+                "viewport=",
+                viewport["name"],
+                "theme=",
+                theme["mode"],
+                "step=",
+                create_channel["modal_step"],
+            )
+
+            await render_slack_page(
+
+                browser=browser,
+
+                sample_index=sample_index,
+
+                page_type="create_channel",
+
+                template_name="create_channel.html",
+
+                context_key="create_channel",
+
+                page_data=create_channel,
+
+                system=system,
+
+                theme=theme,
+
+                viewport=viewport,
+
+                output_subdir="create_channel",
+
+                annotation_profiles=ANNOTATION_PROFILES,
+
+                capture_full_page=CAPTURE_FULL_PAGE,
+
+                capture_viewports=CAPTURE_VIEWPORTS,
+
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
+
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "theme": theme["mode"],
+                "viewport": viewport["name"],
+            }
+
+        except Exception as error:
+
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "theme": theme["mode"],
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
+
+
+# ==========================================================
+# Main Generation
+# ==========================================================
+
+async def main(
+    browser,
+) -> None:
 
     viewports = resolve_viewports(
 
-        mode=
-            VIEWPORT_MODE,
+        mode=VIEWPORT_MODE,
 
-        selected=
-            SELECTED_VIEWPORTS,
+        selected=SELECTED_VIEWPORTS,
     )
 
+    semaphore = asyncio.Semaphore(
+        MAX_CONCURRENT_WORKERS
+    )
+
+    jobs = []
+
+    print(
+        "Slack Create Channel Dataset Generation | "
+        f"jobs={NUM_SAMPLES * len(viewports)} | "
+        f"workers={MAX_CONCURRENT_WORKERS}"
+    )
+
+    for sample_index in range(
+        1,
+        NUM_SAMPLES + 1,
+    ):
+
+        create_channel = (
+            generate_create_channel_data()
+        )
+
+        system = generate_system_data()
+
+        theme = generate_theme()
+
+        for viewport in viewports:
+
+            jobs.append(
+
+                render_one_create_channel_job(
+
+                    browser=browser,
+
+                    semaphore=semaphore,
+
+                    sample_index=sample_index,
+
+                    create_channel=create_channel,
+
+                    system=system,
+
+                    theme=theme,
+
+                    viewport=viewport,
+                )
+            )
+
+    results = await asyncio.gather(
+        *jobs
+    )
+
+    successful_results = [
+        result
+        for result in results
+        if result["status"] == "success"
+    ]
+
+    failed_results = [
+        result
+        for result in results
+        if result["status"] == "failed"
+    ]
+
+    print(
+        "Generation complete | "
+        f"successful={len(successful_results)} | "
+        f"failed={len(failed_results)}"
+    )
+
+    for result in failed_results:
+
+        print(
+            "[FAILED]",
+            "Sample:", result["sample_index"],
+            "| Theme:", result["theme"],
+            "| Viewport:", result["viewport"],
+            "| Error:", result["error"],
+        )
+
+
+# ==========================================================
+# Browser Lifecycle
+# ==========================================================
+
+async def run() -> None:
 
     async with async_playwright() as playwright:
 
@@ -185,88 +280,15 @@ async def main():
             headless=True
         )
 
+        try:
 
-        for sample_index in range(
-            NUM_SAMPLES
-        ):
-
-            create_channel = (
-                generate_create_channel_data()
+            await main(
+                browser
             )
 
-            system = (
-                generate_system_data()
-            )
+        finally:
 
-            theme = (
-                generate_theme()
-            )
-
-
-            for viewport in viewports:
-
-                print(
-                    "[SLACK CREATE CHANNEL]",
-                    "sample=",
-                    sample_index,
-                    "viewport=",
-                    viewport["name"],
-                    "theme=",
-                    theme["mode"],
-                    "step=",
-                    create_channel[
-                        "modal_step"
-                    ],
-                )
-
-
-                await render_slack_page(
-
-                    browser=
-                        browser,
-
-                    sample_index=
-                        sample_index,
-
-                    page_type=
-                        "create_channel",
-
-                    template_name=
-                        "create_channel.html",
-
-                    context_key=
-                        "create_channel",
-
-                    page_data=
-                        create_channel,
-
-                    system=
-                        system,
-
-                    theme=
-                        theme,
-
-                    viewport=
-                        viewport,
-
-                    output_subdir=
-                        "create_channel",
-
-                    annotation_profiles=
-                        ANNOTATION_PROFILES,
-
-                    capture_full_page=
-                        CAPTURE_FULL_PAGE,
-
-                    capture_viewports=
-                        CAPTURE_VIEWPORTS,
-
-                    scroll_percentages=
-                        SCROLL_PERCENTAGES,
-                )
-
-
-        await browser.close()
+            await browser.close()
 
 
 # ==========================================================
@@ -276,5 +298,5 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(
-        main()
+        run()
     )
