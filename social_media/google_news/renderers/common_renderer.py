@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from social_media.common.cc import (
+from social_media.common.all_common import (
     DEFAULT_CAPTURE_FULL_PAGE,
     DEFAULT_CAPTURE_VIEWPORTS,
     DEFAULT_MIN_SCROLL_DELTA,
