@@ -1,77 +1,31 @@
-# social_media/facebook/search_renderer.py
-
 from __future__ import annotations
 
 import asyncio
 import random
 
-from playwright.async_api import (
-    async_playwright,
-)
+from playwright.async_api import async_playwright
 
 from social_media.common.palette_generator import (
     generate_accessible_theme,
 )
-
 from social_media.common.system_generator import (
     generate_system_data,
 )
-
 from social_media.common.viewport import (
     get_viewports_by_names,
 )
-
 from social_media.facebook.generators.search_generator import (
     generate_search_data,
 )
-
 from social_media.facebook.renderers.common_renderer import (
     render_facebook_page,
 )
 
-
 # ==========================================================
 # Configuration
 # ==========================================================
-#
-# NUM_SAMPLES = 2
-#
-#
-# SELECTED_VIEWPORTS = [
-#     "standard_iphone",
-#     "desktop_fhd",
-# ]
-#
-#
-# # ANNOTATION_PROFILES = [
-# #     "big_components",
-# #     "components",
-# #     "small_elements",
-# #     "icons_only",
-# # ]
-#
-# ANNOTATION_PROFILES = [
-#     "big_components",
-#     "small_elements",
-# ]
-#
-#
-# THEME_MODE = "random"
-#
-#
-# CAPTURE_FULL_PAGE = True
-#
-# CAPTURE_VIEWPORTS = True
-#
-#
-# SCROLL_PERCENTAGES = [
-#     0,
-#     25,
-#     50,
-#     75,
-#     100,
-# ]
-NUM_SAMPLES = 30
+
+NUM_SAMPLES = 20
 
 SELECTED_VIEWPORTS = [
     "small_mobile",
@@ -94,15 +48,12 @@ SELECTED_VIEWPORTS = [
 
 ANNOTATION_PROFILES = [
     "big_components",
-    "icons_only",
+    "small_elements",
 ]
-
 
 THEME_MODE = "random"
 
-# CAPTURE_FULL_PAGE = True
 CAPTURE_FULL_PAGE = False
-
 CAPTURE_VIEWPORTS = True
 
 SCROLL_PERCENTAGES = [
@@ -113,171 +64,173 @@ SCROLL_PERCENTAGES = [
     100,
 ]
 
+MAX_CONCURRENT_WORKERS = 4
+
+
 # ==========================================================
 # Theme
 # ==========================================================
 
 def generate_theme() -> dict:
-
-    if THEME_MODE == "random":
-
-        mode = random.choice(
-            [
-                "light",
-                "dark",
-            ]
-        )
-
-    else:
-
-        mode = THEME_MODE
-
-    return generate_accessible_theme(
-        mode=mode
+    mode = (
+        random.choice(["light", "dark"])
+        if THEME_MODE == "random"
+        else THEME_MODE
     )
+    return generate_accessible_theme(mode=mode)
+
+
+# ==========================================================
+# Render Job
+# ==========================================================
+
+async def render_search_job(
+    *,
+    browser,
+    semaphore: asyncio.Semaphore,
+    sample_index: int,
+    search_data: dict,
+    system: dict,
+    theme: dict,
+    viewport: dict,
+) -> dict:
+    async with semaphore:
+        try:
+            print(
+                "[FACEBOOK SEARCH]",
+                "sample=",
+                sample_index,
+                "viewport=",
+                viewport["name"],
+                "theme=",
+                theme["mode"],
+                "state=",
+                search_data["state"]["name"],
+                "query=",
+                search_data["state"]["query"],
+            )
+
+            await render_facebook_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type="search",
+                template_name="search.html",
+                context_key="search",
+                page_data=search_data,
+                system=system,
+                theme=theme,
+                viewport=viewport,
+                output_subdir="search",
+                annotation_profiles=ANNOTATION_PROFILES,
+                capture_full_page=CAPTURE_FULL_PAGE,
+                capture_viewports=CAPTURE_VIEWPORTS,
+                scroll_percentages=SCROLL_PERCENTAGES,
+            )
+
+            return {
+                "status": "success",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+            }
+
+        except Exception as error:
+            print(
+                "[FACEBOOK SEARCH FAILED]",
+                "sample=",
+                sample_index,
+                "viewport=",
+                viewport["name"],
+                "error=",
+                error,
+            )
+
+            return {
+                "status": "failed",
+                "sample_index": sample_index,
+                "viewport": viewport["name"],
+                "error": str(error),
+            }
 
 
 # ==========================================================
 # Main
 # ==========================================================
 
-async def main():
-
+async def main(browser) -> None:
     viewports = get_viewports_by_names(
         SELECTED_VIEWPORTS
     )
+    semaphore = asyncio.Semaphore(
+        MAX_CONCURRENT_WORKERS
+    )
+    jobs = []
 
-    async with async_playwright() as playwright:
+    for sample_index in range(NUM_SAMPLES):
+        search_data = generate_search_data()
+        system = generate_system_data()
+        theme = generate_theme()
 
-        browser = (
-            await playwright.chromium.launch(
-                headless=True
-            )
+        print(
+            "[FACEBOOK SEARCH SAMPLE]",
+            "sample=",
+            sample_index,
+            "theme=",
+            theme["mode"],
+            "state=",
+            search_data["state"]["name"],
+            "query=",
+            search_data["state"]["query"],
+            "people=",
+            len(search_data["people"]),
+            "posts=",
+            len(search_data["posts"]),
         )
 
-        for sample_index in range(
-            NUM_SAMPLES
-        ):
-
-            search_data = (
-                generate_search_data()
-            )
-
-            system = (
-                generate_system_data()
-            )
-
-            theme = (
-                generate_theme()
-            )
-
-            print(
-                "\n"
-                "=========================================="
-            )
-
-            print(
-                "FACEBOOK SEARCH SAMPLE",
-                sample_index,
-            )
-
-            print(
-                "=========================================="
-            )
-
-            print(
-                "Query:",
-                search_data[
-                    "state"
-                ]["query"],
-            )
-
-            print(
-                "State:",
-                search_data[
-                    "state"
-                ]["name"],
-            )
-
-            print(
-                "People:",
-                len(
-                    search_data[
-                        "people"
-                    ]
-                ),
-            )
-
-            print(
-                "Posts:",
-                len(
-                    search_data[
-                        "posts"
-                    ]
-                ),
-            )
-
-            for viewport in viewports:
-
-                print(
-                    "Rendering:",
-                    viewport["name"],
+        for viewport in viewports:
+            jobs.append(
+                render_search_job(
+                    browser=browser,
+                    semaphore=semaphore,
+                    sample_index=sample_index,
+                    search_data=search_data,
+                    system=system,
+                    theme=theme,
+                    viewport=viewport,
                 )
+            )
 
-                await render_facebook_page(
+    results = await asyncio.gather(*jobs)
 
-                    browser=
-                        browser,
+    successful = sum(
+        result["status"] == "success"
+        for result in results
+    )
+    failed = len(results) - successful
 
-                    sample_index=
-                        sample_index,
-
-                    page_type=
-                        "search",
-
-                    template_name=
-                        "search.html",
-
-                    context_key=
-                        "search",
-
-                    page_data=
-                        search_data,
-
-                    system=
-                        system,
-
-                    theme=
-                        theme,
-
-                    viewport=
-                        viewport,
-
-                    output_subdir=
-                        "search",
-
-                    annotation_profiles=
-                        ANNOTATION_PROFILES,
-
-                    capture_full_page=
-                        CAPTURE_FULL_PAGE,
-
-                    capture_viewports=
-                        CAPTURE_VIEWPORTS,
-
-                    scroll_percentages=
-                        SCROLL_PERCENTAGES,
-                )
-
-        await browser.close()
+    print(
+        "[FACEBOOK SEARCH COMPLETE]",
+        "successful=",
+        successful,
+        "failed=",
+        failed,
+    )
 
 
 # ==========================================================
-# Entry
+# Entry Point
 # ==========================================================
+
+async def run() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(
+            headless=True
+        )
+
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
+
 
 if __name__ == "__main__":
-
-    asyncio.run(
-        main()
-    )
+    asyncio.run(run())
