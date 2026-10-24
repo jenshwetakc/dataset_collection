@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block title %}Guests · {{ discover.event_title }}{% endblock %}
+
+{% macro icon(name, semantic) %}
+<span class="material-symbols-rounded"
+      data-class="icon"
+      data-semantic="{{ semantic }}">{{ name }}</span>
+{% endmacro %}
+
+{% macro avatar(guest) %}
+{% if guest.avatar %}
+<img class="guest-avatar"
+     src="{{ guest.avatar }}"
+     alt="Fictional guest"
+     data-class="avatar">
+{% else %}
+<span class="guest-avatar avatar-fallback"
+      data-class="avatar">{{ guest.initials }}</span>
+{% endif %}
+{% endmacro %}
+
+{% block head %}
+<style>
+    .guest-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 24px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand { font-size: 28px; font-weight: 800; letter-spacing: -2px; }
+    .row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .muted { color: var(--text-secondary); }
+    .small { font-size: 12px; }
+    .event-name { overflow-wrap: anywhere; }
+
+    .guest-main {
+        max-width: 1240px;
+        margin: auto;
+        padding: 30px 24px 60px;
+    }
+
+    .manage-tabs {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-subtle);
+        margin-bottom: 28px;
+    }
+
+    .manage-tab {
+        padding: 10px 14px;
+        white-space: nowrap;
+        border-radius: 9px;
+        color: var(--text-secondary);
+    }
+
+    .manage-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    h1 { font-size: 32px; margin-bottom: 6px; }
+    .heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .filter-bar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+
+    .filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        color: var(--text-secondary);
+    }
+
+    .filter.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        border-color: var(--primary);
+    }
+
+    .search-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 320px;
+        max-width: 100%;
+        padding: 11px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--icon);
+    }
+
+    .search input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--on-surface);
+    }
+
+    input::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .bulk-bar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px;
+        margin-bottom: 18px;
+        border-radius: 12px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .table-wrap {
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--surface);
+    }
+
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { padding: 14px 12px; text-align: left; }
+
+    th {
+        font-size: 12px;
+        color: var(--text-secondary);
+        background: var(--surface-variant);
+    }
+
+    td {
+        border-top: 1px solid var(--border-subtle);
+        font-size: 13px;
+        vertical-align: middle;
+    }
+
+    .check-col { width: 42px; }
+    .name-col { width: 34%; }
+    .status-col { width: 130px; }
+    .action-col { width: 48px; }
+    .selected-row { background: var(--primary-container); }
+
+    input[type="checkbox"] {
+        width: 17px;
+        height: 17px;
+        accent-color: var(--primary);
+    }
+
+    .guest-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .avatar-fallback {
+        display: grid;
+        place-items: center;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .guest-identity { min-width: 0; }
+
+    .guest-identity strong, .guest-identity small {
+        display: block;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .guest-identity small { margin-top: 4px; color: var(--text-secondary); }
+
+    .status-badge {
+        display: inline-block;
+        padding: 5px 8px;
+        border-radius: 6px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .empty {
+        padding: 70px 20px;
+        text-align: center;
+        background: var(--surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+    }
+
+    .empty > .material-symbols-rounded { font-size: 48px; margin-bottom: 20px; }
+    .empty h2 { margin-bottom: 12px; }
+    .empty p { margin-bottom: 24px; }
+
+    .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .overlay.drawer-overlay {
+        justify-content: flex-end;
+        align-items: stretch;
+        padding: 0;
+    }
+
+    .dialog {
+        width: min(100%, 480px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .drawer {
+        width: min(100%, 420px);
+        max-height: 100dvh;
+        border-radius: 0;
+    }
+
+    .dialog-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+
+    .dialog-heading h2 { font-size: 23px; }
+
+    .profile-block {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 26px;
+    }
+
+    .profile-block .guest-avatar { width: 56px; height: 56px; }
+    .profile-block p { margin-top: 6px; overflow-wrap: anywhere; }
+
+    .field-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        margin: 18px 0 8px;
+    }
+
+    .field {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font: inherit;
+    }
+
+    textarea.field { min-height: 110px; resize: none; }
+
+    .detail-line {
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .detail-line strong { display: block; margin-top: 6px; }
+    .dialog-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+
+    @media (max-width: 800px) {
+        .ticket-col, .registered-col { display: none; }
+        .name-col { width: auto; }
+    }
+
+    @media (max-width: 550px) {
+        .guest-header { padding: 12px 14px; }
+        .guest-header .event-name { display: none; }
+        .guest-main { padding: 22px 12px 40px; }
+        .search-toolbar { align-items: stretch; }
+        .search { flex: 1; width: auto; }
+        th, td { padding: 12px 6px; }
+        .check-col { width: 30px; }
+        .status-col { width: 78px; }
+        .action-col { width: 34px; }
+        .guest-avatar { width: 28px; height: 28px; }
+        .guest-identity small { font-size: 10px; }
+        .status-badge { padding: 4px; font-size: 10px; }
+        .checkin-col { display: none; }
+        .action-col .icon-button { width: 28px; }
+        .dialog { padding: 20px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if discover.popup_visible else 'false' }}">
+    <header class="guest-header" data-class="app_bar">
+        <div class="row">
+            <span class="brand" data-class="logo">luma</span>
+            <span class="event-name muted">{{ discover.event_title }}</span>
+        </div>
+        <button class="secondary-button" data-class="button">View Event</button>
+    </header>
+
+    <main class="guest-main">
+        <nav class="manage-tabs" data-class="navigation_bar">
+            {% for label in ['Overview', 'Guests', 'Registration', 'Blasts', 'More'] %}
+            <button class="manage-tab {{ 'active' if label == 'Guests' else '' }}"
+                    data-class="tab">{{ label }}</button>
+            {% endfor %}
+        </nav>
+
+        <div class="heading">
+            <div>
+                <h1>Guests</h1>
+                <p class="muted small">Manage registrations and attendance.</p>
+            </div>
+            <div class="heading-actions">
+                <button class="secondary-button" data-class="button">
+                    {{ icon('download', 'export_guests') }} Export
+                </button>
+                <button class="primary-button" data-class="button">
+                    {{ icon('person_add', 'invite_guests') }} Invite Guests
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            {% for label in ['All', 'Going', 'Pending', 'Waitlist', 'Checked In'] %}
+            <button class="filter {{ 'active' if label == discover.active_filter else '' }}"
+                    data-class="chip">
+                {{ label }}
+                <span data-class="badge">{{ discover.counts[label] }}</span>
+            </button>
+            {% endfor %}
+        </div>
+
+        <div class="search-toolbar">
+            <div class="search" data-class="search_bar">
+                {{ icon('search', 'guest_search') }}
+                <input placeholder="Search name or email"
+                       aria-label="Search guests"
+                       value="{{ discover.search_query }}">
+            </div>
+            <button class="icon-button" data-class="button" aria-label="Table settings">
+                {{ icon('tune', 'table_settings') }}
+            </button>
+        </div>
+
+        {% if discover.selected_count %}
+        <div class="bulk-bar" data-class="section">
+            <strong>{{ discover.selected_count }} selected</strong>
+            <button class="secondary-button" data-class="button">Update Status</button>
+            <button class="secondary-button" data-class="button">Clear Selection</button>
+        </div>
+        {% endif %}
+
+        {% if discover.visible_guests %}
+        <section class="table-wrap" data-class="section" data-semantic="guest_table">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="check-col">
+                            <input type="checkbox" aria-label="Select all guests"
+                                   data-class="checkbox">
+                        </th>
+                        <th class="name-col">Guest</th>
+                        <th class="status-col">Status</th>
+                        <th class="ticket-col">Ticket</th>
+                        <th class="registered-col">Registered</th>
+                        <th class="checkin-col">Check-In</th>
+                        <th class="action-col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for guest in discover.visible_guests %}
+                    <tr class="{{ 'selected-row' if guest.selected else '' }}">
+                        <td class="check-col">
+                            <input type="checkbox"
+                                   aria-label="Select {{ guest.name }}"
+                                   {% if guest.selected %}checked{% endif %}
+                                   data-class="checkbox">
+                        </td>
+                        <td>
+                            <div class="row">
+                                {{ avatar(guest) }}
+                                <div class="guest-identity">
+                                    <strong>{{ guest.name }}</strong>
+                                    <small>{{ guest.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="status-col">
+                            <span class="status-badge" data-class="badge">{{ guest.status }}</span>
+                        </td>
+                        <td class="ticket-col">{{ guest.ticket }}</td>
+                        <td class="registered-col muted">{{ guest.registered }}</td>
+                        <td class="checkin-col">
+                            {% if guest.checked_in %}
+                            {{icon('check_circle', guest.id ~ '_checked_in') }}
+                            {% else %}
+                            <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="action-col">
+                            <button class="icon-button"
+                                    data-class="button"
+                                    aria-label="Guest options">
+                                {{ icon('more_horiz', guest.id ~ '_options') }}
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% else %}
+        <section class="empty" data-class="section">
+            {{ icon('group', 'empty_guests') }}
+            <h2>No guests yet</h2>
+            <p class="muted">Invite your community to get started.</p>
+            <button class="primary-button" data-class="button">Invite Guests</button>
+        </section>
+        {% endif %}
+    </main>
+</div>
+
+{% if discover.popup_visible %}
+<div class="overlay {{ 'drawer-overlay' if discover.state == 'guest_details' else '' }}">
+    <section class="dialog {{ 'drawer' if discover.state == 'guest_details' else '' }}"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="guest-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ discover.state }}"
+             data-occluder="true">
+        <div class="dialog-heading">
+            <h2 id="guest-dialog-title">
+                {{ 'Guest Details' if discover.state == 'guest_details' else 'Invite Guests' }}
+            </h2>
+            <button class="icon-button" data-class="button" aria-label="Close dialog">
+                {{ icon('close', 'close_guest_dialog') }}
+            </button>
+        </div>
+
+        {% if discover.state == 'guest_details' %}
+        {% set guest = discover.selected_guest %}
+        <div class="profile-block">
+            {{ avatar(guest) }}
+            <div>
+                <strong>{{ guest.name }}</strong>
+                <p class="muted small">{{ guest.email }}</p>
+            </div>
+        </div>
+
+        <label class="field-label" for="guest-status">Registration Status</label>
+        <select id="guest-status" class="field" data-class="input_field">
+            {% for status in ['Going', 'Pending', 'Waitlist', 'Not Going'] %}
+            <option {% if status == guest.status %}selected{% endif %}>{{ status }}</option>
+            {% endfor %}
+        </select>
+
+        <div class="detail-line">
+            <span class="muted small">Ticket</span>
+            <strong>{{ guest.ticket }}</strong>
+        </div>
+        <div class="detail-line">
+            <span class="muted small">Registered</span>
+            <strong>{{ guest.registered }}</strong>
+        </div>
+        <div class="detail-line">
+            <span class="muted small">Attendance</span>
+            <strong>{{ 'Checked In' if guest.checked_in else 'Not Checked In' }}</strong>
+        </div>
+
+        <div class="dialog-actions">
+            <button class="primary-button" data-class="button">Save Changes</button>
+            <button class="secondary-button" data-class="button">
+                {{ 'Undo Check-In' if guest.checked_in else 'Check In' }}
+            </button>
+        </div>
+
+        {% else %}
+        <p class="muted small">Invite people to {{ discover.event_title }}.</p>
+
+        <label class="field-label" for="invite-emails">Email Addresses</label>
+        <textarea id="invite-emails"
+                  class="field"
+                  data-class="input_field">{{ discover.invitation_emails }}</textarea>
+
+        <label class="field-label" for="invite-message">Personal Message</label>
+        <textarea id="invite-message"
+                  class="field"
+                  data-class="input_field">{{ discover.invitation_message }}</textarea>
+
+        <div class="dialog-actions">
+            <button class="primary-button" data-class="button">
+                {{ icon('send', 'send_invitations') }} Send Invitations
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

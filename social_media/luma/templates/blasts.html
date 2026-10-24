@@ -1,0 +1,1151 @@
+{% extends "base.html" %}
+
+{% block title %}
+Blasts · {{ discover.event_title }}
+{% endblock %}
+
+{% macro icon(name, extra_class="") -%}
+<span
+    class="material-symbols-rounded blast-icon {{ extra_class }}"
+    data-class="icon"
+    aria-hidden="true"
+>{{ name }}</span>
+{%- endmacro %}
+
+{% macro host_avatar() -%}
+{% if discover.host_avatar %}
+<img
+    class="host-avatar"
+    src="{{ discover.host_avatar }}"
+    alt="{{ discover.host_name }}"
+    data-class="avatar"
+>
+{% else %}
+<span
+    class="host-avatar initials"
+    data-class="avatar"
+>{{ discover.host_initials }}</span>
+{% endif %}
+{%- endmacro %}
+
+{% block head %}
+{{ super() }}
+
+<style>
+.blasts-page {
+    --blast-line: color-mix(
+        in srgb, currentColor 16%, transparent
+    );
+    --blast-soft: color-mix(
+        in srgb, currentColor 5%, transparent
+    );
+    --blast-panel: var(
+        --surface, var(--background, #fff)
+    );
+    color: var(--text-primary, inherit);
+    padding: 24px 24px 96px;
+}
+
+.blasts-page * {
+    box-sizing: border-box;
+}
+
+.blasts-page .blast-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+    line-height: 24px;
+    flex-shrink: 0;
+    pointer-events: auto;
+}
+
+.blasts-page .blasts-header,
+.blasts-page .blasts-main {
+    max-width: 1120px;
+    margin: 0 auto;
+}
+
+.blasts-page .blasts-header,
+.blasts-page .heading-row,
+.blasts-page .message-top,
+.blasts-page .editor-footer,
+.blasts-page .dialog-header,
+.blasts-page .dialog-footer,
+.blasts-page .quick-footer,
+.blasts-page .recipient-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.blasts-page .brand-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+.blasts-page .brand {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.blasts-page .event-name {
+    border-left: 1px solid var(--blast-line);
+    padding-left: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.blasts-page .manage-tabs {
+    display: flex;
+    gap: 24px;
+    overflow-x: auto;
+    margin: 28px 0;
+    border-bottom: 1px solid var(--blast-line);
+}
+
+.blasts-page .manage-tabs button {
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: 12px 0;
+    font: inherit;
+}
+
+.blasts-page .manage-tabs button.active {
+    font-weight: 700;
+    border-bottom: 2px solid currentColor;
+}
+
+.blasts-page h1 {
+    margin: 0 0 8px;
+    font-size: clamp(26px, 4vw, 34px);
+}
+
+.blasts-page h2,
+.blasts-page h3 {
+    margin: 0;
+}
+
+.blasts-page .muted {
+    opacity: .7;
+}
+
+.blasts-page .heading-row {
+    margin-bottom: 24px;
+}
+
+.blasts-page .heading-row p {
+    margin: 0;
+}
+
+.blasts-page .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 24px;
+    align-items: start;
+}
+
+.blasts-page .workspace > div {
+    min-width: 0;
+}
+
+.blasts-page .panel {
+    background: var(--blast-panel);
+    border: 1px solid var(--blast-line);
+    border-radius: 16px;
+}
+
+.blasts-page .quick-composer {
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.blasts-page .host-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    min-width: 0;
+}
+
+.blasts-page .host-row strong {
+    overflow-wrap: anywhere;
+}
+
+.blasts-page .host-avatar {
+    display: block;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.blasts-page .initials {
+    display: grid;
+    place-items: center;
+    background: var(--blast-soft);
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.blasts-page input:not([type="checkbox"]),
+.blasts-page textarea,
+.blasts-page select {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--blast-line);
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 12px;
+}
+
+/* Avoid an unannotated browser resize handle. */
+.blasts-page textarea {
+    resize: none;
+}
+
+.blasts-page select option {
+    background: var(--blast-panel);
+    color: inherit;
+}
+
+.blasts-page .quick-composer textarea {
+    min-height: 110px;
+    margin-bottom: 12px;
+}
+
+.blasts-page .button-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.blasts-page button {
+    cursor: pointer;
+}
+
+.blasts-page .primary-button,
+.blasts-page .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 600;
+}
+
+.blasts-page .primary-button {
+    background: var(--primary, #222);
+    color: var(--on-primary, #fff);
+    border: 1px solid transparent;
+}
+
+.blasts-page .secondary-button {
+    background: transparent;
+    color: inherit;
+    border: 1px solid var(--blast-line);
+}
+
+.blasts-page .icon-button {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    border: 1px solid var(--blast-line);
+    border-radius: 9px;
+    flex-shrink: 0;
+}
+
+.blasts-page .message-list {
+    display: grid;
+    gap: 16px;
+}
+
+.blasts-page .message-card {
+    padding: 22px;
+}
+
+.blasts-page .message-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    margin-bottom: 16px;
+}
+
+.blasts-page .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid var(--blast-line);
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-weight: 600;
+}
+
+.blasts-page .status-badge .blast-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+}
+
+.blasts-page .message-card h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+.blasts-page .message-card p {
+    line-height: 1.65;
+    margin: 8px 0;
+    overflow-wrap: anywhere;
+}
+
+.blasts-page .message-recipient {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--blast-line);
+    font-size: 13px;
+}
+
+.blasts-page .info-panel,
+.blasts-page .schedule-summary {
+    padding: 20px;
+}
+
+.blasts-page .info-panel h3 {
+    margin: 12px 0;
+}
+
+.blasts-page .info-panel p,
+.blasts-page .schedule-summary p {
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.blasts-page .info-panel ul {
+    padding-left: 20px;
+    line-height: 1.8;
+    font-size: 14px;
+}
+
+.blasts-page .editor {
+    overflow: hidden;
+}
+
+.blasts-page .editor-heading {
+    padding: 20px;
+    border-bottom: 1px solid var(--blast-line);
+}
+
+.blasts-page .editor-heading p {
+    margin-bottom: 0;
+}
+
+.blasts-page .editor-content {
+    padding: 20px;
+}
+
+.blasts-page .field {
+    display: block;
+    margin-bottom: 20px;
+}
+
+.blasts-page .field-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.blasts-page .recipient-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.blasts-page .recipient-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid var(--blast-line);
+    border-radius: 9px;
+    padding: 9px 11px;
+    font-size: 13px;
+}
+
+.blasts-page .recipient-option input {
+    display: block;
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
+    accent-color: var(--primary, #222);
+}
+
+.blasts-page .rich-editor {
+    border: 1px solid var(--blast-line);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.blasts-page .toolbar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 8px;
+    background: var(--blast-soft);
+    border-bottom: 1px solid var(--blast-line);
+}
+
+.blasts-page .rich-editor textarea {
+    min-height: 270px;
+    border: 0;
+    border-radius: 0;
+    line-height: 1.7;
+}
+
+.blasts-page .editor-footer {
+    flex-wrap: wrap;
+    border-top: 1px solid var(--blast-line);
+    padding: 16px 20px;
+}
+
+.blasts-page .field-error {
+    margin: 7px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.blasts-page .invalid {
+    border: 2px solid currentColor !important;
+}
+
+.blasts-page .empty-state {
+    text-align: center;
+    padding: 64px 24px;
+}
+
+.blasts-page .empty-state > .blast-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 48px;
+    line-height: 48px;
+    margin-bottom: 20px;
+}
+
+.blasts-page .empty-state p {
+    line-height: 1.6;
+    max-width: 360px;
+    margin: 14px auto 24px;
+}
+
+.blasts-page .blast-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgb(0 0 0 / 48%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.blasts-page .blast-dialog {
+    width: min(100%, 480px);
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    background: var(--blast-panel);
+    color: var(--text-primary, inherit);
+    border: 1px solid var(--blast-line);
+    border-radius: 18px;
+    box-shadow: 0 24px 80px rgb(0 0 0 / 24%);
+}
+
+.blasts-page .blast-dialog.preview-dialog {
+    width: min(100%, 620px);
+}
+
+.blasts-page .dialog-header,
+.blasts-page .dialog-footer {
+    padding: 18px 20px;
+}
+
+.blasts-page .dialog-header {
+    border-bottom: 1px solid var(--blast-line);
+}
+
+.blasts-page .dialog-header h2 {
+    font-size: 20px;
+}
+
+.blasts-page .dialog-footer {
+    border-top: 1px solid var(--blast-line);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.blasts-page .dialog-content {
+    padding: 22px;
+}
+
+.blasts-page .email-preview {
+    padding: 24px;
+    border: 1px solid var(--blast-line);
+    border-radius: 12px;
+}
+
+.blasts-page .email-preview h2 {
+    margin: 24px 0 18px;
+    font-size: 24px;
+}
+
+.blasts-page .email-preview p {
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+}
+
+.blasts-page .email-event {
+    padding: 16px;
+    margin-top: 24px;
+    background: var(--blast-soft);
+    border-radius: 10px;
+}
+
+.blasts-page .email-footer {
+    margin-top: 24px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.blasts-page .schedule-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+}
+
+/* GLOBAL control styling: applies to all viewport sizes. */
+.blasts-page .datetime-field,
+.blasts-page .select-field {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+.blasts-page .datetime-field input,
+.blasts-page .select-field select {
+    min-height: 48px;
+    padding-right: 48px;
+}
+
+/* Hide native Chromium date and time indicators. */
+.blasts-page .datetime-field input::-webkit-calendar-picker-indicator {
+    display: none !important;
+    -webkit-appearance: none;
+}
+
+.blasts-page .datetime-field input::-webkit-inner-spin-button {
+    display: none;
+    -webkit-appearance: none;
+}
+
+/* Hide the native select arrow on mobile AND desktop. */
+.blasts-page .select-field select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: none !important;
+}
+
+/* Real DOM icon with its own bounding box. */
+.blasts-page .field-control-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    width: 24px;
+    height: 24px;
+    color: inherit;
+    pointer-events: auto;
+}
+
+@media (max-width: 850px) {
+    .blasts-page .workspace {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Hide only the sidebar, not the dialog summary. */
+    .blasts-page .workspace > aside.info-panel {
+        display: none;
+    }
+}
+
+@media (max-width: 540px) {
+    .blasts-page {
+        padding: 18px 14px 90px;
+    }
+
+    .blasts-page .event-name {
+        font-size: 13px;
+    }
+
+    .blasts-page .blasts-header > .secondary-button {
+        display: none;
+    }
+
+    .blasts-page .manage-tabs {
+        gap: 20px;
+        margin: 20px 0;
+    }
+
+    .blasts-page .heading-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .blasts-page .quick-composer,
+    .blasts-page .message-card,
+    .blasts-page .editor-content,
+    .blasts-page .editor-heading {
+        padding: 16px;
+    }
+
+    .blasts-page .quick-footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .blasts-page .dialog-content {
+        padding: 16px;
+    }
+
+    .blasts-page .email-preview {
+        padding: 18px;
+    }
+
+    .blasts-page .schedule-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="blasts-page">
+
+    <div
+        data-annotation-skip="{{ 'true' if discover.popup_visible else 'false' }}"
+    >
+        <header class="blasts-header" data-class="app_bar">
+            <div class="brand-group">
+                <span class="brand" data-class="logo">luma</span>
+                <span class="event-name">
+                    {{ discover.event_title }}
+                </span>
+            </div>
+
+            <button
+                type="button"
+                class="secondary-button"
+                data-class="button"
+            >
+                View Event {{ icon("north_east") }}
+            </button>
+        </header>
+
+        <main class="blasts-main">
+            <nav class="manage-tabs" data-class="navigation_bar">
+                {% for name in [
+                    "Overview",
+                    "Guests",
+                    "Registration",
+                    "Blasts",
+                    "More"
+                ] %}
+                <button
+                    type="button"
+                    class="{{ 'active' if name == 'Blasts' else '' }}"
+                    data-class="tab"
+                >{{ name }}</button>
+                {% endfor %}
+            </nav>
+
+            <div class="heading-row">
+                <div>
+                    <h1>Blasts</h1>
+                    <p class="muted">Share updates with your guests.</p>
+                </div>
+
+                {% if not discover.editor_visible %}
+                <button
+                    type="button"
+                    class="primary-button"
+                    data-class="button"
+                >
+                    {{ icon("edit_square") }} New Blast
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="workspace">
+                <div>
+                    {% if discover.editor_visible %}
+                    <section class="editor panel" data-class="section">
+                        <div class="editor-heading">
+                            <h2>New Blast</h2>
+                            <p class="muted">
+                                Write a message for your guests.
+                            </p>
+                        </div>
+
+                        <div class="editor-content">
+                            <div class="field">
+                                <div class="recipient-row">
+                                    <span class="field-label">Recipients</span>
+                                    <span class="muted">
+                                        {{ discover.recipient_count }} guests
+                                    </span>
+                                </div>
+
+                                <div class="recipient-options">
+                                    {% for status in discover.recipient_statuses %}
+                                    <label class="recipient-option">
+                                        <input
+                                            type="checkbox"
+                                            data-class="checkbox"
+                                            {% if status in discover.selected_recipients %}
+                                            checked
+                                            {% endif %}
+                                        >
+                                        <span>{{ status }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <label class="field">
+                                <span class="field-label">Subject</span>
+                                <input
+                                    type="text"
+                                    value="{{ discover.subject }}"
+                                    placeholder="Give your message a subject"
+                                    data-class="input_field"
+                                    class="{{ 'invalid' if discover.errors.get('subject') else '' }}"
+                                    aria-invalid="{{ 'true' if discover.errors.get('subject') else 'false' }}"
+                                >
+
+                                {% if discover.errors.get("subject") %}
+                                <span class="field-error">
+                                    {{ icon("error") }}
+                                    {{ discover.errors["subject"] }}
+                                </span>
+                                {% endif %}
+                            </label>
+
+                            <div class="field">
+                                <label class="field-label" for="blast-body">
+                                    Message
+                                </label>
+
+                                <div class="rich-editor {{ 'invalid' if discover.errors.get('body') else '' }}">
+                                    <div class="toolbar">
+                                        {% for glyph, label in [
+                                            ("format_bold", "Bold"),
+                                            ("format_italic", "Italic"),
+                                            ("format_list_bulleted", "Bullet list"),
+                                            ("link", "Insert link"),
+                                            ("image", "Insert image"),
+                                            ("attach_file", "Attach file")
+                                        ] %}
+                                        <button
+                                            type="button"
+                                            class="icon-button"
+                                            data-class="button"
+                                            aria-label="{{ label }}"
+                                        >{{ icon(glyph) }}</button>
+                                        {% endfor %}
+                                    </div>
+
+                                    <textarea
+                                        id="blast-body"
+                                        data-class="input_field"
+                                        placeholder="Write your message..."
+                                        aria-invalid="{{ 'true' if discover.errors.get('body') else 'false' }}"
+                                    >{{ discover.introduction }}{% if discover.introduction %}
+
+{% endif %}{{ discover.body }}</textarea>
+                                </div>
+
+                                {% if discover.errors.get("body") %}
+                                <p class="field-error">
+                                    {{ icon("error") }}
+                                    {{ discover.errors["body"] }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="editor-footer">
+                            <button
+                                type="button"
+                                class="secondary-button"
+                                data-class="button"
+                            >
+                                {{ icon("visibility") }} Preview
+                            </button>
+
+                            <div class="button-row">
+                                <button
+                                    type="button"
+                                    class="secondary-button"
+                                    data-class="button"
+                                >
+                                    {{ icon("schedule") }} Schedule
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="primary-button"
+                                    data-class="button"
+                                >
+                                    {{ icon("send") }} Send Now
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    {% else %}
+                    <section class="quick-composer panel" data-class="section">
+                        <div class="host-row">
+                            {{ host_avatar() }}
+                            <div>
+                                <strong>{{ discover.host_name }}</strong>
+                                <div class="muted">To Going guests</div>
+                            </div>
+                        </div>
+
+                        <textarea
+                            maxlength="140"
+                            placeholder="Share a quick update with your guests..."
+                            aria-label="Quick update"
+                            data-class="input_field"
+                        >{{ discover.quick_message }}</textarea>
+
+                        <div class="quick-footer">
+                            <span class="muted">
+                                {{ discover.quick_message | length }}/140
+                            </span>
+
+                            <div class="button-row">
+                                <button
+                                    type="button"
+                                    class="secondary-button"
+                                    data-class="button"
+                                >Advanced</button>
+
+                                <button
+                                    type="button"
+                                    class="primary-button"
+                                    data-class="button"
+                                >
+                                    {{ icon("send") }} Send
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    {% if discover.messages %}
+                    <section class="message-list" data-class="section">
+                        {% for message in discover.messages %}
+                        <article class="message-card panel" data-class="card">
+                            <div class="message-top">
+                                <div class="host-row">
+                                    {{ host_avatar() }}
+                                    <strong>{{ discover.host_name }}</strong>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    class="icon-button"
+                                    data-class="button"
+                                    aria-label="Message options"
+                                >{{ icon("more_horiz") }}</button>
+                            </div>
+
+                            <div class="message-meta">
+                                <span class="status-badge" data-class="badge">
+                                    {{ icon("schedule" if message.status == "Scheduled" else "check") }}
+                                    <span>{{ message.status }}</span>
+                                </span>
+
+                                <span class="muted">
+                                    {{ message.timestamp }}
+                                </span>
+                            </div>
+
+                            <h3>{{ message.subject }}</h3>
+                            <p>{{ message.introduction }}</p>
+                            <p>{{ message.body }}</p>
+
+                            <div class="message-recipient muted">
+                                To {{ message.recipients }} guests
+                            </div>
+                        </article>
+                        {% endfor %}
+                    </section>
+
+                    {% else %}
+                    <section class="empty-state panel" data-class="section">
+                        {{ icon("campaign") }}
+                        <h2>Keep your guests in the loop</h2>
+                        <p class="muted">
+                            Share arrival instructions, announcements,
+                            or a thank-you message.
+                        </p>
+
+                        <button
+                            type="button"
+                            class="primary-button"
+                            data-class="button"
+                        >Create Your First Blast</button>
+                    </section>
+                    {% endif %}
+                    {% endif %}
+                </div>
+
+                <aside class="info-panel panel" data-class="section">
+                    {{ icon("campaign") }}
+                    <h3>Stay connected</h3>
+                    <p class="muted">
+                        Blasts help guests find important event updates.
+                    </p>
+                    <ul class="muted">
+                        <li>Share arrival details</li>
+                        <li>Announce event updates</li>
+                        <li>Schedule a message ahead of time</li>
+                    </ul>
+                    <p class="muted">
+                        Guests receive updates according to their
+                        notification preferences.
+                    </p>
+                </aside>
+            </div>
+        </main>
+    </div>
+
+    {% if discover.popup_visible %}
+    <div class="blast-overlay">
+        <section
+            class="blast-dialog {{ 'preview-dialog' if discover.state == 'preview' else '' }}"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="blast-dialog-title"
+            data-class="dialog"
+            data-occluder="true"
+        >
+            <header class="dialog-header">
+                <h2 id="blast-dialog-title">
+                    {% if discover.state == "preview" %}
+                    Preview Blast
+                    {% elif discover.state == "schedule_dialog" %}
+                    Schedule Blast
+                    {% else %}
+                    Delete Scheduled Blast?
+                    {% endif %}
+                </h2>
+
+                <button
+                    type="button"
+                    class="icon-button"
+                    data-class="button"
+                    aria-label="Close dialog"
+                >{{ icon("close") }}</button>
+            </header>
+
+            <div class="dialog-content">
+                {% if discover.state == "preview" %}
+                <article class="email-preview" data-class="card">
+                    <div class="host-row">
+                        {{ host_avatar() }}
+                        <div>
+                            <strong>{{ discover.host_name }}</strong>
+                            <div class="muted">
+                                {{ discover.event_title }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2>{{ discover.subject }}</h2>
+                    <p>{{ discover.introduction }}</p>
+                    <p>{{ discover.body }}</p>
+
+                    <div class="email-event" data-class="card">
+                        <strong>{{ discover.event_title }}</strong>
+                        <p class="muted">Your next gathering awaits.</p>
+
+                        <button
+                            type="button"
+                            class="primary-button"
+                            data-class="button"
+                        >View Event</button>
+                    </div>
+
+                    <div class="email-footer muted">
+                        Sent with <span data-class="logo">luma</span>
+                    </div>
+                </article>
+
+                {% elif discover.state == "schedule_dialog" %}
+                <p class="muted">
+                    Choose when to send this message to
+                    {{ discover.recipient_count }} guests.
+                </p>
+
+                <div class="schedule-grid">
+                    <div class="field">
+                        <label class="field-label" for="blast-date">
+                            Date
+                        </label>
+
+                        <div class="datetime-field">
+                            <input
+                                id="blast-date"
+                                type="date"
+                                value="{{ discover.schedule_date }}"
+                                data-class="input_field"
+                            >
+                            {{ icon("calendar_month", "field-control-icon") }}
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="blast-time">
+                            Time
+                        </label>
+
+                        <div class="datetime-field">
+                            <input
+                                id="blast-time"
+                                type="time"
+                                value="{{ discover.schedule_time }}"
+                                data-class="input_field"
+                            >
+                            {{ icon("schedule", "field-control-icon") }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- One timezone field only. -->
+                <div class="field">
+                    <label class="field-label" for="blast-timezone">
+                        Timezone
+                    </label>
+
+                    <div class="select-field">
+                        <select
+                            id="blast-timezone"
+                            data-class="input_field"
+                        >
+                            <option
+                                value="{{ discover.timezone }}"
+                                selected
+                            >{{ discover.timezone }}</option>
+
+                            {% for timezone in [
+                                "Asia/Seoul",
+                                "America/New_York",
+                                "Europe/London"
+                            ] %}
+                            {% if timezone != discover.timezone %}
+                            <option value="{{ timezone }}">
+                                {{ timezone }}
+                            </option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+
+                        {{ icon("expand_more", "field-control-icon") }}
+                    </div>
+                </div>
+
+                <section
+                    class="panel schedule-summary"
+                    data-class="section"
+                >
+                    <strong>{{ discover.subject }}</strong>
+                    <p class="muted">
+                        To {{ discover.selected_recipients | join(", ") }}
+                    </p>
+                </section>
+
+                {% else %}
+                <p>
+                    Delete “{{ discover.selected_message.subject }}”?
+                </p>
+                <p class="muted">
+                    This scheduled message will be canceled
+                    and will not be sent to guests.
+                </p>
+                {% endif %}
+            </div>
+
+            <footer class="dialog-footer">
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-class="button"
+                >
+                    {{ "Back to Editor" if discover.state == "preview" else "Cancel" }}
+                </button>
+
+                {% if discover.state == "schedule_dialog" %}
+                <button
+                    type="button"
+                    class="primary-button"
+                    data-class="button"
+                >
+                    {{ icon("schedule") }} Schedule Blast
+                </button>
+
+                {% elif discover.state == "delete_dialog" %}
+                <button
+                    type="button"
+                    class="primary-button"
+                    data-class="button"
+                >
+                    {{ icon("delete") }} Delete Blast
+                </button>
+                {% endif %}
+            </footer>
+        </section>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

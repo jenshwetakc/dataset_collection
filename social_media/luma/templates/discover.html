@@ -1,0 +1,553 @@
+{% extends "base.html" %}
+
+{% block title %}Discover · Luma{% endblock %}
+
+{% macro icon(name, semantic) %}
+<span class="material-symbols-rounded"
+      data-class="icon"
+      data-semantic="{{ semantic }}">{{ name }}</span>
+{% endmacro %}
+
+{% block head %}
+<style>
+    .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: 72px;
+        padding: 16px max(20px, calc((100% - 1180px) / 2));
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .brand {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -2px;
+    }
+
+    .header-nav, .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .nav-tab {
+        padding: 10px 12px;
+        border-radius: 10px;
+        color: var(--text-secondary);
+    }
+
+    .nav-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    main {
+        max-width: 1180px;
+        margin: auto;
+        padding: 36px 24px 60px;
+    }
+
+    .intro {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 26px;
+    }
+
+    h1 {
+        font-size: clamp(28px, 4vw, 42px);
+        letter-spacing: -1.2px;
+        margin-bottom: 10px;
+    }
+
+    .muted { color: var(--text-secondary); }
+
+    .search-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--icon);
+    }
+
+    .search-box input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--on-surface);
+    }
+
+    .search-box input::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .categories {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        margin-bottom: 28px;
+    }
+
+    .category {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        white-space: nowrap;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .category.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        border-color: var(--primary);
+    }
+
+    .results-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .event-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 22px;
+    }
+
+    .event-card {
+        min-width: 0;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+        overflow: hidden;
+    }
+
+    .event-cover {
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        background: var(--primary-container);
+    }
+
+    .cover-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 25px;
+        color: var(--on-primary-container);
+        font-size: 30px;
+        font-weight: 800;
+        text-align: center;
+    }
+
+    .event-body { padding: 16px; }
+
+    .event-date {
+        color: var(--text-secondary);
+        font-size: 13px;
+        margin-bottom: 9px;
+    }
+
+    .event-title {
+        font-size: 19px;
+        line-height: 1.3;
+        margin-bottom: 12px;
+        overflow-wrap: anywhere;
+    }
+
+    .host-row, .venue-row, .event-footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .host-row {
+        margin-bottom: 10px;
+        font-size: 13px;
+    }
+
+    .avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .avatar-fallback {
+        display: grid;
+        place-items: center;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 10px;
+    }
+
+    .venue-row {
+        color: var(--text-secondary);
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+
+    .venue-row .material-symbols-rounded { font-size: 18px; }
+
+    .event-footer {
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .badge {
+        padding: 5px 8px;
+        border-radius: 6px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .empty-state {
+        padding: 70px 20px;
+        text-align: center;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+    }
+
+    .empty-state > .material-symbols-rounded {
+        font-size: 48px;
+        margin-bottom: 16px;
+        color: var(--icon);
+    }
+
+    .empty-state h2 { margin-bottom: 10px; }
+    .empty-state p { margin-bottom: 22px; }
+
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .filter-dialog {
+        width: min(100%, 480px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+        box-shadow: 0 20px 70px rgb(0 0 0 / 25%);
+    }
+
+    .dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+
+    .field-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .dialog-field {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .switch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 4px 0 26px;
+    }
+
+    .switch {
+        width: 44px;
+        height: 26px;
+        padding: 3px;
+        border-radius: 20px;
+        background: var(--border);
+    }
+
+    .switch.on { background: var(--primary); }
+
+    .switch-thumb {
+        display: block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--surface);
+    }
+
+    .switch.on .switch-thumb {
+        margin-left: auto;
+        background: var(--on-primary);
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+        .event-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .header-nav { display: none; }
+    }
+
+    @media (max-width: 550px) {
+        main { padding: 24px 14px 40px; }
+        .app-header { padding: 12px 14px; min-height: 60px; }
+        .create-event { display: none; }
+        .intro { align-items: flex-start; flex-direction: column; gap: 14px; }
+        .event-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+        .filter-label { display: none; }
+        .search-row { gap: 8px; }
+        .filter-dialog { padding: 20px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if discover.popup_visible else 'false' }}">
+    <header class="app-header"
+            data-class="app_bar"
+            data-semantic="luma_header">
+        <div class="brand" data-class="logo">luma</div>
+
+        <nav class="header-nav"
+             data-class="navigation_bar"
+             data-semantic="desktop_navigation">
+            <button class="nav-tab" data-class="tab">Events</button>
+            <button class="nav-tab" data-class="tab">Calendars</button>
+            <button class="nav-tab active" data-class="tab">Discover</button>
+        </nav>
+
+        <div class="header-actions">
+            <button class="secondary-button create-event"
+                    data-class="button">
+                {{ icon('add', 'create_event_icon') }}
+                Create Event
+            </button>
+            <button class="primary-button" data-class="button">Sign In</button>
+        </div>
+    </header>
+
+    <main>
+        <section class="intro"
+                 data-class="section"
+                 data-semantic="discover_intro">
+            <div>
+                <h1>{{ discover.heading }}</h1>
+                <p class="muted">{{ discover.subtitle }}</p>
+            </div>
+            <button class="secondary-button" data-class="button">
+                {{ icon('location_on', 'city_icon') }}
+                {{ discover.city }}
+                {{ icon('expand_more', 'city_dropdown_icon') }}
+            </button>
+        </section>
+
+        <div class="search-row">
+            <div class="search-box"
+                 data-class="search_bar"
+                 data-semantic="event_search">
+                {{ icon('search', 'search_icon') }}
+                <input value="{{ discover.search_query }}"
+                       placeholder="Search events"
+                       aria-label="Search events">
+            </div>
+            <button class="secondary-button"
+                    data-class="button"
+                    data-semantic="open_filters">
+                {{ icon('tune', 'filter_icon') }}
+                <span class="filter-label">Filters</span>
+            </button>
+        </div>
+
+        <nav class="categories"
+             data-class="navigation_bar"
+             data-semantic="category_navigation">
+            {% for category in discover.categories %}
+            <button class="category {{ 'active' if category.name == discover.active_category else '' }}"
+                    data-class="tab"
+                    data-semantic="category_{{ loop.index }}">
+                {{ icon(category.icon, 'category_icon_' ~ loop.index) }}
+                {{ category.name }}
+            </button>
+            {% endfor %}
+        </nav>
+
+        <div class="results-title">
+            <h2>Explore {{ discover.city }}</h2>
+            <span class="muted">{{ discover.visible_events|length }} events</span>
+        </div>
+
+        {% if discover.visible_events %}
+        <div class="event-grid">
+            {% for event in discover.visible_events %}
+            <article class="event-card"
+                     data-class="card"
+                     data-semantic="{{ event.id }}">
+                {% if event.cover %}
+                <img class="event-cover"
+                     src="{{ event.cover }}"
+                     alt="{{ event.title }}"
+                     data-class="image"
+                     data-semantic="{{ event.id }}_cover">
+                {% else %}
+                <div class="event-cover cover-fallback">
+                    {{ event.category }}
+                </div>
+                {% endif %}
+
+                <div class="event-body">
+                    <p class="event-date">{{ event.date }} · {{ event.time }}</p>
+                    <h3 class="event-title">{{ event.title }}</h3>
+
+                    <div class="host-row">
+                        {% if event.avatar %}
+                        <img class="avatar"
+                             src="{{ event.avatar }}"
+                             alt="Fictional host"
+                             data-class="avatar">
+                        {% else %}
+                        <span class="avatar avatar-fallback"
+                              data-class="avatar">{{ event.initials }}</span>
+                        {% endif %}
+                        <span class="muted">By {{ event.host }}</span>
+                    </div>
+
+                    <div class="venue-row">
+                        {{ icon('location_on', event.id ~ '_location') }}
+                        <span>{{ event.venue }}</span>
+                    </div>
+
+                    <div class="event-footer">
+                        <span class="badge" data-class="badge">{{ event.price }}</span>
+                        <span>{{ event.attendees }} attending</span>
+                        <button class="icon-button"
+                                data-class="button"
+                                aria-label="Save event">
+                            {{ icon('bookmark' if event.saved else 'bookmark_border',
+                                    event.id ~ '_bookmark') }}
+                        </button>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <section class="empty-state"
+                 data-class="section"
+                 data-semantic="empty_results">
+            {{ icon('search_off', 'empty_search_icon') }}
+            <h2>No events found</h2>
+            <p class="muted">Try a different keyword or explore another category.</p>
+            <button class="primary-button" data-class="button">Explore All Events</button>
+        </section>
+        {% endif %}
+    </main>
+</div>
+
+{% if discover.popup_visible %}
+<div class="modal-overlay">
+    <section class="filter-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="filter-title"
+             data-class="dialog"
+             data-semantic="filter_dialog"
+             data-occluder="true">
+        <div class="dialog-header">
+            <h2 id="filter-title">Filter Events</h2>
+            <button class="icon-button"
+                    data-class="button"
+                    aria-label="Close filters">
+                {{ icon('close', 'close_filters_icon') }}
+            </button>
+        </div>
+
+        <label class="field-label" for="location">Location</label>
+        <input id="location"
+               class="dialog-field"
+               value="{{ discover.city }}"
+               data-class="input_field">
+
+        <label class="field-label" for="date-filter">When</label>
+        <select id="date-filter" class="dialog-field" data-class="input_field">
+            {% for option in discover.date_options %}
+            <option {% if option == discover.date_filter %}selected{% endif %}>
+                {{ option }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <label class="field-label" for="format-filter">Event Format</label>
+        <select id="format-filter" class="dialog-field" data-class="input_field">
+            {% for option in discover.format_options %}
+            <option {% if option == discover.format_filter %}selected{% endif %}>
+                {{ option }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <div class="switch-row">
+            <span>Free events only</span>
+            <button class="switch {{ 'on' if discover.free_only else '' }}"
+                    role="switch"
+                    aria-label="Free events only"
+                    aria-checked="{{ 'true' if discover.free_only else 'false' }}"
+                    data-class="switch">
+                <span class="switch-thumb"></span>
+            </button>
+        </div>
+
+        <div class="dialog-actions">
+            <button class="secondary-button" data-class="button">Reset</button>
+            <button class="primary-button" data-class="button">Show Events</button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

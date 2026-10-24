@@ -1,0 +1,832 @@
+{% extends "base.html" %}
+
+{% block title %}
+Chat · {{ discover.event_title }}
+{% endblock %}
+
+{% macro icon(name) -%}
+<span
+    class="material-symbols-rounded"
+    data-class="icon"
+    aria-hidden="true"
+>{{ name }}</span>
+{%- endmacro %}
+
+{% macro avatar(person) -%}
+{% if person.avatar %}
+<img
+    class="ec-avatar"
+    src="{{ person.avatar }}"
+    alt="{{ person.name }}"
+    data-class="avatar"
+>
+{% else %}
+<span
+    class="ec-avatar ec-initials"
+    data-class="avatar"
+>{{ person.initials }}</span>
+{% endif %}
+{%- endmacro %}
+
+{% block head %}
+{{ super() }}
+<style>
+.ec-page {
+    --ec-line: color-mix(
+        in srgb, currentColor 18%, transparent
+    );
+    --ec-soft: color-mix(
+        in srgb, currentColor 6%, transparent
+    );
+    --ec-panel: var(
+        --surface, var(--background, #fff)
+    );
+    color: var(--text-primary, inherit);
+    padding: 20px 20px 90px;
+}
+
+.ec-page * {
+    box-sizing: border-box;
+}
+
+.ec-shell {
+    max-width: 1360px;
+    margin: auto;
+    border: 1px solid var(--ec-line);
+    border-radius: 16px;
+    background: var(--ec-panel);
+    overflow: hidden;
+}
+
+.ec-layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+}
+
+.ec-sidebar {
+    border-right: 1px solid var(--ec-line);
+    padding: 20px 14px;
+}
+
+.ec-side-heading,
+.ec-header,
+.ec-actions,
+.ec-message-meta,
+.ec-composer-row,
+.ec-reply,
+.ec-dialog-header,
+.ec-dialog-footer,
+.ec-member,
+.ec-mute-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ec-side-heading,
+.ec-header,
+.ec-dialog-header,
+.ec-dialog-footer,
+.ec-member,
+.ec-mute-option {
+    justify-content: space-between;
+}
+
+.ec-brand {
+    font-size: 27px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.ec-sidebar h2 {
+    margin: 28px 8px 16px;
+    font-size: 22px;
+}
+
+.ec-page button {
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+}
+
+.ec-icon-button {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--ec-line);
+    border-radius: 9px;
+    background: transparent;
+    flex-shrink: 0;
+}
+
+.ec-search {
+    position: relative;
+    margin: 0 6px 18px;
+}
+
+.ec-page input,
+.ec-page textarea {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--ec-line);
+    border-radius: 10px;
+    padding: 12px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
+.ec-search input {
+    padding-left: 42px;
+}
+
+.ec-search > .material-symbols-rounded {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+}
+
+.ec-conversation {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 14px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    margin-bottom: 6px;
+}
+
+.ec-conversation.active {
+    background: var(--ec-soft);
+}
+
+.ec-conversation-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.ec-conversation p {
+    margin: 7px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.ec-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--ec-line);
+    border-radius: 999px;
+    padding: 3px 7px;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.ec-main {
+    min-width: 0;
+}
+
+.ec-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--ec-line);
+}
+
+.ec-header h1 {
+    font-size: 19px;
+    margin: 0 0 5px;
+    overflow-wrap: anywhere;
+}
+
+.ec-muted {
+    opacity: .7;
+    line-height: 1.5;
+}
+
+.ec-header p {
+    margin: 0;
+    font-size: 13px;
+}
+
+.ec-history {
+    padding: 24px;
+    min-height: 340px;
+}
+
+.ec-day {
+    text-align: center;
+    font-size: 12px;
+    margin-bottom: 28px;
+}
+
+.ec-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.ec-message.own {
+    justify-content: flex-end;
+}
+
+.ec-avatar {
+    display: block;
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.ec-initials {
+    display: grid;
+    place-items: center;
+    background: var(--ec-soft);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ec-message-content {
+    max-width: min(78%, 520px);
+    min-width: 0;
+}
+
+.ec-message-meta {
+    flex-wrap: wrap;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.ec-message.own .ec-message-meta {
+    justify-content: flex-end;
+}
+
+.ec-bubble {
+    background: var(--ec-soft);
+    border: 1px solid var(--ec-line);
+    padding: 12px 15px;
+    border-radius: 4px 16px 16px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.ec-message.own .ec-bubble {
+    background: var(--primary, #222);
+    color: var(--on-primary, #fff);
+    border-color: transparent;
+    border-radius: 16px 4px 16px 16px;
+}
+
+.ec-reaction {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    border: 1px solid var(--ec-line);
+    border-radius: 999px;
+    padding: 4px 8px;
+    margin-top: 7px;
+    font-size: 12px;
+}
+
+.ec-reaction .material-symbols-rounded {
+    font-size: 18px;
+}
+
+.ec-composer {
+    border-top: 1px solid var(--ec-line);
+    padding: 18px 22px;
+}
+
+.ec-composer-row {
+    align-items: flex-end;
+}
+
+.ec-composer textarea {
+    min-height: 48px;
+    height: 48px;
+    max-height: 160px;
+    resize: vertical;
+}
+
+.ec-send {
+    background: var(--primary, #222);
+    color: var(--on-primary, #fff) !important;
+    border-color: transparent;
+}
+
+.ec-reply {
+    justify-content: space-between;
+    padding: 12px;
+    border-left: 3px solid currentColor;
+    background: var(--ec-soft);
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.ec-reply p {
+    margin: 4px 0 0;
+    font-size: 13px;
+}
+
+.ec-closed,
+.ec-empty {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.ec-empty {
+    padding: 90px 20px;
+}
+
+.ec-empty > .material-symbols-rounded {
+    font-size: 48px;
+}
+
+.ec-empty h2 {
+    font-size: 22px;
+    margin: 18px 0 10px;
+}
+
+.ec-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgb(0 0 0 / 48%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.ec-dialog {
+    width: min(100%, 440px);
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    border: 1px solid var(--ec-line);
+    border-radius: 18px;
+    background: var(--ec-panel);
+    box-shadow: 0 24px 80px rgb(0 0 0 / 24%);
+}
+
+.ec-overlay.members {
+    justify-content: flex-end;
+    padding: 0;
+}
+
+.ec-overlay.members .ec-dialog {
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+}
+
+.ec-dialog-header,
+.ec-dialog-footer {
+    padding: 18px 20px;
+}
+
+.ec-dialog-header {
+    border-bottom: 1px solid var(--ec-line);
+}
+
+.ec-dialog-header h2 {
+    font-size: 20px;
+    margin: 0;
+}
+
+.ec-dialog-body {
+    padding: 20px;
+}
+
+.ec-dialog-footer {
+    border-top: 1px solid var(--ec-line);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.ec-primary,
+.ec-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 14px;
+    border-radius: 9px;
+    min-height: 40px;
+}
+
+.ec-primary {
+    background: var(--primary, #222);
+    color: var(--on-primary, #fff) !important;
+    border: 1px solid transparent;
+}
+
+.ec-secondary {
+    background: transparent;
+    border: 1px solid var(--ec-line);
+}
+
+.ec-member {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--ec-line);
+}
+
+.ec-member-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.ec-member-name strong {
+    overflow-wrap: anywhere;
+}
+
+.ec-mute-option {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--ec-line);
+}
+
+.ec-mute-option input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--primary, #222);
+}
+
+.ec-quote {
+    border-left: 3px solid currentColor;
+    background: var(--ec-soft);
+    padding: 14px;
+    border-radius: 8px;
+    margin: 16px 0;
+    line-height: 1.6;
+}
+
+@media (max-width: 850px) {
+    .ec-layout {
+        grid-template-columns: 220px minmax(0, 1fr);
+    }
+
+    .ec-header {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .ec-page {
+        padding: 12px 10px 86px;
+    }
+
+    .ec-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ec-sidebar {
+        display: none;
+    }
+
+    .ec-history {
+        padding: 18px 14px;
+    }
+
+    .ec-header {
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .ec-header h1 {
+        font-size: 17px;
+    }
+
+    .ec-actions {
+        gap: 5px;
+    }
+
+    .ec-actions .ec-icon-button {
+        width: 30px;
+        height: 32px;
+    }
+
+    .ec-message-content {
+        max-width: 80%;
+    }
+
+    .ec-composer {
+        padding: 14px 10px;
+    }
+
+    .ec-composer-row {
+        gap: 6px;
+    }
+
+    .ec-composer-row .ec-icon-button {
+        width: 30px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ec-page">
+    <div
+        class="ec-shell"
+        data-annotation-skip="{{ 'true' if discover.popup_visible else 'false' }}"
+    >
+        <div class="ec-layout">
+            <aside class="ec-sidebar" data-class="section">
+                <div class="ec-side-heading">
+                    <span class="ec-brand" data-class="logo">luma</span>
+                    <button
+                        class="ec-icon-button"
+                        data-class="button"
+                        aria-label="New chat"
+                    >{{ icon("edit_square") }}</button>
+                </div>
+
+                <h2>Chats</h2>
+
+                <div class="ec-search">
+                    <input
+                        type="text"
+                        placeholder="Search chats"
+                        aria-label="Search chats"
+                        data-class="search_bar"
+                    >
+                    {{ icon("search") }}
+                </div>
+
+                <nav data-class="navigation_bar">
+                    {% for chat in discover.conversations %}
+                    <button
+                        class="ec-conversation {{ 'active' if loop.first else '' }}"
+                        data-class="button"
+                    >
+                        <span class="ec-conversation-title">
+                            <strong>
+                                {{ discover.event_title if loop.first else chat.title }}
+                            </strong>
+
+                            {% if chat.unread %}
+                            <span class="ec-badge" data-class="badge">
+                                {{ chat.unread }}
+                            </span>
+                            {% endif %}
+                        </span>
+                        <p class="ec-muted">{{ chat.preview }}</p>
+                    </button>
+                    {% endfor %}
+                </nav>
+            </aside>
+
+            <main class="ec-main">
+                <header class="ec-header" data-class="app_bar">
+                    <div>
+                        <h1>{{ discover.event_title }}</h1>
+                        <p class="ec-muted">
+                            {{ discover.member_count }} participants
+                        </p>
+                    </div>
+
+                    <div class="ec-actions">
+                        {% for glyph, label in [
+                            ("group", "View participants"),
+                            ("notifications_off", "Mute chat"),
+                            ("lock", "Close chat")
+                        ] %}
+                        <button
+                            class="ec-icon-button"
+                            data-class="button"
+                            aria-label="{{ label }}"
+                        >{{ icon(glyph) }}</button>
+                        {% endfor %}
+                    </div>
+                </header>
+
+                <section class="ec-history" data-class="section">
+                    {% if discover.messages %}
+                    <div class="ec-day ec-muted">Today</div>
+
+                    {% for message in discover.messages %}
+                    <div class="ec-message {{ 'own' if message.own else '' }}">
+                        {% if not message.own %}
+                        {{ avatar(message.sender) }}
+                        {% endif %}
+
+                        <div class="ec-message-content">
+                            <div class="ec-message-meta">
+                                <strong>
+                                    {{ "You" if message.own else message.sender.name }}
+                                </strong>
+
+                                {% if message.sender.role == "Host" and not message.own %}
+                                <span class="ec-badge" data-class="badge">
+                                    Host
+                                </span>
+                                {% endif %}
+
+                                <span class="ec-muted">{{ message.time }}</span>
+                            </div>
+
+                            <div class="ec-bubble">
+                                {{ message.text }}
+                            </div>
+
+                            {% if message.reaction %}
+                            <button
+                                class="ec-reaction"
+                                data-class="button"
+                                aria-label="Like reaction"
+                            >
+                                {{ icon("thumb_up") }}
+                                {{ message.reaction_count }}
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {% else %}
+                    <div class="ec-empty">
+                        {{ icon("forum") }}
+                        <h2>Start the conversation</h2>
+                        <p class="ec-muted">
+                            Introduce yourself to the event community.
+                        </p>
+                    </div>
+                    {% endif %}
+                </section>
+
+                {% if discover.closed %}
+                <section class="ec-closed" data-class="section">
+                    {{ icon("lock") }}
+                    <p><strong>This chat is closed.</strong></p>
+                    <p class="ec-muted">
+                        You can read previous messages.
+                    </p>
+                </section>
+                {% else %}
+                <section class="ec-composer" data-class="section">
+                    {% if discover.reply_visible %}
+                    <div class="ec-reply">
+                        <div>
+                            <strong>
+                                Replying to {{ discover.selected_message.sender.name }}
+                            </strong>
+                            <p class="ec-muted">
+                                {{ discover.selected_message.text }}
+                            </p>
+                        </div>
+
+                        <button
+                            class="ec-icon-button"
+                            data-class="button"
+                            aria-label="Cancel reply"
+                        >{{ icon("close") }}</button>
+                    </div>
+                    {% endif %}
+
+                    <div class="ec-composer-row">
+                        <button
+                            class="ec-icon-button"
+                            data-class="button"
+                            aria-label="Add attachment"
+                        >{{ icon("add") }}</button>
+
+                        <textarea
+                            placeholder="Write a message..."
+                            aria-label="Message"
+                            data-class="input_field"
+                        >{{ discover.draft }}</textarea>
+
+                        <button
+                            class="ec-icon-button"
+                            data-class="button"
+                            aria-label="Choose reaction"
+                        >{{ icon("sentiment_satisfied") }}</button>
+
+                        <button
+                            class="ec-icon-button ec-send"
+                            data-class="button"
+                            aria-label="Send message"
+                        >{{ icon("send") }}</button>
+                    </div>
+                </section>
+                {% endif %}
+            </main>
+        </div>
+    </div>
+
+    {% if discover.popup_visible %}
+    <div class="ec-overlay {{ 'members' if discover.state == 'members_dialog' else '' }}">
+        <section
+            class="ec-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ec-dialog-title"
+            data-class="dialog"
+            data-occluder="true"
+        >
+            <header class="ec-dialog-header">
+                <h2 id="ec-dialog-title">
+                    {% if discover.state == "members_dialog" %}
+                    Participants
+                    {% elif discover.state == "mute_dialog" %}
+                    Mute Chat
+                    {% elif discover.state == "delete_dialog" %}
+                    Delete Message?
+                    {% else %}
+                    Close Event Chat?
+                    {% endif %}
+                </h2>
+
+                <button
+                    class="ec-icon-button"
+                    data-class="button"
+                    aria-label="Close dialog"
+                >{{ icon("close") }}</button>
+            </header>
+
+            <div class="ec-dialog-body">
+                {% if discover.state == "members_dialog" %}
+                <p class="ec-muted">{{ discover.event_title }}</p>
+
+                {% for member in discover.members %}
+                <div class="ec-member">
+                    <div class="ec-member-name">
+                        {{ avatar(member) }}
+                        <strong>{{ member.name }}</strong>
+                    </div>
+
+                    {% if member.role == "Host" %}
+                    <span class="ec-badge" data-class="badge">Host</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {% elif discover.state == "mute_dialog" %}
+                <p class="ec-muted">
+                    Choose how long to mute chat notifications.
+                </p>
+
+                {% for option in discover.mute_options %}
+                <label class="ec-mute-option">
+                    <span>{{ option }}</span>
+                    <input
+                        type="radio"
+                        name="mute-duration"
+                        value="{{ option }}"
+                        data-class="selection_indicator"
+                        {% if option == discover.selected_mute %}checked{% endif %}
+                    >
+                </label>
+                {% endfor %}
+
+                {% elif discover.state == "delete_dialog" %}
+                <p>Remove this message from the conversation?</p>
+                <div class="ec-quote">
+                    <strong>{{ discover.selected_message.sender.name }}</strong>
+                    <p>{{ discover.selected_message.text }}</p>
+                </div>
+
+                {% else %}
+                <p>
+                    Closing this chat prevents participants
+                    from sending new messages.
+                </p>
+                <p class="ec-muted">
+                    Previous messages remain available to read.
+                </p>
+                {% endif %}
+            </div>
+
+            {% if discover.state != "members_dialog" %}
+            <footer class="ec-dialog-footer">
+                <button class="ec-secondary" data-class="button">
+                    Cancel
+                </button>
+
+                <button class="ec-primary" data-class="button">
+                    {% if discover.state == "mute_dialog" %}
+                    Mute
+                    {% elif discover.state == "delete_dialog" %}
+                    Delete Message
+                    {% else %}
+                    Close Chat
+                    {% endif %}
+                </button>
+            </footer>
+            {% endif %}
+        </section>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

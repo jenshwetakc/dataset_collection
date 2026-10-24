@@ -1,0 +1,176 @@
+from __future__ import annotations
+
+import asyncio
+import random
+from pathlib import Path
+
+from playwright.async_api import async_playwright
+
+from social_media.common.palette_generator import generate_accessible_theme
+from social_media.common.dynamic_system_generator import generate_system_data
+from social_media.common.viewport import get_viewports_by_names
+from social_media.common.media_generator import ASSETS_ROOT
+
+from social_media.luma.generators.create_generator import (
+    CREATE_STATES,
+    apply_create_state,
+    generate_create_data,
+)
+from social_media.luma.renderers.common_renderer import render_page
+
+LUMA_ROOT = Path(__file__).resolve().parents[1]
+TEMPLATE_DIR = LUMA_ROOT / "templates"
+OUTPUT_ROOT = LUMA_ROOT / "output"
+
+# Change this to your event-cover directory.
+COVERS_DIR = ASSETS_ROOT / "luma"
+
+NUM_SAMPLES = 5
+
+SELECTED_VIEWPORTS = [
+    "small_mobile",
+    # "standard_android", "standard_iphone",
+    # "large_mobile", "mobile_landscape", "tablet_portrait",
+    # "large_tablet_portrait", "tablet_landscape", "foldable",
+    # "small_laptop", "laptop", "large_laptop",
+    # "desktop_fhd", "desktop_qhd", "desktop_4k",
+    "ultrawide",
+]
+
+ANNOTATION_PROFILES = ["big_components", "small_elements"]
+THEME_MODE = "random"
+CAPTURE_FULL_PAGE = False
+CAPTURE_VIEWPORTS = True
+SCROLL_PERCENTAGES = [0, 25, 50, 75, 100]
+SAVE_VISUALIZATIONS = True
+MAX_CONCURRENT_WORKERS = 4
+
+
+async def render_create_job(
+    *,
+    browser,
+    semaphore,
+    sample_index,
+    page_data,
+    system,
+    theme,
+    viewport,
+):
+    async with semaphore:
+        try:
+            await render_page(
+                browser=browser,
+                sample_index=sample_index,
+                page_type=f"create_{page_data['state']}",
+                template_name="create.html",
+                context_key="discover",
+                page_data=page_data,
+                system=system,
+                theme=theme,
+                viewport=viewport,
+                template_dir=TEMPLATE_DIR,
+                output_root=OUTPUT_ROOT,
+                output_subdir="create",
+                annotation_profiles=ANNOTATION_PROFILES,
+                capture_full_page=CAPTURE_FULL_PAGE,
+                capture_viewports=CAPTURE_VIEWPORTS,
+                scroll_percentages=(
+                    [0] if page_data["popup_visible"]
+                    else SCROLL_PERCENTAGES
+                ),
+                save_visualizations=SAVE_VISUALIZATIONS,
+            )
+            return {"status": "success"}
+
+        except Exception as error:
+            print(
+                "[LUMA CREATE FAILED] "
+                f"sample={sample_index} "
+                f"state={page_data['state']} "
+                f"viewport={viewport['name']} "
+                f"error={error!r}"
+            )
+            return {"status": "failed", "error": repr(error)}
+
+
+async def main(browser):
+    viewports = get_viewports_by_names(SELECTED_VIEWPORTS)
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_WORKERS)
+
+    successful = 0
+    failed = 0
+
+    for sample_index in range(NUM_SAMPLES):
+        page_data = apply_create_state(
+            generate_create_data(
+                sample_index=sample_index,
+                covers_dir=COVERS_DIR,
+            ),
+            random.choice(CREATE_STATES),
+        )
+
+        mode = (
+            random.choice(["light", "dark"])
+            if THEME_MODE == "random"
+            else THEME_MODE
+        )
+        theme = generate_accessible_theme(mode=mode)
+
+        print(
+            "[LUMA CREATE] "
+            f"sample={sample_index} "
+            f"state={page_data['state']} "
+            f"theme={mode}"
+        )
+
+        jobs = [
+            render_create_job(
+                browser=browser,
+                semaphore=semaphore,
+                sample_index=sample_index,
+                page_data=page_data,
+                system=generate_system_data(
+                    style="random",
+                    icon_density="random",
+                    viewport=viewport,
+                ),
+                theme=theme,
+                viewport=viewport,
+            )
+            for viewport in viewports
+        ]
+
+        results = await asyncio.gather(*jobs)
+
+        successful += sum(
+            result["status"] == "success"
+            for result in results
+        )
+        failed += sum(
+            result["status"] == "failed"
+            for result in results
+        )
+
+    print(
+        "[LUMA CREATE COMPLETE] "
+        f"successful={successful} failed={failed}"
+    )
+
+    if failed:
+        raise RuntimeError(
+            f"{failed} Create Event renders failed. "
+            "See failure messages above."
+        )
+
+
+async def run():
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(headless=True)
+        try:
+            await main(browser)
+        finally:
+            await browser.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(run())

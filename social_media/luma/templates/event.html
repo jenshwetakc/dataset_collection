@@ -1,0 +1,531 @@
+{% extends "base.html" %}
+
+{% block title %}{{ discover.title }} · Luma{% endblock %}
+
+{% macro icon(name, semantic) %}
+<span class="material-symbols-rounded"
+      data-class="icon"
+      data-semantic="{{ semantic }}">{{ name }}</span>
+{% endmacro %}
+
+{% block head %}
+<style>
+    .event-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        min-height: 64px;
+        padding: 12px 24px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand { font-size: 28px; font-weight: 800; letter-spacing: -2px; }
+    .row { display: flex; align-items: center; gap: 10px; }
+    .muted { color: var(--text-secondary); }
+    .small { font-size: 13px; }
+
+    .event-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 390px) minmax(0, 1fr);
+        gap: 44px;
+        max-width: 1100px;
+        margin: auto;
+        padding: 40px 24px 64px;
+    }
+
+    .event-layout > * { min-width: 0; }
+
+    .cover {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 20px;
+        background: var(--primary-container);
+    }
+
+    .cover-placeholder {
+        display: grid;
+        place-items: center;
+        padding: 30px;
+        color: var(--on-primary-container);
+        font-size: 36px;
+        font-weight: 800;
+        text-align: center;
+    }
+
+    .side-section { padding: 24px 0; }
+    .side-section + .side-section {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .side-section h3 { margin-bottom: 16px; }
+
+    .host { margin-bottom: 12px; }
+
+    .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .avatar-placeholder {
+        display: grid;
+        place-items: center;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .event-category {
+        display: inline-block;
+        padding: 6px 10px;
+        margin-bottom: 14px;
+        border-radius: 8px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    h1 {
+        font-size: clamp(30px, 4vw, 46px);
+        line-height: 1.12;
+        letter-spacing: -1.4px;
+        overflow-wrap: anywhere;
+        margin-bottom: 24px;
+    }
+
+    .detail-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .detail-row p { margin-top: 5px; line-height: 1.5; }
+    .detail-row > .material-symbols-rounded {
+        color: var(--icon);
+        margin-top: 3px;
+    }
+
+    .date-tile {
+        width: 48px;
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        overflow: hidden;
+        text-align: center;
+    }
+
+    .date-month {
+        display: block;
+        padding: 4px;
+        font-size: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .date-day { display: block; padding: 6px; font-size: 20px; }
+
+    .registration-card {
+        margin: 28px 0;
+        padding: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .registration-card h2 { font-size: 20px; margin-bottom: 10px; }
+    .registration-card p { line-height: 1.6; margin-bottom: 18px; }
+    .registration-card .primary-button { width: 100%; }
+    .registration-card button:disabled { cursor: default; }
+
+    .ticket-info {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .cancel-button {
+        display: block;
+        margin: 12px auto 0;
+        padding: 8px;
+        color: var(--text-secondary);
+        text-decoration: underline;
+    }
+
+    .content-section {
+        padding: 24px 0;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .content-section h2 { font-size: 21px; margin-bottom: 18px; }
+    .content-section p {
+        margin-bottom: 14px;
+        line-height: 1.75;
+        color: var(--text-secondary);
+    }
+
+    .agenda-row {
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .agenda-row strong { display: block; margin-top: 6px; }
+
+    .question {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 16px 0;
+        text-align: left;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .dialog {
+        width: min(100%, 480px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+        box-shadow: 0 20px 70px rgb(0 0 0 / 25%);
+    }
+
+    .dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .dialog h2 { font-size: 23px; }
+    .dialog p { line-height: 1.6; margin-bottom: 18px; }
+    .dialog label { display: block; margin: 16px 0 8px; font-weight: 700; }
+
+    .field {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 24px;
+    }
+
+    .share-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    @media (max-width: 767px) {
+        .event-layout {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 24px;
+            padding: 24px 16px 48px;
+        }
+
+        .cover { max-width: 480px; margin: auto; }
+        .desktop-side { display: none; }
+        .event-header { padding: 12px 16px; }
+    }
+
+    @media (max-width: 359px) {
+        .event-layout { padding: 18px 12px 40px; }
+        .dialog { padding: 18px; }
+        .dialog-actions { flex-wrap: wrap; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if discover.popup_visible else 'false' }}">
+    <header class="event-header"
+            data-class="app_bar"
+            data-semantic="event_header">
+        <div class="brand" data-class="logo">luma</div>
+        <div class="row">
+            <button class="icon-button"
+                    data-class="button"
+                    aria-label="Share event">
+                {{ icon('share', 'header_share') }}
+            </button>
+            <button class="primary-button" data-class="button">Sign In</button>
+        </div>
+    </header>
+
+    <main class="event-layout">
+        <aside>
+            {% if discover.cover %}
+            <img class="cover"
+                 src="{{ discover.cover }}"
+                 alt="{{ discover.title }}"
+                 data-class="image"
+                 data-semantic="event_cover">
+            {% else %}
+            <div class="cover cover-placeholder">
+                {{ discover.title }}
+            </div>
+            {% endif %}
+
+            <section class="side-section desktop-side"
+                     data-class="section"
+                     data-semantic="event_hosts">
+                <h3>Hosted By</h3>
+
+                {% for host in discover.hosts %}
+                <div class="row host">
+                    {% if host.avatar %}
+                    <img class="avatar"
+                         src="{{ host.avatar }}"
+                         alt="Fictional host"
+                         data-class="avatar">
+                    {% else %}
+                    <span class="avatar avatar-placeholder"
+                          data-class="avatar">{{ host.initials }}</span>
+                    {% endif %}
+                    <strong class="small">{{ host.name }}</strong>
+                </div>
+                {% endfor %}
+
+                <button class="secondary-button" data-class="button">
+                    {{ icon('mail', 'contact_host') }}
+                    Contact Host
+                </button>
+            </section>
+
+            <section class="side-section desktop-side"
+                     data-class="section"
+                     data-semantic="event_guests">
+                <h3>{{ discover.attendee_count }} Going</h3>
+                <p class="muted small">Meet people from the community.</p>
+            </section>
+        </aside>
+
+        <div>
+            <span class="event-category" data-class="badge">
+                {{ discover.category }}
+            </span>
+
+            <h1>{{ discover.title }}</h1>
+
+            <section data-class="section" data-semantic="event_information">
+                <div class="detail-row">
+                    <div class="date-tile">
+                        <span class="date-month">{{ discover.month }}</span>
+                        <strong class="date-day">{{ discover.day }}</strong>
+                    </div>
+                    <div>
+                        <strong>{{ discover.date }}</strong>
+                        <p class="muted">
+                            {{ discover.start_time }} – {{ discover.end_time }}
+                            <br>{{ discover.timezone }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    {{ icon('videocam' if discover.online else 'location_on',
+                            'event_location') }}
+                    <div>
+                        <strong>{{ discover.venue }}</strong>
+                        <p class="muted">{{ discover.address }}</p>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    {{ icon('calendar_month', 'event_calendar') }}
+                    <div>
+                        <strong>{{ discover.calendar_name }}</strong>
+                        <p class="muted small">
+                            Hosted by {{ discover.hosts[0].name }}
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="registration-card"
+                     data-class="card"
+                     data-semantic="registration_status">
+                <h2>{{ discover.status_title }}</h2>
+                <p class="muted">{{ discover.status_message }}</p>
+
+                <div class="ticket-info">
+                    <strong>{{ discover.price_text }}</strong>
+                    <span class="muted small">
+                        {{ discover.attendee_count }} attending
+                    </span>
+                </div>
+
+                <button class="primary-button"
+                        data-class="button"
+                        {% if discover.state == 'pending_approval' %}disabled{% endif %}>
+                    {{ icon(
+                        'confirmation_number'
+                        if discover.state in ['registered', 'cancel_dialog']
+                        else 'hourglass_top'
+                        if discover.state == 'pending_approval'
+                        else 'event_available',
+                        'registration_action'
+                    ) }}
+                    {{ discover.action_label }}
+                </button>
+
+                {% if discover.state in ['registered', 'cancel_dialog'] %}
+                <button class="cancel-button" data-class="button">
+                    Cancel Registration
+                </button>
+                {% endif %}
+            </section>
+
+            <section class="content-section"
+                     data-class="section"
+                     data-semantic="event_description">
+                <h2>About Event</h2>
+                {% for paragraph in discover.description %}
+                <p>{{ paragraph }}</p>
+                {% endfor %}
+            </section>
+
+            <section class="content-section"
+                     data-class="section"
+                     data-semantic="event_agenda">
+                <h2>What to Expect</h2>
+                {% for entry in discover.agenda %}
+                <div class="agenda-row">
+                    <span class="muted small">{{ entry.time }}</span>
+                    <strong>{{ entry.title }}</strong>
+                </div>
+                {% endfor %}
+            </section>
+
+            <section class="content-section"
+                     data-class="section"
+                     data-semantic="event_faq">
+                <h2>Good to Know</h2>
+                {% for question in discover.questions %}
+                <button class="question">
+                    <span>{{ question }}</span>
+                    {{ icon('expand_more', 'faq_' ~ loop.index) }}
+                </button>
+                {% endfor %}
+            </section>
+        </div>
+    </main>
+</div>
+
+{% if discover.popup_visible %}
+<div class="overlay">
+    <section class="dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="dialog-title"
+             data-class="dialog"
+             data-semantic="{{ discover.state }}"
+             data-occluder="true">
+
+        <div class="dialog-header">
+            <h2 id="dialog-title">
+                {% if discover.state == 'registration_dialog' %}
+                Register for Event
+                {% elif discover.state == 'share_dialog' %}
+                Share Event
+                {% else %}
+                Cancel Registration?
+                {% endif %}
+            </h2>
+            <button class="icon-button"
+                    data-class="button"
+                    aria-label="Close dialog">
+                {{ icon('close', 'dialog_close') }}
+            </button>
+        </div>
+
+        {% if discover.state == 'registration_dialog' %}
+        <p class="muted">{{ discover.title }}</p>
+
+        <label for="guest-name">Full Name</label>
+        <input id="guest-name"
+               class="field"
+               value="{{ discover.guest_name }}"
+               data-class="input_field">
+
+        <label for="guest-email">Email</label>
+        <input id="guest-email"
+               type="email"
+               class="field"
+               value="{{ discover.guest_email }}"
+               data-class="input_field">
+
+        <label for="ticket-type">Ticket</label>
+        <select id="ticket-type" class="field" data-class="input_field">
+            <option>General Admission · {{ discover.price_text }}</option>
+        </select>
+
+        <div class="dialog-actions">
+            <button class="primary-button" data-class="button">
+                {{ 'Confirm Registration' if discover.price == 0 else 'Continue to Payment' }}
+            </button>
+        </div>
+
+        {% elif discover.state == 'share_dialog' %}
+        <p class="muted">Invite someone to {{ discover.title }}.</p>
+
+        <label for="share-url">Event Link</label>
+        <input id="share-url"
+               class="field"
+               readonly
+               value="{{ discover.share_url }}"
+               data-class="input_field">
+
+        <div class="share-options">
+            <button class="secondary-button" data-class="button">
+                {{ icon('content_copy', 'copy_link') }} Copy Link
+            </button>
+            <button class="secondary-button" data-class="button">
+                {{ icon('mail', 'email_event') }} Email
+            </button>
+        </div>
+
+        {% else %}
+        <p class="muted">
+            Your place at {{ discover.title }} will be released.
+            You can register again if places remain available.
+        </p>
+        <div class="dialog-actions">
+            <button class="secondary-button" data-class="button">Keep Registration</button>
+            <button class="primary-button" data-class="button">Cancel Registration</button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

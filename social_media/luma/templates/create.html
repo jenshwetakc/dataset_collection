@@ -1,0 +1,732 @@
+{% extends "base.html" %}
+
+{% block title %}Create Event · Luma{% endblock %}
+
+{% macro icon(name, semantic) %}
+<span class="material-symbols-rounded"
+      data-class="icon"
+      data-semantic="{{ semantic }}">{{ name }}</span>
+{% endmacro %}
+
+{% macro error(key) %}
+{% if discover.errors.get(key) %}
+<p class="error">{{ discover.errors[key] }}</p>
+{% endif %}
+{% endmacro %}
+
+{% block head %}
+<style>
+    .create-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 24px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .brand {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -2px;
+    }
+
+    .row { display: flex; align-items: center; gap: 10px; }
+    .muted { color: var(--text-secondary); }
+
+    .create-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 360px) minmax(0, 560px);
+        justify-content: center;
+        gap: 44px;
+        max-width: 1100px;
+        margin: auto;
+        padding: 40px 24px 64px;
+    }
+
+    .create-layout > * { min-width: 0; }
+
+    .cover-editor {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 20px;
+        overflow: hidden;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .cover-image { width: 100%; height: 100%; }
+
+    .cover-placeholder {
+        display: flex;
+        height: 100%;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        text-align: center;
+    }
+
+    .cover-placeholder .material-symbols-rounded { font-size: 48px; }
+
+    .edit-cover {
+        position: absolute;
+        bottom: 14px;
+        right: 14px;
+        box-shadow: 0 2px 12px rgb(0 0 0 / 15%);
+    }
+
+    .theme-control {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid var(--border-subtle);
+        background: var(--surface);
+        color: var(--on-surface);
+        text-align: left;
+    }
+
+    .calendar-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 22px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+    }
+
+    .event-name {
+        width: 100%;
+        padding: 4px 0 14px;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--text-primary);
+        font-size: clamp(28px, 4vw, 40px);
+        font-weight: 700;
+        letter-spacing: -1px;
+    }
+
+    input::placeholder, textarea::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .form-section {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .form-section h2 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 17px;
+        margin-bottom: 16px;
+    }
+
+    .date-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .field {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        padding: 11px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .date-grid .field + .field { margin-top: 8px; }
+
+    .timezone {
+        margin-top: 12px;
+        padding: 8px 0;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .location-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .location-tab {
+        padding: 9px 14px;
+        border-radius: 9px;
+        border: 1px solid var(--border-subtle);
+        color: var(--text-secondary);
+    }
+
+    .location-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        border-color: var(--primary);
+    }
+
+    .editor {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--surface);
+    }
+
+    .editor-toolbar {
+        display: flex;
+        gap: 4px;
+        padding: 5px 8px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .editor textarea {
+        display: block;
+        width: 100%;
+        min-height: 170px;
+        padding: 16px;
+        resize: none;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--on-surface);
+        line-height: 1.6;
+        font: inherit;
+    }
+
+    .visibility-control {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        padding: 16px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        background: var(--surface);
+        text-align: left;
+    }
+
+    .visibility-control small {
+        display: block;
+        margin-top: 5px;
+        color: var(--text-secondary);
+    }
+
+    .create-submit { width: 100%; margin-top: 24px; }
+
+    .error {
+        color: var(--error);
+        font-size: 12px;
+        margin-top: 8px;
+    }
+
+    .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .picker-dialog {
+        width: min(100%, 620px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+        box-shadow: 0 20px 70px rgb(0 0 0 / 25%);
+    }
+
+    .dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .dialog-header h2 { font-size: 23px; }
+
+    .cover-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+    }
+
+    .cover-choice {
+        position: relative;
+        aspect-ratio: 1;
+        overflow: hidden;
+        border-radius: 12px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        border: 2px solid transparent;
+    }
+
+    .cover-choice.selected { border-color: var(--primary); }
+    .cover-choice img { width: 100%; height: 100%; }
+
+    .selection-mark {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .selection-mark .material-symbols-rounded { font-size: 18px; }
+
+    .theme-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .theme-choice {
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        text-align: left;
+    }
+
+    .theme-choice.selected { border: 2px solid var(--primary); }
+
+    .theme-preview {
+        height: 110px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        background: var(--surface-variant);
+    }
+
+    .theme-preview.ambient {
+        background: linear-gradient(
+            135deg, var(--primary-container), var(--surface)
+        );
+    }
+
+    .theme-preview.pattern {
+        background: repeating-linear-gradient(
+            45deg,
+            var(--surface-variant) 0 12px,
+            var(--primary-container) 12px 24px
+        );
+    }
+
+    .theme-preview.playful {
+        background:
+            radial-gradient(circle at 25% 30%, var(--primary) 0 15%, transparent 16%),
+            radial-gradient(circle at 75% 70%, var(--primary-container) 0 25%, transparent 26%),
+            var(--surface-variant);
+    }
+
+    .visibility-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        padding: 18px;
+        margin-bottom: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        text-align: left;
+    }
+
+    .visibility-option small {
+        display: block;
+        margin-top: 6px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 22px;
+    }
+
+    @media (max-width: 767px) {
+        .create-layout {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 28px;
+            padding: 24px 16px 40px;
+        }
+
+        .cover-column { max-width: 420px; width: 100%; margin: auto; }
+        .create-header { padding: 12px 16px; }
+    }
+
+    @media (max-width: 359px) {
+        .picker-dialog { padding: 18px; }
+        .cover-grid { gap: 8px; }
+        .date-grid { gap: 8px; }
+        .field { padding: 10px 6px; font-size: 12px; }
+    }
+
+    /* Apply to mobile, tablet, and desktop. */
+    .create-layout .datetime-control {
+        position: relative;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .create-layout .datetime-control input.field {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        min-height: 48px;
+        padding-right: 46px;
+    }
+
+    /* Hide native Chromium date/time indicators. */
+    .create-layout .datetime-control input::-webkit-calendar-picker-indicator {
+        display: none !important;
+        -webkit-appearance: none;
+    }
+
+    .create-layout .datetime-control input::-webkit-inner-spin-button {
+        display: none;
+        -webkit-appearance: none;
+    }
+
+    /* Explicit DOM icon for annotation extraction. */
+    .create-layout .datetime-control .datetime-icon {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+
+        font-size: 24px;
+        line-height: 24px;
+        color: inherit;
+        pointer-events: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if discover.popup_visible else 'false' }}">
+    <header class="create-header" data-class="app_bar">
+        <div class="brand" data-class="logo">luma</div>
+        <button class="secondary-button" data-class="button">
+            {{ icon('arrow_back', 'back_to_events') }} Events
+        </button>
+    </header>
+
+    <main class="create-layout">
+        <aside class="cover-column">
+            <section class="cover-editor" data-class="section">
+                {% if discover.cover %}
+                <img class="cover-image"
+                     src="{{ discover.cover }}"
+                     alt="Event cover"
+                     data-class="image">
+                {% else %}
+                <div class="cover-placeholder">
+                    {{ icon('image', 'empty_cover') }}
+                    <strong>Choose an event cover</strong>
+                </div>
+                {% endif %}
+                <button class="secondary-button edit-cover" data-class="button">
+                    {{ icon('edit', 'edit_cover') }} Edit Cover
+                </button>
+            </section>
+
+            <button class="theme-control" data-class="button">
+                <span class="row">
+                    {{ icon('palette', 'theme_control') }}
+                    <span>Theme · {{ discover.selected_theme }}</span>
+                </span>
+                {{ icon('expand_more', 'theme_dropdown') }}
+            </button>
+        </aside>
+
+        <div>
+            <button class="calendar-control" data-class="button">
+                {{ icon('calendar_month', 'calendar_selection') }}
+                {{ discover.calendar }}
+                {{ icon('expand_more', 'calendar_dropdown') }}
+            </button>
+
+            <input class="event-name"
+                   aria-label="Event name"
+                   placeholder="Event Name"
+                   value="{{ discover.title }}"
+                   data-class="input_field">
+            {{ error('title') }}
+
+            <section class="form-section" data-class="section">
+                <h2>
+                    {{ icon("schedule", "date_section") }}
+                    Date & Time
+                </h2>
+
+                <div class="date-grid">
+                    <div>
+                        <label for="start-date">Start</label>
+
+                        <div class="datetime-control">
+                            <input
+                                id="start-date"
+                                class="field"
+                                type="date"
+                                value="{{ discover.start_date }}"
+                                data-class="input_field"
+                            >
+
+                            <span
+                                class="material-symbols-rounded datetime-icon"
+                                data-class="icon"
+                                data-semantic="start_date_icon"
+                                aria-hidden="true"
+                            >calendar_month</span>
+                        </div>
+
+                        <div class="datetime-control">
+                            <input
+                                id="start-time"
+                                class="field"
+                                type="time"
+                                aria-label="Start time"
+                                value="{{ discover.start_time }}"
+                                data-class="input_field"
+                            >
+
+                            <span
+                                class="material-symbols-rounded datetime-icon"
+                                data-class="icon"
+                                data-semantic="start_time_icon"
+                                aria-hidden="true"
+                            >schedule</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="end-date">End</label>
+
+                        <div class="datetime-control">
+                            <input
+                                id="end-date"
+                                class="field"
+                                type="date"
+                                value="{{ discover.end_date }}"
+                                data-class="input_field"
+                            >
+
+                            <span
+                                class="material-symbols-rounded datetime-icon"
+                                data-class="icon"
+                                data-semantic="end_date_icon"
+                                aria-hidden="true"
+                            >calendar_month</span>
+                        </div>
+
+                        <div class="datetime-control">
+                            <input
+                                id="end-time"
+                                class="field"
+                                type="time"
+                                aria-label="End time"
+                                value="{{ discover.end_time }}"
+                                data-class="input_field"
+                            >
+
+                            <span
+                                class="material-symbols-rounded datetime-icon"
+                                data-class="icon"
+                                data-semantic="end_time_icon"
+                                aria-hidden="true"
+                            >schedule</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="timezone-control"
+                    data-class="button"
+                >
+                    {{ icon("public", "timezone_icon") }}
+                    {{ discover.timezone }}
+                    {{ icon("expand_more", "timezone_dropdown") }}
+                </button>
+            </section>
+
+            <section class="form-section" data-class="section">
+                <h2>{{ icon('location_on', 'location_section') }} Location</h2>
+                <nav class="location-tabs">
+                    <button class="location-tab {{ 'active' if not discover.online else '' }}"
+                            data-class="tab">In Person</button>
+                    <button class="location-tab {{ 'active' if discover.online else '' }}"
+                            data-class="tab">Online</button>
+                </nav>
+                <input class="field"
+                       aria-label="{{ 'Meeting link' if discover.online else 'Event location' }}"
+                       placeholder="{{ 'Meeting link' if discover.online else 'Add Event Location' }}"
+                       value="{{ discover.meeting_url if discover.online else discover.location }}"
+                       data-class="input_field">
+                {{ error('location') }}
+            </section>
+
+            <section class="form-section" data-class="section">
+                <h2>{{ icon('notes', 'description_section') }} Description</h2>
+                <div class="editor">
+                    <div class="editor-toolbar">
+                        {% for symbol in ['format_bold', 'format_italic', 'format_list_bulleted', 'link'] %}
+                        <button class="icon-button"
+                                data-class="button"
+                                aria-label="{{ symbol|replace('_', ' ') }}">
+                            {{ icon(symbol, 'format_' ~ loop.index) }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <textarea aria-label="Event description"
+                              placeholder="Tell guests what to expect..."
+                              data-class="input_field">{{ discover.description }}</textarea>
+                </div>
+            </section>
+
+            <section class="form-section" data-class="section">
+                <button class="visibility-control" data-class="button">
+                    <span>
+                        <strong>{{ discover.visibility }} Event</strong>
+                        <small>Choose who can find your event</small>
+                    </span>
+                    {{ icon('expand_more', 'visibility_dropdown') }}
+                </button>
+            </section>
+
+            <button class="primary-button create-submit" data-class="button">
+                Create Event
+            </button>
+        </div>
+    </main>
+</div>
+
+{% if discover.popup_visible %}
+<div class="overlay">
+    <section class="picker-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="create-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ discover.state }}"
+             data-occluder="true">
+        <div class="dialog-header">
+            <h2 id="create-dialog-title">
+                {% if discover.state == 'cover_picker' %}Choose Cover
+                {% elif discover.state == 'theme_picker' %}Event Theme
+                {% else %}Event Visibility{% endif %}
+            </h2>
+            <button class="icon-button" data-class="button" aria-label="Close dialog">
+                {{ icon('close', 'create_dialog_close') }}
+            </button>
+        </div>
+
+        {% if discover.state == 'cover_picker' %}
+        <button class="secondary-button" data-class="button">
+            {{ icon('upload', 'upload_cover') }} Upload Image
+        </button>
+
+        <div class="cover-grid">
+            {% for cover in discover.covers %}
+            <button class="cover-choice {{ 'selected' if loop.first else '' }}"
+                    data-class="button"
+                    aria-label="Choose cover {{ loop.index }}">
+                {% if cover.image %}
+                <img src="{{ cover.image }}" alt="Cover option" data-class="image">
+                {% else %}
+                {{ icon('image', cover.id ~ '_placeholder') }}
+                {% endif %}
+                {% if loop.first %}
+                <span class="selection-mark" >
+                    {{ icon('check', 'selected_cover_check') }}
+                </span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+
+        {% elif discover.state == 'theme_picker' %}
+        <div class="theme-grid">
+            {% for option in discover.themes %}
+            <button class="theme-choice {{ 'selected' if option.name == discover.selected_theme else '' }}"
+                    data-class="button">
+                <div class="theme-preview {{ option.style }}"></div>
+                <strong>{{ option.name }}</strong>
+                {% if option.name == discover.selected_theme %}
+                <span>
+                    {{ checkbox('check', 'selected_theme_check') }}
+                </span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        {% for name, description in [
+            ('Public', 'Shown on your calendar and available to discover.'),
+            ('Private', 'Only people with the event link can register.')
+        ] %}
+        <button class="visibility-option" data-class="button">
+            <span>
+                <strong>{{ name }}</strong>
+                <small>{{ description }}</small>
+            </span>
+            {% if name == discover.visibility %}
+            <span>
+                {{ checkbox('check_circle', 'visibility_selected') }}
+            </span>
+            {% else %}
+            {{ icon('radio_button_unchecked', 'visibility_unselected') }}
+            {% endif %}
+        </button>
+        {% endfor %}
+        {% endif %}
+
+        <div class="dialog-actions">
+            <button class="primary-button" data-class="button">Done</button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

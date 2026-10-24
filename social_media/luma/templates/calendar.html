@@ -1,0 +1,621 @@
+{% extends "base.html" %}
+
+{% block title %}{{ discover.community_name }} · Luma{% endblock %}
+
+{% macro icon(name, semantic) %}
+<span class="material-symbols-rounded"
+      data-class="icon"
+      data-semantic="{{ semantic }}">{{ name }}</span>
+{% endmacro %}
+
+{% macro avatar(person) %}
+{% if person.avatar %}
+<img class="avatar"
+     src="{{ person.avatar }}"
+     alt="Fictional community member"
+     data-class="avatar">
+{% else %}
+<span class="avatar avatar-fallback"
+      data-class="avatar">{{ person.initials }}</span>
+{% endif %}
+{% endmacro %}
+
+{% block head %}
+<style>
+    .calendar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: 64px;
+        padding: 12px 24px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -2px;
+    }
+
+    .row { display: flex; align-items: center; gap: 10px; }
+    .muted { color: var(--text-secondary); }
+    .small { font-size: 13px; }
+
+    .calendar-page {
+        max-width: 1180px;
+        margin: auto;
+        padding: 28px 24px 60px;
+    }
+
+    .banner {
+        width: 100%;
+        height: clamp(170px, 22vw, 280px);
+        border-radius: 20px;
+        background: var(--primary-container);
+    }
+
+    .banner-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        color: var(--on-primary-container);
+        font-size: clamp(24px, 4vw, 42px);
+        font-weight: 800;
+        text-align: center;
+    }
+
+    .community-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 26px 0 30px;
+    }
+
+    .community-identity {
+        display: flex;
+        gap: 18px;
+        min-width: 0;
+    }
+
+    .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .avatar-fallback {
+        display: grid;
+        place-items: center;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .community-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        flex-shrink: 0;
+    }
+
+    h1 {
+        font-size: clamp(26px, 3vw, 38px);
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+        margin-bottom: 10px;
+    }
+
+    .community-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .community-meta .material-symbols-rounded { font-size: 18px; }
+
+    .subscribe-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .subscribed-message {
+        margin-bottom: 24px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .calendar-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 34px;
+    }
+
+    .calendar-layout > * { min-width: 0; }
+
+    .tabs {
+        display: flex;
+        gap: 10px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-subtle);
+        margin-bottom: 22px;
+    }
+
+    .tab {
+        padding: 10px 16px;
+        border-radius: 10px;
+        color: var(--text-secondary);
+    }
+
+    .tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .event-row {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr) 130px;
+        align-items: start;
+        gap: 16px;
+        padding: 18px;
+        margin-bottom: 16px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .date-tile {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        text-align: center;
+    }
+
+    .date-month {
+        display: block;
+        padding: 4px;
+        font-size: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .date-day {
+        display: block;
+        padding: 6px;
+        font-size: 20px;
+    }
+
+    .event-title {
+        font-size: 19px;
+        line-height: 1.3;
+        margin: 8px 0 10px;
+        overflow-wrap: anywhere;
+    }
+
+    .event-meta { margin-bottom: 8px; line-height: 1.5; }
+
+    .event-image {
+        width: 130px;
+        height: 130px;
+        border-radius: 12px;
+        background: var(--primary-container);
+    }
+
+    .event-image-fallback {
+        display: grid;
+        place-items: center;
+        color: var(--on-primary-container);
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 5px 8px;
+        border-radius: 6px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .event-footer {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .side-card {
+        padding: 22px;
+        margin-bottom: 18px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .side-card h2 { font-size: 19px; margin-bottom: 14px; }
+    .side-card p { line-height: 1.7; margin-bottom: 14px; }
+    .host { margin-bottom: 14px; }
+
+    .empty-state {
+        padding: 60px 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        text-align: center;
+        background: var(--surface);
+    }
+
+    .empty-state > .material-symbols-rounded {
+        font-size: 48px;
+        margin-bottom: 18px;
+        color: var(--icon);
+    }
+
+    .empty-state h2 { margin-bottom: 12px; }
+    .empty-state p { line-height: 1.6; margin-bottom: 20px; }
+
+    .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .dialog {
+        width: min(100%, 460px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+        box-shadow: 0 20px 70px rgb(0 0 0 / 25%);
+    }
+
+    .dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .dialog h2 { font-size: 23px; }
+    .dialog p { line-height: 1.6; margin-bottom: 18px; }
+
+    .field-label {
+        display: block;
+        margin: 16px 0 8px;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .field {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 18px;
+        font-size: 13px;
+    }
+
+    .checkbox-row input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+    }
+
+    .dialog-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+    }
+
+    @media (max-width: 900px) {
+        .calendar-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .sidebar {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .calendar-page { padding: 18px 14px 40px; }
+        .calendar-header { padding: 12px 14px; }
+        .community-header { flex-direction: column; gap: 18px; }
+        .community-avatar { width: 54px; height: 54px; }
+        .community-identity { gap: 12px; }
+
+        .event-row {
+            grid-template-columns: minmax(0, 1fr) 88px;
+            gap: 12px;
+            padding: 14px;
+        }
+
+        .date-tile { display: none; }
+        .event-image { width: 88px; height: 88px; }
+        .event-title { font-size: 17px; }
+
+        .sidebar { grid-template-columns: minmax(0, 1fr); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if discover.popup_visible else 'false' }}">
+    <header class="calendar-header"
+            data-class="app_bar"
+            data-semantic="calendar_header">
+        <div class="brand" data-class="logo">luma</div>
+        <div class="row">
+            <button class="icon-button"
+                    data-class="button"
+                    aria-label="Explore calendars">
+                {{ icon('explore', 'explore_calendars') }}
+            </button>
+            <button class="primary-button" data-class="button">Sign In</button>
+        </div>
+    </header>
+
+    <main class="calendar-page">
+        {% if discover.banner %}
+        <img class="banner"
+             src="{{ discover.banner }}"
+             alt="Community banner"
+             data-class="image"
+             data-semantic="community_banner">
+        {% else %}
+        <div class="banner banner-fallback">{{ discover.community_name }}</div>
+        {% endif %}
+
+        <section class="community-header"
+                 data-class="section"
+                 data-semantic="community_identity">
+            <div class="community-identity">
+                {% if discover.avatar %}
+                <img class="community-avatar"
+                     src="{{ discover.avatar }}"
+                     alt="Community avatar"
+                     data-class="avatar">
+                {% else %}
+                <span class="community-avatar avatar-fallback"
+                      data-class="avatar">{{ discover.initials }}</span>
+                {% endif %}
+
+                <div>
+                    <h1>{{ discover.community_name }}</h1>
+                    <div class="community-meta">
+                        {{ icon('location_on', 'community_location') }}
+                        <span>{{ discover.city }}</span>
+                        <span>{{ discover.subscriber_count }} subscribers</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subscribe-actions">
+                <button class="primary-button" data-class="button">
+                    {{ icon('check' if discover.subscribed else 'add',
+                            'subscribe_icon') }}
+                    {{ 'Subscribed' if discover.subscribed else 'Subscribe' }}
+                </button>
+
+                <button class="secondary-button"
+                        data-class="button"
+                        aria-label="Share calendar">
+                    {{ icon('share', 'share_calendar') }}
+                </button>
+            </div>
+        </section>
+
+        {% if discover.subscribed %}
+        <div class="subscribed-message">
+            You’re subscribed. New event announcements will arrive by email.
+        </div>
+        {% endif %}
+
+        <div class="calendar-layout">
+            <div>
+                <nav class="tabs"
+                     data-class="navigation_bar"
+                     data-semantic="calendar_tabs">
+                    <button class="tab {{ 'active' if discover.active_tab == 'upcoming' else '' }}"
+                            data-class="tab">Upcoming</button>
+                    <button class="tab {{ 'active' if discover.active_tab == 'past' else '' }}"
+                            data-class="tab">Past</button>
+                </nav>
+
+                {% for event in discover.visible_events %}
+                <article class="event-row"
+                         data-class="card"
+                         data-semantic="{{ event.id }}">
+                    <div class="date-tile">
+                        <span class="date-month">{{ event.month }}</span>
+                        <strong class="date-day">{{ event.day }}</strong>
+                    </div>
+
+                    <div>
+                        <p class="muted small">{{ event.date }} · {{ event.time }}</p>
+                        <h2 class="event-title">{{ event.title }}</h2>
+                        <p class="event-meta muted small">By {{ event.host }}</p>
+                        <p class="event-meta muted small">{{ event.venue }}</p>
+
+                        <div class="event-footer">
+                            <span class="badge" data-class="badge">
+                                {{ 'Ended' if event.past else event.price }}
+                            </span>
+                            <span class="muted small">
+                                {{ event.attendees }}
+                                {{ 'attended' if event.past else 'going' }}
+                            </span>
+                            <button class="icon-button"
+                                    data-class="button"
+                                    aria-label="View event">
+                                {{ icon('arrow_forward', event.id ~ '_open') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    {% if event.image %}
+                    <img class="event-image"
+                         src="{{ event.image }}"
+                         alt="{{ event.title }}"
+                         data-class="image"
+                         data-semantic="{{ event.id }}_image">
+                    {% else %}
+                    <div class="event-image event-image-fallback">
+                        {{ icon('event', event.id ~ '_fallback') }}
+                    </div>
+                    {% endif %}
+                </article>
+                {% else %}
+                <section class="empty-state"
+                         data-class="section"
+                         data-semantic="calendar_empty">
+                    {{ icon('event_busy', 'empty_calendar_icon') }}
+                    <h2>No upcoming events</h2>
+                    <p class="muted">
+                        Subscribe to hear when the next gathering is announced.
+                    </p>
+                    <button class="primary-button" data-class="button">Subscribe</button>
+                </section>
+                {% endfor %}
+            </div>
+
+            <aside class="sidebar">
+                <section class="side-card"
+                         data-class="card"
+                         data-semantic="about_community">
+                    <h2>About Calendar</h2>
+                    <p class="muted">{{ discover.description }}</p>
+                    <button class="secondary-button" data-class="button">
+                        {{ icon('calendar_month', 'add_calendar') }}
+                        Add to Calendar
+                    </button>
+                </section>
+
+                <section class="side-card"
+                         data-class="card"
+                         data-semantic="community_hosts">
+                    <h2>Organized By</h2>
+                    {% for host in discover.hosts %}
+                    <div class="row host">
+                        {{ avatar(host) }}
+                        <strong class="small">{{ host.name }}</strong>
+                    </div>
+                    {% endfor %}
+                    <button class="secondary-button" data-class="button">
+                        {{ icon('mail', 'contact_organizers') }}
+                        Contact
+                    </button>
+                </section>
+            </aside>
+        </div>
+    </main>
+</div>
+
+{% if discover.popup_visible %}
+<div class="overlay">
+    <section class="dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="calendar-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ discover.state }}"
+             data-occluder="true">
+        <div class="dialog-header">
+            <h2 id="calendar-dialog-title">
+                {{ 'Subscribe to Calendar' if discover.state == 'subscribe_dialog' else 'Share Calendar' }}
+            </h2>
+            <button class="icon-button"
+                    data-class="button"
+                    aria-label="Close dialog">
+                {{ icon('close', 'calendar_dialog_close') }}
+            </button>
+        </div>
+
+        {% if discover.state == 'subscribe_dialog' %}
+        <p class="muted">
+            Get updates from {{ discover.community_name }}.
+        </p>
+
+        <label class="field-label" for="subscriber-name">Name</label>
+        <input id="subscriber-name"
+               class="field"
+               value="{{ discover.guest_name }}"
+               data-class="input_field">
+
+        <label class="field-label" for="subscriber-email">Email</label>
+        <input id="subscriber-email"
+               type="email"
+               class="field"
+               value="{{ discover.guest_email }}"
+               data-class="input_field">
+
+        <label class="checkbox-row">
+            <input type="checkbox"
+                   {% if discover.email_updates %}checked{% endif %}
+                   data-class="checkbox">
+            <span>Email me about new events</span>
+        </label>
+
+        <div class="dialog-actions">
+            <button class="primary-button" data-class="button">Subscribe</button>
+        </div>
+
+        {% else %}
+        <p class="muted">Invite others to {{ discover.community_name }}.</p>
+
+        <label class="field-label" for="calendar-link">Calendar Link</label>
+        <input id="calendar-link"
+               class="field"
+               readonly
+               value="{{ discover.share_url }}"
+               data-class="input_field">
+
+        <div class="dialog-actions">
+            <button class="primary-button" data-class="button">
+                {{ icon('content_copy', 'copy_calendar_link') }}
+                Copy Link
+            </button>
+            <button class="secondary-button" data-class="button">
+                {{ icon('mail', 'email_calendar') }}
+                Email
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}
