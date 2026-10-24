@@ -1,0 +1,96 @@
+{% macro tabs(labels,key,active='') %}
+<nav class="tabs" data-class="navigation_bar" data-semantic="{{key}}">{% for label in labels %}
+    <button type="button" class="{{'active' if label|lower|replace(' ','_')==active else ''}}" data-class="tab"
+            data-semantic="{{key}}_{{loop.index}}">{{label}}
+    </button>
+    {% endfor %}
+</nav>{% endmacro %}
+{% macro toolbar(key) %}
+<nav class="analysis-toolbar" data-class="navigation_bar" data-semantic="{{key}}">
+    {{select(key~'_project','Project','Demo Commerce')}}{{select(key~'_date','Date range','Last 30
+    days')}}{{select(key~'_interval','Interval','Daily')}}{{btn('filter_alt',key~'_filter','Filter',variant='outlined')}}<span
+        class="grow"></span>{{btn('ios_share',key~'_share','Share',variant='outlined')}}{{action(key~'_save','Save',True)}}
+</nav>{% endmacro %}
+{% macro metrics(key) %}
+<section class="metric-grid" data-class="section" data-semantic="{{key}}">{% for label,value in [('Active
+    users','28,400'),('Conversion','24.8%'),('Day 7 retention','36.2%'),('Events per user','18.4')] %}
+    <article class="metric-card" data-class="card" data-semantic="{{key}}_{{loop.index}}"><p class="muted small">
+        {{label}}</p><strong class="metric-value">{{value}}</strong><span class="positive small">+{{loop.index*3}}.2% vs previous period</span>
+    </article>
+    {% endfor %}
+</section>{% endmacro %}
+{% macro chart(key,title,kind='line',compare=false) %}
+<section class="chart-card" data-class="section" data-semantic="{{key}}">
+    <header class="row between"><h3>{{title}}</h3>{{btn('more_horiz',key~'_menu',annotate=false)}}</header>
+    <div class="chart-wrap" data-class="image">
+        <svg class="chart-svg" viewBox="0 0 620 270" role="img" aria-label="{{title}} · synthetic chart">{% for y in
+            [30,80,130,180,230] %}
+            <line class="gridline" x1="45" x2="600" y1="{{y}}" y2="{{y}}"/>
+            <text x="5" y="{{y+4}}">{{(230-y)*100}}</text>
+            {% endfor %}{% for i in range(5) %}
+            <text x="{{45+i*133}}" y="260">Oct {{1+i*7}}</text>
+            {% endfor %}{% if kind=='bar' %}{% for value in ff.points[:20] %}
+            <rect x="{{48+(loop.index-1)*27}}" y="{{230-value*2}}" width="18" height="{{value*2}}" fill="#437bf4"
+                  rx="2"/>
+            {% endfor %}{% else %}
+            <polyline points="{% for value in ff.points %}{{45+(loop.index-1)*20}},{{230-value*2}} {% endfor %}"
+                      stroke="#437bf4" stroke-width="3" fill="none"/>
+            {% if compare %}
+            <polyline points="{% for value in ff.points %}{{45+(loop.index-1)*20}},{{230-value*1.5}} {% endfor %}"
+                      stroke="#a16ad8" stroke-width="3" fill="none" stroke-dasharray="6 4"/>
+            {% endif %}{% endif %}
+        </svg>
+    </div>
+    <div class="legend"><span class="legend-item"><i class="legend-dot"></i>All users</span>{% if compare %}<span
+            class="legend-item"><i class="legend-dot" style="background:#a16ad8"></i>Previous period</span>{% endif
+        %}<span class="point-note">Illustrative data</span></div>
+</section>{% endmacro %}
+{% macro table(key,kind='events') %}
+<section class="data-table" data-class="section" data-semantic="{{key}}">
+    <table>
+        <thead>
+        <tr>
+            <th>{{'User ID' if kind=='users' else 'Name'}}</th>
+            <th>{{'Platform' if kind=='users' else 'Owner / type'}}</th>
+            <th>{{'Country' if kind=='users' else 'Unique users'}}</th>
+            <th>{{'Last seen' if kind=='users' else 'Total events'}}</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>{% for row in ff.rows %}
+        <tr>
+            <td class="table-name">{{action(key~'_open_'~loop.index,row.id if kind=='users' else
+                row.name,variant='text')}}
+            </td>
+            <td>{{row.platform if kind=='users' else row.type}}</td>
+            <td>{{row.country if kind=='users' else '{:,}'.format(row.users)}}</td>
+            <td>{{row.date if kind=='users' else '{:,}'.format(row.events)}}</td>
+            <td><span class="tag-pill" data-class="badge"
+                      data-semantic="{{key}}_status_{{loop.index}}">{{row.status}}</span></td>
+            <td>{{btn('more_horiz',key~'_more_'~loop.index,annotate=false)}}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>{% endmacro %}
+{% macro builder(key) %}
+<aside class="panel builder-config" data-class="section" data-semantic="{{key}}"><h3>Events</h3>
+    {{select(key~'_event','Event','Purchase Completed')}}{{btn('add',key~'_event_add','Add event')}}<h3>Measured as</h3>
+    {{select(key~'_measure','Measure','Uniques')}}<h3>Segment by</h3>{{select(key~'_cohort','Users','All
+    users')}}{{btn('add',key~'_filter_add','Add filter')}}{{select(key~'_group','Group by','Platform')}}
+</aside>{% endmacro %}
+{% macro empty(key,title) %}
+<section class="empty" data-class="section" data-semantic="{{key}}">{{icon('query_stats',key~'_icon',32)}}<h2>
+    {{title}}</h2>
+    <p class="muted">Create something to begin exploring your data.</p>{{action(key~'_create','Create new',True)}}
+</section>{% endmacro %}
+{% macro promo(key) %}
+<aside class="promo" data-class="card" data-semantic="{{key}}"><span class="badge" data-class="badge"
+                                                                     data-semantic="{{key}}_label">Sponsored · fictional partner</span>
+    <h3>Build a stronger analytics practice</h3>
+    <p>Explore Example Data Academy workshops. This is synthetic promotional content.</p>
+    <div class="row wrap">{{btn('open_in_new',key~'_visit','Explore
+        workshops',variant='filled')}}{{btn('close',key~'_close',annotate=false)}}
+    </div>
+</aside>{% endmacro %}
