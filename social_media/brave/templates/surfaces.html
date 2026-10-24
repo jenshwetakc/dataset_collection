@@ -1,0 +1,111 @@
+{% set s=ff['state'] %}{% set mode=ff['popup_mode'] %}
+{% if mode=='modal' %}
+<div class="overlay" data-occluder="{{ 'false' if ff['popup_visible'] else 'true' }}">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="modal_title" data-class="dialog"
+             data-semantic="{{ff['page']}}_{{s}}_dialog">
+        <header class="row between"><h2 id="modal_title">{{s|replace('_',' ')|title}}</h2>
+            {{btn('close','modal_close',annotate=false)}}
+        </header>
+        <div class="stack">
+            {% if s=='restore_session' %}<p>Restore the previous windows and tabs?</p>
+            {{check('restore_selected','Restore all example tabs',True)}}
+            {% elif s=='close_all' %}<p>Close all 8 tabs?</p>{{check('close_warn','Warn when closing multiple
+            tabs',True)}}
+            {% elif s in ['delete_selected','clear_history','clear_data'] %}<p>{{'Delete 2 selected history entries?' if
+            s=='delete_selected' else 'Clear selected browsing data?'}}</p>{% if s!='delete_selected'
+            %}{{select('clear_time','Time range','Last hour')}}{{check('clear_history_check','Browsing
+            history',True)}}{{check('clear_cookie_check','Cookies and site
+            data',True)}}{{check('clear_cache_check','Cached content',True)}}{% endif %}
+            {% elif s in ['edit_bookmark','new_folder'] %}{{field('bookmark_dialog_name','Name','Research' if
+            s=='new_folder' else 'Design notes')}}{% if s=='edit_bookmark'
+            %}{{field('bookmark_dialog_url','URL','https://example.test/page/1')}}{{select('bookmark_dialog_folder','Folder','Bookmarks
+            Toolbar')}}{% endif %}
+            {% elif s=='remove_download' %}<p>Remove project-notes.pdf from download history?</p>
+            <p>The file remains on disk in this scenario.</p>
+            {% elif s=='remove_addon' %}<p>Remove Reading Helper?</p>{{check('addon_remove_report','Report this
+            fictional add-on',False)}}
+            {% elif s=='reset_settings' %}<p>Refresh the browser settings?</p>{{check('reset_keep_bookmarks','Keep
+            bookmarks',True)}}
+            {% endif %}
+        </div>
+        <footer class="row" style="justify-content:flex-end">
+            {{action('modal_cancel','Cancel')}}{{action('modal_confirm','Delete' if s=='delete_selected' else 'Clear' if
+            s in ['clear_history','clear_data'] else 'OK',True)}}
+        </footer>
+    </section>
+</div>
+{% else %}
+{% set cls='cookie-banner' if mode=='cookie_banner' else 'cookie-side' if mode=='cookie_side' else 'left-panel' if mode=='sidebar' else 'side-panel' if mode=='side_panel' else 'anchored-menu suggestions-panel' if mode in ['typing','suggestions'] else 'anchored-menu tracking-panel' if mode=='tracking' else 'anchored-menu permission-panel' if mode=='permission' else 'find-panel' if mode=='find' else 'notification-panel' if mode=='ad_notification' else 'side-panel' if mode=='leo' else 'anchored-menu' %}
+<section class="surface {{cls}}" role="{{'complementary' if mode in ['side_panel','sidebar'] else 'region'}}"
+         aria-label="{{s|replace('_',' ')|title}}" data-class="{{'dialog' if mode.startswith('cookie') else 'section'}}"
+         data-semantic="{{ff['page']}}_{{s}}_surface" data-occluder="true">
+    <header class="surface-head row between"><h3>{{'Cookie preferences' if mode.startswith('cookie') else 'Search
+        suggestions' if mode in ['typing','suggestions'] else 'Brave Shields' if mode=='tracking' else s|replace('_','
+        ')|title}}</h3>{{btn('close','surface_close',annotate=false)}}
+    </header>
+    <div class="dialog">
+        {% if mode in ['cookie_banner','cookie_side'] %}<p>This example website uses cookies for preferences and
+        optional analytics.</p>
+        <p class="small muted">Website banner · not a Brave setting</p>{{check('cookie_essential','Essential
+        cookies',True)}}{{check('cookie_optional','Optional analytics',False)}}
+        {% elif mode in ['typing','suggestions'] %}{% for label in ['workspace ideas','workspace ideas for small
+        rooms','workspace lighting tips','workspace organization'] %}{{btn('search','suggestion_' ~
+        loop.index,label)}}{% endfor %}<p class="small muted">{{'Simulated password typing; no values are sent' if
+        s=='password_typing' else 'Search suggestions for the current input'}}</p>
+        {% elif mode=='rewards' %}<h3>Brave Rewards</h3>
+        <p>Demo balance: 0.00 BAT</p>{{toggle('reward_panel_ads','Notification
+        ads',True)}}{{action('reward_panel_open','Open Rewards')}}
+        {% elif mode=='ad_notification' %}<span class="badge" data-class="badge" data-semantic="notification_ad_label">Advertisement · fictional</span>
+        <h3>Discover Trail Supply</h3>
+        <p>Weekend essentials for your next trip.</p>{{btn('open_in_new','notification_ad_open','Learn more')}}
+        {% elif mode=='leo' %}<h3>Leo</h3>
+        <p>Synthetic assistant conversation</p>
+        <section class="card" data-class="card" data-semantic="leo_message">How can I help with this page?</section>
+        {{field('leo_prompt','Ask Leo','Summarize this page')}}{{btn('arrow_upward','leo_send',annotate=false)}}
+        {% elif mode=='tracking' %}<p>Protections for example.test</p>{{toggle('site_protection','Tracking
+        protection',True)}}{{badge('trackers_blocked','12 trackers
+        blocked')}}{{btn('shield','tracking_category','Cross-site tracking
+        cookies')}}{{btn('visibility_off','tracking_content','Tracking content')}}{{action('tracking_manage','Manage
+        Protection Settings')}}
+        {% elif mode=='permission' %}<p>example.test wants to use your camera.</p>
+        {{select('permission_camera_device','Camera','Built-in camera')}}{{check('remember_permission','Remember this
+        decision',False)}}
+        {% elif mode=='sidebar' %}{% for row in ff['rows'][:6] %}{{btn('history' if ff['page']=='history' else
+        'bookmark','sidebar_entry_' ~ loop.index,row['title'])}}{% endfor %}{{action('sidebar_manage','Manage All
+        Items')}}
+        {% elif mode=='downloads' %}{% for file in ff['files'] %}
+        <article class="row" data-class="card" data-semantic="download_surface_row_{{loop.index}}">
+            {{icon('description','download_surface_icon_' ~ loop.index)}}
+            <div class="grow"><strong>{{file['name']}}</strong>
+                <p class="small muted">{{file['size']}}</p></div>
+            {{btn('folder_open','download_surface_folder_' ~ loop.index,annotate=false)}}
+        </article>
+        {% endfor %}{{action('surface_all_downloads','Show All Downloads')}}
+        {% elif mode=='find' %}{{field('find_panel_query','Find in page','workspace')}}
+        <div class="row"><span>1 / 4</span>{{btn('expand_less','find_previous',annotate=false)}}{{btn('expand_more','find_next',annotate=false)}}
+        </div>
+        {{check('find_case','Match case',False)}}{{check('find_whole_words','Whole words',False)}}
+        {% elif mode=='side_panel' and s=='customize_panel'
+        %}{{check('custom_shortcuts','Shortcuts',True)}}{{check('custom_activity','Recent
+        activity',True)}}{{select('custom_theme','Theme','System theme')}}{{action('custom_restore','Restore
+        Defaults')}}
+        {% elif mode=='side_panel' %}{{select('results_engine','Search engine','Example
+        Search')}}{{check('results_safe','Filter explicit results',True)}}{{check('results_suggestions','Search
+        suggestions',True)}}
+        {% elif mode=='tab_menu' %}{{btn('push_pin','tab_pin','Pin
+        Tab')}}{{btn('content_copy','tab_duplicate','Duplicate Tab')}}{{btn('volume_off','tab_mute','Mute
+        Tab')}}{{btn('close','tab_close_action','Close Tab')}}
+        {% elif mode=='addon_menu'
+        %}{{btn('settings','addon_preferences','Preferences')}}{{btn('info','addon_details','Details')}}{{btn('delete_outline','addon_remove_action','Remove')}}
+        {% endif %}
+    </div>
+    {% if mode.startswith('cookie') %}
+    <footer class="surface-actions">{{action('cookie_reject','Reject Optional')}}{{action('cookie_accept','Accept
+        All',True)}}
+    </footer>
+    {% elif mode=='permission' %}
+    <footer class="surface-actions">{{action('permission_block','Block')}}{{action('permission_allow','Allow',True)}}
+    </footer>
+    {% endif %}
+</section>
+{% endif %}
