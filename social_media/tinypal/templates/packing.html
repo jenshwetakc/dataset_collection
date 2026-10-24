@@ -1,0 +1,784 @@
+{% extends "base.html" %}
+
+{% block title %}Packing Checklist · Tinypal{% endblock %}
+
+{% block head %}
+<style>
+    .packing-shell {
+        max-width: 1380px;
+        margin: 0 auto;
+        padding: 24px 28px 40px;
+    }
+
+    .packing-header,
+    .packing-heading,
+    .group-heading,
+    .dialog-heading,
+    .dialog-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .packing-header {
+        margin-bottom: 30px;
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 23px;
+        font-weight: 800;
+    }
+
+    .brand-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .packing-nav {
+        display: flex;
+        gap: 8px;
+    }
+
+    .packing-nav button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        color: var(--on-surface);
+    }
+
+    .packing-nav button.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .packing-heading {
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+
+    .packing-heading h1 {
+        font-size: clamp(26px, 3vw, 36px);
+        margin-bottom: 8px;
+    }
+
+    .muted {
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .packing-layout {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        align-items: start;
+        gap: 24px;
+    }
+
+    .packing-sidebar {
+        display: grid;
+        gap: 18px;
+    }
+
+    .packing-card {
+        padding: 24px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .trip-icon,
+    .empty-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        margin-bottom: 18px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .trip-icon .material-symbols-rounded,
+    .empty-icon .material-symbols-rounded {
+        font-size: 32px;
+    }
+
+    .trip-card h2 {
+        font-size: 22px;
+        margin-bottom: 6px;
+    }
+
+    .trip-card .secondary-button {
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    .progress-value {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin: 16px 0 12px;
+    }
+
+    .progress-value strong {
+        font-size: 38px;
+    }
+
+    .progress-track {
+        height: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--surface-variant);
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--icon);
+        border-radius: inherit;
+    }
+
+    .progress-caption {
+        margin-top: 12px;
+    }
+
+    .reset-button {
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    .packing-groups {
+        display: grid;
+        gap: 18px;
+    }
+
+    .group-heading {
+        margin-bottom: 16px;
+    }
+
+    .group-heading h2 {
+        font-size: 20px;
+    }
+
+    .count-badge {
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: var(--badge-background);
+        color: var(--badge-text);
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .packing-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        min-height: 76px;
+        padding: 14px 0;
+        text-align: left;
+        color: var(--on-surface);
+    }
+
+    .packing-row + .packing-row {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .item-check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        color: var(--icon);
+    }
+
+    .item-check .material-symbols-rounded {
+        font-size: 28px;
+    }
+
+    .item-description {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .item-title {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 5px;
+        overflow-wrap: anywhere;
+    }
+
+    .packing-row.packed .item-title {
+        text-decoration: line-through;
+    }
+
+    .item-kind {
+        color: var(--icon);
+        flex-shrink: 0;
+    }
+
+    .complete-banner {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 20px;
+        border-radius: 18px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .complete-banner h2 {
+        font-size: 20px;
+        margin-bottom: 4px;
+    }
+
+    .complete-banner p {
+        line-height: 1.5;
+    }
+
+    .empty-card {
+        padding: 56px 24px;
+        text-align: center;
+    }
+
+    .empty-card h2 {
+        margin-bottom: 10px;
+    }
+
+    .empty-card .primary-button {
+        margin-top: 22px;
+    }
+
+    .packing-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(0, 0, 0, .48);
+    }
+
+    .packing-dialog {
+        width: 100%;
+        max-width: 480px;
+        max-height: calc(100dvh - 36px);
+        overflow-y: auto;
+        padding: 24px;
+        border-radius: 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .dialog-heading {
+        margin-bottom: 18px;
+    }
+
+    .dialog-heading h2 {
+        font-size: 23px;
+    }
+
+    .field-label {
+        display: block;
+        margin: 18px 0 8px;
+        font-weight: 700;
+    }
+
+    .packing-input {
+        width: 100%;
+        min-height: 46px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .category-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .category-chip {
+        min-height: 40px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .category-chip.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .dialog-actions {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 24px;
+    }
+
+    .trip-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 82px;
+        padding: 14px;
+        margin-top: 10px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        text-align: left;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .trip-option.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .trip-option-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .trip-option-copy strong,
+    .trip-option-copy span {
+        display: block;
+    }
+
+    .trip-option-copy span {
+        margin-top: 4px;
+        font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+        .packing-layout {
+            grid-template-columns: 260px minmax(0, 1fr);
+            gap: 16px;
+        }
+
+        .packing-card {
+            padding: 18px;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .packing-shell {
+            padding: 18px 16px 94px;
+        }
+
+        .packing-header {
+            margin-bottom: 24px;
+        }
+
+        .packing-heading {
+            flex-direction: column;
+        }
+
+        .packing-heading > .primary-button {
+            width: 100%;
+        }
+
+        .packing-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .packing-nav {
+            position: fixed;
+            bottom: var(--bottom-chrome);
+            left: 0;
+            right: 0;
+            z-index: 30;
+            justify-content: space-around;
+            gap: 0;
+            padding: 8px 4px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+        }
+
+        .packing-nav button {
+            flex-direction: column;
+            flex: 1;
+            gap: 4px;
+            min-width: 0;
+            padding: 8px 4px;
+            font-size: 11px;
+        }
+
+        .packing-dialog {
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="packing-shell"
+     data-annotation-skip="{{ 'true' if tinypal.popup_visible else 'false' }}">
+
+    <header class="packing-header"
+            data-class="app_bar"
+            data-semantic="packing_app_bar">
+
+        <div class="brand">
+            <span class="brand-mark"
+                  data-class="logo"
+                  data-semantic="tinypal_logo">
+                {{ icon('child_care', 'tinypal_brand_icon') }}
+            </span>
+            <span>Tinypal</span>
+        </div>
+
+        <nav class="packing-nav"
+             aria-label="Main navigation"
+             data-class="navigation_bar"
+             data-semantic="packing_navigation"
+             data-occluder="{{ 'false' if tinypal['popup_visible'] else 'true' }}"
+
+        >
+
+            {% for item in tinypal.navigation %}
+            <button type="button"
+                    class="{{ 'active' if item.active else '' }}"
+
+                    data-semantic="packing_nav_{{ loop.index0 }}">
+                {{ icon(item.icon, 'packing_nav_icon_' ~ loop.index0) }}
+                <span>{{ item.label }}</span>
+            </button>
+            {% endfor %}
+        </nav>
+    </header>
+
+    <div class="packing-heading" data-class="section">
+        <div>
+            <h1>Packing checklist</h1>
+            <p class="muted">A little preparation for your next outing.</p>
+        </div>
+
+        <button type="button"
+                class="primary-button"
+                data-class="button"
+                data-semantic="packing_add_item">
+            {{ icon('add', 'packing_add_icon') }}
+            Add item
+        </button>
+    </div>
+
+    <div class="packing-layout">
+        <aside class="packing-sidebar"
+               data-class="section"
+               data-semantic="packing_trip_summary">
+
+            <section class="packing-card trip-card"
+                     data-class="card"
+                     data-semantic="packing_trip_card">
+
+                <div class="trip-icon" data-class="button">
+                    {{ icon(
+                        tinypal.selected_trip.icon,
+                        'packing_trip_icon'
+                    ) }}
+                </div>
+
+                <h2>{{ tinypal.selected_trip.title }}</h2>
+                <p class="muted">{{ tinypal.selected_trip.subtitle }}</p>
+
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="packing_change_trip">
+                    Change trip
+                    {{ icon('expand_more', 'packing_change_trip_icon') }}
+                </button>
+            </section>
+
+            <section class="packing-card"
+                     data-class="card"
+                     data-semantic="packing_progress_card">
+
+                <h2>Packing progress</h2>
+
+                <div class="progress-value">
+                    <strong>{{ tinypal.packed_count }}</strong>
+                    <span class="muted">of {{ tinypal.total }} packed</span>
+                </div>
+
+                <div class="progress-track"
+                     role="progressbar"
+                     aria-label="Items packed"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="{{ tinypal.progress_percent }}"
+                     data-class="progress_bar"
+                     data-semantic="packing_progress">
+                    <div class="progress-fill"
+                         style="width: {{ tinypal.progress_percent }}%;"></div>
+                </div>
+
+                <p class="muted progress-caption">
+                    {% if not tinypal.total %}
+                    Add items to start your checklist.
+                    {% elif not tinypal.remaining_count %}
+                    Everything on your list is packed.
+                    {% else %}
+                    {{ tinypal.remaining_count }} items still to pack.
+                    {% endif %}
+                </p>
+
+                {% if tinypal.total %}
+                <button type="button"
+                        class="secondary-button reset-button"
+                        data-class="button"
+                        data-semantic="packing_reset">
+                    {{ icon('restart_alt', 'packing_reset_icon') }}
+                    Reset checklist
+                </button>
+                {% endif %}
+            </section>
+        </aside>
+
+        <main class="packing-groups"
+              data-class="section"
+              data-semantic="packing_checklist">
+
+            {% if tinypal.state == 'all_packed' %}
+            <section class="complete-banner"
+                     data-class="card"
+                     data-semantic="packing_complete_banner">
+                {{ icon('check_circle', 'packing_complete_icon') }}
+                <div>
+                    <h2>Ready to head out</h2>
+                    <p>Everything on your checklist is packed.</p>
+                </div>
+            </section>
+            {% endif %}
+
+            {% for group in tinypal.groups %}
+            <section class="packing-card"
+                     data-class="card"
+                     data-semantic="{{ group.id }}">
+
+                <div class="group-heading">
+                    <h2>{{ group.title }}</h2>
+                    <span class="count-badge"
+                          data-class="badge"
+                          data-semantic="{{ group['id'] }}_count">
+                        {{ group['packed_count'] }}/{{ group['items']|length }}
+                    </span>
+                </div>
+
+                {% for item in group['items'] %}
+                <button type="button"
+                        class="packing-row {{ 'packed' if item.packed else '' }}"
+                        aria-pressed="{{ 'true' if item.packed else 'false' }}"
+
+                        data-semantic="{{ item.id }}">
+
+                    <span class="item-check">
+                        {{ icon(
+                            'check_box' if item.packed else 'check_box_outline_blank',
+                            item.id ~ '_checkbox',
+                            'checkbox'
+                        ) }}
+                    </span>
+
+                    <span class="item-description">
+                        <span class="item-title">{{ item.title }}</span>
+                        <span class="muted">{{ item.quantity }}</span>
+                    </span>
+
+                    <span class="item-kind">
+                        {{ icon(item.icon, item.id ~ '_icon') }}
+                    </span>
+                </button>
+                {% endfor %}
+            </section>
+            {% else %}
+            <section class="packing-card empty-card"
+                     data-class="card"
+                     data-semantic="packing_empty">
+
+                <div class="empty-icon" data-class="button">
+                    {{ icon('checklist', 'packing_empty_icon') }}
+                </div>
+
+                <h2>Your checklist starts here</h2>
+                <p class="muted">
+                    Add the things you want to bring for this trip.
+                </p>
+
+                <button type="button"
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="packing_empty_add">
+                    {{ icon('add', 'packing_empty_add_icon') }}
+                    Add your first item
+                </button>
+            </section>
+            {% endfor %}
+        </main>
+    </div>
+</div>
+
+{% if tinypal.popup_visible %}
+<div class="packing-overlay">
+    <section class="packing-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="packing-dialog-title"
+             data-class="dialog"
+             data-semantic="packing_{{ tinypal.state }}_dialog"
+             data-occluder="true">
+
+        <div class="dialog-heading">
+            <h2 id="packing-dialog-title">
+                {% if tinypal.state == 'add_item' %}
+                Add an item
+                {% elif tinypal.state == 'trip_picker' %}
+                Choose a trip
+                {% else %}
+                Reset checklist?
+                {% endif %}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+                    aria-label="Close dialog"
+                    data-class="button"
+                    data-semantic="packing_dialog_close">
+                {{ icon('close', 'packing_dialog_close_icon') }}
+            </button>
+        </div>
+
+        {% if tinypal.state == 'add_item' %}
+        <label class="field-label" for="packing-item-title">
+            Item name
+        </label>
+        <input id="packing-item-title"
+               class="packing-input"
+               type="text"
+               value="{{ tinypal.form.title }}"
+               placeholder="For example, sun hat"
+               data-class="input_field"
+               data-semantic="packing_item_title_input">
+
+        <label class="field-label" for="packing-item-quantity">
+            Quantity
+        </label>
+        <input id="packing-item-quantity"
+               class="packing-input"
+               type="text"
+               inputmode="numeric"
+               value="{{ tinypal.form.quantity }}"
+               data-class="input_field"
+               data-semantic="packing_item_quantity_input">
+
+        <p class="field-label">Category</p>
+        <div class="category-options">
+            {% for category in tinypal.categories %}
+            <button type="button"
+                    class="category-chip {{ 'active' if category == tinypal.form.category else '' }}"
+                    aria-pressed="{{ 'true' if category == tinypal.form.category else 'false' }}"
+                    data-class="chip"
+                    data-semantic="packing_category_{{ loop.index0 }}">
+                {{ category }}
+            </button>
+            {% endfor %}
+        </div>
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="packing_add_cancel">
+                Cancel
+            </button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="packing_add_save">
+                Add item
+            </button>
+        </div>
+
+        {% elif tinypal.state == 'trip_picker' %}
+        <p class="muted">Choose the checklist you want to prepare.</p>
+
+        {% for trip in tinypal.trips %}
+        <button type="button"
+                class="trip-option {{ 'active' if trip.id == tinypal.selected_trip.id else '' }}"
+                aria-pressed="{{ 'true' if trip.id == tinypal.selected_trip.id else 'false' }}"
+                data-class="button"
+                data-semantic="packing_trip_option_{{ trip.id }}">
+
+            {{ icon(trip.icon, 'packing_trip_option_icon_' ~ trip.id) }}
+
+            <span class="trip-option-copy">
+                <strong>{{ trip.title }}</strong>
+                <span>{{ trip.subtitle }}</span>
+            </span>
+
+            {{ icon(
+                'radio_button_checked' if trip.id == tinypal.selected_trip.id else 'radio_button_unchecked',
+                'packing_trip_selection_' ~ trip.id,
+                'checkbox'
+            ) }}
+        </button>
+        {% endfor %}
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="packing_trip_done">
+                Done
+            </button>
+        </div>
+
+        {% else %}
+        <p class="muted">
+            Mark all {{ tinypal.total }} items as unpacked.
+            Your items and quantities will stay on this checklist.
+        </p>
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="packing_reset_cancel">
+                Keep progress
+            </button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="packing_reset_confirm">
+                {{ icon('restart_alt', 'packing_reset_confirm_icon') }}
+                Reset checklist
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

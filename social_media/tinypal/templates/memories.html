@@ -1,0 +1,748 @@
+{% extends "base.html" %}
+
+{% block title %}Tinypal — Memories & Milestones{% endblock %}
+
+{% block head %}
+<style>
+    .memories-shell {
+        max-width: 1440px;
+        margin: auto;
+        padding: 24px 28px 100px;
+    }
+
+    .memory-header, .memory-heading, .memory-nav,
+    .memory-filters, .memory-footer, .popup-heading,
+    .popup-actions, .milestone-choice {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .memory-header, .memory-heading,
+    .memory-footer, .popup-heading {
+        justify-content: space-between;
+    }
+
+    .memory-header { margin-bottom: 24px; }
+
+    .memory-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 23px;
+        font-weight: 800;
+    }
+
+    .brand-symbol {
+        display: inline-flex;
+        padding: 10px;
+        border-radius: 14px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .memory-nav {
+        padding: 8px;
+        margin-bottom: 28px;
+        border-radius: 16px;
+        background: var(--surface);
+    }
+
+    .memory-nav button, .memory-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 18px;
+        border-radius: 12px;
+        color: var(--on-surface);
+    }
+
+    .memory-nav .active, .memory-filter.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .memory-heading {
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+
+    .memory-heading h1 {
+        font-size: clamp(26px, 3vw, 36px);
+        margin-bottom: 10px;
+    }
+
+    .muted { color: var(--text-secondary); }
+
+    .memory-banner {
+        padding: 24px;
+        margin-bottom: 24px;
+        border-radius: 20px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .memory-banner h2 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        font-size: 22px;
+    }
+
+    .memory-banner p { line-height: 1.6; }
+
+    .memory-filters {
+        width: fit-content;
+        flex-wrap: wrap;
+        padding: 6px;
+        margin-bottom: 18px;
+        border-radius: 14px;
+        background: var(--surface);
+    }
+
+    .result-label { margin-bottom: 20px; }
+
+    .memory-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .memory-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .memory-photo {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+    }
+
+    .photo-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 220px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .photo-placeholder .material-symbols-rounded { font-size: 56px; }
+
+    .memory-body { padding: 18px; }
+
+    .milestone-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 9px;
+        border-radius: 20px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 12px;
+        margin-bottom: 10px;
+    }
+
+    .milestone-badge .material-symbols-rounded { font-size: 17px; }
+
+    .memory-body h3 {
+        font-size: 20px;
+        line-height: 1.4;
+        margin-bottom: 8px;
+    }
+
+    .memory-body > p { line-height: 1.6; }
+
+    .memory-date {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 10px;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .memory-date .material-symbols-rounded {
+        font-size: 18px;
+        color: var(--icon);
+    }
+
+    .memory-footer {
+        padding-top: 14px;
+        margin-top: 14px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .memory-open {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 40px;
+        font-weight: 700;
+        color: var(--on-surface);
+    }
+
+    .empty-album {
+        text-align: center;
+        padding: 60px 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .empty-album > .material-symbols-rounded {
+        font-size: 52px;
+        margin-bottom: 18px;
+        color: var(--icon);
+    }
+
+    .empty-album p { margin: 12px 0 22px; line-height: 1.6; }
+
+    .mobile-memory-nav { display: none; }
+
+    .memory-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(0, 0, 0, 0.45);
+    }
+
+    .memory-popup {
+        width: min(100%, 500px);
+        max-height: calc(100dvh - 36px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .memory-popup.viewer { width: min(100%, 680px); }
+
+    .popup-heading { margin-bottom: 18px; align-items: flex-start; }
+    .popup-heading h2 { font-size: 23px; line-height: 1.3; }
+
+    .viewer-media { border-radius: 14px; margin-bottom: 18px; }
+
+    .viewer-copy { margin: 12px 0; line-height: 1.7; }
+
+    .viewer-author {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-secondary);
+    }
+
+    .viewer-author .material-symbols-rounded { color: var(--icon); }
+
+    .memory-field { display: block; margin-bottom: 14px; }
+
+    .memory-field > span {
+        display: block;
+        margin-bottom: 7px;
+        font-weight: 700;
+    }
+
+    .field-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+    }
+
+    .field-control .material-symbols-rounded { color: var(--icon); }
+
+    .field-control input {
+        flex: 1;
+        width: 100%;
+        min-width: 0;
+        padding: 12px 0;
+        border: 0;
+        outline: none;
+        background: transparent;
+    }
+
+    .memory-field textarea {
+        width: 100%;
+        min-height: 75px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        resize: none;
+    }
+
+    input::placeholder, textarea::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .photo-upload {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 72px;
+        margin-bottom: 16px;
+        border: 1px dashed var(--border);
+        border-radius: 14px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .form-photo {
+        width: 100%;
+        height: 110px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        object-fit: cover;
+    }
+
+    .milestone-choice {
+        width: 100%;
+        padding: 12px 0;
+        text-align: left;
+        color: var(--on-surface);
+    }
+
+    .milestone-choice .material-symbols-rounded { color: var(--icon); }
+
+    .popup-actions {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 18px;
+    }
+
+    .delete-description {
+        line-height: 1.7;
+        color: var(--text-secondary);
+    }
+
+    .danger-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 16px;
+        border-radius: 12px;
+        background: var(--error);
+        color: var(--on-error);
+        font-weight: 700;
+    }
+
+    @media (max-width: 1000px) {
+        .memory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 600px) {
+        .memories-shell { padding: 16px 14px 100px; }
+        .memory-brand { font-size: 20px; }
+        .memory-nav { display: none; }
+        .memory-heading { flex-direction: column; gap: 16px; }
+        .memory-heading > button { width: 100%; }
+        .memory-banner { padding: 18px; }
+        .memory-grid { grid-template-columns: minmax(0, 1fr); }
+        .memory-filter { padding: 11px 12px; font-size: 13px; }
+        .memory-popup { padding: 18px; }
+
+        .mobile-memory-nav {
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: var(--bottom-chrome);
+            z-index: 30;
+            padding: 8px 4px;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .mobile-memory-nav button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: var(--on-surface);
+        }
+
+        .mobile-memory-nav button.active {
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+        }
+
+        .popup-actions > button { flex: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div
+    class="memories-shell"
+    data-annotation-skip="{{ 'true'
+        if tinypal['popup_visible'] else 'false' }}"
+>
+    <header class="memory-header" data-class="app_bar">
+        <div class="memory-brand">
+            <span class="brand-symbol" data-class="logo">
+                {{ icon('child_care', 'memories_brand') }}
+            </span>
+            Tinypal
+        </div>
+        <button
+            type="button"
+            class="icon-button"
+
+            aria-label="Album options"
+        >
+            {{ icon('more_horiz', 'memories_options') }}
+        </button>
+    </header>
+
+    <nav class="memory-nav" data-class="navigation_bar">
+        {% for item in tinypal['navigation'] %}
+        <button
+            type="button"
+            class="{{ 'active' if item['active'] else '' }}"
+            data-class="button"
+        >
+            {{ icon(item['icon'], 'memories_desktop_nav_' ~ loop.index) }}
+            {{ item['label'] }}
+        </button>
+        {% endfor %}
+    </nav>
+
+    <div class="memory-heading" data-class="section">
+        <div>
+            <h1>Memories & milestones</h1>
+            <p class="muted">Keep the little moments close.</p>
+        </div>
+        <button type="button" class="primary-button" data-class="button">
+            {{ icon('add_a_photo', 'memories_add') }}
+            Add memory
+        </button>
+    </div>
+
+    <article class="memory-banner" data-class="card">
+        <h2>
+            {{ icon('auto_awesome', 'memories_banner') }}
+            Your family story
+        </h2>
+        <p>
+            {{ tinypal['memories']|length }} memories ·
+            {{ tinypal['milestone_count'] }} milestones
+        </p>
+    </article>
+
+    <div class="memory-filters" role="tablist" aria-label="Memory categories">
+        {% for filter in tinypal['filters'] %}
+        <button
+            type="button"
+            role="tab"
+            class="memory-filter {{ 'active'
+                if filter['id'] == tinypal['active_filter'] else '' }}"
+            data-class="tab"
+            aria-selected="{{ 'true'
+                if filter['id'] == tinypal['active_filter'] else 'false' }}"
+        >
+            {{ icon(filter['icon'], 'memories_filter_' ~ filter['id']) }}
+            {{ filter['label'] }}
+        </button>
+        {% endfor %}
+    </div>
+
+    <p class="result-label muted">{{ tinypal['count'] }} memories</p>
+
+    <section data-class="section">
+        {% if tinypal['visible_memories'] %}
+        <div class="memory-grid">
+            {% for memory in tinypal['visible_memories'] %}
+            <article class="memory-card" data-class="card">
+                {% if memory['photo'] %}
+                <img
+                    class="memory-photo"
+                    src="{{ memory['photo'] }}"
+                    alt="{{ memory['title'] }}"
+                    data-class="image"
+                    data-semantic="{{ memory['id'] }}_photo"
+                >
+                {% else %}
+                <div class="photo-placeholder">
+                    {{ icon(memory['icon'], memory['id'] ~ '_placeholder') }}
+                </div>
+                {% endif %}
+
+                <div class="memory-body">
+                    {% if memory['kind'] == 'milestone' %}
+                    <span class="milestone-badge" data-class="badge">
+                        {{ icon('auto_awesome', memory['id'] ~ '_milestone') }}
+                        Milestone
+                    </span>
+                    {% endif %}
+
+                    <h3>{{ memory['title'] }}</h3>
+                    <span class="memory-date">
+                        {{ icon('calendar_month', memory['id'] ~ '_date') }}
+                        {{ memory['date_label'] }}
+                    </span>
+                    <p class="muted">{{ memory['note'] }}</p>
+
+                    <div class="memory-footer">
+                        <button
+                            type="button"
+                            class="memory-open"
+                            data-class="button"
+                        >
+                            View memory
+                            {{ icon('arrow_forward', memory['id'] ~ '_view') }}
+                        </button>
+
+                        <button
+                            type="button"
+                            class="icon-button"
+
+                            aria-label="Favorite {{ memory['title'] }}"
+                            aria-pressed="{{ 'true'
+                                if memory['favorite'] else 'false' }}"
+                        >
+                            {{ icon(
+                                'favorite'
+                                    if memory['favorite']
+                                    else 'favorite_border',
+                                memory['id'] ~ '_favorite'
+                            ) }}
+                        </button>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <article class="empty-album" data-class="card">
+            {{ icon('photo_library', 'memories_empty') }}
+            <h2>Your story starts here</h2>
+            <p class="muted">Add a photo or write about a moment you enjoyed.</p>
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('add', 'memories_empty_add') }}
+                Add first memory
+            </button>
+        </article>
+        {% endif %}
+    </section>
+
+    <nav
+        class="mobile-memory-nav"
+        data-class="navigation_bar"
+        data-occluder="{{ 'false' if tinypal['popup_visible'] else 'true' }}"
+
+    >
+        {% for item in tinypal['navigation'] %}
+        <button
+            type="button"
+            class="{{ 'active' if item['active'] else '' }}"
+
+        >
+            {{ icon(item['icon'], 'memories_mobile_nav_' ~ loop.index) }}
+            {{ item['label'] }}
+        </button>
+        {% endfor %}
+    </nav>
+</div>
+
+{% if tinypal['popup_visible'] %}
+<div class="memory-modal">
+    <section
+        class="memory-popup {{ 'viewer'
+            if tinypal['popup_kind'] == 'memory_viewer' else '' }}"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="memory-popup-title"
+        data-class="dialog"
+        data-semantic="{{ tinypal['popup_kind'] }}"
+        data-occluder="true"
+    >
+        <div class="popup-heading">
+            <h2 id="memory-popup-title">
+                {% if tinypal['popup_kind'] == 'memory_viewer' %}
+                {{ tinypal['selected_memory']['title'] }}
+                {% elif tinypal['popup_kind'] == 'add_memory' %}
+                Add memory
+                {% elif tinypal['popup_kind'] == 'edit_memory' %}
+                Edit memory
+                {% else %}
+                Delete memory?
+                {% endif %}
+            </h2>
+
+            <button
+                type="button"
+                class="icon-button"
+
+                aria-label="Close dialog"
+            >
+                {{ icon('close', 'memory_popup_close') }}
+            </button>
+        </div>
+
+        {% if tinypal['popup_kind'] == 'memory_viewer' %}
+        {% set memory = tinypal['selected_memory'] %}
+
+        {% if memory['photo'] %}
+        <img
+            class="memory-photo viewer-media"
+            src="{{ memory['photo'] }}"
+            alt="{{ memory['title'] }}"
+            data-class="image"
+            data-semantic="viewer_photo"
+        >
+        {% else %}
+        <div class="photo-placeholder viewer-media">
+            {{ icon(memory['icon'], 'viewer_placeholder') }}
+        </div>
+        {% endif %}
+
+        <span class="memory-date">
+            {{ icon('calendar_month', 'viewer_date') }}
+            {{ memory['date_label'] }}
+        </span>
+
+        <p class="viewer-copy">{{ memory['note'] }}</p>
+
+        <p class="viewer-author">
+            {{ icon('person', 'viewer_author') }}
+            Added by {{ memory['author'] }}
+        </p>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                {{ icon('edit', 'viewer_edit') }}
+                Edit
+            </button>
+            <button type="button" class="secondary-button" data-class="button">
+                {{ icon('share', 'viewer_share') }}
+                Share
+            </button>
+        </div>
+
+        {% elif tinypal['popup_kind'] in ['add_memory', 'edit_memory'] %}
+        {% set form = tinypal['form'] %}
+
+        {% if form['photo'] %}
+        <img
+            class="form-photo"
+            src="{{ form['photo'] }}"
+            alt="Selected memory photo"
+            data-class="image"
+            data-semantic="memory_form_photo"
+        >
+        {% endif %}
+
+        <button type="button" class="photo-upload" data-class="button">
+            {{ icon('add_a_photo', 'memory_choose_photo') }}
+            {{ 'Change photo' if form['photo'] else 'Choose photo' }}
+        </button>
+
+        <label class="memory-field">
+            <span>Title</span>
+            <div class="field-control">
+                {{ icon('edit', 'memory_title_icon') }}
+                <input
+                    type="text"
+                    value="{{ form['title'] }}"
+                    placeholder="Name this moment"
+                    data-class="input_field"
+                    data-semantic="memory_title"
+                >
+            </div>
+        </label>
+
+        <label class="memory-field">
+            <span>Date</span>
+            <div class="field-control">
+                {{ icon('calendar_month', 'memory_date_icon') }}
+                <input
+                    type="text"
+                    value="{{ form['date'] }}"
+                    placeholder="YYYY-MM-DD"
+                    data-class="input_field"
+                    data-semantic="memory_date"
+                >
+            </div>
+        </label>
+
+        <label class="memory-field">
+            <span>Note</span>
+            <textarea
+                placeholder="What would you like to remember?"
+                data-class="input_field"
+                data-semantic="memory_note"
+            >{{ form['note'] }}</textarea>
+        </label>
+
+        <button
+            type="button"
+            class="milestone-choice"
+            data-class="button"
+            aria-pressed="{{ 'true' if form['milestone'] else 'false' }}"
+        >
+            {{ icon(
+                'check_box'
+                    if form['milestone']
+                    else 'check_box_outline_blank',
+                'memory_milestone_checkbox',
+                'checkbox'
+            ) }}
+            Mark as a milestone
+        </button>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Cancel
+            </button>
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('save', 'memory_save') }}
+                Save memory
+            </button>
+        </div>
+
+        {% else %}
+        <p class="delete-description">
+            Delete “{{ tinypal['selected_memory']['title'] }}”
+            from your family album?
+        </p>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Keep memory
+            </button>
+            <button type="button" class="danger-button" data-class="button">
+                {{ icon('delete', 'memory_confirm_delete') }}
+                Delete
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

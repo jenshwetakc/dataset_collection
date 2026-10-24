@@ -1,0 +1,1107 @@
+{% extends "base.html" %}
+
+{% block title %}Activity Inbox · Tinypal{% endblock %}
+
+{% block head %}
+<style>
+    .inbox-shell {
+        max-width: 1540px;
+        margin: 0 auto;
+        padding: 24px 28px 40px;
+    }
+
+    .inbox-header,
+    .inbox-brand,
+    .inbox-navigation,
+    .inbox-heading,
+    .inbox-actions,
+    .inbox-toolbar,
+    .inbox-tabs,
+    .group-title,
+    .notification-meta,
+    .dialog-heading,
+    .dialog-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .inbox-header,
+    .inbox-heading,
+    .inbox-toolbar,
+    .group-title,
+    .dialog-heading {
+        justify-content: space-between;
+    }
+
+    .inbox-header {
+        margin-bottom: 28px;
+    }
+
+    .inbox-brand {
+        font-size: 24px;
+        font-weight: 800;
+    }
+
+    .inbox-brand-mark,
+    .notification-symbol,
+    .detail-symbol,
+    .empty-symbol {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border-radius: 14px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .inbox-brand-mark {
+        width: 42px;
+        height: 42px;
+    }
+
+    .inbox-navigation button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 16px;
+        border-radius: 12px;
+        color: var(--on-surface);
+    }
+
+    .inbox-navigation button.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .inbox-heading {
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+
+    .inbox-heading h1 {
+        font-size: clamp(28px, 3vw, 38px);
+        margin-bottom: 8px;
+    }
+
+    .inbox-muted {
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .inbox-actions {
+        flex-wrap: wrap;
+    }
+
+    .inbox-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 310px;
+        align-items: start;
+        gap: 24px;
+    }
+
+    .inbox-main,
+    .inbox-sidebar {
+        min-width: 0;
+    }
+
+    .inbox-sidebar {
+        display: grid;
+        gap: 18px;
+    }
+
+    .inbox-card {
+        padding: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .inbox-tools {
+        margin-bottom: 22px;
+    }
+
+    .inbox-toolbar {
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+
+    .inbox-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 180px;
+        max-width: 420px;
+        min-height: 46px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--icon);
+    }
+
+    .inbox-search input {
+        width: 100%;
+        min-width: 0;
+        padding: 12px 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--on-surface);
+    }
+
+    .inbox-tabs {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .inbox-tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-weight: 700;
+    }
+
+    .inbox-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .inbox-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: var(--badge-background);
+        color: var(--badge-text);
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .selection-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 16px;
+        margin-bottom: 22px;
+        border-radius: 14px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .selection-toolbar .inbox-actions {
+        gap: 8px;
+    }
+
+    .inbox-group {
+        margin-bottom: 24px;
+    }
+
+    .group-title {
+        margin-bottom: 12px;
+    }
+
+    .group-title h2 {
+        font-size: 18px;
+    }
+
+    .notification-list {
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .notification-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 20px;
+    }
+
+    .notification-row + .notification-row {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .notification-row.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .notification-open {
+        display: flex;
+        align-items: flex-start;
+        flex: 1;
+        min-width: 0;
+        gap: 14px;
+        padding: 0;
+        text-align: left;
+        color: inherit;
+    }
+
+    .notification-symbol {
+        width: 46px;
+        height: 46px;
+    }
+
+    .notification-copy {
+        display: block;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .notification-title {
+        display: block;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.4;
+        margin-bottom: 5px;
+        overflow-wrap: anywhere;
+    }
+
+    .notification-description {
+        display: block;
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .notification-row.selected .notification-description,
+    .notification-row.selected .notification-meta {
+        color: var(--on-primary-container);
+    }
+
+    .notification-meta {
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .notification-meta .material-symbols-rounded {
+        font-size: 16px;
+    }
+
+    .notification-tools {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .selection-control {
+        padding: 0;
+        margin-top: 8px;
+        color: var(--icon);
+    }
+
+    .selection-control .material-symbols-rounded {
+        font-size: 26px;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 18px;
+    }
+
+    .summary-cell {
+        padding: 16px 12px;
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .summary-cell strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 30px;
+    }
+
+    .summary-cell span {
+        font-size: 13px;
+    }
+
+    .sidebar-heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        font-size: 18px;
+    }
+
+    .quick-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 76px;
+        padding: 12px 0;
+        text-align: left;
+        color: var(--on-surface);
+    }
+
+    .quick-link + .quick-link {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .quick-link-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .quick-link-copy strong,
+    .quick-link-copy small {
+        display: block;
+    }
+
+    .quick-link-copy small {
+        margin-top: 5px;
+        line-height: 1.4;
+        color: var(--text-secondary);
+    }
+
+    .sidebar-button {
+        width: 100%;
+        margin-top: 18px;
+    }
+
+    .empty-inbox {
+        padding: 60px 24px;
+        text-align: center;
+    }
+
+    .empty-symbol,
+    .detail-symbol {
+        width: 70px;
+        height: 70px;
+        margin-bottom: 18px;
+        border-radius: 22px;
+    }
+
+    .empty-symbol .material-symbols-rounded,
+    .detail-symbol .material-symbols-rounded {
+        font-size: 34px;
+    }
+
+    .empty-inbox h2 {
+        margin-bottom: 10px;
+    }
+
+    .inbox-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgba(0, 0, 0, .48);
+    }
+
+    .inbox-dialog {
+        width: 100%;
+        max-width: 540px;
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border-radius: 22px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .dialog-heading {
+        margin-bottom: 20px;
+    }
+
+    .dialog-heading h2 {
+        font-size: 23px;
+    }
+
+    .dialog-actions {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 24px;
+    }
+
+    .detail-title {
+        font-size: 24px;
+        line-height: 1.4;
+        margin-bottom: 12px;
+    }
+
+    .detail-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 18px 0;
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .preference-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 0;
+    }
+
+    .preference-row + .preference-row {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .preference-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .preference-copy strong,
+    .preference-copy small {
+        display: block;
+    }
+
+    .preference-copy small {
+        margin-top: 5px;
+        line-height: 1.4;
+        color: var(--text-secondary);
+    }
+
+    .preference-icon {
+        color: var(--icon);
+    }
+
+    .preference-switch {
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+        width: 48px;
+        height: 28px;
+        padding: 3px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+    }
+
+    .preference-switch.enabled {
+        justify-content: flex-end;
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .switch-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--icon);
+    }
+
+    .preference-switch.enabled .switch-thumb {
+        background: var(--on-primary);
+    }
+
+    @media (max-width: 1050px) {
+        .inbox-layout {
+            grid-template-columns: minmax(0, 1fr) 260px;
+            gap: 16px;
+        }
+
+        .inbox-shell {
+            padding: 20px;
+        }
+    }
+
+    @media (max-width: 800px) {
+        .inbox-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .inbox-sidebar {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .inbox-sidebar > :last-child {
+            grid-column: 1 / -1;
+        }
+
+        .inbox-heading {
+            flex-direction: column;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .inbox-shell {
+            padding: 18px 12px 100px;
+        }
+
+        .inbox-heading,
+        .inbox-header {
+            margin-bottom: 20px;
+        }
+
+        .inbox-heading > .inbox-actions {
+            width: 100%;
+        }
+
+        .inbox-heading > .inbox-actions > button {
+            flex: 1;
+        }
+
+        .inbox-navigation {
+            position: fixed;
+            bottom: var(--bottom-chrome);
+            left: 0;
+            right: 0;
+            z-index: 30;
+            justify-content: space-around;
+            gap: 0;
+            padding: 8px 4px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+        }
+
+        .inbox-navigation button {
+            flex-direction: column;
+            flex: 1;
+            gap: 4px;
+            min-width: 0;
+            padding: 8px 4px;
+            font-size: 11px;
+        }
+
+        .inbox-card {
+            padding: 16px;
+        }
+
+        .notification-list {
+            padding: 0;
+        }
+
+        .notification-row {
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 16px;
+        }
+
+        .notification-open {
+            gap: 10px;
+        }
+
+        .notification-symbol {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+        }
+
+        .notification-symbol .material-symbols-rounded {
+            font-size: 20px;
+        }
+
+        .notification-tools {
+            margin-left: auto;
+        }
+
+        .inbox-sidebar {
+            grid-template-columns: 1fr;
+        }
+
+        .inbox-sidebar > :last-child {
+            grid-column: auto;
+        }
+
+        .inbox-dialog {
+            padding: 18px;
+        }
+
+        .preference-row {
+            gap: 8px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="inbox-shell"
+     data-annotation-skip="{{ 'true' if tinypal['popup_visible'] else 'false' }}">
+
+    <header class="inbox-header"
+            data-class="app_bar"
+            data-semantic="inbox_app_bar">
+
+        <div class="inbox-brand">
+            <span class="inbox-brand-mark"
+                  data-class="logo"
+                  data-semantic="inbox_tinypal_logo">
+                {{ icon('child_care', 'inbox_brand_icon') }}
+            </span>
+            <span>Tinypal</span>
+        </div>
+
+        <nav class="inbox-navigation"
+             aria-label="Main navigation"
+             data-class="navigation_bar"
+             data-semantic="inbox_navigation"
+             data-occluder="{{ 'false' if tinypal['popup_visible'] else 'true' }}"
+
+        >
+            {% for item in tinypal['navigation'] %}
+            <button type="button"
+                    class="{{ 'active' if item['active'] else '' }}"
+
+                    data-semantic="inbox_nav_{{ loop.index0 }}">
+                {{ icon(item['icon'], 'inbox_nav_icon_' ~ loop.index0) }}
+                <span>{{ item['label'] }}</span>
+            </button>
+            {% endfor %}
+        </nav>
+    </header>
+
+    <div class="inbox-heading" data-class="section">
+        <div>
+            <h1>Activity inbox</h1>
+            <p class="inbox-muted">
+                Reminders, shared moments, and family updates.
+            </p>
+        </div>
+
+        <div class="inbox-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="inbox_preferences">
+                {{ icon('tune', 'inbox_preferences_icon') }}
+                Preferences
+            </button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="inbox_mark_all_read">
+                {{ icon('done_all', 'inbox_mark_all_read_icon') }}
+                Mark all read
+            </button>
+        </div>
+    </div>
+
+    <div class="inbox-layout">
+        <main class="inbox-main"
+              data-class="section"
+              data-semantic="inbox_activity_section">
+
+            <section class="inbox-card inbox-tools"
+                     data-class="card"
+                     data-semantic="inbox_filter_card">
+
+                <div class="inbox-toolbar">
+                    <label class="inbox-search"
+                           data-class="search_bar"
+                           data-semantic="inbox_search">
+                        {{ icon('search', 'inbox_search_icon') }}
+                        <input type="text"
+                               aria-label="Search activity"
+                               placeholder="Search activity">
+                    </label>
+
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button"
+                            data-semantic="inbox_select">
+                        {{ icon('checklist', 'inbox_select_icon') }}
+                        {{ 'Done selecting' if tinypal['selection_mode'] else 'Select' }}
+                    </button>
+                </div>
+
+                <div class="inbox-tabs" role="tablist"
+                     aria-label="Activity categories">
+                    {% for filter in tinypal['filters'] %}
+                    <button type="button"
+                            role="tab"
+                            aria-selected="{{ 'true' if filter['id'] == tinypal['active_filter'] else 'false' }}"
+                            class="inbox-tab {{ 'active' if filter['id'] == tinypal['active_filter'] else '' }}"
+                            data-class="tab"
+                            data-semantic="inbox_filter_{{ filter['id'] }}">
+                        {{ filter['label'] }}
+                        {% if filter['id'] == 'unread' %}
+                        <span class="inbox-badge"
+                              data-class="badge"
+                              data-semantic="inbox_unread_tab_count">
+                            {{ tinypal['unread_count'] }}
+                        </span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if tinypal['selection_mode'] %}
+            <div class="selection-toolbar"
+                 data-class="card"
+                 data-semantic="inbox_selection_toolbar">
+                <strong>{{ tinypal['selected_count'] }} selected</strong>
+
+                <div class="inbox-actions">
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button"
+                            data-semantic="inbox_selected_read">
+                        {{ icon('done_all', 'inbox_selected_read_icon') }}
+                        Mark read
+                    </button>
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button"
+                            data-semantic="inbox_selected_delete">
+                        {{ icon('delete', 'inbox_selected_delete_icon') }}
+                        Delete
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            {% for group in tinypal['groups'] %}
+            <section class="inbox-group"
+                     data-class="section"
+                     data-semantic="{{ group['id'] }}">
+
+                <div class="group-title">
+                    <h2>{{ group['title'] }}</h2>
+                    <span class="inbox-badge"
+                          data-class="badge"
+                          data-semantic="{{ group['id'] }}_count">
+                        {{ group['entries']|length }}
+                    </span>
+                </div>
+
+                <div class="inbox-card notification-list"
+                     data-class="card"
+                     data-semantic="{{ group['id'] }}_card">
+
+                    {% for notification in group['entries'] %}
+                    <article class="notification-row {{ 'selected' if notification['selected'] else '' }}">
+
+                        {% if tinypal['selection_mode'] %}
+                        <button type="button"
+                                class="selection-control"
+                                aria-label="Select {{ notification['title'] }}"
+                                aria-pressed="{{ 'true' if notification['selected'] else 'false' }}"
+
+                                data-semantic="{{ notification['id'] }}_select">
+                            {{ icon(
+                                'check_box' if notification['selected'] else 'check_box_outline_blank',
+                                notification['id'] ~ '_checkbox',
+                                'checkbox'
+                            ) }}
+                        </button>
+                        {% endif %}
+
+                        <button type="button"
+                                class="notification-open"
+
+                                data-semantic="{{ notification['id'] }}_open">
+
+                            <span class="notification-symbol" data-class="button">
+                                {{ icon(
+                                    notification['icon'],
+                                    notification['id'] ~ '_category_icon'
+                                ) }}
+                            </span>
+
+                            <span class="notification-copy">
+                                <span class="notification-title">
+                                    {{ notification['title'] }}
+                                </span>
+
+                                <span class="notification-description">
+                                    {{ notification['description'] }}
+                                </span>
+
+                                <span class="notification-meta">
+                                    {{ icon(
+                                        'schedule',
+                                        notification['id'] ~ '_time_icon'
+                                    ) }}
+                                    <span>{{ notification['time'] }}</span>
+                                    <span>·</span>
+                                    <span>{{ notification['source'] }}</span>
+                                </span>
+                            </span>
+                        </button>
+
+                        <div class="notification-tools">
+                            {% if notification['unread'] %}
+                            <span class="inbox-badge"
+                                  data-class="badge"
+                                  data-semantic="{{ notification['id'] }}_unread">
+                                New
+                            </span>
+                            {% endif %}
+
+                            <button type="button"
+                                    class="icon-button"
+                                    aria-label="More options for {{ notification['title'] }}"
+
+                                    data-semantic="{{ notification['id'] }}_more">
+                                {{ icon(
+                                    'more_horiz',
+                                    notification['id'] ~ '_more_icon'
+                                ) }}
+                            </button>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% else %}
+            <section class="inbox-card empty-inbox"
+                     data-class="card"
+                     data-semantic="inbox_empty">
+                <div class="empty-symbol" data-class="button">
+                    {{ icon('notifications_none', 'inbox_empty_icon') }}
+                </div>
+                <h2>You’re all caught up</h2>
+                <p class="inbox-muted">
+                    New family activity will appear here.
+                </p>
+            </section>
+            {% endfor %}
+        </main>
+
+        <aside class="inbox-sidebar"
+               data-class="section"
+               data-semantic="inbox_sidebar">
+
+            <section class="inbox-card"
+                     data-class="card"
+                     data-semantic="inbox_summary_card">
+                <h2 class="sidebar-heading">
+                    {{ icon('notifications', 'inbox_summary_icon') }}
+                    Inbox overview
+                </h2>
+
+                <div class="summary-grid">
+                    <div class="summary-cell">
+                        <strong>{{ tinypal['total'] }}</strong>
+                        <span>Total updates</span>
+                    </div>
+                    <div class="summary-cell">
+                        <strong>{{ tinypal['unread_count'] }}</strong>
+                        <span>Unread</span>
+                    </div>
+                </div>
+
+                <p class="inbox-muted" style="margin-top: 16px;">
+                    Showing {{ tinypal['visible_count'] }} updates
+                    in this view.
+                </p>
+            </section>
+
+            <section class="inbox-card"
+                     data-class="card"
+                     data-semantic="inbox_quick_links_card">
+                <h2 class="sidebar-heading">
+                    {{ icon('apps', 'inbox_quick_links_icon') }}
+                    Jump back in
+                </h2>
+
+                {% for link in tinypal['quick_links'] %}
+                <button type="button"
+                        class="quick-link"
+
+                        data-semantic="inbox_link_{{ link['id'] }}">
+                    {{ icon(link['icon'], 'inbox_link_icon_' ~ link['id']) }}
+
+                    <span class="quick-link-copy">
+                        <strong>{{ link['label'] }}</strong>
+                        <small>{{ link['description'] }}</small>
+                    </span>
+
+                    {{ icon('chevron_right', 'inbox_link_arrow_' ~ link['id']) }}
+                </button>
+                {% endfor %}
+            </section>
+
+            <section class="inbox-card"
+                     data-class="card"
+                     data-semantic="inbox_manage_card">
+                <h2 class="sidebar-heading">
+                    {{ icon('tune', 'inbox_manage_icon') }}
+                    Your notifications
+                </h2>
+
+                <p class="inbox-muted">
+                    Choose which family updates you want to receive.
+                </p>
+
+                <button type="button"
+                        class="secondary-button sidebar-button"
+                        data-class="button"
+                        data-semantic="inbox_manage_preferences">
+                    Notification preferences
+                </button>
+
+                {% if tinypal['total'] %}
+                <button type="button"
+                        class="secondary-button sidebar-button"
+                        data-class="button"
+                        data-semantic="inbox_clear">
+                    {{ icon('delete_sweep', 'inbox_clear_icon') }}
+                    Clear inbox
+                </button>
+                {% endif %}
+            </section>
+        </aside>
+    </div>
+</div>
+
+{% if tinypal['popup_visible'] %}
+<div class="inbox-overlay">
+    <section class="inbox-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="inbox-dialog-title"
+             data-class="dialog"
+             data-semantic="inbox_{{ tinypal['state'] }}_dialog"
+             data-occluder="true">
+
+        <div class="dialog-heading">
+            <h2 id="inbox-dialog-title">
+                {% if tinypal['state'] == 'notification_details' %}
+                Activity details
+                {% elif tinypal['state'] == 'preferences' %}
+                Notification preferences
+                {% else %}
+                Clear your inbox?
+                {% endif %}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+                    aria-label="Close dialog"
+
+                    data-semantic="inbox_dialog_close">
+                {{ icon('close', 'inbox_dialog_close_icon') }}
+            </button>
+        </div>
+
+        {% if tinypal['state'] == 'notification_details' %}
+        {% set notification = tinypal['selected_notification'] %}
+
+        <div class="detail-symbol" data-class="button">
+            {{ icon(notification['icon'], 'inbox_detail_category_icon') }}
+        </div>
+
+        <h3 class="detail-title">{{ notification['title'] }}</h3>
+        <p class="inbox-muted">{{ notification['description'] }}</p>
+
+        <div class="detail-meta">
+            {{ icon('schedule', 'inbox_detail_time_icon') }}
+            <span>{{ notification['group'] }} · {{ notification['time'] }}</span>
+            <span>· {{ notification['source'] }}</span>
+        </div>
+
+        {% if notification['unread'] %}
+        <span class="inbox-badge"
+              data-class="badge"
+              data-semantic="inbox_detail_unread">
+            Unread
+        </span>
+        {% endif %}
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="inbox_detail_mark_read">
+                {{ icon('done_all', 'inbox_detail_mark_read_icon') }}
+                Mark read
+            </button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="inbox_detail_open_source">
+                Open checklist
+                {{ icon('arrow_forward', 'inbox_detail_open_icon') }}
+            </button>
+        </div>
+
+        {% elif tinypal['state'] == 'preferences' %}
+        <p class="inbox-muted">
+            Choose the updates that appear in your inbox.
+        </p>
+
+        {% for preference in tinypal['preferences'] %}
+        <div class="preference-row">
+            <span class="preference-icon">
+                {{ icon(
+                    preference['icon'],
+                    'inbox_preference_icon_' ~ preference['id']
+                ) }}
+            </span>
+
+            <div class="preference-copy">
+                <strong>{{ preference['title'] }}</strong>
+                <small>{{ preference['description'] }}</small>
+            </div>
+
+            <button type="button"
+                    role="switch"
+                    aria-label="{{ preference['title'] }}"
+                    aria-checked="{{ 'true' if preference['enabled'] else 'false' }}"
+                    class="preference-switch {{ 'enabled' if preference['enabled'] else '' }}"
+                    data-class="switch"
+                    data-semantic="inbox_preference_switch_{{ preference['id'] }}">
+                <span class="switch-thumb" aria-hidden="true"></span>
+            </button>
+        </div>
+        {% endfor %}
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="inbox_preferences_save">
+                Save preferences
+            </button>
+        </div>
+
+        {% else %}
+        <p class="inbox-muted">
+            Remove all {{ tinypal['total'] }} notifications from this inbox.
+            Your routines, memories, and family records will stay available.
+        </p>
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="inbox_clear_cancel">
+                Keep updates
+            </button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="inbox_clear_confirm">
+                {{ icon('delete_sweep', 'inbox_clear_confirm_icon') }}
+                Clear inbox
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

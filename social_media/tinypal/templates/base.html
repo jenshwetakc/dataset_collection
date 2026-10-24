@@ -1,0 +1,321 @@
+{% macro icon(name, semantic, annotation_class='icon') -%}
+<span
+    class="material-symbols-rounded"
+    data-class="{{ annotation_class }}"
+    data-semantic="{{ semantic }}"
+    aria-hidden="true"
+>{{ name }}</span>
+{%- endmacro %}
+
+{% macro avatar(child) -%}
+{% if child['avatar'] %}
+<img
+    class="avatar"
+    src="{{ child['avatar'] }}"
+    alt="{{ child['name'] }}"
+    data-class="avatar"
+    data-semantic="{{ child['id'] }}_avatar"
+>
+{% else %}
+<span
+    class="avatar avatar-fallback"
+    data-class="avatar"
+    data-semantic="{{ child['id'] }}_avatar"
+    role="img"
+    aria-label="{{ child['name'] }}"
+>{{ child['initial'] }}</span>
+{% endif %}
+{%- endmacro %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>{% block title %}Tinypal Synthetic UI{% endblock %}</title>
+
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+    >
+
+    <style>
+        :root {
+            {% for role, color in theme['semantic'].items() %}
+            --{{ role|replace('_', '-') }}: {{ color }};
+            {% endfor %}
+
+            --chrome-height: {{ system['layout']['height'] }}px;
+            --bottom-chrome:
+                {{ system['layout']['height']
+                   if system['layout']['position'] == 'bottom'
+                   else 0 }}px;
+            --radius: 18px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--background);
+            color: var(--on-background);
+        }
+
+        body {
+            padding-bottom: var(--bottom-chrome);
+        }
+
+        body.popup-open { overflow: hidden; }
+
+        button, input, textarea, select {
+            font: inherit;
+            color: inherit;
+        }
+
+        button {
+            cursor: pointer;
+            border: 0;
+            background: transparent;
+        }
+
+        input, textarea { min-width: 0; }
+
+        h1, h2, h3, p { margin: 0; }
+
+        img {
+            display: block;
+            max-width: 100%;
+            object-fit: cover;
+        }
+
+        .material-symbols-rounded {
+            font-family: "Material Symbols Rounded";
+            font-size: 22px;
+            font-weight: normal;
+            font-style: normal;
+            line-height: 1;
+            display: inline-block;
+            white-space: nowrap;
+            flex-shrink: 0;
+            font-feature-settings: "liga";
+            font-variation-settings:
+                "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .primary-button, .secondary-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 44px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .primary-button {
+            background: var(--primary);
+            color: var(--on-primary);
+        }
+
+        .secondary-button {
+            background: var(--surface);
+            color: var(--on-surface);
+            border: 1px solid var(--border);
+        }
+
+        .icon-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            color: var(--icon);
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .avatar-fallback {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+            font-weight: 700;
+        }
+
+        .system-chrome {
+            height: var(--chrome-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 0 10px;
+            background: var(--surface);
+            color: var(--on-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 11px;
+        }
+
+        .system-chrome.bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .system-group {
+            display: flex;
+            align-items: center;
+            gap: {{ system['display']['icon_gap'] }}px;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .system-group.left { flex: 1 1 0; }
+        .system-group.right { justify-content: flex-end; }
+
+        .system-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        .system-icon {
+            font-size: {{ system['display']['icon_size'] }}px;
+            color: var(--icon);
+        }
+
+        .system-clock {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .ios-cutout {
+            width: 70px;
+            height: 20px;
+            border-radius: 20px;
+            background: #000;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 600px) {
+            .desktop-menu { display: none; }
+            .system-item.low-priority { display: none; }
+            .system-group.left .system-item:nth-of-type(n+4) {
+                display: none;
+            }
+            .system-item .system-label { display: none; }
+        }
+
+        @media (max-width: 359px) {
+            .system-group { gap: 2px; }
+            .system-group.left .system-item:nth-of-type(n+3) {
+                display: none;
+            }
+            .ios-cutout { width: 40px; }
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body class="{{ 'popup-open' if tinypal['popup_visible'] else '' }}">
+    <div
+        class="system-chrome {{ system['layout']['position'] }}"
+        data-class="status_bar"
+        data-semantic="system_chrome"
+        data-annotation-skip="{{ 'true' if tinypal['popup_visible'] else 'false' }}"
+        data-occluder="{{ 'false' if tinypal['popup_visible'] else 'true' }}"
+    >
+        <div class="system-group left">
+            {% if system['layout']['clock_position'] == 'left' %}
+            <strong class="system-clock">
+                {{ system['time_text'] }}
+                {% if system['time_period'] %}
+                {{ system['time_period'] }}
+                {% endif %}
+            </strong>
+            {% endif %}
+
+            {% for item in system['left_icons'] %}
+            <span class="system-item">
+                <span
+                    class="material-symbols-rounded system-icon"
+                    data-class="{{ item['annotation_class'] }}"
+                    data-semantic="system_{{ item['id'] }}"
+                    aria-hidden="true"
+                >{{ item['icon'] }}</span>
+            </span>
+            {% endfor %}
+
+            {% if system['style'] == 'macos' %}
+            <strong class="desktop-menu">Tinypal</strong>
+            {% for label in system['desktop']['menu_items'] %}
+            <span class="desktop-menu">{{ label }}</span>
+            {% endfor %}
+            {% elif system['style'] == 'ubuntu' %}
+            <strong class="desktop-menu">Activities</strong>
+            {% endif %}
+        </div>
+
+        {% if system['style'] == 'ios'
+              and system['ios_device_variant'] != 'classic' %}
+        <div class="ios-cutout" aria-hidden="true"></div>
+        {% elif system['layout']['clock_position'] == 'center' %}
+        <span class="system-clock">
+            {{ system['desktop_time_text'] }}
+        </span>
+        {% endif %}
+
+        <div class="system-group right">
+            {% for item in system['right_icons'] %}
+            <span
+                class="system-item {{ 'low-priority'
+                    if item['id'] in system['system_states']
+                    else '' }}"
+            >
+                <span
+                    class="material-symbols-rounded system-icon"
+                    data-class="{{ item['annotation_class'] }}"
+                    data-semantic="system_{{ item['id'] }}"
+                    aria-hidden="true"
+                >{{ item['icon'] }}</span>
+
+                {% if item['text'] %}
+                <span class="system-label">{{ item['text'] }}</span>
+                {% endif %}
+            </span>
+            {% endfor %}
+
+            {% if system['layout']['clock_position'] == 'right' %}
+            <span class="system-clock">
+                {{ system['time_text'] }}
+                {% if system['time_period'] %}
+                {{ system['time_period'] }}
+                {% endif %}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% block content %}{% endblock %}
+</body>
+</html>

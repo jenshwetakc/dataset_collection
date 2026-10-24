@@ -1,0 +1,925 @@
+{% extends "base.html" %}
+
+{% block title %}Family Journal · Tinypal{% endblock %}
+
+{% block head %}
+<style>
+    .journal-shell {
+        max-width: 1640px;
+        margin: auto;
+        padding: 24px 28px 40px;
+    }
+
+    .journal-header,
+    .journal-brand,
+    .journal-nav,
+    .journal-heading,
+    .journal-actions,
+    .journal-toolbar,
+    .journal-tabs,
+    .note-heading,
+    .note-footer,
+    .journal-dialog-heading,
+    .journal-dialog-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .journal-header,
+    .journal-heading,
+    .journal-toolbar,
+    .note-heading,
+    .note-footer,
+    .journal-dialog-heading {
+        justify-content: space-between;
+    }
+
+    .journal-header { margin-bottom: 28px; }
+    .journal-brand { font-size: 24px; font-weight: 800; }
+
+    .journal-mark,
+    .note-symbol {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .journal-nav button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        color: var(--on-surface);
+    }
+
+    .journal-nav button.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .journal-heading {
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+
+    .journal-heading h1 {
+        font-size: clamp(28px, 3vw, 38px);
+        margin-bottom: 8px;
+    }
+
+    .journal-muted {
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .journal-actions,
+    .journal-tabs {
+        flex-wrap: wrap;
+    }
+
+    .journal-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        align-items: start;
+        gap: 24px;
+    }
+
+    .journal-main { min-width: 0; }
+
+    .journal-sidebar {
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+    }
+
+    .journal-card {
+        padding: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .journal-tools { margin-bottom: 20px; }
+
+    .journal-toolbar {
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+
+    .journal-search {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        gap: 10px;
+        min-width: 180px;
+        max-width: 440px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--icon);
+    }
+
+    .journal-search input {
+        width: 100%;
+        padding: 13px 0;
+        border: 0;
+        background: transparent;
+        color: var(--on-surface);
+    }
+
+    .journal-tab,
+    .journal-category {
+        min-height: 42px;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-weight: 700;
+    }
+
+    .journal-tab.active,
+    .journal-category.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .journal-selection {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+        border-radius: 14px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .journal-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .note-card {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .note-card.selected {
+        border: 2px solid var(--border);
+    }
+
+    .note-heading { margin-bottom: 16px; }
+    .note-controls { display: flex; align-items: center; gap: 4px; }
+
+    .note-open {
+        padding: 0;
+        text-align: left;
+        color: var(--on-surface);
+    }
+
+    .note-open h2 {
+        font-size: 20px;
+        line-height: 1.4;
+        margin-bottom: 10px;
+        overflow-wrap: anywhere;
+    }
+
+    .note-body {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+    }
+
+    .note-tasks {
+        display: grid;
+        gap: 10px;
+        margin: 18px 0;
+    }
+
+    .note-task {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 0;
+        text-align: left;
+        color: var(--on-surface);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .note-task .material-symbols-rounded {
+        flex-shrink: 0;
+        color: var(--icon);
+    }
+
+    .note-task.done .task-copy {
+        text-decoration: line-through;
+    }
+
+    .note-footer {
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: auto;
+        padding-top: 18px;
+    }
+
+    .journal-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: var(--badge-background);
+        color: var(--badge-text);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .journal-badge .material-symbols-rounded { font-size: 16px; }
+
+    .note-author {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .note-author .material-symbols-rounded { font-size: 16px; }
+
+    .journal-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 18px;
+    }
+
+    .journal-stat {
+        padding: 14px 8px;
+        text-align: center;
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .journal-stat strong { display: block; font-size: 26px; }
+    .journal-stat span { font-size: 11px; }
+
+    .journal-sidebar h2 {
+        font-size: 19px;
+        margin-bottom: 12px;
+    }
+
+    .journal-activity {
+        display: flex;
+        gap: 10px;
+        padding: 14px 0;
+    }
+
+    .journal-activity + .journal-activity {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .journal-activity > .material-symbols-rounded {
+        color: var(--icon);
+        flex-shrink: 0;
+    }
+
+    .journal-activity strong,
+    .journal-activity small {
+        display: block;
+        line-height: 1.5;
+    }
+
+    .journal-activity strong { font-size: 13px; }
+    .journal-activity small {
+        margin-top: 4px;
+        color: var(--text-secondary);
+    }
+
+    .journal-shortcut {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        padding: 14px 0;
+        color: var(--on-surface);
+        text-align: left;
+    }
+
+    .journal-shortcut + .journal-shortcut {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .journal-shortcut span.copy { flex: 1; }
+
+    .journal-empty {
+        grid-column: 1 / -1;
+        padding: 60px 24px;
+        text-align: center;
+    }
+
+    .journal-empty > .material-symbols-rounded {
+        font-size: 48px;
+        color: var(--icon);
+        margin-bottom: 18px;
+    }
+
+    .journal-empty h2 { margin-bottom: 10px; }
+    .journal-empty button { margin-top: 22px; }
+
+    .journal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgba(0, 0, 0, .48);
+    }
+
+    .journal-dialog {
+        width: 100%;
+        max-width: 560px;
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border-radius: 22px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .journal-dialog-heading { margin-bottom: 20px; }
+    .journal-dialog-heading h2 { font-size: 23px; }
+
+    .journal-dialog-actions {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 24px;
+    }
+
+    .journal-field-label {
+        display: block;
+        margin: 16px 0 8px;
+        font-weight: 700;
+    }
+
+    .journal-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font: inherit;
+    }
+
+    textarea.journal-input {
+        min-height: 110px;
+        resize: none;
+    }
+
+    .journal-categories {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .journal-pin-choice {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 18px;
+        padding: 0;
+        color: var(--on-surface);
+    }
+
+    .journal-pin-choice .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .journal-detail-title {
+        margin: 18px 0 12px;
+        font-size: 25px;
+        line-height: 1.4;
+    }
+
+    @media (max-width: 1250px) {
+        .journal-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .journal-layout {
+            grid-template-columns: minmax(0, 1fr) 270px;
+            gap: 18px;
+        }
+    }
+
+    @media (max-width: 850px) {
+        .journal-layout { grid-template-columns: 1fr; }
+
+        .journal-sidebar {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .journal-sidebar > :last-child { grid-column: 1 / -1; }
+        .journal-heading { flex-direction: column; }
+    }
+
+    @media (max-width: 600px) {
+        .journal-shell { padding: 18px 12px 100px; }
+        .journal-grid, .journal-sidebar { grid-template-columns: 1fr; }
+        .journal-sidebar > :last-child { grid-column: auto; }
+        .journal-card { padding: 18px; }
+
+        .journal-nav {
+            position: fixed;
+            bottom: var(--bottom-chrome);
+            left: 0;
+            right: 0;
+            z-index: 30;
+            justify-content: space-around;
+            gap: 0;
+            padding: 8px 4px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+        }
+
+        .journal-nav button {
+            flex-direction: column;
+            flex: 1;
+            gap: 4px;
+            min-width: 0;
+            padding: 8px 4px;
+            font-size: 11px;
+        }
+
+        .journal-heading > .journal-actions { width: 100%; }
+        .journal-heading > .journal-actions button { flex: 1; }
+        .journal-dialog { padding: 18px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="journal-shell"
+     data-annotation-skip="{{ 'true' if tinypal['popup_visible'] else 'false' }}">
+
+    <header class="journal-header"
+            data-class="app_bar"
+            data-semantic="journal_app_bar">
+        <div class="journal-brand">
+            <span class="journal-mark"
+                  data-class="logo"
+                  data-semantic="journal_logo">
+                {{ icon('child_care', 'journal_brand_icon') }}
+            </span>
+            <span>Tinypal</span>
+        </div>
+
+        <nav class="journal-nav"
+             aria-label="Main navigation"
+             data-class="navigation_bar"
+             data-semantic="journal_navigation"
+             data-occluder="{{ 'false' if tinypal['popup_visible'] else 'true' }}" >
+            {% for item in tinypal['navigation'] %}
+            <button type="button"
+                    class="{{ 'active' if item['active'] else '' }}"
+                    data-semantic="journal_nav_{{ loop.index0 }}">
+                {{ icon(item['icon'], 'journal_nav_icon_' ~ loop.index0) }}
+                {{ item['label'] }}
+            </button>
+            {% endfor %}
+        </nav>
+    </header>
+
+    <div class="journal-heading" data-class="section" >
+        <div>
+            <h1>Family journal</h1>
+            <p class="journal-muted">
+                Keep shared notes, little plans, and handovers together.
+            </p>
+        </div>
+
+        <div class="journal-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="journal_select">
+                {{ icon('checklist', 'journal_select_icon') }}
+                {{ 'Done selecting' if tinypal['selection_mode'] else 'Select notes' }}
+            </button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="journal_add">
+                {{ icon('add', 'journal_add_icon') }}
+                Add note
+            </button>
+        </div>
+    </div>
+
+    <div class="journal-layout">
+        <main class="journal-main"
+              data-class="section"
+              data-semantic="journal_notes_section">
+
+            <section class="journal-card journal-tools"
+                     data-class="card"
+                     data-semantic="journal_tools">
+                <div class="journal-toolbar">
+                    <label class="journal-search"
+                           data-class="search_bar"
+                           data-semantic="journal_search">
+                        {{ icon('search', 'journal_search_icon') }}
+                        <input type="text"
+                               aria-label="Search family notes"
+                               placeholder="Search family notes">
+                    </label>
+
+                    <span class="journal-badge"
+                          data-class="badge"
+                          data-semantic="journal_visible_count">
+                        {{ tinypal['visible_notes']|length }} notes
+                    </span>
+                </div>
+
+                <div class="journal-tabs" role="tablist"
+                     aria-label="Note categories">
+                    {% for filter in tinypal['filters'] %}
+                    <button type="button"
+                            role="tab"
+                            aria-selected="{{ 'true' if filter['id'] == tinypal['active_filter'] else 'false' }}"
+                            class="journal-tab {{ 'active' if filter['id'] == tinypal['active_filter'] else '' }}"
+                            data-class="tab"
+                            data-semantic="journal_filter_{{ filter['id'] }}">
+                        {{ filter['label'] }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if tinypal['selection_mode'] %}
+            <div class="journal-selection"
+                 data-class="card"
+                 data-semantic="journal_selection_toolbar">
+                <strong>{{ tinypal['selected_count'] }} notes selected</strong>
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="journal_delete_selected">
+                    {{ icon('delete', 'journal_delete_selected_icon') }}
+                    Delete selected
+                </button>
+            </div>
+            {% endif %}
+
+            <div class="journal-grid">
+                {% for note in tinypal['visible_notes'] %}
+                <article class="journal-card note-card {{ 'selected' if note['selected'] else '' }}"
+                         data-class="card"
+                         data-semantic="{{ note['id'] }}">
+
+                    <div class="note-heading">
+                        <span class="note-symbol" data-class="button">
+                            {{ icon(note['icon'], note['id'] ~ '_category_icon') }}
+                        </span>
+
+                        <div class="note-controls">
+                            {% if tinypal['selection_mode'] %}
+                            <button type="button"
+                                    class="icon-button"
+                                    aria-label="Select {{ note['title'] }}"
+                                    aria-pressed="{{ 'true' if note['selected'] else 'false' }}"
+
+                                    data-semantic="{{ note['id'] }}_select">
+                                {{ icon(
+                                    'check_box' if note['selected'] else 'check_box_outline_blank',
+                                    note['id'] ~ '_checkbox',
+                                    'checkbox'
+                                ) }}
+                            </button>
+                            {% endif %}
+
+                            <button type="button"
+                                    class="icon-button"
+                                    aria-label="More options for {{ note['title'] }}"
+
+                                    data-semantic="{{ note['id'] }}_more">
+                                {{ icon('more_horiz', note['id'] ~ '_more_icon') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="button"
+                            class="note-open"
+
+                            data-semantic="{{ note['id'] }}_open">
+                        <h2>{{ note['title'] }}</h2>
+                        <span class="note-body">{{ note['body'] }}</span>
+                    </button>
+
+                    {% if note['tasks'] %}
+                    <div class="note-tasks">
+                        {% for task in note['tasks'] %}
+                        <button type="button"
+                                class="note-task {{ 'done' if task['done'] else '' }}"
+                                aria-pressed="{{ 'true' if task['done'] else 'false' }}"
+
+                                data-semantic="{{ task['id'] }}">
+                            {{ icon(
+                                'check_box' if task['done'] else 'check_box_outline_blank',
+                                task['id'] ~ '_checkbox',
+                                'checkbox'
+                            ) }}
+                            <span class="task-copy">{{ task['title'] }}</span>
+                        </button>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="note-footer">
+                        {% if note['pinned'] %}
+                        <span class="journal-badge"
+                              data-class="badge"
+                              data-semantic="{{ note['id'] }}_pinned">
+                            {{ icon('push_pin', note['id'] ~ '_pin_icon') }}
+                            Pinned
+                        </span>
+                        {% else %}
+                        <span class="journal-badge"
+                              data-class="badge"
+                              data-semantic="{{ note['id'] }}_category">
+                            {{ note['category']|capitalize }}
+                        </span>
+                        {% endif %}
+
+                        <span class="note-author">
+                            {{ icon('person', note['id'] ~ '_author_icon') }}
+                            {{ note['author'] }} · {{ note['updated'] }}
+                        </span>
+                    </div>
+                </article>
+
+                {% else %}
+                <section class="journal-card journal-empty"
+                         data-class="card"
+                         data-semantic="journal_empty">
+                    {{ icon('edit_note', 'journal_empty_icon') }}
+                    <h2>A space for your family notes</h2>
+                    <p class="journal-muted">
+                        Add a handover, a play idea, or a plan to get started.
+                    </p>
+                    <button type="button"
+                            class="primary-button"
+                            data-class="button"
+                            data-semantic="journal_empty_add">
+                        {{ icon('add', 'journal_empty_add_icon') }}
+                        Add your first note
+                    </button>
+                </section>
+                {% endfor %}
+            </div>
+        </main>
+
+        <aside class="journal-sidebar"
+               data-class="section"
+               data-semantic="journal_sidebar">
+
+            <section class="journal-card"
+                     data-class="card"
+                     data-semantic="journal_summary">
+                <h2>Journal overview</h2>
+                <p class="journal-muted">Your shared family notebook.</p>
+
+                <div class="journal-stats">
+                    <div class="journal-stat">
+                        <strong>{{ tinypal['total'] }}</strong>
+                        <span>Notes</span>
+                    </div>
+                    <div class="journal-stat">
+                        <strong>{{ tinypal['pinned_count'] }}</strong>
+                        <span>Pinned</span>
+                    </div>
+                    <div class="journal-stat">
+                        <strong>{{ tinypal['task_count'] }}</strong>
+                        <span>Open tasks</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="journal-card"
+                     data-class="card"
+                     data-semantic="journal_recent_activity">
+                <h2>Recent activity</h2>
+
+                {% for activity in tinypal['activity'] %}
+                <div class="journal-activity">
+                    {{ icon(activity['icon'], activity['id'] ~ '_icon') }}
+                    <div>
+                        <strong>{{ activity['title'] }}</strong>
+                        <small>{{ activity['time'] }}</small>
+                    </div>
+                </div>
+                {% else %}
+                <p class="journal-muted">New journal activity will appear here.</p>
+                {% endfor %}
+            </section>
+
+            <section class="journal-card"
+                     data-class="card"
+                     data-semantic="journal_shortcuts">
+                <h2>Family shortcuts</h2>
+
+                {% for label, symbol in [
+                    ('Shared routines', 'calendar_month'),
+                    ('Packing checklist', 'checklist'),
+                    ('Family memories', 'photo_library'),
+                    ('Caregiver access', 'group')
+                ] %}
+                <button type="button"
+                        class="journal-shortcut"
+
+                        data-semantic="journal_shortcut_{{ loop.index0 }}">
+                    {{ icon(symbol, 'journal_shortcut_icon_' ~ loop.index0) }}
+                    <span class="copy">{{ label }}</span>
+                    {{ icon('chevron_right', 'journal_shortcut_arrow_' ~ loop.index0) }}
+                </button>
+                {% endfor %}
+            </section>
+        </aside>
+    </div>
+</div>
+
+{% if tinypal['popup_visible'] %}
+<div class="journal-overlay">
+    <section class="journal-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="journal-dialog-title"
+             data-class="dialog"
+             data-semantic="journal_{{ tinypal['state'] }}_dialog"
+             data-occluder="true">
+
+        <div class="journal-dialog-heading">
+            <h2 id="journal-dialog-title">
+                {% if tinypal['state'] == 'add_note' %}
+                Add a family note
+                {% elif tinypal['state'] == 'note_details' %}
+                Note details
+                {% else %}
+                Delete this note?
+                {% endif %}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+                    aria-label="Close dialog"
+
+                    data-semantic="journal_dialog_close">
+                {{ icon('close', 'journal_dialog_close_icon') }}
+            </button>
+        </div>
+
+        {% if tinypal['state'] == 'add_note' %}
+        <label class="journal-field-label" for="journal-title">Title</label>
+        <input id="journal-title"
+               class="journal-input"
+               type="text"
+               value="{{ tinypal['form']['title'] }}"
+               placeholder="Give your note a title"
+               data-class="input_field"
+               data-semantic="journal_title_input">
+
+        <label class="journal-field-label" for="journal-body">Note</label>
+        <textarea id="journal-body"
+                  class="journal-input"
+                  placeholder="What would you like to share?"
+                  data-class="input_field"
+                  data-semantic="journal_body_input">{{ tinypal['form']['body'] }}</textarea>
+
+        <p class="journal-field-label">Category</p>
+        <div class="journal-categories">
+            {% for category in tinypal['categories'] %}
+            <button type="button"
+                    class="journal-category {{ 'active' if category['id'] == tinypal['form']['category'] else '' }}"
+                    aria-pressed="{{ 'true' if category['id'] == tinypal['form']['category'] else 'false' }}"
+                    data-class="chip"
+                    data-semantic="journal_form_category_{{ category['id'] }}">
+                {{ category['label'] }}
+            </button>
+            {% endfor %}
+        </div>
+
+        <button type="button"
+                class="journal-pin-choice"
+                aria-pressed="{{ 'true' if tinypal['form']['pinned'] else 'false' }}"
+                data-class="button"
+                data-semantic="journal_form_pin">
+            {{ icon(
+                'check_box' if tinypal['form']['pinned'] else 'check_box_outline_blank',
+                'journal_form_pin_checkbox',
+                'checkbox'
+            ) }}
+            Pin this note
+        </button>
+
+        <div class="journal-dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="journal_add_cancel">Cancel</button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="journal_add_save">Save note</button>
+        </div>
+
+        {% elif tinypal['state'] == 'note_details' %}
+        {% set note = tinypal['selected_note'] %}
+
+        <span class="note-symbol" data-class="button">
+            {{ icon(note['icon'], 'journal_detail_category_icon') }}
+        </span>
+
+        <h3 class="journal-detail-title">{{ note['title'] }}</h3>
+        <p class="journal-muted">{{ note['body'] }}</p>
+
+        <div class="note-tasks">
+            {% for task in note['tasks'] %}
+            <button type="button"
+                    class="note-task {{ 'done' if task['done'] else '' }}"
+                    aria-pressed="{{ 'true' if task['done'] else 'false' }}"
+
+                    data-semantic="detail_{{ task['id'] }}">
+                {{ icon(
+                    'check_box' if task['done'] else 'check_box_outline_blank',
+                    'detail_' ~ task['id'] ~ '_checkbox',
+                    'checkbox'
+                ) }}
+                <span class="task-copy">{{ task['title'] }}</span>
+            </button>
+            {% endfor %}
+        </div>
+
+        <p class="journal-muted">
+            {{ note['author'] }} · Updated {{ note['updated']|lower }}
+        </p>
+
+        <div class="journal-dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="journal_detail_delete">
+                {{ icon('delete', 'journal_detail_delete_icon') }}
+                Delete
+            </button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="journal_detail_edit">
+                {{ icon('edit', 'journal_detail_edit_icon') }}
+                Edit note
+            </button>
+        </div>
+
+        {% else %}
+        <p class="journal-muted">
+            Remove “{{ tinypal['selected_note']['title'] }}”
+            from the shared family journal.
+        </p>
+
+        <div class="journal-dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="journal_delete_cancel">Keep note</button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="journal_delete_confirm">
+                {{ icon('delete', 'journal_delete_confirm_icon') }}
+                Delete note
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

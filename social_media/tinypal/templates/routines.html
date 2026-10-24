@@ -1,0 +1,911 @@
+{% extends "base.html" %}
+
+{% block title %}Tinypal — Routine Planner{% endblock %}
+
+{% block head %}
+<style>
+    .planner {
+        max-width: 1400px;
+        margin: auto;
+        padding: 24px 28px 100px;
+    }
+
+    .planner-header, .planner-heading, .planner-nav,
+    .month-row, .routine-row, .routine-info,
+    .popup-heading, .popup-actions, .setting-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .planner-header, .planner-heading, .month-row,
+    .popup-heading, .setting-row {
+        justify-content: space-between;
+    }
+
+    .planner-header { margin-bottom: 24px; }
+
+    .planner-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 23px;
+        font-weight: 800;
+    }
+
+    .planner-symbol, .routine-symbol {
+        display: inline-flex;
+        padding: 10px;
+        border-radius: 14px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        flex-shrink: 0;
+    }
+
+    .planner-nav {
+        padding: 8px;
+        margin-bottom: 28px;
+        border-radius: 16px;
+        background: var(--surface);
+    }
+
+    .planner-nav button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 18px;
+        border-radius: 12px;
+        color: var(--on-surface);
+    }
+
+    .planner-nav button.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .planner-heading {
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+
+    .planner-heading h1 {
+        font-size: clamp(26px, 3vw, 36px);
+        margin-bottom: 9px;
+    }
+
+    .muted { color: var(--text-secondary); }
+
+    .planner-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .planner-content { min-width: 0; }
+
+    .panel {
+        padding: 22px;
+        margin-bottom: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .month-row { margin-bottom: 18px; }
+
+    .month-controls { display: flex; gap: 4px; }
+
+    .week-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .day-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 4px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--on-surface);
+        min-width: 0;
+        position: relative;
+    }
+
+    .day-button strong { font-size: 20px; }
+
+    .day-button.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .selected-day-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .period-section { margin-bottom: 24px; }
+
+    .period-section > h2 {
+        font-size: 20px;
+        margin-bottom: 14px;
+    }
+
+    .routine-card {
+        padding: 18px;
+        margin-bottom: 14px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .routine-info { flex: 1; min-width: 0; }
+
+    .routine-copy { min-width: 0; }
+    .routine-copy h3 { font-size: 18px; margin-bottom: 6px; }
+    .routine-copy p { line-height: 1.5; }
+
+    .routine-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .routine-meta > span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .routine-meta .material-symbols-rounded {
+        font-size: 18px;
+        color: var(--icon);
+    }
+
+    .routine-note {
+        margin-top: 12px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+    }
+
+    .completed-label {
+        display: inline-flex;
+        padding: 5px 9px;
+        border-radius: 20px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 12px;
+    }
+
+    .summary-person {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .summary-person small {
+        display: block;
+        margin-top: 5px;
+        color: var(--text-secondary);
+    }
+
+    .progress-track {
+        height: 12px;
+        margin: 18px 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        overflow: hidden;
+        background: var(--surface);
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--icon);
+    }
+
+    .summary-text { line-height: 1.6; }
+
+    .planner-tip {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .planner-tip h3 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .planner-tip p { line-height: 1.7; }
+
+    .empty-plan {
+        text-align: center;
+        padding: 44px 20px;
+    }
+
+    .empty-plan > .material-symbols-rounded {
+        font-size: 48px;
+        margin-bottom: 16px;
+        color: var(--icon);
+    }
+
+    .empty-plan p { margin: 12px 0 22px; line-height: 1.6; }
+
+    .mobile-planner-nav { display: none; }
+
+    .planner-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(0, 0, 0, 0.45);
+    }
+
+    .planner-popup {
+        width: min(100%, 480px);
+        max-height: calc(100dvh - 36px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .popup-heading { margin-bottom: 18px; }
+    .popup-heading h2 { font-size: 23px; }
+
+    .planner-field { display: block; margin-bottom: 14px; }
+
+    .planner-field > span {
+        display: block;
+        margin-bottom: 7px;
+        font-weight: 700;
+    }
+
+    .field-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+    }
+
+    .field-control .material-symbols-rounded { color: var(--icon); }
+
+    .field-control input {
+        flex: 1;
+        width: 100%;
+        min-width: 0;
+        padding: 12px 0;
+        border: 0;
+        outline: none;
+        background: transparent;
+    }
+
+    .planner-field textarea {
+        width: 100%;
+        min-height: 65px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        resize: none;
+    }
+
+    .field-control input::placeholder,
+    .planner-field textarea::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .repeat-button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        padding: 13px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .repeat-button > span {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .setting-row { padding: 14px 0; }
+
+    .reminder-switch {
+        width: 48px;
+        height: 28px;
+        padding: 3px;
+        border: 1px solid var(--border);
+        border-radius: 30px;
+        background: var(--surface-variant);
+        flex-shrink: 0;
+    }
+
+    .reminder-switch.enabled {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .switch-thumb {
+        display: block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--on-surface-variant);
+    }
+
+    .enabled .switch-thumb {
+        margin-left: auto;
+        background: var(--on-primary);
+    }
+
+    .repeat-day {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 13px 0;
+        border-bottom: 1px solid var(--border-subtle);
+        text-align: left;
+        color: var(--on-surface);
+    }
+
+    .repeat-day .material-symbols-rounded { color: var(--icon); }
+
+    .popup-actions {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 18px;
+    }
+
+    .popup-description {
+        line-height: 1.6;
+        color: var(--text-secondary);
+    }
+
+    .danger-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 16px;
+        border-radius: 12px;
+        background: var(--error);
+        color: var(--on-error);
+        font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+        .planner-layout { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+        .planner { padding: 16px 14px 100px; }
+        .planner-brand { font-size: 20px; }
+        .planner-nav { display: none; }
+        .planner-heading { flex-direction: column; gap: 16px; }
+        .planner-heading > button { width: 100%; }
+        .panel { padding: 16px; }
+        .week-grid { gap: 4px; }
+        .day-button { padding: 12px 2px; font-size: 11px; }
+        .day-button strong { font-size: 17px; }
+        .routine-card { padding: 14px; }
+        .routine-row { gap: 7px; }
+        .routine-symbol { padding: 7px; }
+        .routine-copy h3 { font-size: 16px; }
+        .routine-copy p { font-size: 13px; }
+
+        .mobile-planner-nav {
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: var(--bottom-chrome);
+            z-index: 30;
+            padding: 8px 4px;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .mobile-planner-nav button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: var(--on-surface);
+        }
+
+        .mobile-planner-nav button.active {
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+        }
+
+        .planner-popup { padding: 18px; }
+
+        .planner-modal.sheet {
+            padding: 0;
+            align-items: flex-end;
+        }
+
+        .sheet .planner-popup {
+            width: 100%;
+            max-height: 92dvh;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .popup-actions > button { flex: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div
+    class="planner"
+    data-annotation-skip="{{ 'true'
+        if tinypal['popup_visible'] else 'false' }}"
+>
+    <header class="planner-header" data-class="app_bar">
+        <div class="planner-brand">
+            <span class="planner-symbol" data-class="logo">
+                {{ icon('child_care', 'planner_brand') }}
+            </span>
+            Tinypal
+        </div>
+
+        <button
+            type="button"
+            class="icon-button"
+
+            aria-label="Routine settings"
+        >
+            {{ icon('settings', 'planner_settings') }}
+        </button>
+    </header>
+
+    <nav class="planner-nav" data-class="navigation_bar">
+        {% for item in tinypal['navigation'] %}
+        <button
+            type="button"
+            class="{{ 'active' if item['active'] else '' }}"
+            data-class="button"
+        >
+            {{ icon(item['icon'], 'planner_desktop_nav_' ~ loop.index) }}
+            {{ item['label'] }}
+        </button>
+        {% endfor %}
+    </nav>
+
+    <div class="planner-heading" data-class="section">
+        <div>
+            <h1>Routine planner</h1>
+            <p class="muted">
+                A little structure for {{ tinypal['selected_child']['name'] }}’s day.
+            </p>
+        </div>
+
+        <button type="button" class="primary-button" data-class="button">
+            {{ icon('add', 'planner_add_routine') }}
+            Add routine
+        </button>
+    </div>
+
+    <div class="planner-layout">
+        <main class="planner-content">
+            <section class="panel" data-class="section">
+                <div class="month-row">
+                    <strong>{{ tinypal['month_label'] }}</strong>
+                    <div class="month-controls">
+                        <button
+                            type="button"
+                            class="icon-button"
+
+                            aria-label="Previous week"
+                        >
+                            {{ icon('chevron_left', 'planner_previous_week') }}
+                        </button>
+                        <button
+                            type="button"
+                            class="icon-button"
+
+                            aria-label="Next week"
+                        >
+                            {{ icon('chevron_right', 'planner_next_week') }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="week-grid">
+                    {% for day in tinypal['week_days'] %}
+                    <button
+                        type="button"
+                        class="day-button {{ 'selected'
+                            if day['selected'] else '' }}"
+                        data-class="button"
+                        aria-label="{{ day['date'] }}"
+                        aria-pressed="{{ 'true'
+                            if day['selected'] else 'false' }}"
+                    >
+                        <span>{{ day['label'] }}</span>
+                        <strong>{{ day['number'] }}</strong>
+                        {% if day['selected'] %}
+                        <span
+                            class="selected-day-dot"
+                            data-class="selection_indicator"
+                        ></span>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% for group in tinypal['groups'] %}
+            <section class="period-section" data-class="section">
+                <h2>{{ group['label'] }}</h2>
+
+                {% for routine in group['routines'] %}
+                <article class="routine-card" data-class="card">
+                    <div class="routine-row">
+                        <span class="routine-symbol" data-class="button">
+                            {{ icon(routine['icon'], routine['id'] ~ '_type') }}
+                        </span>
+
+                        <div class="routine-info">
+                            <div class="routine-copy">
+                                <h3>{{ routine['title'] }}</h3>
+                                <p class="muted">
+                                    {{ routine['time'] }} ·
+                                    {{ routine['duration'] }} min
+                                </p>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="icon-button"
+
+                            aria-label="Complete {{ routine['title'] }}"
+                            aria-pressed="{{ 'true'
+                                if routine['completed'] else 'false' }}"
+                        >
+                            {{ icon(
+                                'check_box'
+                                    if routine['completed']
+                                    else 'check_box_outline_blank',
+                                routine['id'] ~ '_completed',
+                                'checkbox'
+                            ) }}
+                        </button>
+
+                        <button
+                            type="button"
+                            class="icon-button"
+
+                            aria-label="Edit {{ routine['title'] }}"
+                        >
+                            {{ icon('more_horiz', routine['id'] ~ '_options') }}
+                        </button>
+                    </div>
+
+                    <div class="routine-meta">
+                        <span>
+                            {{ icon('repeat', routine['id'] ~ '_repeat') }}
+                            {{ routine['repeat_label'] }}
+                        </span>
+
+                        {% if routine['reminder'] %}
+                        <span>
+                            {{ icon(
+                                'notifications_active',
+                                routine['id'] ~ '_reminder'
+                            ) }}
+                            Reminder on
+                        </span>
+                        {% endif %}
+
+                        {% if routine['completed'] %}
+                        <span class="completed-label" data-class="badge">
+                            Completed
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if routine['note'] %}
+                    <p class="routine-note">{{ routine['note'] }}</p>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </section>
+            {% else %}
+            <article class="panel empty-plan" data-class="card">
+                {{ icon('event_available', 'planner_empty') }}
+                <h2>A day with room to plan</h2>
+                <p class="muted">Add a routine whenever you’re ready.</p>
+                <button type="button" class="primary-button" data-class="button">
+                    {{ icon('add', 'planner_empty_add') }}
+                    Add first routine
+                </button>
+            </article>
+            {% endfor %}
+        </main>
+
+        <aside>
+            <article class="panel" data-class="card">
+                <div class="summary-person">
+                    {{ avatar(tinypal['selected_child']) }}
+                    <span>
+                        <strong>{{ tinypal['selected_child']['name'] }}</strong>
+                        <small>{{ tinypal['selected_child']['age'] }}</small>
+                    </span>
+                </div>
+
+                <h2>Today’s progress</h2>
+
+                <div
+                    class="progress-track"
+                    data-class="progress_bar"
+                    role="progressbar"
+                    aria-label="Completed routines"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="{{ tinypal['progress'] }}"
+                >
+                    <div
+                        class="progress-fill"
+                        style="width: {{ tinypal['progress'] }}%"
+                    ></div>
+                </div>
+
+                <p class="summary-text muted">
+                    {{ tinypal['completed_count'] }} of
+                    {{ tinypal['total_count'] }} routines completed
+                </p>
+            </article>
+
+            <article class="panel planner-tip" data-class="card">
+                <h3>
+                    {{ icon('lightbulb', 'planner_tip') }}
+                    Make room for changes
+                </h3>
+                <p>
+                    Your plan can change with your family’s day.
+                    Edit times or skip an activity when needed.
+                </p>
+            </article>
+        </aside>
+    </div>
+
+    <nav
+        class="mobile-planner-nav"
+        data-class="navigation_bar"
+        data-occluder="{{ 'false' if tinypal['popup_visible'] else 'true' }}"
+
+    >
+        {% for item in tinypal['navigation'] %}
+        <button
+            type="button"
+            class="{{ 'active' if item['active'] else '' }}"
+            data-class="button"
+        >
+            {{ icon(item['icon'], 'planner_mobile_nav_' ~ loop.index) }}
+            {{ item['label'] }}
+        </button>
+        {% endfor %}
+    </nav>
+</div>
+
+{% if tinypal['popup_visible'] %}
+<div
+    class="planner-modal {{ 'sheet'
+        if tinypal['popup_kind'] == 'repeat_sheet' else '' }}"
+>
+    <section
+        class="planner-popup"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="planner-popup-title"
+        data-class="{{ 'bottom_sheet'
+            if tinypal['popup_kind'] == 'repeat_sheet'
+            else 'dialog' }}"
+        data-semantic="{{ tinypal['popup_kind'] }}"
+        data-occluder="true"
+    >
+        <div class="popup-heading">
+            <h2 id="planner-popup-title">
+                {% if tinypal['popup_kind'] == 'add_routine' %}
+                Add routine
+                {% elif tinypal['popup_kind'] == 'edit_routine' %}
+                Edit routine
+                {% elif tinypal['popup_kind'] == 'repeat_sheet' %}
+                Repeat days
+                {% else %}
+                Delete routine?
+                {% endif %}
+            </h2>
+
+            <button
+                type="button"
+                class="icon-button"
+
+                aria-label="Close dialog"
+            >
+                {{ icon('close', 'planner_popup_close') }}
+            </button>
+        </div>
+
+        {% if tinypal['popup_kind'] in ['add_routine', 'edit_routine'] %}
+        {% set form = tinypal['form'] %}
+
+        <label class="planner-field">
+            <span>Routine name</span>
+            <div class="field-control" data-class="input_field"
+                    data-semantic="routine_name">
+                {{ icon('event_note', 'routine_name_icon') }}
+                <input
+                    type="text"
+                    value="{{ form['title'] }}"
+
+                >
+            </div>
+        </label>
+
+        <label class="planner-field">
+            <span>Time</span>
+            <div class="field-control" data-class="input_field"
+                    data-semantic="routine_time">
+                {{ icon('schedule', 'routine_time_icon') }}
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    value="{{ form['time'] }}"
+                    placeholder="HH:MM"
+
+                >
+            </div>
+        </label>
+
+        <label class="planner-field">
+            <span>Duration</span>
+            <div class="field-control" data-class="input_field"
+                    data-semantic="routine_duration">
+                {{ icon('timer', 'routine_duration_icon') }}
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    value="{{ form['duration'] }}"
+
+                >
+                <span>min</span>
+            </div>
+        </label>
+
+        <div class="planner-field">
+            <span>Repeat</span>
+            <button
+                type="button"
+                class="repeat-button"
+                data-class="button"
+            >
+                <span>
+                    {{ icon('repeat', 'routine_repeat_icon') }}
+                    {{ form['repeat_label'] }}
+                </span>
+                {{ icon('expand_more', 'routine_repeat_dropdown') }}
+            </button>
+        </div>
+
+        <div class="setting-row">
+            <strong>Remind me</strong>
+            <button
+                type="button"
+                class="reminder-switch {{ 'enabled'
+                    if form['reminder'] else '' }}"
+                role="switch"
+                aria-label="Routine reminder"
+                aria-checked="{{ 'true'
+                    if form['reminder'] else 'false' }}"
+                data-class="switch"
+                data-semantic="routine_reminder_switch"
+            >
+                <span class="switch-thumb"></span>
+            </button>
+        </div>
+
+        <label class="planner-field">
+            <span>Note</span>
+            <textarea
+                placeholder="Add a note"
+                data-class="input_field"
+                data-semantic="routine_note"
+            >{{ form['note'] }}</textarea>
+        </label>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Cancel
+            </button>
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('save', 'routine_save') }}
+                Save routine
+            </button>
+        </div>
+
+        {% elif tinypal['popup_kind'] == 'repeat_sheet' %}
+        {% for day in tinypal['repeat_days'] %}
+        <button
+            type="button"
+            class="repeat-day"
+            data-class="button"
+            aria-pressed="{{ 'true' if day['selected'] else 'false' }}"
+        >
+            {{ day['label'] }}
+            {{ icon(
+                'check_box'
+                    if day['selected']
+                    else 'check_box_outline_blank',
+                'repeat_day_' ~ day['id'],
+                'checkbox'
+            ) }}
+        </button>
+        {% endfor %}
+
+        <div class="popup-actions">
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('save', 'repeat_days_save') }}
+                Save days
+            </button>
+        </div>
+
+        {% else %}
+        <p class="popup-description">
+            Delete “{{ tinypal['selected_routine']['title'] }}”
+            from your routine plan?
+        </p>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Keep routine
+            </button>
+            <button type="button" class="danger-button" data-class="button">
+                {{ icon('delete', 'routine_confirm_delete') }}
+                Delete
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

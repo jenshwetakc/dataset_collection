@@ -1,0 +1,1025 @@
+{% extends "base.html" %}
+
+{% block title %}Tinypal — Activity History{% endblock %}
+
+{% block head %}
+<style>
+    .history-shell {
+        max-width: 1440px;
+        margin: auto;
+        padding: 24px 28px 100px;
+    }
+
+    .history-header, .history-heading, .history-actions,
+    .history-child, .history-nav, .history-toolbar,
+    .history-tabs, .record-main, .record-footer,
+    .popup-heading, .popup-actions, .filter-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .history-header, .history-heading,
+    .record-footer, .popup-heading {
+        justify-content: space-between;
+    }
+
+    .history-header { margin-bottom: 24px; }
+
+    .history-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 23px;
+        font-weight: 800;
+    }
+
+    .brand-symbol, .record-symbol {
+        display: inline-flex;
+        padding: 12px;
+        border-radius: 14px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        flex-shrink: 0;
+    }
+
+    .history-child {
+        padding: 6px 12px 6px 6px;
+        border: 1px solid var(--border);
+        border-radius: 30px;
+        background: var(--surface);
+    }
+
+    .history-child small {
+        display: block;
+        margin-top: 3px;
+        color: var(--text-secondary);
+    }
+
+    .history-nav {
+        padding: 8px;
+        border-radius: 16px;
+        background: var(--surface);
+        margin-bottom: 28px;
+    }
+
+    .history-nav button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 18px;
+        border-radius: 12px;
+        color: var(--on-surface);
+    }
+
+    .history-nav button.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .history-heading {
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+
+    .history-heading h1 {
+        font-size: clamp(26px, 3vw, 36px);
+        margin-bottom: 8px;
+    }
+
+    .muted { color: var(--text-secondary); }
+
+    .history-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .history-content { min-width: 0; }
+
+    .history-toolbar { margin-bottom: 18px; }
+
+    .search-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+        padding: 0 14px;
+        border: 1px solid var(--border);
+        border-radius: 13px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .search-control > .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .search-control input {
+        width: 100%;
+        padding: 14px 0;
+        border: 0;
+        outline: none;
+        background: transparent;
+    }
+
+    .search-control input::placeholder,
+    .edit-control input::placeholder,
+    textarea::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .history-tabs {
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .history-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 42px;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 30px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .history-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .results-label { margin-bottom: 20px; }
+
+    .day-group { margin-bottom: 26px; }
+
+    .day-group > h2 {
+        margin-bottom: 14px;
+        font-size: 19px;
+    }
+
+    .timeline {
+        display: grid;
+        gap: 14px;
+    }
+
+    .record-card {
+        padding: 18px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 17px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .record-main {
+        align-items: flex-start;
+    }
+
+    .record-description { flex: 1; min-width: 0; }
+
+    .record-description h3 { font-size: 17px; margin-bottom: 5px; }
+
+    .record-value {
+        display: inline-flex;
+        padding: 5px 9px;
+        border-radius: 20px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .record-footer {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-subtle);
+        font-size: 13px;
+    }
+
+    .record-footer .caregiver {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-secondary);
+    }
+
+    .record-footer .caregiver .material-symbols-rounded {
+        color: var(--icon);
+        font-size: 18px;
+    }
+
+    .record-note {
+        margin-top: 12px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+    }
+
+    .text-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 32px;
+        color: var(--on-surface);
+        font-weight: 700;
+    }
+
+    .side-panel {
+        padding: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+        margin-bottom: 20px;
+    }
+
+    .side-panel h2 { font-size: 20px; margin-bottom: 8px; }
+
+    .summary-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .summary-row > .material-symbols-rounded { color: var(--icon); }
+
+    .summary-row strong { display: block; margin-top: 4px; }
+
+    .side-panel p { line-height: 1.6; }
+
+    .side-panel .secondary-button {
+        width: 100%;
+        margin-top: 18px;
+    }
+
+    .empty-panel {
+        text-align: center;
+        padding: 48px 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .empty-panel > .material-symbols-rounded {
+        font-size: 48px;
+        margin-bottom: 16px;
+        color: var(--icon);
+    }
+
+    .empty-panel p { margin: 12px 0 20px; line-height: 1.6; }
+
+    .mobile-history-nav { display: none; }
+
+    .modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(0, 0, 0, 0.45);
+    }
+
+    .history-popup {
+        width: min(100%, 500px);
+        max-height: calc(100dvh - 36px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+        box-shadow: 0 20px 70px rgba(0, 0, 0, 0.22);
+    }
+
+    .popup-heading { margin-bottom: 14px; }
+
+    .popup-heading h2 { font-size: 22px; }
+
+    .popup-description {
+        margin-bottom: 20px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .filter-title { margin: 18px 0 10px; }
+
+    .filter-option {
+        width: 100%;
+        padding: 12px 0;
+        text-align: left;
+        justify-content: space-between;
+    }
+
+    .filter-option .option-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .filter-option .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .edit-field { display: block; margin-bottom: 16px; }
+
+    .edit-field > span {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .edit-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+    }
+
+    .edit-control input {
+        flex: 1;
+        width: 100%;
+        padding: 13px 0;
+        border: 0;
+        outline: none;
+        background: transparent;
+    }
+
+    .edit-control .material-symbols-rounded { color: var(--icon); }
+
+    .dropdown-button {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        text-align: left;
+    }
+
+    textarea {
+        width: 100%;
+        min-height: 90px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        resize: none;
+    }
+
+    .popup-actions {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 22px;
+    }
+
+    .detail-hero {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 18px;
+        margin-bottom: 20px;
+        border-radius: 16px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .detail-hero strong { display: block; font-size: 24px; margin-top: 6px; }
+
+    .detail-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .detail-row > .material-symbols-rounded { color: var(--icon); }
+
+    .detail-row small {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--text-secondary);
+    }
+
+    .delete-symbol {
+        display: inline-flex;
+        padding: 14px;
+        margin-bottom: 18px;
+        border-radius: 50%;
+        background: var(--error);
+        color: var(--on-error);
+    }
+
+    .danger-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 16px;
+        border-radius: 12px;
+        background: var(--error);
+        color: var(--on-error);
+        font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+        .history-layout { grid-template-columns: minmax(0, 1fr); }
+        .history-sidebar {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .history-shell { padding: 16px 14px 100px; }
+        .history-brand { font-size: 20px; }
+        .history-actions .history-child { display: none; }
+        .history-nav { display: none; }
+        .history-heading { flex-direction: column; gap: 16px; }
+        .history-heading .primary-button { width: 100%; }
+        .history-toolbar { flex-wrap: wrap; }
+        .search-control { flex-basis: 100%; }
+        .history-tabs { gap: 7px; }
+        .history-tab { padding: 9px 11px; font-size: 13px; }
+        .history-sidebar { grid-template-columns: minmax(0, 1fr); }
+        .record-card { padding: 14px; }
+        .record-main { flex-wrap: wrap; }
+        .record-value { margin-left: 0; }
+        .record-symbol { padding: 9px; }
+
+        .mobile-history-nav {
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: var(--bottom-chrome);
+            z-index: 30;
+            padding: 8px 4px;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .mobile-history-nav button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: var(--on-surface);
+        }
+
+        .mobile-history-nav button.active {
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+        }
+
+        .modal-layer.sheet-layer {
+            align-items: flex-end;
+            padding: 0;
+        }
+
+        .sheet-layer .history-popup {
+            width: 100%;
+            max-height: 92dvh;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .history-popup { padding: 18px; }
+        .popup-actions > button { flex: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div
+    class="history-shell"
+    data-annotation-skip="{{ 'true'
+        if tinypal['popup_visible'] else 'false' }}"
+>
+    <header class="history-header" data-class="app_bar">
+        <div class="history-brand" >
+            <span class="brand-symbol" data-class="logo">
+                {{ icon('child_care', 'history_brand') }}
+            </span>
+            Tinypal
+        </div>
+
+        <div class="history-actions">
+            <button
+                type="button"
+                class="history-child"
+                data-class="button"
+                aria-label="Switch child"
+            >
+                {{ avatar(tinypal['selected_child']) }}
+                <span>
+                    <strong>{{ tinypal['selected_child']['name'] }}</strong>
+                    <small>{{ tinypal['selected_child']['age'] }}</small>
+                </span>
+                {{ icon('expand_more', 'history_child_dropdown') }}
+            </button>
+
+            <button
+                type="button"
+                class="icon-button"
+                aria-label="More options"
+            >
+                {{ icon('more_horiz', 'history_more') }}
+            </button>
+        </div>
+    </header>
+
+    <nav class="history-nav" data-class="navigation_bar">
+        {% for item in tinypal['navigation'] %}
+        <button
+            type="button"
+            class="{{ 'active' if item['active'] else '' }}"
+            data-class="button"
+        >
+            {{ icon(item['icon'], 'history_desktop_nav_' ~ loop.index) }}
+            {{ item['label'] }}
+        </button>
+        {% endfor %}
+    </nav>
+
+    <div class="history-heading" data-class="section">
+        <div>
+            <h1>Activity history</h1>
+            <p class="muted">
+                {{ tinypal['selected_child']['name'] }}’s recorded moments,
+                all in one place.
+            </p>
+        </div>
+
+        <button type="button" class="primary-button" data-class="button">
+            {{ icon('add', 'history_add') }}
+            Add record
+        </button>
+    </div>
+
+    <div class="history-layout" data-class="section">
+        <main class="history-content">
+            <div class="history-toolbar">
+                <div class="search-control" data-class="search_bar">
+                    {{ icon('search', 'history_search') }}
+                    <input
+                        type="text"
+                        value="{{ tinypal['query'] }}"
+                        placeholder="Search records"
+                        aria-label="Search records"
+                    >
+                    {% if tinypal['query'] %}
+                    <button
+                        type="button"
+                        class="icon-button"
+
+                        aria-label="Clear search"
+                    >
+                        {{ icon('close', 'history_clear_search') }}
+                    </button>
+                    {% endif %}
+                </div>
+
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-class="button"
+                >
+                    {{ icon('calendar_month', 'history_date') }}
+                    {{ tinypal['date_range'] }}
+                    {{ icon('expand_more', 'history_date_dropdown') }}
+                </button>
+
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-class="button"
+                >
+                    {{ icon('tune', 'history_filters') }}
+                    Filters
+                </button>
+            </div>
+
+            <div class="history-tabs" role="tablist" aria-label="Record categories">
+                {% for category in tinypal['categories'] %}
+                <button
+                    type="button"
+                    role="tab"
+                    class="history-tab {{ 'active'
+                        if category['id'] == tinypal['selected_category']
+                        else '' }}"
+                    data-class="tab"
+                    aria-selected="{{ 'true'
+                        if category['id'] == tinypal['selected_category']
+                        else 'false' }}"
+                >
+                    {{ icon(
+                        category['icon'],
+                        'history_category_' ~ category['id']
+                    ) }}
+                    {{ category['label'] }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <p class="results-label muted">
+                {{ tinypal['result_count'] }} records
+            </p>
+
+            {% for group in tinypal['groups'] %}
+            <section class="day-group" data-class="section">
+                <h2>{{ group['label'] }}</h2>
+
+                <div class="timeline">
+                    {% for record in group['records'] %}
+                    <article
+                        class="record-card"
+                        data-class="card"
+                        data-semantic="{{ record['id'] }}"
+                    >
+                        <div class="record-main">
+                            <span class="record-symbol" data-class="button">
+                                {{ icon(
+                                    record['icon'],
+                                    record['id'] ~ '_type'
+                                ) }}
+                            </span>
+
+                            <div class="record-description">
+                                <h3>{{ record['title'] }}</h3>
+                                <p class="muted">{{ record['time'] }}</p>
+                            </div>
+
+                            <span class="record-value" data-class="badge">
+                                {{ record['value'] }}
+                            </span>
+
+                            <button
+                                type="button"
+                                class="icon-button"
+
+                                aria-label="Options for {{ record['title'] }}"
+                            >
+                                {{ icon(
+                                    'more_horiz',
+                                    record['id'] ~ '_options'
+                                ) }}
+                            </button>
+                        </div>
+
+                        {% if record['note'] %}
+                        <p class="record-note">{{ record['note'] }}</p>
+                        {% endif %}
+
+                        <div class="record-footer">
+                            <span class="caregiver">
+                                {{ icon(
+                                    'person',
+                                    record['id'] ~ '_caregiver'
+                                ) }}
+                                {{ record['caregiver'] }}
+                            </span>
+
+                            <button
+                                type="button"
+                                class="text-button"
+                                data-class="button"
+                            >
+                                Details
+                                {{ icon(
+                                    'chevron_right',
+                                    record['id'] ~ '_details'
+                                ) }}
+                            </button>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+            {% else %}
+            <article class="empty-panel" data-class="card">
+                {{ icon('search_off', 'history_empty') }}
+                <h2>No matching records</h2>
+                <p class="muted">
+                    Try another search or clear the filters.
+                </p>
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-class="button"
+                >
+                    {{ icon('restart_alt', 'history_reset') }}
+                    Reset filters
+                </button>
+            </article>
+            {% endfor %}
+        </main>
+
+        <aside class="history-sidebar">
+            <section class="side-panel" data-class="section">
+                <h2>Displayed summary</h2>
+                <p class="muted">{{ tinypal['date_range'] }}</p>
+
+                {% for summary in tinypal['summary'] %}
+                <div class="summary-row">
+                    {{ icon(
+                        summary['icon'],
+                        'history_summary_' ~ loop.index
+                    ) }}
+                    <span>
+                        <span>{{ summary['title'] }}</span>
+                        <strong>
+                            {{ summary['value'] }} {{ summary['unit'] }}
+                        </strong>
+                    </span>
+                </div>
+                {% endfor %}
+            </section>
+
+            <article class="side-panel" data-class="card">
+                <h2>Your family record</h2>
+                <p class="muted">
+                    Keep a copy of the activities you have recorded.
+                </p>
+                <button
+                    type="button"
+                    class="secondary-button"
+                    data-class="button"
+                >
+                    {{ icon('download', 'history_export') }}
+                    Export records
+                </button>
+            </article>
+        </aside>
+    </div>
+
+    <nav
+        class="mobile-history-nav"
+        data-class="navigation_bar"
+        data-occluder="{{ 'false' if tinypal['popup_visible'] else 'true' }}"
+
+    >
+        {% for item in tinypal['navigation'] %}
+        <button
+            type="button"
+            class="{{ 'active' if item['active'] else '' }}"
+
+        >
+            {{ icon(item['icon'], 'history_mobile_nav_' ~ loop.index) }}
+            {{ item['label'] }}
+        </button>
+        {% endfor %}
+    </nav>
+</div>
+
+{% if tinypal['popup_visible'] %}
+{% set record = tinypal['selected_record'] %}
+<div
+    class="modal-layer {{ 'sheet-layer'
+        if tinypal['popup_kind'] == 'filter_sheet' else '' }}"
+>
+    <section
+        class="history-popup"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="history-popup-title"
+        data-class="{{ 'bottom_sheet'
+            if tinypal['popup_kind'] == 'filter_sheet'
+            else 'dialog' }}"
+        data-semantic="{{ tinypal['popup_kind'] }}"
+        data-occluder="true"
+    >
+        <div class="popup-heading">
+            <h2 id="history-popup-title">
+                {% if tinypal['popup_kind'] == 'filter_sheet' %}
+                Filter records
+                {% elif tinypal['popup_kind'] == 'record_details' %}
+                Record details
+                {% elif tinypal['popup_kind'] == 'edit_record' %}
+                Edit record
+                {% else %}
+                Delete record?
+                {% endif %}
+            </h2>
+
+            <button
+                type="button"
+                class="icon-button"
+
+                aria-label="Close dialog"
+            >
+                {{ icon('close', 'history_popup_close') }}
+            </button>
+        </div>
+
+        {% if tinypal['popup_kind'] == 'filter_sheet' %}
+        <p class="popup-description">
+            Choose the activities and caregivers to display.
+        </p>
+
+        <h3 class="filter-title">Activity types</h3>
+
+        {% for category in tinypal['categories'] %}
+        {% if category['id'] != 'all' %}
+        {% set checked = category['id'] in tinypal['filter_categories'] %}
+        <button
+            type="button"
+            class="filter-option"
+            data-class="button"
+            aria-pressed="{{ 'true' if checked else 'false' }}"
+        >
+            <span class="option-label">
+                {{ icon(
+                    category['icon'],
+                    'filter_type_' ~ category['id']
+                ) }}
+                {{ category['label'] }}
+            </span>
+
+            {{ icon(
+                'check_box' if checked else 'check_box_outline_blank',
+                'filter_checkbox_' ~ category['id'],
+                'checkbox'
+            ) }}
+        </button>
+        {% endif %}
+        {% endfor %}
+
+        <h3 class="filter-title">Caregiver</h3>
+
+        <button
+            type="button"
+            class="dropdown-button"
+            data-class="button"
+        >
+            {{ tinypal['caregiver_filter'] }}
+            {{ icon('expand_more', 'filter_caregiver_dropdown') }}
+        </button>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Reset
+            </button>
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('check', 'history_apply_filters') }}
+                Apply filters
+            </button>
+        </div>
+
+        {% elif tinypal['popup_kind'] == 'record_details' %}
+        <div class="detail-hero">
+            {{ icon(record['icon'], 'detail_activity_type') }}
+            <span>
+                {{ record['title'] }}
+                <strong>{{ record['value'] }}</strong>
+            </span>
+        </div>
+
+        <div class="detail-row">
+            {{ icon('calendar_month', 'detail_date') }}
+            <span><small>Date</small>{{ record['date'] }}</span>
+        </div>
+
+        <div class="detail-row">
+            {{ icon('schedule', 'detail_time') }}
+            <span><small>Time</small>{{ record['time'] }}</span>
+        </div>
+
+        <div class="detail-row">
+            {{ icon('person', 'detail_caregiver') }}
+            <span><small>Recorded by</small>{{ record['caregiver'] }}</span>
+        </div>
+
+        <div class="detail-row">
+            {{ icon('notes', 'detail_note') }}
+            <span>
+                <small>Notes</small>
+                {{ record['note'] or 'No note added' }}
+            </span>
+        </div>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                {{ icon('delete', 'detail_delete') }}
+                Delete
+            </button>
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('edit', 'detail_edit') }}
+                Edit record
+            </button>
+        </div>
+
+        {% elif tinypal['popup_kind'] == 'edit_record' %}
+        <p class="popup-description">
+            Update this {{ record['title']|lower }} record.
+        </p>
+
+        <label class="edit-field">
+            <span>Date</span>
+            <div  class="edit-control" data-class="input_field"
+                    data-semantic="edit_record_date">
+                {{ icon('calendar_month', 'edit_date_icon') }}
+                <input
+                    type="text"
+                    value="{{ record['date'] }}"
+                    placeholder="YYYY-MM-DD"
+
+                >
+            </div>
+        </label>
+
+        <label class="edit-field">
+            <span>Time</span>
+            <div class="edit-control"   data-class="input_field"
+                    data-semantic="edit_record_time">
+                {{ icon('schedule', 'edit_time_icon') }}
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    value="{{ record['time'] }}"
+                    placeholder="HH:MM"
+
+                >
+            </div>
+        </label>
+
+        <label class="edit-field" >
+            <span>Amount</span>
+            <div class="edit-control" data-class="input_field"
+                    data-semantic="edit_record_amount">
+                {{ icon('water_drop', 'edit_amount_icon') }}
+                <input
+                    type="text"
+                    inputmode="decimal"
+                    value="{{ record['amount'] }}"
+
+                >
+                <span>ml</span>
+            </div>
+        </label>
+
+        <label>
+            <span>Notes</span>
+            <textarea  class="edit-field" data-class="input_field"
+                data-semantic="edit_record_notes"
+                placeholder="Add a note"
+
+            >{{ record['note'] }}</textarea>
+        </label>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Cancel
+            </button>
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('check', 'edit_record_save') }}
+                Save changes
+            </button>
+        </div>
+
+        {% elif tinypal['popup_kind'] == 'delete_dialog' %}
+        <span class="delete-symbol" data-class="button">
+            {{ icon('delete', 'delete_confirmation_icon') }}
+        </span>
+
+        <p class="popup-description">
+            Delete the {{ record['title']|lower }} record from
+            {{ record['date'] }} at {{ record['time'] }}?
+            This record will be removed from the history.
+        </p>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Keep record
+            </button>
+            <button type="button" class="danger-button" data-class="button">
+                {{ icon('delete', 'confirm_delete_record') }}
+                Delete record
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

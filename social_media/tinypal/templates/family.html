@@ -1,0 +1,971 @@
+{% extends "base.html" %}
+
+{% block title %}Tinypal — Family & Caregivers{% endblock %}
+
+{% block head %}
+<style>
+    .family-shell {
+        max-width: 1400px;
+        margin: auto;
+        padding: 24px 28px 100px;
+    }
+
+    .family-header, .family-heading, .family-nav,
+    .family-tabs, .section-heading, .person-row,
+    .popup-heading, .popup-actions, .permission-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .family-header, .family-heading, .section-heading,
+    .popup-heading, .permission-row {
+        justify-content: space-between;
+    }
+
+    .family-header { margin-bottom: 24px; }
+
+    .family-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 23px;
+        font-weight: 800;
+    }
+
+    .family-brand-symbol {
+        display: inline-flex;
+        padding: 10px;
+        border-radius: 14px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .family-nav {
+        padding: 8px;
+        margin-bottom: 28px;
+        background: var(--surface);
+        border-radius: 16px;
+    }
+
+    .family-nav button, .family-tab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 18px;
+        border-radius: 12px;
+        color: var(--on-surface);
+    }
+
+    .family-nav .active, .family-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .family-heading {
+        align-items: flex-start;
+        margin-bottom: 26px;
+    }
+
+    .family-heading h1 {
+        font-size: clamp(26px, 3vw, 36px);
+        margin-bottom: 9px;
+    }
+
+    .muted { color: var(--text-secondary); }
+
+    .family-layout {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+    }
+
+    .family-panel {
+        padding: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+        margin-bottom: 22px;
+        min-width: 0;
+    }
+
+    .section-heading { margin-bottom: 18px; }
+    .section-heading h2 { font-size: 21px; }
+
+    .child-profile {
+        padding: 18px 0;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .person-row { align-items: flex-start; }
+    .person-info { flex: 1; min-width: 0; }
+
+    .person-info h3 { font-size: 18px; margin-bottom: 6px; }
+
+    .person-info p {
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+
+    .child-note {
+        margin: 14px 0;
+        line-height: 1.6;
+        color: var(--text-secondary);
+    }
+
+    .family-tabs {
+        width: fit-content;
+        padding: 6px;
+        margin-bottom: 22px;
+        border-radius: 14px;
+        background: var(--surface);
+        flex-wrap: wrap;
+    }
+
+    .member-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .member-card {
+        padding: 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+        min-width: 0;
+    }
+
+    .role-badge {
+        display: inline-flex;
+        padding: 5px 9px;
+        margin-top: 12px;
+        border-radius: 20px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .member-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .member-actions .secondary-button {
+        padding: 9px 12px;
+        font-size: 13px;
+    }
+
+    .owner-note {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 18px;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .owner-note .material-symbols-rounded { color: var(--icon); }
+
+    .invite-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        margin-bottom: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .invite-symbol {
+        display: inline-flex;
+        padding: 12px;
+        border-radius: 14px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .invite-copy { flex: 1; min-width: 0; }
+    .invite-copy h3 { margin-bottom: 6px; }
+    .invite-copy p { overflow-wrap: anywhere; }
+
+    .empty-family {
+        text-align: center;
+        padding: 30px 18px;
+        margin-top: 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .empty-family > .material-symbols-rounded {
+        font-size: 48px;
+        color: var(--icon);
+        margin-bottom: 14px;
+    }
+
+    .empty-family p {
+        margin: 12px 0 20px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+    }
+
+    .sharing-note {
+        margin-top: 22px;
+        padding: 22px;
+        border-radius: 18px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .sharing-note h3 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .sharing-note p { line-height: 1.7; }
+
+    .mobile-family-nav { display: none; }
+
+    .family-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(0, 0, 0, 0.45);
+    }
+
+    .family-popup {
+        width: min(100%, 500px);
+        max-height: calc(100dvh - 36px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .popup-heading {
+        margin-bottom: 16px;
+        align-items: flex-start;
+    }
+
+    .popup-heading h2 { font-size: 23px; line-height: 1.3; }
+
+    .popup-description {
+        margin-bottom: 20px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .family-field { display: block; margin-bottom: 16px; }
+
+    .family-field > span {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .family-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+    }
+
+    .family-control .material-symbols-rounded { color: var(--icon); }
+
+    .family-control input {
+        flex: 1;
+        width: 100%;
+        min-width: 0;
+        padding: 13px 0;
+        border: 0;
+        outline: none;
+        background: transparent;
+    }
+
+    .family-control input::placeholder,
+    .family-field textarea::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .family-field textarea {
+        width: 100%;
+        min-height: 85px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        resize: none;
+    }
+
+    .role-choice {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 14px;
+        margin-bottom: 10px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        text-align: left;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .role-choice.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .role-choice strong { display: block; }
+    .role-choice small { display: block; margin-top: 5px; }
+
+    .permission-person { margin-bottom: 20px; }
+
+    .permission-row {
+        padding: 17px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .permission-row small {
+        display: block;
+        margin-top: 6px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+    }
+
+    .permission-switch {
+        width: 48px;
+        height: 28px;
+        padding: 3px;
+        border-radius: 30px;
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+        background: var(--surface-variant);
+    }
+
+    .permission-switch.enabled {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .permission-thumb {
+        display: block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--on-surface-variant);
+    }
+
+    .enabled .permission-thumb {
+        margin-left: auto;
+        background: var(--on-primary);
+    }
+
+    .popup-actions {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 22px;
+    }
+
+    .remove-symbol {
+        display: inline-flex;
+        padding: 14px;
+        margin-bottom: 18px;
+        border-radius: 50%;
+        background: var(--error);
+        color: var(--on-error);
+    }
+
+    .danger-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 16px;
+        border-radius: 12px;
+        background: var(--error);
+        color: var(--on-error);
+        font-weight: 700;
+    }
+
+    @media (max-width: 1000px) {
+        .family-layout { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+        .family-shell { padding: 16px 14px 100px; }
+        .family-brand { font-size: 20px; }
+        .family-nav { display: none; }
+        .family-heading { flex-direction: column; gap: 16px; }
+        .family-heading > button { width: 100%; }
+        .family-panel { padding: 17px; }
+        .member-grid { grid-template-columns: minmax(0, 1fr); }
+        .family-tab { padding: 11px 13px; font-size: 13px; }
+        .invite-card { padding: 16px; }
+
+        .mobile-family-nav {
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: var(--bottom-chrome);
+            z-index: 30;
+            padding: 8px 4px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+        }
+
+        .mobile-family-nav button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: var(--on-surface);
+        }
+
+        .mobile-family-nav button.active {
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+        }
+
+        .family-popup { padding: 18px; }
+
+        .family-modal.sheet {
+            padding: 0;
+            align-items: flex-end;
+        }
+
+        .sheet .family-popup {
+            width: 100%;
+            max-height: 92dvh;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .popup-actions > button { flex: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div
+    class="family-shell"
+    data-annotation-skip="{{ 'true'
+        if tinypal['popup_visible'] else 'false' }}"
+>
+    <header class="family-header" data-class="app_bar">
+        <div class="family-brand">
+            <span class="family-brand-symbol" data-class="logo">
+                {{ icon('child_care', 'family_brand') }}
+            </span>
+            Tinypal
+        </div>
+
+        <button
+            type="button"
+            class="icon-button"
+
+            aria-label="Family settings"
+        >
+            {{ icon('settings', 'family_settings') }}
+        </button>
+    </header>
+
+    <nav class="family-nav" data-class="navigation_bar">
+        {% for item in tinypal['navigation'] %}
+        <button
+            type="button"
+            class="{{ 'active' if item['active'] else '' }}"
+            data-class="button"
+        >
+            {{ icon(item['icon'], 'family_desktop_nav_' ~ loop.index) }}
+            {{ item['label'] }}
+        </button>
+        {% endfor %}
+    </nav>
+
+    <div class="family-heading" data-class="section">
+        <div>
+            <h1>{{ tinypal['family_name'] }}</h1>
+            <p class="muted">Profiles, caregivers, and shared access.</p>
+        </div>
+
+        <button type="button" class="primary-button" data-class="button">
+            {{ icon('person_add', 'family_invite') }}
+            Invite caregiver
+        </button>
+    </div>
+
+    <div class="family-layout">
+        <aside>
+            <section class="family-panel" data-class="section">
+                <div class="section-heading">
+                    <h2>Children</h2>
+                    <button
+                        type="button"
+                        class="icon-button"
+
+                        aria-label="Add child"
+                    >
+                        {{ icon('add', 'family_add_child') }}
+                    </button>
+                </div>
+
+                {% for child in tinypal['children'] %}
+                <article class="child-profile" data-class="card">
+                    <div class="person-row">
+                        {{ avatar(child) }}
+                        <div class="person-info">
+                            <h3>{{ child['name'] }}</h3>
+                            <p class="muted">{{ child['age'] }}</p>
+                        </div>
+                    </div>
+
+                    <p class="child-note">{{ child['note'] }}</p>
+
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        data-class="button"
+                    >
+                        {{ icon('edit', child['id'] ~ '_edit') }}
+                        Edit profile
+                    </button>
+                </article>
+                {% endfor %}
+            </section>
+
+            <article class="sharing-note" data-class="card">
+                <h3>
+                    {{ icon('lock', 'family_sharing_lock') }}
+                    Shared with care
+                </h3>
+                <p>
+                    Choose what each caregiver can view and update
+                    in your family space.
+                </p>
+            </article>
+        </aside>
+
+        <main>
+            <div class="family-tabs" role="tablist" aria-label="Family access">
+                <button
+                    type="button"
+                    role="tab"
+                    class="family-tab {{ 'active'
+                        if tinypal['active_tab'] == 'members' else '' }}"
+                    data-class="tab"
+                    aria-selected="{{ 'true'
+                        if tinypal['active_tab'] == 'members' else 'false' }}"
+                >
+                    {{ icon('group', 'family_members_tab') }}
+                    Members
+                    <span data-class="badge">{{ tinypal['member_count'] }}</span>
+                </button>
+
+                <button
+                    type="button"
+                    role="tab"
+                    class="family-tab {{ 'active'
+                        if tinypal['active_tab'] == 'invites' else '' }}"
+                    data-class="tab"
+                    aria-selected="{{ 'true'
+                        if tinypal['active_tab'] == 'invites' else 'false' }}"
+                >
+                    {{ icon('mail', 'family_invites_tab') }}
+                    Invitations
+                    <span data-class="badge">{{ tinypal['invite_count'] }}</span>
+                </button>
+            </div>
+
+            {% if tinypal['active_tab'] == 'members' %}
+            <section data-class="section">
+                <div class="member-grid">
+                    {% for person in tinypal['caregivers'] %}
+                    <article class="member-card" data-class="card">
+                        <div class="person-row">
+                            {{ avatar(person) }}
+                            <div class="person-info">
+                                <h3>{{ person['name'] }}</h3>
+                                <p class="muted">{{ person['email'] }}</p>
+                                <span class="role-badge" data-class="badge">
+                                    {{ person['role'] }}
+                                </span>
+                            </div>
+                        </div>
+
+                        {% if person['owner'] %}
+                        <div class="owner-note">
+                            {{ icon('verified_user', 'family_owner_access') }}
+                            Manages family access
+                        </div>
+                        {% else %}
+                        <div class="member-actions">
+                            <button
+                                type="button"
+                                class="secondary-button"
+                                data-class="button"
+                            >
+                                {{ icon('tune', person['id'] ~ '_permissions') }}
+                                Permissions
+                            </button>
+
+                            <button
+                                type="button"
+                                class="icon-button"
+                                data-class="button"
+                                aria-label="Remove {{ person['name'] }}"
+                            >
+                                {{ icon('person_remove', person['id'] ~ '_remove') }}
+                            </button>
+                        </div>
+                        {% endif %}
+                    </article>
+                    {% endfor %}
+                </div>
+
+                {% if tinypal['additional_caregivers'] == 0 %}
+                <article class="empty-family" data-class="card">
+                    {{ icon('group_add', 'family_empty_caregivers') }}
+                    <h2>Bring your caregivers together</h2>
+                    <p>
+                        Invite someone to view or help record your child’s day.
+                    </p>
+                    <button
+                        type="button"
+                        class="primary-button"
+                        data-class="button"
+                    >
+                        {{ icon('person_add', 'family_empty_invite') }}
+                        Invite someone
+                    </button>
+                </article>
+                {% endif %}
+            </section>
+
+            {% else %}
+            <section data-class="section">
+                {% for invitation in tinypal['invitations'] %}
+                <article class="invite-card" data-class="card">
+                    <span class="invite-symbol" data-class="button">
+                        {{ icon('mail', invitation['id'] ~ '_mail') }}
+                    </span>
+
+                    <div class="invite-copy">
+                        <h3>{{ invitation['name'] }}</h3>
+                        <p class="muted">{{ invitation['email'] }}</p>
+
+                        <span class="role-badge" data-class="badge">
+                            {{ invitation['status'] }} · {{ invitation['role'] }}
+                        </span>
+
+                        <div class="member-actions">
+                            <button
+                                type="button"
+                                class="secondary-button"
+                                data-class="button"
+                            >
+                                {{ icon('send', invitation['id'] ~ '_resend') }}
+                                Resend
+                            </button>
+
+                            <button
+                                type="button"
+                                class="icon-button"
+                                data-class="button"
+                                aria-label="Cancel invitation"
+                            >
+                                {{ icon('close', invitation['id'] ~ '_cancel') }}
+                            </button>
+                        </div>
+                    </div>
+                </article>
+                {% else %}
+                <article class="empty-family" data-class="card">
+                    {{ icon('mail_outline', 'family_empty_invites') }}
+                    <h2>No pending invitations</h2>
+                    <p>Your invitation list is clear.</p>
+                </article>
+                {% endfor %}
+            </section>
+            {% endif %}
+        </main>
+    </div>
+
+    <nav
+        class="mobile-family-nav"
+        data-class="navigation_bar"
+         data-occluder="{{ 'false'
+            if tinypal['popup_visible']
+            else 'true' }}"
+    >
+        {% for item in tinypal['navigation'] %}
+        <button
+            type="button"
+            class="{{ 'active' if item['active'] else '' }}"
+
+        >
+            {{ icon(item['icon'], 'family_mobile_nav_' ~ loop.index) }}
+            {{ item['label'] }}
+        </button>
+        {% endfor %}
+    </nav>
+</div>
+
+{% if tinypal['popup_visible'] %}
+<div
+    class="family-modal {{ 'sheet'
+        if tinypal['popup_kind'] == 'permissions_sheet' else '' }}"
+>
+    <section
+        class="family-popup"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="family-popup-title"
+        data-class="{{ 'bottom_sheet'
+            if tinypal['popup_kind'] == 'permissions_sheet'
+            else 'dialog' }}"
+        data-semantic="{{ tinypal['popup_kind'] }}"
+        data-occluder="true"
+    >
+        <div class="popup-heading">
+            <h2 id="family-popup-title">
+                {% if tinypal['popup_kind'] == 'invite_dialog' %}
+                Invite caregiver
+                {% elif tinypal['popup_kind'] == 'permissions_sheet' %}
+                Caregiver permissions
+                {% elif tinypal['popup_kind'] == 'edit_child' %}
+                Edit child profile
+                {% else %}
+                Remove caregiver?
+                {% endif %}
+            </h2>
+
+            <button
+                type="button"
+                class="icon-button"
+
+                aria-label="Close dialog"
+            >
+                {{ icon('close', 'family_popup_close') }}
+            </button>
+        </div>
+
+        {% if tinypal['popup_kind'] == 'invite_dialog' %}
+        <p class="popup-description">
+            Send an invitation to your family space.
+        </p>
+
+        <label class="family-field">
+            <span>Name</span>
+            <div class="family-control" data-class="input_field"
+                    data-semantic="invite_name">
+                {{ icon('person', 'family_invite_name_icon') }}
+                <input
+                    type="text"
+                    value="{{ tinypal['invite_name'] }}"
+                    placeholder="Caregiver name"
+
+                >
+            </div>
+        </label>
+
+        <label class="family-field">
+            <span>Email</span>
+            <div class="family-control" data-class="input_field"
+                    data-semantic="invite_email">
+                {{ icon('mail', 'family_invite_email_icon') }}
+                <input
+                    type="email"
+                    value="{{ tinypal['invite_email'] }}"
+                    placeholder="name@example.com"
+
+                >
+            </div>
+        </label>
+
+        <p class="popup-description">Choose an access level:</p>
+
+        {% for role in tinypal['roles'] %}
+        {% set selected = role['id'] == tinypal['invite_role'] %}
+        <button
+            type="button"
+            class="role-choice {{ 'selected' if selected else '' }}"
+            data-class="button"
+            aria-pressed="{{ 'true' if selected else 'false' }}"
+        >
+            {{ icon(
+                'check_box' if selected else 'check_box_outline_blank',
+                'invite_role_' ~ loop.index,
+                'checkbox'
+            ) }}
+            <span>
+                <strong>{{ role['id'] }}</strong>
+                <small>{{ role['description'] }}</small>
+            </span>
+        </button>
+        {% endfor %}
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Cancel
+            </button>
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('send', 'family_send_invite') }}
+                Send invitation
+            </button>
+        </div>
+
+        {% elif tinypal['popup_kind'] == 'permissions_sheet' %}
+        {% set person = tinypal['selected_caregiver'] %}
+
+        <div class="person-row permission-person">
+            {{ avatar(person) }}
+            <div class="person-info">
+                <h3>{{ person['name'] }}</h3>
+                <p class="muted">{{ person['email'] }}</p>
+            </div>
+        </div>
+
+        {% for permission in tinypal['permissions'] %}
+        <div class="permission-row">
+            <span>
+                <strong>{{ permission['title'] }}</strong>
+                <small>{{ permission['description'] }}</small>
+            </span>
+
+            <button
+                type="button"
+                class="permission-switch {{ 'enabled'
+                    if permission['enabled'] else '' }}"
+                role="switch"
+                aria-checked="{{ 'true'
+                    if permission['enabled'] else 'false' }}"
+                aria-label="{{ permission['title'] }}"
+                data-class="switch"
+                data-semantic="{{ permission['id'] }}"
+            >
+                <span class="permission-thumb"></span>
+            </button>
+        </div>
+        {% endfor %}
+
+        <div class="popup-actions">
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('save', 'family_save_permissions') }}
+                Save permissions
+            </button>
+        </div>
+
+        {% elif tinypal['popup_kind'] == 'edit_child' %}
+        {% set child = tinypal['selected_child'] %}
+
+        <div class="person-row permission-person">
+            {{ avatar(child) }}
+            <button type="button" class="secondary-button" data-class="button">
+                {{ icon('photo_camera', 'family_change_child_photo') }}
+                Change photo
+            </button>
+        </div>
+
+        <label class="family-field" data-semantic="child_name">
+            <span>Child’s name</span>
+            <div class="family-control" data-class="input_field">
+                {{ icon('person', 'family_child_name_icon') }}
+                <input
+                    type="text"
+                    value="{{ child['name'] }}"
+
+
+                >
+            </div>
+        </label>
+
+        <label class="family-field">
+            <span>Birth date</span>
+            <div class="family-control" data-class="input_field"
+                    data-semantic="child_birth_date">
+                {{ icon('calendar_month', 'family_birth_date_icon') }}
+                <input
+                    type="text"
+                    value="{{ child['birth_date'] }}"
+                    placeholder="YYYY-MM-DD"
+
+                >
+            </div>
+        </label>
+
+        <label class="family-field">
+            <span>Profile note</span>
+            <textarea
+                data-class="input_field"
+                data-semantic="child_profile_note"
+            >{{ child['note'] }}</textarea>
+        </label>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Cancel
+            </button>
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('save', 'family_save_child') }}
+                Save profile
+            </button>
+        </div>
+
+        {% elif tinypal['popup_kind'] == 'remove_dialog' %}
+        <span class="remove-symbol" data-class="button">
+            {{ icon('person_remove', 'family_remove_warning') }}
+        </span>
+
+        <p class="popup-description">
+            Remove {{ tinypal['selected_caregiver']['name'] }}
+            from your family space? They will lose access to shared
+            records and routines.
+        </p>
+
+        <div class="popup-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Keep caregiver
+            </button>
+            <button type="button" class="danger-button" data-class="button">
+                {{ icon('person_remove', 'family_confirm_remove') }}
+                Remove
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}
