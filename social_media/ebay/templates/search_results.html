@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block page %}
+<div class="result-layout" data-class="section">
+    <aside class="filters" data-class="section" data-semantic="search_filters"><h3>Filter results</h3>{% for
+        title,choices in [('Condition',['New','Pre-owned','Refurbished']),('Buying format',['All
+        listings','Auction','Buy It Now']),('Item location',['Default','US Only','Worldwide'])] %}
+        <div class="filter-group stack"><strong>{{title}}</strong>{% for label in choices %}{{check('filter_' ~
+            title|replace(' ','_') ~ '_' ~ loop.index,label,ebay['state']=='filtered' and loop.first)}}{% endfor %}
+        </div>
+        {% endfor %}<label class="field">Price<input type="range" min="0" max="500" value="250" data-class="slider"
+                                                     data-semantic="price_range"></label></aside>
+    <div class="stack" data-class="section">
+        <div class="row between">
+            <div><h2>{{'0' if ebay['state']=='no_results' else '2,481'}} results for “{{ebay['query']}}”</h2>
+                <p class="muted">Save this search to get updates</p></div>
+            {{btn('tune','mobile_filters' , annotate=false)}}{{select('sort_results','Sort','Best Match')}}
+        </div>
+        <div class="tabs">{% for label in ['All listings','Auction','Buy It Now'] %}
+            <button data-class="tab" data-semantic="buying_tab_{{loop.index}}">{{label}}</button>
+            {% endfor %}
+        </div>
+        {% if ebay['state']=='filtered' %}
+        <div class="row" data-class="section">
+            <button class="secondary" data-class="chip" data-semantic="active_filter">
+                New{{icon('close','remove_new_filter')}}
+            </button>
+            <button data-class="button" data-semantic="clear_filters">Clear all filters</button>
+        </div>
+        {% endif %}{% if ebay['state']=='no_results' %}
+        <section class="empty card" data-class="section" data-semantic="no_results">
+            {{icon('search_off','no_results_icon')}}<h2>No exact matches found</h2>
+            <p>Try a broader search or remove some filters.</p>
+            <button class="primary" data-class="button" data-semantic="broaden_search">Browse similar items</button>
+        </section>
+        {% elif ebay['state']=='list' %}{% for x in ebay['items'][:12] %}
+        <article class="list-item card" data-class="card" data-semantic="list_{{x['id']}}"><img src="{{x['image']}}"
+                                                                                                alt="{{x['title']}}"
+                                                                                                data-class="image"
+                                                                                                data-semantic="list_image_{{x['id']}}">
+            <div class="stack"><h3>{{x['title']}}</h3><span class="muted">{{x['condition']}}</span><strong
+                    class="price">US ${{x['price']}}</strong><span>{{x['shipping']}}</span><span class="small">{{x['seller']}} ({{x['rating']}} positive feedback)</span>
+            </div>
+            <div class="list-actions">{{btn('favorite_border','list_watch_' ~ x['id'] , annotate=false)}}{{btn('more_horiz','list_more_'
+                ~ x['id'] , annotate=false)}}
+            </div>
+        </article>
+        {% endfor %}{% else %}
+        <div class="grid">{% for x in ebay['items'][:20] %}{{product(x,'product_' ~ x['id'])}}{% endfor %}</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

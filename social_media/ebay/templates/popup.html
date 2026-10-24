@@ -1,0 +1,121 @@
+{% set state=ebay['state'] %}
+<div class="overlay" data-occluder="true">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="popup_title" data-class="dialog"
+             data-semantic="{{ebay['page']}}_{{state}}_dialog">
+        <header class="dialog-head row between"><h2 id="popup_title">{{state|replace('_',' ')|title}}</h2>
+            {{btn('close','popup_close', annotate=false)}}
+        </header>
+        <div class="dialog-body stack">
+            {% if state=='category_menu' %}{% for label,name in ebay['categories'] %}
+            <button class="popup-category-row" data-class="button" data-semantic="menu_category_{{loop.index}}">
+                {{icon(name,'menu_category_icon_' ~ loop.index)}}<strong class="grow">{{label}}</strong>{{icon('chevron_right','category_next_'
+                ~ loop.index)}}
+            </button>
+            {% endfor %}
+            {% elif state=='notifications' %}{% for x in ebay['items'][:8] %}
+            <div class="row">{{icon('notifications_none','notification_icon_' ~ loop.index)}}
+                <div><strong>{{'Price drop on a watched item' if loop.index%2 else 'Your order has shipped'}}</strong>
+                    <p>{{x['title']}}</p><small class="muted">{{loop.index}}h ago</small></div>
+            </div>
+            {% endfor %}
+            {% elif state=='filter_dialog' %}<h3>Condition</h3>
+            {{check('filter_new','New',true)}}{{check('filter_used','Pre-owned',false)}}{{check('filter_refurbished','Refurbished',false)}}
+            <h3>Buying format</h3>{{radio('buying_all','All
+            listings',true)}}{{radio('buying_auction','Auction',false)}}{{radio('buying_fixed','Buy It Now',false)}}<h3>
+            Price</h3>
+            <div class="form-grid">{{field('price_min','Minimum','20')}}{{field('price_max','Maximum','250')}}</div>
+            {{check('free_shipping_filter','Free shipping',true)}}
+            {% elif state=='sort_menu' %}{% for label in ['Best Match','Time: ending soonest','Time: newly
+            listed','Price + Shipping: lowest first','Price + Shipping: highest first'] %}{{radio('sort_' ~
+            loop.index,label,loop.first)}}{% endfor %}
+            {% elif state=='image_gallery' %}<img style="width:100%;max-height:450px;object-fit:contain"
+                                                  src="{{ebay['active_item']['image']}}" alt="Enlarged item photo"
+                                                  data-class="image" data-semantic="gallery_main">
+            <div class="row between">{{btn('chevron_left','gallery_previous' , annotate=false)}}<span>1 of 6</span>{{btn('chevron_right','gallery_next' , annotate=false)}}
+            </div>
+            <div class="thumbnails">{% for x in ebay['items'][:6] %}
+                <button data-class="button" data-semantic="gallery_thumb_{{loop.index}}"><img src="{{x['image']}}"
+                                                                                              alt="Gallery thumbnail"
+                                                                                              data-class="image"
+                                                                                              data-semantic="gallery_thumb_image_{{loop.index}}">
+                </button>
+                {% endfor %}
+            </div>
+            {% elif state=='contact_seller' %}
+            <div class="row">
+                {{icon('storefront','contact_seller_icon')}}<strong>{{ebay['active_item']['seller']}}</strong></div>
+            <p>Ask a question about {{ebay['active_item']['title']}}</p>{{select('question_topic','Topic','Item
+            condition')}}<label class="field">Message<textarea rows="5" placeholder="Write your question…"
+                                                               data-class="input_field"
+                                                               data-semantic="seller_message"></textarea></label>{{check('send_copy','Send
+            a copy to my email',true)}}
+            {% elif state in ['place_bid','make_offer'] %}
+            <div class="order-row"><img src="{{ebay['active_item']['image']}}" alt="Item" data-class="image"
+                                        data-semantic="bid_item_image">
+                <h3>{{ebay['active_item']['title']}}</h3><strong>${{ebay['active_item']['price']}}</strong></div>
+            {{field('bid_amount','Your maximum bid' if state=='place_bid' else 'Your offer','175.00')}}<p class="muted">
+            {{'Automatic bidding will increase your bid up to this amount.' if state=='place_bid' else 'The seller can
+            accept, decline or counter your offer.'}}</p>{{check('bid_confirm_terms','I understand this purchase
+            commitment',true)}}
+            {% elif state=='remove_item' %}{{icon('delete_outline','remove_item_icon')}}<h3>Remove this item from your
+            cart?</h3>
+            <p>{{ebay['active_item']['title']}}</p>
+            <button class="secondary" data-class="button" data-semantic="move_saved">Save for later instead</button>
+            {% elif state=='shipping_options' %}<h3>Choose delivery</h3>{{radio('standard_shipping','Standard shipping ·
+            Free · 3–5 days',true)}}{{radio('expedited_shipping','Expedited shipping · $12.95 · 1–2
+            days',false)}}{{radio('local_pickup','Local pickup · Free',false)}}
+            {% elif state=='address_dialog' %}
+            <div class="form-grid">{{field('address_full_name','Full name','Alex
+                Morgan')}}{{field('address_phone','Phone','555-010-0148')}}{{field('address_street','Street','123 Market
+                Street')}}{{field('address_city','City','San
+                Francisco')}}{{field('address_state','State','CA')}}{{field('address_zip','ZIP code','94103')}}
+            </div>
+            {{check('default_address','Use as default shipping address',true)}}
+            {% elif state=='order_confirmation' %}{{icon('check_circle','order_success_icon')}}<h2>Thanks for your
+            order!</h2>
+            <p>Synthetic order: EBAY-DEMO-1048</p>
+            <p>Estimated delivery: 3–5 business days.</p>
+            <div class="order-row"><img src="{{ebay['active_item']['image']}}" alt="Ordered item" data-class="image"
+                                        data-semantic="confirmed_item_image">
+                <h3>{{ebay['active_item']['title']}}</h3><strong>${{ebay['active_item']['price']}}</strong></div>
+            {{btn('local_shipping','view_order','View order details')}}
+            {% elif state=='watchlist_actions' %}{% for label,name in [('Move to collection','folder'),('Remove from
+            watchlist','favorite_border'),('Share item','share'),('Find similar','search')]
+            %}{{btn(name,'watchlist_action_' ~ loop.index,label)}}{% endfor %}
+            {% elif state=='start_return' %}<h3>Why are you returning this item?</h3>{% for label in ['Does not match
+            description','Arrived damaged','Wrong item received','Changed my mind'] %}{{radio('return_reason_' ~
+            loop.index,label,loop.first)}}{% endfor %}<label class="field">Additional details<textarea rows="4"
+                                                                                                       data-class="input_field"
+                                                                                                       data-semantic="return_details"></textarea></label>{{btn('add_photo_alternate','return_photo','Add
+            photos')}}
+            {% elif state=='leave_feedback' %}<h3>How was your experience?</h3>
+            <div class="row">{% for i in range(5) %}{{btn('star','feedback_star_' ~ i , annotate=false)}}{% endfor %}</div>
+            {{radio('feedback_positive','Positive',true)}}{{radio('feedback_neutral','Neutral',false)}}{{radio('feedback_negative','Negative',false)}}<label
+                class="field">Feedback<textarea rows="4" data-class="input_field" data-semantic="feedback_text">Item arrived as described. Thank you!</textarea></label>
+            {% elif state=='bulk_edit' %}<h3>Edit 2 selected listings</h3>{{check('bulk_price','Change
+            price',true)}}{{field('bulk_price_value','New price','149.00')}}{{check('bulk_shipping','Change
+            shipping',false)}}{{select('bulk_shipping_service','Shipping','Standard
+            shipping')}}{{check('bulk_quantity','Change
+            quantity',false)}}{{field('bulk_quantity_value','Quantity','1')}}
+            {% elif state=='promote_listing' %}<h3>Promote your listing</h3>
+            <p>Choose an illustrative ad rate for this synthetic listing.</p><label class="field">Ad rate<input
+                type="range" min="1" max="20" value="6" data-class="slider"
+                data-semantic="promotion_rate"></label><strong>6% ad rate</strong>{{check('promotion_auto','Use
+            suggested rate automatically',false)}}
+            {% elif state=='publish_confirmation' %}<h3>Ready to list your item?</h3>
+            <p>{{ebay['listing_title']}}</p><strong>US $149.00 · Free shipping</strong>{{check('publish_accuracy','I
+            confirm the listing details are accurate',true)}}{{check('publish_terms','I agree to the seller
+            terms',true)}}<p class="muted">This screen is a dataset simulation. No listing is published.</p>{% endif %}
+        </div>
+        <footer class="dialog-foot row between">
+            <button class="secondary" data-class="button" data-semantic="dialog_cancel">Close</button>
+            {% if state not in
+            ['category_menu','notifications','image_gallery','order_confirmation','watchlist_actions'] %}
+            <button class="primary" data-class="button" data-semantic="dialog_confirm">{{'Submit' if state in
+                ['place_bid','make_offer','contact_seller','start_return','leave_feedback'] else 'Confirm' if state in
+                ['remove_item','publish_confirmation'] else 'Apply'}}
+            </button>
+            {% endif %}
+        </footer>
+    </section>
+</div>
