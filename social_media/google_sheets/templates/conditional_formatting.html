@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}{{ formatting["document_title"] }} – Google Sheets{% endblock %}
+
+{% block styles %}
+.cf-root { min-height: 100vh; background: var(--surface); }
+.topbar { height: 64px; display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid var(--border-subtle); background: var(--surface); position: sticky; top: 0; z-index: 30; }
+.sheets-mark { width: 34px; height: 42px; border-radius: 4px; background: #0f9d58; color: white; display: grid; place-items: center; flex: 0 0 auto; }
+.title-wrap { min-width: 0; flex: 1; }
+.doc-title { color: var(--text-primary); font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu-row { display: flex; gap: 18px; color: var(--text-secondary); font-size: 13px; margin-top: 5px; }
+.share-button { min-width: 78px; height: 38px; padding: 0 17px; border-radius: 20px; background: var(--primary); color: var(--on-primary); font-weight: 700; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary-container); color: var(--on-primary-container); display: grid; place-items: center; font-weight: 700; }
+.toolbar { height: 46px; display: flex; align-items: center; gap: 4px; padding: 5px 12px; border-bottom: 1px solid var(--border-subtle); background: var(--surface); position: sticky; top: 64px; z-index: 25; overflow: hidden; }
+.toolbar-divider { width: 1px; height: 26px; background: var(--border-subtle); margin: 0 5px; }
+.zoom-chip { height: 32px; padding: 0 10px; border-radius: 5px; display: grid; place-items: center; background: var(--surface-variant); font-size: 12px; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 360px; min-height: calc(100vh - 110px); }
+.sheet-area { min-width: 0; overflow: auto; background: var(--surface); padding-bottom: 48px; }
+.formula-row { height: 38px; display: grid; grid-template-columns: 86px 42px minmax(260px, 1fr); align-items: center; border-bottom: 1px solid var(--grid-line); position: sticky; top: 110px; z-index: 12; background: var(--surface); }
+.name-box { height: 100%; display: grid; place-items: center; border-right: 1px solid var(--grid-line); font-size: 12px; }
+.fx { text-align: center; color: var(--text-secondary); font-style: italic; }
+.formula-input { height: 30px; margin-right: 8px; padding: 0 10px; border: 1px solid var(--border); border-radius: 4px; }
+.grid { min-width: 920px; display: grid; grid-template-columns: 46px 220px 150px 140px 130px 130px 140px; font-size: 12px; }
+.cell { min-height: 36px; padding: 8px; border-right: 1px solid var(--grid-line); border-bottom: 1px solid var(--grid-line); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; background: var(--surface); }
+.corner, .column-letter, .row-number { background: var(--surface-variant); color: var(--text-secondary); text-align: center; font-weight: 600; }
+.header-cell { background: color-mix(in srgb, var(--primary-container) 46%, var(--surface)); font-weight: 700; }
+.selected-range { background: color-mix(in srgb, #34a853 18%, var(--surface)); border-left: 2px solid #188038; border-right: 2px solid #188038; }
+.status-blocked { background: #f4c7c3; color: #8c1d18; font-weight: 700; }
+.status-complete { background: #b7e1cd; color: #0d652d; font-weight: 700; }
+.high-value { background: #b7e1cd; color: #0d652d; font-weight: 700; }
+.medium-value { background: #fce8b2; color: #7a4f01; }
+.sheet-tabs { position: fixed; left: 0; right: 360px; bottom: 0; height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: var(--surface); border-top: 1px solid var(--border-subtle); z-index: 20; }
+.sheet-tab { height: 34px; padding: 0 16px; border-bottom: 3px solid #0f9d58; font-weight: 700; color: var(--text-primary); }
+.panel { border-left: 1px solid var(--border-subtle); background: var(--surface); min-height: calc(100vh - 110px); position: relative; z-index: 22; }
+.panel-head { min-height: 58px; padding: 12px 14px 10px 18px; display: flex; align-items: center; border-bottom: 1px solid var(--border-subtle); }
+.panel-title { font-size: 16px; font-weight: 700; flex: 1; }
+.panel-body { padding: 16px 18px 88px; }
+.tabs { height: 42px; display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--border-subtle); }
+.tab { display: grid; place-items: center; color: var(--text-secondary); font-size: 13px; }
+.tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); font-weight: 700; }
+.section-label { margin: 18px 0 7px; color: var(--text-secondary); font-size: 12px; font-weight: 700; }
+.field { min-height: 42px; border: 1px solid var(--border); border-radius: 5px; padding: 9px 10px; display: flex; align-items: center; gap: 8px; background: var(--surface); }
+.field-value { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.field.error { border-color: var(--error); }
+.error-text { color: var(--error); font-size: 12px; margin-top: 5px; }
+.format-preview { height: 52px; border: 1px solid var(--border); border-radius: 5px; display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; }
+.preview-sample { padding: 7px 12px; border-radius: 3px; background: #b7e1cd; color: #0d652d; font-weight: 700; }
+.format-tools { display: flex; gap: 5px; }
+.swatch { width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--border); }
+.rules-list { display: grid; gap: 10px; }
+.rule-card { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 11px; display: grid; grid-template-columns: 54px minmax(0, 1fr) 32px; gap: 10px; align-items: center; background: var(--surface); }
+.rule-preview { height: 34px; border-radius: 4px; display: grid; place-items: center; font-size: 11px; font-weight: 700; overflow: hidden; }
+.rule-range { color: var(--text-secondary); font-size: 11px; margin-top: 4px; }
+.add-rule { width: 100%; height: 42px; margin-top: 16px; border: 1px solid var(--primary); border-radius: 20px; color: var(--primary); font-weight: 700; }
+.scale-bar { height: 28px; border-radius: 4px; margin: 14px 0; background: linear-gradient(90deg, #f8696b, #ffeb84, #63be7b); }
+.scale-point { display: grid; grid-template-columns: 86px 1fr 58px 34px; gap: 6px; align-items: center; margin: 9px 0; font-size: 12px; }
+.mini-field { height: 34px; border: 1px solid var(--border); border-radius: 4px; padding: 0 7px; display: flex; align-items: center; overflow: hidden; }
+.panel-actions { position: absolute; bottom: 0; left: 0; right: 0; min-height: 68px; padding: 12px 18px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-subtle); background: var(--surface); }
+.text-button { height: 38px; padding: 0 18px; border-radius: 19px; color: var(--primary); font-weight: 700; }
+.primary-button { height: 38px; padding: 0 20px; border-radius: 19px; background: var(--primary); color: var(--on-primary); font-weight: 700; }
+.empty, .loading { min-height: 330px; display: grid; place-items: center; text-align: center; color: var(--text-secondary); }
+.empty-icon { font-size: 50px; color: var(--icon); }
+.spinner { width: 38px; height: 38px; border: 4px solid var(--border-subtle); border-top-color: var(--primary); border-radius: 50%; }
+.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, .42); z-index: 90; }
+.dialog { position: fixed; z-index: 100; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(430px, calc(100vw - 28px)); border-radius: 14px; background: var(--surface); color: var(--on-surface); box-shadow: 0 18px 60px rgba(0, 0, 0, .34); padding: 22px; }
+.dialog-title { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+.dialog-text { color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin-bottom: 18px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.range-list { display: grid; gap: 7px; margin-top: 10px; }
+.range-option { height: 40px; padding: 0 10px; display: flex; align-items: center; gap: 10px; border-radius: 5px; background: var(--surface-variant); }
+.popup-menu { position: fixed; z-index: 100; right: 24px; top: 145px; width: 220px; padding: 8px 0; border-radius: 9px; background: var(--surface); box-shadow: 0 10px 34px rgba(0,0,0,.3); }
+.menu-item { height: 42px; padding: 0 14px; display: flex; align-items: center; gap: 12px; width: 100%; }
+.danger { color: var(--error); }
+@media (max-width: 1023px) {
+  .topbar { top: 28px; height: 58px; padding: 7px 10px; }
+  .menu-row { display: none; }
+  .share-button { display: none; }
+  .toolbar { top: 86px; }
+  .workspace { grid-template-columns: 1fr; }
+  .formula-row { top: 132px; }
+  .sheet-area { min-height: 390px; max-height: 48vh; }
+  .panel { border-left: 0; border-top: 1px solid var(--border-subtle); min-height: 520px; }
+  .sheet-tabs { position: absolute; right: 0; bottom: auto; top: calc(48vh + 88px); }
+  .panel-actions { position: sticky; bottom: 0; }
+}
+@media (max-width: 599px) {
+  .topbar .icon-button:nth-of-type(2), .zoom-chip:nth-of-type(n+2), .toolbar-divider:nth-of-type(n+2) { display: none; }
+  .sheets-mark { width: 30px; height: 36px; }
+  .doc-title { font-size: 15px; }
+  .workspace { display: block; }
+  .sheet-area { max-height: 42vh; }
+  .panel { min-height: 620px; }
+  .panel-body { padding: 14px 14px 92px; }
+  .sheet-tabs { top: calc(42vh + 88px); }
+  .popup-menu { right: 12px; top: 118px; width: 210px; }
+}
+{% endblock %}
+
+{% macro icon_button(icon, semantic) -%}
+<button class="icon-button" data-class="button" data-semantic="{{ semantic }}">
+  <span class="material-symbols-rounded" data-class="icon" data-semantic="{{ semantic }}_icon">{{ icon }}</span>
+</button>
+{%- endmacro %}
+
+{% block content %}
+<div class="cf-root">
+  <div {% if formatting["is_popup"] %}data-annotation-skip="true"{% endif %}>
+    <header class="topbar" data-class="app_bar" data-semantic="sheets_app_bar" data-occluder="true">
+      <div class="sheets-mark" data-class="icon" data-semantic="sheets_logo"><span class="material-symbols-rounded">table_view</span></div>
+      <div class="title-wrap">
+        <div class="doc-title">{{ formatting["document_title"] }}</div>
+        <div class="menu-row"><span>File</span><span>Edit</span><span>View</span><span>Insert</span><span>Format</span><span>Data</span><span>Tools</span></div>
+      </div>
+      {{ icon_button("history", "version_history") }}
+      {{ icon_button("comment", "comments") }}
+      <button class="share-button" data-class="button" data-semantic="share_button">Share</button>
+      <div class="avatar" data-class="avatar" data-semantic="account_avatar">{{ formatting["account_initial"] }}</div>
+    </header>
+
+    <nav class="toolbar" data-class="navigation_bar" data-semantic="formatting_toolbar">
+      {{ icon_button("undo", "undo") }}{{ icon_button("redo", "redo") }}
+      <span class="toolbar-divider"></span><div class="zoom-chip">100%</div><span class="toolbar-divider"></span>
+      {{ icon_button("format_bold", "bold") }}{{ icon_button("format_italic", "italic") }}
+      {{ icon_button("format_color_text", "text_color") }}{{ icon_button("format_color_fill", "fill_color") }}
+      {{ icon_button("borders", "borders") }}{{ icon_button("horizontal_distribute", "alignment") }}
+    </nav>
+
+    <div class="workspace">
+      <section class="sheet-area" data-class="section" data-semantic="spreadsheet_grid">
+        <div class="formula-row">
+          <div class="name-box">E2</div><div class="fx">fx</div>
+          <div class="formula-input" data-class="input_field" data-semantic="formula_input">=E2</div>
+        </div>
+        <div class="grid">
+          <div class="cell corner"></div>
+          {% for letter in ["A", "B", "C", "D", "E", "F"] %}<div class="cell column-letter">{{ letter }}</div>{% endfor %}
+          <div class="cell row-number">1</div>
+          {% for header in formatting["headers"] %}<div class="cell header-cell">{{ header }}</div>{% endfor %}
+          {% for row_record in formatting["rows"] %}
+            <div class="cell row-number">{{ row_record["row_number"] }}</div>
+            <div class="cell">{{ row_record["project"] }}</div>
+            <div class="cell">{{ row_record["owner"] }}</div>
+            <div class="cell">{{ row_record["department"] }}</div>
+            <div class="cell {% if '$4' in row_record['budget_text'] or '$3' in row_record['budget_text'] %}medium-value{% endif %}">{{ row_record["budget_text"] }}</div>
+            <div class="cell selected-range {% if row_record['completion'] >= 80 %}high-value{% endif %}">{{ row_record["completion_text"] }}</div>
+            <div class="cell {% if row_record['status'] == 'Blocked' %}status-blocked{% elif row_record['status'] == 'Complete' %}status-complete{% endif %}">{{ row_record["status"] }}</div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <div class="sheet-tabs" data-class="navigation_bar" data-semantic="sheet_tabs">
+        {{ icon_button("add", "add_sheet") }}
+        <button class="sheet-tab" data-class="tab" data-semantic="active_sheet">{{ formatting["sheet_name"] }}</button>
+      </div>
+
+      <aside class="panel" data-class="section" data-semantic="conditional_formatting_panel">
+        <div class="panel-head"><div class="panel-title">Conditional format rules</div>{{ icon_button("close", "close_panel") }}</div>
+
+        {% if formatting["state"] == "loading" %}
+          <div class="loading"><div><div class="spinner" data-class="progress_bar" data-semantic="loading_indicator"></div><p>Loading rules…</p></div></div>
+        {% elif formatting["state"] == "empty_state" %}
+          <div class="empty"><div><span class="material-symbols-rounded empty-icon" data-class="icon" data-semantic="empty_rules_icon">format_paint</span><h3>No conditional formatting rules</h3><p>Select cells, then add a rule.</p><button class="primary-button" data-class="button" data-semantic="add_first_rule">Add rule</button></div></div>
+        {% elif formatting["state"] == "rules_list" or formatting["state"] == "rule_menu" or formatting["state"] == "delete_dialog" %}
+          <div class="panel-body">
+            <div class="rules-list">
+              {% for rule_record in formatting["rules"] %}
+                <article class="rule-card" data-class="card" data-semantic="format_rule_{{ loop.index }}">
+                  <div class="rule-preview" style="background: {{ rule_record['preview_background'] }}; color: {{ rule_record['preview_color'] }}">{{ rule_record["preview_text"] }}</div>
+                  <div><div>{{ rule_record["description"] }}</div><div class="rule-range">{{ rule_record["range"] }}</div></div>
+                  {{ icon_button("more_vert", "rule_menu_" ~ loop.index) }}
+                </article>
+              {% endfor %}
+            </div>
+            <button class="add-rule" data-class="button" data-semantic="add_rule">+ Add another rule</button>
+          </div>
+        {% else %}
+          <div class="tabs" data-class="navigation_bar" data-semantic="rule_type_tabs">
+            <button class="tab {% if formatting['state'] != 'color_scale_editor' %}active{% endif %}" data-class="tab" data-semantic="single_color_tab">Single color</button>
+            <button class="tab {% if formatting['state'] == 'color_scale_editor' %}active{% endif %}" data-class="tab" data-semantic="color_scale_tab">Color scale</button>
+          </div>
+          <div class="panel-body">
+            <div class="section-label">Apply to range</div>
+            <div class="field"><div class="field-value">{{ formatting["apply_range"] }}</div>{{ icon_button("grid_on", "select_range") }}</div>
+
+            {% if formatting["state"] == "color_scale_editor" %}
+              <div class="section-label">Preview</div><div class="scale-bar" data-class="selection_indicator" data-semantic="color_scale_preview"></div>
+              {% for point_record in formatting["color_scale_points"] %}
+                <div class="scale-point">
+                  <strong>{{ point_record["label"] }}</strong>
+                  <div class="mini-field">{{ point_record["type"] }}</div>
+                  <div class="mini-field">{{ point_record["value"] }}</div>
+                  <div class="swatch" style="background: {{ point_record['color'] }}" data-class="button" data-semantic="{{ point_record['label']|lower }}_color"></div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="section-label">Format cells if…</div>
+              <div class="field"><div class="field-value">{% if formatting["state"] in ["custom_formula", "invalid_formula"] %}Custom formula is{% else %}{{ formatting["format_condition"] }}{% endif %}</div><span class="material-symbols-rounded" data-class="icon" data-semantic="condition_dropdown">arrow_drop_down</span></div>
+              <div class="section-label">Value or formula</div>
+              <div class="field {% if formatting['state'] == 'invalid_formula' %}error{% endif %}" data-class="input_field" data-semantic="condition_value">
+                <div class="field-value">{% if formatting["state"] == "custom_formula" %}{{ formatting["custom_formula"] }}{% elif formatting["state"] == "invalid_formula" %}{{ formatting["invalid_formula"] }}{% else %}{{ formatting["condition_value"] }}{% endif %}</div>
+              </div>
+              {% if formatting["state"] == "invalid_formula" %}<div class="error-text">Invalid formula. Check the operator and cell reference.</div>{% endif %}
+              <div class="section-label">Formatting style</div>
+              <div class="format-preview"><span class="preview-sample">Default</span><div class="format-tools">{{ icon_button("format_bold", "rule_bold") }}{{ icon_button("format_italic", "rule_italic") }}{{ icon_button("format_color_text", "rule_text_color") }}{{ icon_button("format_color_fill", "rule_fill_color") }}</div></div>
+            {% endif %}
+          </div>
+          <div class="panel-actions"><button class="text-button" data-class="button" data-semantic="cancel_rule">Cancel</button><button class="primary-button" data-class="button" data-semantic="save_rule">Done</button></div>
+        {% endif %}
+      </aside>
+    </div>
+  </div>
+
+  {% if formatting["is_popup"] %}<div class="scrim" data-annotation-skip="true"></div>{% endif %}
+
+  {% if formatting["state"] == "range_dialog" %}
+    <section class="dialog" data-class="dialog" data-semantic="select_data_range_dialog" data-occluder="true">
+      <div class="dialog-title">Select a data range</div>
+      <div class="field" data-class="input_field" data-semantic="range_input"><div class="field-value">{{ formatting["apply_range"] }}</div>{{ icon_button("grid_on", "range_picker") }}</div>
+      <div class="range-list">
+        {% for range_text in formatting["range_suggestions"] %}<button class="range-option" data-class="button" data-semantic="range_option_{{ loop.index }}"><span class="material-symbols-rounded" data-class="icon" data-semantic="range_option_icon_{{ loop.index }}">table_view</span>{{ range_text }}</button>{% endfor %}
+      </div>
+      <div class="dialog-actions"><button class="text-button" data-class="button" data-semantic="cancel_range">Cancel</button><button class="primary-button" data-class="button" data-semantic="confirm_range">OK</button></div>
+    </section>
+  {% elif formatting["state"] == "rule_menu" %}
+    <section class="popup-menu" data-class="dialog" data-semantic="rule_options_menu" data-occluder="true">
+      <button class="menu-item" data-class="button" data-semantic="edit_rule"><span class="material-symbols-rounded" data-class="icon" data-semantic="edit_rule_icon">edit</span>Edit rule</button>
+      <button class="menu-item" data-class="button" data-semantic="duplicate_rule"><span class="material-symbols-rounded" data-class="icon" data-semantic="duplicate_rule_icon">content_copy</span>Duplicate</button>
+      <button class="menu-item danger" data-class="button" data-semantic="delete_rule"><span class="material-symbols-rounded" data-class="icon" data-semantic="delete_rule_icon">delete</span>Delete rule</button>
+    </section>
+  {% elif formatting["state"] == "delete_dialog" %}
+    <section class="dialog" data-class="dialog" data-semantic="delete_rule_dialog" data-occluder="true">
+      <div class="dialog-title">Delete conditional formatting rule?</div>
+      <div class="dialog-text">The formatting will be removed from {{ formatting["selected_rule"]["range"] }}. Cell values will not be changed.</div>
+      <div class="dialog-actions"><button class="text-button" data-class="button" data-semantic="cancel_delete">Cancel</button><button class="primary-button" data-class="button" data-semantic="confirm_delete">Delete</button></div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

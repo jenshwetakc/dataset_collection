@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Import file – Google Sheets{% endblock %}
+
+{% block styles %}
+.import-page { min-height:100vh; background:var(--background); color:var(--text-primary); }
+.import-appbar { position:sticky; top:0; z-index:30; height:68px; display:flex; align-items:center; gap:14px; padding:0 22px; border-bottom:1px solid var(--border-subtle); background:var(--surface); }
+.logo { width:36px; height:36px; display:grid; place-items:center; border-radius:6px; color:#fff; background:#0f9d58; }
+.app-title { min-width:0; flex:1; font-size:20px; font-weight:500; }
+.app-actions { display:flex; align-items:center; gap:5px; }
+.account-avatar { width:34px; height:34px; display:grid; place-items:center; border-radius:50%; color:#fff; background:#7c4dff; font-weight:700; }
+.workspace { width:min(980px,calc(100% - 32px)); margin:42px auto; }
+.page-heading { margin-bottom:25px; text-align:center; }
+.page-heading h1 { margin:0 0 8px; font-size:28px; font-weight:500; }
+.page-heading p { margin:0; color:var(--text-secondary); }
+.upload-card { min-height:430px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:36px; border:1px solid var(--border-subtle); border-radius:18px; background:var(--surface); box-shadow:0 2px 8px #0002; text-align:center; }
+.upload-card.dragging { border:3px dashed var(--primary); background:var(--primary-container); }
+.upload-illustration { width:112px; height:112px; display:grid; place-items:center; border-radius:50%; background:var(--surface-variant); color:var(--primary); }
+.upload-illustration .material-symbols-rounded { font-size:58px; }
+.upload-card h2 { margin:24px 0 8px; font-size:21px; }
+.upload-card p { max-width:500px; margin:0; color:var(--text-secondary); line-height:1.55; }
+.primary-button,.secondary-button,.danger-button { min-height:40px; padding:0 20px; border-radius:20px; font-weight:700; }
+.primary-button { color:var(--on-primary); background:var(--primary); }
+.secondary-button { color:var(--primary); border:1px solid var(--border); }
+.danger-button { color:var(--on-error); background:var(--error); }
+.browse-button { margin-top:24px; }
+.supported { margin-top:18px; color:var(--text-secondary); font-size:12px; }
+.file-card { width:min(620px,100%); margin:0 auto; padding:26px; border:1px solid var(--border-subtle); border-radius:16px; background:var(--surface); box-shadow:0 2px 8px #0002; }
+.file-header { display:flex; align-items:center; gap:14px; }
+.file-icon { width:50px; height:50px; display:grid; place-items:center; border-radius:10px; color:#fff; background:#0f9d58; }
+.file-icon .material-symbols-rounded { font-size:30px; }
+.file-main { min-width:0; flex:1; }
+.file-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+.file-size { margin-top:5px; color:var(--text-secondary); font-size:13px; }
+.progress-track { height:8px; margin:28px 0 10px; overflow:hidden; border-radius:5px; background:var(--surface-variant); }
+.progress-fill { height:100%; border-radius:5px; background:var(--primary); }
+.progress-meta { display:flex; justify-content:space-between; color:var(--text-secondary); font-size:13px; }
+.spinner { width:54px; height:54px; margin:28px auto; border:5px solid var(--surface-variant); border-top-color:var(--primary); border-radius:50%; }
+.success-icon,.error-icon { width:88px; height:88px; display:grid; place-items:center; margin:0 auto; border-radius:50%; background:color-mix(in srgb,var(--success) 16%,var(--surface)); color:var(--success); }
+.error-icon { background:color-mix(in srgb,var(--error) 14%,var(--surface)); color:var(--error); }
+.success-icon .material-symbols-rounded,.error-icon .material-symbols-rounded { font-size:48px; }
+.result-card { min-height:400px; display:flex; flex-direction:column; justify-content:center; text-align:center; }
+.result-card h2 { margin:22px 0 9px; }
+.result-card p { max-width:520px; margin:0 auto; color:var(--text-secondary); line-height:1.55; }
+.result-actions { display:flex; justify-content:center; gap:12px; margin-top:26px; }
+.scrim { position:fixed; inset:0; z-index:80; background:#0009; }
+.dialog { position:fixed; z-index:90; top:50%; left:50%; width:min(620px,calc(100vw - 28px)); max-height:calc(100vh - 38px); overflow:auto; transform:translate(-50%,-50%); border-radius:18px; background:var(--surface); color:var(--on-surface); box-shadow:0 16px 50px #0008; }
+.dialog-head { display:flex; align-items:center; gap:12px; padding:22px 24px 14px; }
+.dialog-head h2 { min-width:0; flex:1; margin:0; font-size:22px; }
+.dialog-body { padding:8px 24px 20px; }
+.option-field { margin:15px 0; }
+.option-field label { display:block; margin-bottom:7px; color:var(--text-secondary); font-size:13px; font-weight:600; }
+.select-box { width:100%; height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 13px; border:1px solid var(--border); border-radius:8px; }
+.check-row { display:flex; align-items:center; gap:12px; margin:18px 0; }
+.checkbox { width:20px; height:20px; display:grid; place-items:center; border-radius:3px; color:var(--on-primary); background:var(--primary); }
+.dialog-actions { display:flex; justify-content:flex-end; gap:10px; padding:14px 24px 22px; border-top:1px solid var(--border-subtle); }
+.preview-dialog { width:min(900px,calc(100vw - 28px)); }
+.preview-summary { display:flex; gap:18px; padding:0 24px 15px; color:var(--text-secondary); font-size:13px; }
+.table-wrap { margin:0 24px 20px; overflow:auto; border:1px solid var(--border-subtle); border-radius:9px; }
+.preview-table { width:100%; min-width:700px; border-collapse:collapse; font-size:12px; }
+.preview-table th,.preview-table td { padding:10px 12px; border-right:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle); white-space:nowrap; text-align:left; }
+.preview-table th { background:var(--surface-variant); font-weight:700; }
+.warning { display:flex; gap:12px; margin:5px 0 16px; padding:14px; border-radius:10px; color:var(--on-surface); background:color-mix(in srgb,var(--error) 11%,var(--surface)); }
+.warning .material-symbols-rounded { color:var(--error); }
+@media (max-width:600px) {
+  .import-appbar { height:60px; padding:0 10px; }
+  .app-title { font-size:17px; }
+  .desktop-action { display:none; }
+  .workspace { width:calc(100% - 20px); margin:18px auto; }
+  .page-heading h1 { font-size:23px; }
+  .upload-card { min-height:390px; padding:24px 18px; }
+  .file-card { padding:20px 16px; }
+  .dialog-head,.dialog-body { padding-left:18px; padding-right:18px; }
+  .dialog-actions { padding-left:18px; padding-right:18px; }
+  .result-actions { flex-direction:column; align-items:stretch; }
+  .preview-summary { padding-left:18px; padding-right:18px; }
+  .table-wrap { margin-left:18px; margin-right:18px; }
+}
+{% endblock %}
+
+{% block content %}
+{% set popup = import_page.is_popup %}
+<div class="import-page">
+  <div {% if popup %}data-annotation-skip="true"{% endif %}>
+    <header class="import-appbar" data-class="app_bar" data-semantic="import_app_bar">
+      <span class="logo material-symbols-rounded" data-class="icon" data-semantic="sheets_logo">table_view</span>
+      <div class="app-title">Import spreadsheet</div>
+      <div class="app-actions">
+        <button class="icon-button desktop-action" data-class="button" data-semantic="help_button"><span class="material-symbols-rounded" data-class="icon" data-semantic="help_icon">help</span></button>
+        <button class="icon-button" data-class="button" data-semantic="close_import"><span class="material-symbols-rounded" data-class="icon" data-semantic="close_icon">close</span></button>
+        <div class="account-avatar" data-class="avatar" data-semantic="account_avatar">{{ import_page.account_initial }}</div>
+      </div>
+    </header>
+
+    <main class="workspace" data-class="section" data-semantic="import_workspace">
+      <div class="page-heading"><h1>Import a spreadsheet</h1><p>Upload a spreadsheet or delimited text file to continue.</p></div>
+
+      {% if import_page.state in ["upload_idle", "drag_active"] %}
+      <section class="upload-card{% if import_page.state == 'drag_active' %} dragging{% endif %}" data-class="card" data-semantic="file_drop_zone">
+        <div class="upload-illustration" data-class="image" data-semantic="upload_illustration"><span class="material-symbols-rounded" data-class="icon" data-semantic="upload_cloud_icon">{% if import_page.state == "drag_active" %}move_to_inbox{% else %}cloud_upload{% endif %}</span></div>
+        <h2>{% if import_page.state == "drag_active" %}Drop the file to upload it{% else %}Drag a file here{% endif %}</h2>
+        <p>{% if import_page.state == "drag_active" %}Release the file and Google Sheets will begin uploading it.{% else %}Import an Excel workbook, CSV, TSV, or OpenDocument spreadsheet.{% endif %}</p>
+        <button class="primary-button browse-button" data-class="button" data-semantic="browse_files_button">Browse files</button>
+        <div class="supported">Supported: .xls, .xlsx, .csv, .tsv, .ods</div>
+      </section>
+
+      {% elif import_page.state == "uploading" %}
+      <section class="file-card" data-class="card" data-semantic="upload_progress_card">
+        <div class="file-header"><div class="file-icon" data-class="image" data-semantic="upload_file_icon"><span class="material-symbols-rounded">description</span></div><div class="file-main"><div class="file-name">{{ import_page.file_name }}</div><div class="file-size">{{ import_page.file_size }} MB</div></div><button class="icon-button" data-class="button" data-semantic="cancel_upload"><span class="material-symbols-rounded" data-class="icon" data-semantic="cancel_upload_icon">close</span></button></div>
+        <div class="progress-track" data-class="slider" data-semantic="upload_progress"><div class="progress-fill" style="width:{{ import_page.progress }}%"></div></div>
+        <div class="progress-meta"><span>Uploading…</span><span>{{ import_page.progress }}%</span></div>
+      </section>
+
+      {% elif import_page.state == "processing" %}
+      <section class="file-card result-card" data-class="card" data-semantic="processing_card">
+        <div class="spinner" data-class="progress_bar" data-semantic="processing_spinner"></div><h2>Preparing your spreadsheet</h2><p>Reading {{ import_page.file_name }} and checking {{ import_page.row_count }} rows.</p>
+      </section>
+
+      {% elif import_page.state == "success" %}
+      <section class="file-card result-card" data-class="card" data-semantic="import_success_card">
+        <div class="success-icon"><span class="material-symbols-rounded" data-class="icon" data-semantic="success_icon">check_circle</span></div><h2>Import complete</h2><p>{{ import_page.file_name }} was imported successfully with {{ import_page.row_count }} rows and {{ import_page.column_count }} columns.</p><div class="result-actions"><button class="secondary-button" data-class="button" data-semantic="import_another_button">Import another file</button><button class="primary-button" data-class="button" data-semantic="open_spreadsheet_button">Open spreadsheet</button></div>
+      </section>
+
+      {% elif import_page.state == "file_error" %}
+      <section class="file-card result-card" data-class="card" data-semantic="import_error_card">
+        <div class="error-icon"><span class="material-symbols-rounded" data-class="icon" data-semantic="error_icon">error</span></div><h2>{{ import_page.error_title }}</h2><p>{{ import_page.error_message }}</p><div class="result-actions"><button class="secondary-button" data-class="button" data-semantic="cancel_error_button">Cancel</button><button class="primary-button" data-class="button" data-semantic="try_again_button">Try again</button></div>
+      </section>
+      {% else %}
+      <section class="file-card" data-class="card" data-semantic="pending_import_file">
+        <div class="file-header"><div class="file-icon"><span class="material-symbols-rounded">description</span></div><div class="file-main"><div class="file-name">{{ import_page.file_name }}</div><div class="file-size">Ready to import · {{ import_page.file_size }} MB</div></div></div>
+      </section>
+      {% endif %}
+    </main>
+  </div>
+
+  {% if popup %}<div class="scrim" data-annotation-skip="true"></div>{% endif %}
+
+  {% if import_page.state == "import_options" %}
+  <section class="dialog" data-class="dialog" data-semantic="import_options_dialog" data-occluder="true">
+    <div class="dialog-head"><span class="material-symbols-rounded file-icon" data-class="icon" data-semantic="options_file_icon">description</span><h2>Import file</h2><button class="icon-button" data-class="button" data-semantic="close_options"><span class="material-symbols-rounded" data-class="icon" data-semantic="close_options_icon">close</span></button></div>
+    <div class="dialog-body">
+      <div class="option-field"><label>Import location</label><button class="select-box" data-class="button" data-semantic="import_location_select"><span>{{ import_page.selected_import_location }}</span><span class="material-symbols-rounded" data-class="icon" data-semantic="location_dropdown_icon">arrow_drop_down</span></button></div>
+      <div class="option-field"><label>Separator type</label><button class="select-box" data-class="button" data-semantic="separator_select"><span>{{ import_page.selected_separator }}</span><span class="material-symbols-rounded" data-class="icon" data-semantic="separator_dropdown_icon">arrow_drop_down</span></button></div>
+      <label class="check-row"><span class="checkbox" data-class="selection_indicator" data-semantic="convert_text_checkbox"><span class="material-symbols-rounded" data-class="icon" data-semantic="check_icon">check</span></span><span>Convert text to numbers, dates, and formulas</span></label>
+    </div>
+    <div class="dialog-actions"><button class="secondary-button" data-class="button" data-semantic="cancel_options">Cancel</button><button class="primary-button" data-class="button" data-semantic="confirm_import">Import data</button></div>
+  </section>
+
+  {% elif import_page.state == "preview" %}
+  <section class="dialog preview-dialog" data-class="dialog" data-semantic="import_preview_dialog" data-occluder="true">
+    <div class="dialog-head"><h2>Preview {{ import_page.file_name }}</h2><button class="icon-button" data-class="button" data-semantic="close_preview"><span class="material-symbols-rounded" data-class="icon" data-semantic="close_preview_icon">close</span></button></div>
+    <div class="preview-summary"><span>{{ import_page.row_count }} rows</span><span>{{ import_page.column_count }} columns</span><span>UTF-8</span></div>
+    <div class="table-wrap" data-class="section" data-semantic="data_preview_table"><table class="preview-table"><thead><tr>{% for heading in import_page.headers %}<th>{{ heading }}</th>{% endfor %}</tr></thead><tbody>{% for preview_row in import_page.preview_rows %}<tr>{% for cell_value in preview_row %}<td>{{ cell_value }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+    <div class="dialog-actions"><button class="secondary-button" data-class="button" data-semantic="back_from_preview">Back</button><button class="primary-button" data-class="button" data-semantic="import_preview_data">Import data</button></div>
+  </section>
+
+  {% elif import_page.state == "overwrite_dialog" %}
+  <section class="dialog" data-class="dialog" data-semantic="overwrite_confirmation_dialog" data-occluder="true">
+    <div class="dialog-head"><h2>Replace spreadsheet?</h2></div><div class="dialog-body"><div class="warning"><span class="material-symbols-rounded" data-class="icon" data-semantic="overwrite_warning_icon">warning</span><span>All content in the current spreadsheet will be replaced by the imported file. This action cannot be undone.</span></div><p><strong>{{ import_page.file_name }}</strong> contains {{ import_page.row_count }} rows.</p></div><div class="dialog-actions"><button class="secondary-button" data-class="button" data-semantic="cancel_overwrite">Cancel</button><button class="danger-button" data-class="button" data-semantic="confirm_overwrite">Replace</button></div>
+  </section>
+
+  {% elif import_page.state == "cancel_dialog" %}
+  <section class="dialog" data-class="dialog" data-semantic="cancel_import_dialog" data-occluder="true">
+    <div class="dialog-head"><h2>Cancel import?</h2></div><div class="dialog-body"><p>Your uploaded file and selected import settings will be discarded.</p></div><div class="dialog-actions"><button class="secondary-button" data-class="button" data-semantic="keep_importing">Keep importing</button><button class="danger-button" data-class="button" data-semantic="discard_import">Discard</button></div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

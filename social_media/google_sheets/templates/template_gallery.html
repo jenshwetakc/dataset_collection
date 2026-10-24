@@ -1,0 +1,1179 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Template gallery - Google Sheets
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    * {
+        box-sizing: border-box;
+    }
+
+
+    body {
+        margin: 0;
+    }
+
+
+    button,
+    input {
+        font: inherit;
+    }
+
+
+    .gallery-page {
+        min-height: 100vh;
+        color: var(--theme-on-surface);
+        background: var(--theme-surface);
+    }
+
+
+    .gallery-shell {
+        min-height: 100vh;
+    }
+
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .gallery-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        min-height: 68px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--theme-outline-variant);
+        background: var(--theme-surface);
+    }
+
+
+    .brand {
+        min-width: 190px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+
+    .brand-logo {
+        width: 40px;
+        height: 40px;
+        display: grid;
+        place-items: center;
+        color: #0f9d58;
+        border-radius: 9px;
+    }
+
+
+    .brand-name {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+
+    .search-wrapper {
+        max-width: 720px;
+        min-width: 220px;
+        display: flex;
+        align-items: center;
+        flex: 1;
+        padding: 0 14px;
+        border-radius: 24px;
+        background: var(--theme-surface-container);
+    }
+
+
+    .search-input {
+        width: 100%;
+        min-height: 44px;
+        color: var(--theme-on-surface);
+        border: 0;
+        outline: none;
+        background: transparent;
+    }
+
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+
+    .icon-button {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        color: var(--theme-on-surface);
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+    }
+
+
+    .icon-button:hover {
+        background: var(--theme-surface-container);
+    }
+
+
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        color: var(--theme-on-primary);
+        border: 0;
+        border-radius: 50%;
+        background: var(--theme-primary);
+        font-weight: 700;
+    }
+
+
+    /* ======================================================
+       Layout
+       ====================================================== */
+
+    .gallery-layout {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+    }
+
+
+    .category-sidebar {
+        position: sticky;
+        top: 68px;
+        height: calc(100vh - 68px);
+        padding: 18px 12px;
+        border-right: 1px solid var(--theme-outline-variant);
+        background: var(--theme-surface);
+    }
+
+
+    .category-button {
+        width: 100%;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        margin-bottom: 4px;
+        padding: 0 14px;
+        color: var(--theme-on-surface);
+        border: 0;
+        border-radius: 22px;
+        background: transparent;
+        text-align: left;
+    }
+
+
+    .category-button.active {
+        color: var(--theme-on-primary-container);
+        background: var(--theme-primary-container);
+        font-weight: 700;
+    }
+
+
+    .gallery-content {
+        min-width: 0;
+        padding: 26px 30px 60px;
+    }
+
+
+    /* ======================================================
+       Featured
+       ====================================================== */
+
+    .featured-section {
+        margin-bottom: 36px;
+    }
+
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+
+    .section-heading h1,
+    .section-heading h2 {
+        margin: 0;
+    }
+
+
+    .section-heading h1 {
+        font-size: 24px;
+    }
+
+
+    .section-heading h2 {
+        font-size: 20px;
+    }
+
+
+    .sort-button {
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 0 13px;
+        color: var(--theme-on-surface);
+        border: 1px solid var(--theme-outline-variant);
+        border-radius: 19px;
+        background: transparent;
+    }
+
+
+    .featured-grid,
+    .template-grid {
+        display: grid;
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(220px, 1fr)
+            );
+        gap: 18px;
+    }
+
+
+    /* ======================================================
+       Template Card
+       ====================================================== */
+
+    .template-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--theme-outline-variant);
+        border-radius: 12px;
+        background: var(--theme-surface-container-low);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+
+    .template-card:hover {
+        border-color: var(--theme-primary);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.14);
+    }
+
+
+    .template-preview {
+        height: 150px;
+        padding: 15px;
+        overflow: hidden;
+        background: var(--theme-surface-container);
+    }
+
+
+    .preview-sheet {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(40px, 1fr));
+        overflow: hidden;
+        border: 1px solid var(--theme-outline-variant);
+        background: var(--theme-surface);
+    }
+
+
+    .preview-cell {
+        min-width: 0;
+        min-height: 25px;
+        padding: 5px;
+        overflow: hidden;
+        border-right: 1px solid var(--theme-outline-variant);
+        border-bottom: 1px solid var(--theme-outline-variant);
+        color: var(--theme-on-surface);
+        font-size: 8px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+
+    .preview-cell.header {
+        color: white;
+        font-weight: 700;
+    }
+
+
+    .template-information {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 13px;
+    }
+
+
+    .template-name {
+        margin-bottom: 5px;
+        font-weight: 700;
+    }
+
+
+    .template-description {
+        display: -webkit-box;
+        overflow: hidden;
+        color: var(--theme-on-surface-variant);
+        font-size: 12px;
+        line-height: 1.4;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+
+    .favorite-button.active {
+        color: #f9ab00;
+    }
+
+
+    /* ======================================================
+       Empty State
+       ====================================================== */
+
+    .empty-state {
+        min-height: 420px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+    }
+
+
+    .empty-state-content {
+        max-width: 420px;
+        padding: 30px;
+    }
+
+
+    .empty-state-icon {
+        font-size: 64px;
+        color: var(--theme-on-surface-variant);
+    }
+
+
+    .empty-state h2 {
+        margin-bottom: 8px;
+    }
+
+
+    .empty-state p {
+        color: var(--theme-on-surface-variant);
+        line-height: 1.5;
+    }
+
+
+    .primary-button,
+    .secondary-button {
+        min-height: 40px;
+        padding: 0 18px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+
+    .primary-button {
+        color: var(--theme-on-primary);
+        border: 1px solid var(--theme-primary);
+        background: var(--theme-primary);
+    }
+
+
+    .secondary-button {
+        color: var(--theme-primary);
+        border: 1px solid var(--theme-outline-variant);
+        background: transparent;
+    }
+
+
+    /* ======================================================
+       Preview Dialog
+       ====================================================== */
+
+    .dialog-scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(0, 0, 0, 0.42);
+    }
+
+
+    .preview-dialog {
+        position: fixed;
+        z-index: 90;
+        top: 50%;
+        left: 50%;
+        width: min(900px, calc(100vw - 30px));
+        max-height: calc(100vh - 30px);
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+        overflow: hidden;
+        color: var(--theme-on-surface);
+        border: 1px solid var(--theme-outline-variant);
+        border-radius: 16px;
+        background: var(--theme-surface-container-high);
+        box-shadow: 0 18px 55px rgba(0, 0, 0, 0.35);
+        transform: translate(-50%, -50%);
+    }
+
+
+    .dialog-preview-area {
+        min-height: 480px;
+        display: grid;
+        place-items: center;
+        padding: 35px;
+        background: var(--theme-surface-container);
+    }
+
+
+    .dialog-sheet {
+        width: 100%;
+        max-width: 560px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(65px, 1fr));
+        border: 1px solid var(--theme-outline);
+        background: var(--theme-surface);
+        box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
+    }
+
+
+    .dialog-cell {
+        min-height: 42px;
+        padding: 10px 8px;
+        overflow: hidden;
+        border-right: 1px solid var(--theme-outline-variant);
+        border-bottom: 1px solid var(--theme-outline-variant);
+        font-size: 11px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+
+    .dialog-cell.header {
+        color: white;
+        font-weight: 700;
+    }
+
+
+    .dialog-information {
+        display: flex;
+        flex-direction: column;
+        padding: 24px;
+    }
+
+
+    .dialog-information h2 {
+        margin: 12px 0 8px;
+    }
+
+
+    .dialog-information p {
+        color: var(--theme-on-surface-variant);
+        line-height: 1.55;
+    }
+
+
+    .dialog-spacer {
+        flex: 1;
+    }
+
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (max-width: 760px) {
+
+        .gallery-page {
+            min-height:
+                calc(
+                    100vh
+                    - var(--status-bar-height)
+                );
+        }
+
+        .gallery-header {
+            min-height: 60px;
+            gap: 8px;
+            padding: 8px 10px;
+        }
+
+
+        .brand {
+            min-width: auto;
+        }
+
+
+        .brand-name {
+            display: none;
+        }
+
+
+        .search-wrapper {
+            min-width: 0;
+        }
+
+
+        .header-help {
+            display: none;
+        }
+
+
+        .gallery-layout {
+            display: block;
+        }
+
+
+        .category-sidebar {
+            position: sticky;
+            top: 0;
+            z-index: 15;
+            width: 100%;
+            height: auto;
+            display: flex;
+            gap: 6px;
+            padding: 8px 10px;
+            overflow-x: auto;
+            border-right: 0;
+            border-bottom: 1px solid var(--theme-outline-variant);
+        }
+
+
+        .category-button {
+            width: auto;
+            min-width: max-content;
+            min-height: 36px;
+            margin: 0;
+            padding: 0 12px;
+        }
+
+
+        .category-button .material-symbols-rounded {
+            display: none;
+        }
+
+
+        .gallery-content {
+            padding: 20px 14px 50px;
+        }
+
+
+        .featured-grid,
+        .template-grid {
+            grid-template-columns:
+                repeat(
+                    auto-fill,
+                    minmax(150px, 1fr)
+                );
+            gap: 12px;
+        }
+
+
+        .template-preview {
+            height: 120px;
+            padding: 10px;
+        }
+
+
+        .preview-dialog {
+            grid-template-columns: 1fr;
+            overflow-y: auto;
+        }
+
+
+        .dialog-preview-area {
+            min-height: 260px;
+            padding: 20px;
+        }
+
+
+        .dialog-information {
+            min-height: 240px;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="gallery-page">
+
+    <div
+        class="gallery-shell"
+        {% if template_gallery.is_popup %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+        <header
+            class="gallery-header"
+            data-class="app_bar"
+            data-semantic="template_gallery_app_bar"
+            data-occluder="true"
+        >
+
+            <div class="brand">
+
+                <div
+                    class="brand-logo"
+                    data-class="logo"
+                    data-semantic="google_sheets_logo"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="sheets_logo_icon"
+                    >
+                        table_view
+                    </span>
+                </div>
+
+                <span class="brand-name">
+                    Sheets
+                </span>
+
+            </div>
+
+
+            <div
+                class="search-wrapper"
+                data-class="search_bar"
+                data-semantic="search_templates"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="search_templates_icon"
+                >
+                    search
+                </span>
+
+                <input
+                    class="search-input"
+                    data-class="input_field"
+                    data-semantic="template_search_input"
+                    value="{{ template_gallery.search_query }}"
+                    placeholder="Search templates"
+                >
+
+                {% if template_gallery.search_query %}
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="clear_template_search"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="clear_search_icon"
+                    >
+                        close
+                    </span>
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="header-actions">
+
+                <button
+                    class="icon-button header-help"
+                    data-class="button"
+                    data-semantic="template_help"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="help_icon"
+                    >
+                        help
+                    </span>
+                </button>
+
+                <button
+                    class="user-avatar"
+                    data-class="avatar"
+                    data-semantic="current_user_avatar"
+                >
+                    {{ template_gallery.user.initial }}
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <div class="gallery-layout">
+
+            <nav
+                class="category-sidebar"
+                data-class="navigation_bar"
+                data-semantic="template_categories"
+            >
+
+                {% for category in template_gallery.categories %}
+
+                <button
+                    class="
+                        category-button
+
+                        {% if
+                            category["id"]
+                            == template_gallery.selected_category
+                        %}
+                            active
+                        {% endif %}
+                    "
+                    data-class="button"
+                    data-semantic="category_{{ category['id'] }}"
+                >
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="category_icon_{{ category['id'] }}"
+                    >
+                        {{ category["icon"] }}
+                    </span>
+
+                    {{ category["label"] }}
+
+                </button>
+
+                {% endfor %}
+
+            </nav>
+
+
+            <main class="gallery-content">
+
+                {% if
+                    template_gallery.state
+                    in [
+                        "all_templates",
+                        "preview_dialog"
+                    ]
+                %}
+
+                <section
+                    class="featured-section"
+                    data-class="section"
+                    data-semantic="featured_templates"
+                >
+
+                    <div class="section-heading">
+
+                        <h2>
+                            Featured templates
+                        </h2>
+
+                    </div>
+
+
+                    <div class="featured-grid">
+
+                        {% for template_item in template_gallery.featured_templates %}
+
+                        <article
+                            class="template-card"
+                            data-class="card"
+                            data-semantic="featured_template_{{ template_item['id'] }}"
+                        >
+
+                            <div class="template-preview">
+
+                                <div class="preview-sheet">
+
+                                    {% for preview_row in template_item["preview_rows"] %}
+
+                                        {% set preview_row_index = loop.index0 %}
+
+                                        {% for cell in preview_row %}
+
+                                        <span
+                                            class="
+                                                preview-cell
+
+                                                {% if preview_row_index == 0 %}
+                                                    header
+                                                {% endif %}
+                                            "
+                                            {% if preview_row_index == 0 %}
+                                            style="background: {{ template_item['accent'] }};"
+                                            {% endif %}
+                                        >
+                                            {{ cell }}
+                                        </span>
+
+                                        {% endfor %}
+
+                                    {% endfor %}
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="template-information">
+
+                                <div>
+
+                                    <div class="template-name">
+                                        {{ template_item["name"] }}
+                                    </div>
+
+                                    <div class="template-description">
+                                        {{ template_item["description"] }}
+                                    </div>
+
+                                </div>
+
+                                <button
+                                    class="
+                                        icon-button
+                                        favorite-button
+
+                                        {% if template_item["favorite"] %}
+                                            active
+                                        {% endif %}
+                                    "
+                                    data-class="button"
+                                    data-semantic="favorite_featured_{{ template_item['id'] }}"
+                                >
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="favorite_icon_{{ template_item['id'] }}"
+                                    >
+                                        {% if template_item["favorite"] %}
+                                            star
+                                        {% else %}
+                                            star_border
+                                        {% endif %}
+                                    </span>
+                                </button>
+
+                            </div>
+
+                        </article>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+                {% endif %}
+
+
+                <section
+                    data-class="section"
+                    data-semantic="template_results"
+                >
+
+                    <div class="section-heading">
+
+                        <h1>
+                            {{ template_gallery.section_title }}
+                        </h1>
+
+                        <button
+                            class="sort-button"
+                            data-class="button"
+                            data-semantic="sort_templates"
+                        >
+                            {{ template_gallery.sort_label }}
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="sort_templates_icon"
+                            >
+                                arrow_drop_down
+                            </span>
+                        </button>
+
+                    </div>
+
+
+                    {% if not template_gallery.templates %}
+
+                    <div class="empty-state">
+
+                        <div class="empty-state-content">
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    empty-state-icon
+                                "
+                                data-class="icon"
+                                data-semantic="no_templates_icon"
+                            >
+                                search_off
+                            </span>
+
+                            <h2>
+                                No templates found
+                            </h2>
+
+                            <p>
+                                Try another search term or browse all
+                                available template categories.
+                            </p>
+
+                            <button
+                                class="primary-button"
+                                data-class="button"
+                                data-semantic="browse_all_templates"
+                            >
+                                Browse all templates
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    {% else %}
+
+                    <div class="template-grid">
+
+                        {% for template_item in template_gallery.templates %}
+
+                        <article
+                            class="template-card"
+                            data-class="card"
+                            data-semantic="template_{{ template_item['id'] }}"
+                        >
+
+                            <div class="template-preview">
+
+                                <div class="preview-sheet">
+
+                                    {% for preview_row in template_item["preview_rows"] %}
+
+                                        {% set preview_row_index = loop.index0 %}
+
+                                        {% for cell in preview_row %}
+
+                                        <span
+                                            class="
+                                                preview-cell
+
+                                                {% if preview_row_index == 0 %}
+                                                    header
+                                                {% endif %}
+                                            "
+                                            {% if preview_row_index == 0 %}
+                                            style="background: {{ template_item['accent'] }};"
+                                            {% endif %}
+                                        >
+                                            {{ cell }}
+                                        </span>
+
+                                        {% endfor %}
+
+                                    {% endfor %}
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="template-information">
+
+                                <div>
+
+                                    <div class="template-name">
+                                        {{ template_item["name"] }}
+                                    </div>
+
+                                    <div class="template-description">
+                                        {{ template_item["description"] }}
+                                    </div>
+
+                                </div>
+
+                                <button
+                                    class="
+                                        icon-button
+                                        favorite-button
+
+                                        {% if template_item["favorite"] %}
+                                            active
+                                        {% endif %}
+                                    "
+                                    data-class="button"
+                                    data-semantic="favorite_{{ template_item['id'] }}"
+                                >
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="favorite_icon_{{ template_item['id'] }}"
+                                    >
+                                        {% if template_item["favorite"] %}
+                                            star
+                                        {% else %}
+                                            star_border
+                                        {% endif %}
+                                    </span>
+                                </button>
+
+                            </div>
+
+                        </article>
+
+                        {% endfor %}
+
+                    </div>
+
+                    {% endif %}
+
+                </section>
+
+            </main>
+
+        </div>
+
+    </div>
+
+
+    {% if
+        template_gallery.state == "preview_dialog"
+        and template_gallery.preview_template
+    %}
+
+        {% set selected_template =
+            template_gallery.preview_template
+        %}
+
+        <div class="dialog-scrim"></div>
+
+        <section
+            class="preview-dialog"
+            data-class="dialog"
+            data-semantic="template_preview_dialog"
+            data-occluder="true"
+        >
+
+            <div class="dialog-preview-area">
+
+                <div class="dialog-sheet">
+
+                    {% for preview_row in selected_template["preview_rows"] %}
+
+                        {% set preview_row_index = loop.index0 %}
+
+                        {% for cell in preview_row %}
+
+                        <span
+                            class="
+                                dialog-cell
+
+                                {% if preview_row_index == 0 %}
+                                    header
+                                {% endif %}
+                            "
+                            {% if preview_row_index == 0 %}
+                            style="background: {{ selected_template['accent'] }};"
+                            {% endif %}
+                        >
+                            {{ cell }}
+                        </span>
+
+                        {% endfor %}
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+
+            <div class="dialog-information">
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="close_template_preview"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="close_preview_icon"
+                    >
+                        close
+                    </span>
+                </button>
+
+                <h2>
+                    {{ selected_template["name"] }}
+                </h2>
+
+                <p>
+                    {{ selected_template["description"] }}
+                </p>
+
+                <p>
+                    Used by
+                    {{ selected_template["usage_count"] }}
+                    people
+                </p>
+
+                <div class="dialog-spacer"></div>
+
+                <div class="dialog-actions">
+
+                    <button
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="favorite_preview_template"
+                    >
+                        {% if selected_template["favorite"] %}
+                            Remove favorite
+                        {% else %}
+                            Add to favorites
+                        {% endif %}
+                    </button>
+
+                    <button
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="use_template"
+                    >
+                        Use template
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

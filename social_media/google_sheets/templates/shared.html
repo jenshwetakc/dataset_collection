@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Shared with me – Google Sheets{% endblock %}
+
+{% block styles %}
+.shared-page { min-height:100vh; background:var(--background); color:var(--text-primary); }
+.topbar { position:sticky; top:0; z-index:20; height:72px; display:grid; grid-template-columns:238px minmax(260px,720px) 1fr; align-items:center; gap:18px; padding:0 20px; background:var(--background); }
+.brand { display:flex; align-items:center; gap:10px; min-width:0; font-size:21px; color:var(--text-secondary); }
+.sheets-logo { width:36px; height:36px; display:grid; place-items:center; border-radius:6px; background:#0f9d58; color:white; }
+.search { height:48px; display:flex; align-items:center; gap:12px; padding:0 15px; border-radius:24px; background:var(--surface-variant); color:var(--text-secondary); }
+.search input { width:100%; min-width:0; color:var(--text-primary); }
+.top-actions { display:flex; align-items:center; justify-content:flex-end; gap:5px; }
+.avatar { display:grid; place-items:center; width:34px; height:34px; border-radius:50%; color:white; font-weight:700; background:#7c4dff; }
+.layout { display:grid; grid-template-columns:256px minmax(0,1fr); min-height:calc(100vh - 72px); }
+.sidebar { padding:12px 14px; }
+.new-button { width:112px; height:48px; display:flex; align-items:center; justify-content:center; gap:9px; margin:4px 0 18px; border-radius:15px; background:var(--surface); box-shadow:0 1px 3px #0004; font-weight:600; }
+.nav-item { width:100%; height:42px; display:flex; align-items:center; gap:15px; padding:0 18px; border-radius:0 22px 22px 0; color:var(--text-secondary); text-align:left; }
+.nav-item.active { color:var(--on-primary-container); background:var(--primary-container); font-weight:700; }
+.content { min-width:0; padding:18px 28px 70px; }
+.content-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.content-head h1 { margin:0; font-size:24px; font-weight:500; }
+.view-actions { display:flex; align-items:center; gap:5px; }
+.filter-row { display:flex; gap:8px; padding:20px 0 18px; overflow:hidden; }
+.filter { height:34px; display:flex; align-items:center; gap:7px; padding:0 14px; border:1px solid var(--border); border-radius:9px; white-space:nowrap; }
+.section-title { margin:10px 0 15px; font-size:14px; font-weight:600; }
+.file-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:18px; }
+.file-card { position:relative; min-width:0; border:1px solid var(--border-subtle); border-radius:13px; overflow:hidden; background:var(--surface); }
+.file-card.selected { outline:2px solid var(--primary); background:var(--primary-container); }
+.preview { height:145px; margin:8px; padding:18px 15px; overflow:hidden; border-radius:8px; background:var(--background); border:1px solid var(--border-subtle); }
+.preview-line { height:9px; margin-bottom:12px; border-radius:4px; background:var(--border-subtle); }
+.file-info { padding:10px 13px 13px; }
+.file-title { display:flex; align-items:center; gap:9px; min-width:0; font-size:14px; font-weight:600; }
+.file-title span:nth-child(2) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sheet-icon { color:#0f9d58; }
+.file-meta { display:flex; align-items:center; gap:8px; margin-top:12px; color:var(--text-secondary); font-size:12px; }
+.owner-avatar { width:23px; height:23px; display:grid; place-items:center; border-radius:50%; color:white; font-size:11px; font-weight:700; }
+.card-more { position:absolute; right:8px; bottom:8px; }
+.file-list { display:flex; flex-direction:column; border-top:1px solid var(--border-subtle); }
+.file-row { min-width:0; height:58px; display:grid; grid-template-columns:minmax(220px,1fr) 180px 110px 45px; align-items:center; gap:12px; padding:0 8px; border-bottom:1px solid var(--border-subtle); }
+.file-row.selected { background:var(--primary-container); outline:2px solid var(--primary); outline-offset:-2px; }
+.row-owner,.row-title { display:flex; align-items:center; gap:9px; min-width:0; }
+.row-title span:nth-child(2),.row-owner span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.muted { color:var(--text-secondary); font-size:13px; }
+.empty { min-height:480px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.empty .material-symbols-rounded { font-size:84px; color:var(--border); }
+.empty h2 { margin:20px 0 8px; font-size:21px; }
+.empty p { max-width:360px; margin:0; color:var(--text-secondary); line-height:1.5; }
+.skeleton { border-radius:8px; background:linear-gradient(90deg,var(--surface-variant),var(--border-subtle),var(--surface-variant)); background-size:200% 100%; }
+.skeleton-card { height:225px; border-radius:13px; }
+.details-panel { position:fixed; z-index:30; right:0; top:72px; width:340px; height:calc(100vh - 72px); padding:20px; border-left:1px solid var(--border-subtle); background:var(--surface); box-shadow:-5px 0 15px #0002; }
+.details-panel h2 { margin:4px 0 22px; font-size:19px; }
+.detail-preview { height:170px; display:grid; place-items:center; border:1px solid var(--border-subtle); border-radius:12px; background:var(--background); }
+.detail-preview .material-symbols-rounded { color:#0f9d58; font-size:64px; }
+.detail-line { padding:15px 0; border-bottom:1px solid var(--border-subtle); }
+.detail-label { color:var(--text-secondary); font-size:12px; }
+.detail-value { margin-top:6px; font-size:14px; }
+.scrim { position:fixed; inset:0; z-index:80; background:#0008; }
+.dialog { position:fixed; z-index:90; left:50%; top:50%; width:min(520px,calc(100vw - 28px)); transform:translate(-50%,-50%); padding:24px; border-radius:18px; background:var(--surface); color:var(--on-surface); box-shadow:0 14px 45px #0008; }
+.dialog h2 { margin:0 0 8px; font-size:22px; }
+.dialog p { color:var(--text-secondary); line-height:1.5; }
+.dialog-field { height:46px; display:flex; align-items:center; margin:20px 0; padding:0 13px; border:1px solid var(--border); border-radius:8px; }
+.dialog-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+.text-button,.primary-button { min-height:38px; padding:0 18px; border-radius:20px; font-weight:700; color:var(--primary); }
+.primary-button { color:var(--on-primary); background:var(--primary); }
+.person-card { display:flex; align-items:center; gap:12px; margin:18px 0; padding:12px; border-radius:10px; background:var(--surface-variant); }
+.menu { position:fixed; z-index:90; top:34%; left:50%; width:250px; transform:translate(-10%,-20%); padding:7px 0; border-radius:10px; background:var(--surface); color:var(--on-surface); box-shadow:0 8px 28px #0007; }
+.menu-item { width:100%; height:42px; display:flex; align-items:center; gap:13px; padding:0 17px; text-align:left; }
+.menu-item:last-child { color:var(--error); }
+@media (max-width:1023px) {
+  .topbar { top:0; height:64px; grid-template-columns:auto minmax(0,1fr) auto; padding:0 10px; gap:8px; }
+  .brand span:last-child,.top-actions .desktop-only { display:none; }
+  .layout { grid-template-columns:1fr; min-height:calc(100vh - 64px); }
+  .sidebar { display:none; }
+  .content { padding:16px 14px 64px; }
+  .file-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
+  .preview { height:112px; }
+  .details-panel { top:92px; width:min(340px,92vw); height:calc(100vh - 92px); }
+}
+@media (max-width:520px) {
+  .topbar { grid-template-columns:40px minmax(0,1fr) 40px; }
+  .search { height:42px; }
+  .search .filter-search { display:none; }
+  .content-head h1 { font-size:21px; }
+  .file-grid { grid-template-columns:1fr; }
+  .preview { height:155px; }
+  .file-row { grid-template-columns:minmax(0,1fr) 40px; }
+  .row-owner,.row-date { display:none; }
+  .dialog { padding:20px; }
+  .menu { top:40%; left:50%; transform:translate(-50%,-20%); }
+}
+{% endblock %}
+
+{% block content %}
+{% set popup = shared.is_popup %}
+<div class="shared-page">
+  <div {% if popup %}data-annotation-skip="true"{% endif %}>
+    <header class="topbar" data-class="app_bar" data-semantic="shared_top_app_bar" data-occluder="true">
+      <div class="brand">
+        <span class="sheets-logo material-symbols-rounded" data-class="icon" data-semantic="sheets_logo">table_view</span>
+        <span>Sheets</span>
+      </div>
+      <div class="search" data-class="search_bar" data-semantic="search_shared_files">
+        <span class="material-symbols-rounded" data-class="icon" data-semantic="search_icon">search</span>
+        <input value="{{ shared.query }}" placeholder="Search in Sheets" aria-label="Search in Sheets">
+        <span class="material-symbols-rounded filter-search" data-class="icon" data-semantic="search_options">tune</span>
+      </div>
+      <div class="top-actions">
+        <button class="icon-button desktop-only" data-class="button" data-semantic="help_button"><span class="material-symbols-rounded" data-class="icon" data-semantic="help_icon">help</span></button>
+        <button class="icon-button desktop-only" data-class="button" data-semantic="settings_button"><span class="material-symbols-rounded" data-class="icon" data-semantic="settings_icon">settings</span></button>
+        <div class="avatar" data-class="avatar" data-semantic="account_avatar">{{ shared.account_initial }}</div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" data-class="navigation_bar" data-semantic="sheets_navigation">
+        <button class="new-button" data-class="button" data-semantic="new_spreadsheet"><span class="material-symbols-rounded" data-class="icon" data-semantic="new_icon">add</span>New</button>
+        {% for nav in shared.navigation %}
+        <button class="nav-item{% if nav.active %} active{% endif %}" data-class="button" data-semantic="nav_{{ nav.label|lower|replace(' ','_') }}">
+          <span class="material-symbols-rounded" data-class="icon" data-semantic="nav_{{ nav.icon }}_icon">{{ nav.icon }}</span><span>{{ nav.label }}</span>
+        </button>
+        {% endfor %}
+      </aside>
+
+      <main class="content" data-class="section" data-semantic="shared_files_content">
+        <div class="content-head">
+          <h1>{% if shared.state == "search_results" %}Search results{% else %}Shared with me{% endif %}</h1>
+          <div class="view-actions">
+            <button class="icon-button" data-class="button" data-semantic="sort_button"><span class="material-symbols-rounded" data-class="icon" data-semantic="sort_icon">sort</span></button>
+            <button class="icon-button" data-class="button" data-semantic="view_mode_button"><span class="material-symbols-rounded" data-class="icon" data-semantic="view_mode_icon">{% if shared.view_mode == "list" %}grid_view{% else %}view_list{% endif %}</span></button>
+            <button class="icon-button" data-class="button" data-semantic="details_button"><span class="material-symbols-rounded" data-class="icon" data-semantic="details_icon">info</span></button>
+          </div>
+        </div>
+        <div class="filter-row">
+          {% for filter_name in shared.filters %}<button class="filter" data-class="button" data-semantic="filter_{{ filter_name|lower }}">{{ filter_name }}<span class="material-symbols-rounded" data-class="icon" data-semantic="filter_{{ filter_name|lower }}_icon">arrow_drop_down</span></button>{% endfor %}
+        </div>
+
+        {% if shared.state == "empty" %}
+        <section class="empty" data-class="section" data-semantic="empty_shared_files">
+          <span class="material-symbols-rounded" data-class="icon" data-semantic="empty_state_icon">group_off</span>
+          <h2>No files have been shared with you</h2><p>Files shared by other people will appear here.</p>
+        </section>
+        {% elif shared.state == "loading" %}
+        <section class="file-grid" data-class="section" data-semantic="loading_file_grid">
+          {% for number in range(8) %}<div class="skeleton skeleton-card"></div>{% endfor %}
+        </section>
+        {% else %}
+        <div class="section-title">{% if shared.state == "search_results" %}Results for “{{ shared.query }}”{% else %}Files{% endif %}</div>
+          {% if shared.view_mode == "list" %}
+          <section class="file-list" data-class="section" data-semantic="shared_file_list">
+            {% for sheet_file in shared.files %}
+            <article class="file-row{% if shared.state in ['file_selected','context_menu','details_panel'] and sheet_file.id == shared.selected_id %} selected{% endif %}" data-class="card" data-semantic="shared_file_{{ sheet_file.id }}">
+              <div class="row-title"><span class="material-symbols-rounded sheet-icon" data-class="icon" data-semantic="file_type_{{ sheet_file.id }}">table_view</span><span>{{ sheet_file.title }}</span></div>
+              <div class="row-owner muted"><span class="owner-avatar" style="background:{{ sheet_file.owner_color }}" data-class="avatar" data-semantic="owner_avatar_{{ sheet_file.id }}">{{ sheet_file.owner_initial }}</span><span>{{ sheet_file.owner }}</span></div>
+              <span class="row-date muted">{{ sheet_file.modified }}</span>
+              <button class="icon-button" data-class="button" data-semantic="file_menu_{{ sheet_file.id }}"><span class="material-symbols-rounded" data-class="icon" data-semantic="file_menu_icon_{{ sheet_file.id }}">more_vert</span></button>
+            </article>
+            {% endfor %}
+          </section>
+          {% else %}
+          <section class="file-grid" data-class="section" data-semantic="shared_file_grid">
+            {% for sheet_file in shared.files %}
+            <article class="file-card{% if shared.state in ['file_selected','context_menu','details_panel'] and sheet_file.id == shared.selected_id %} selected{% endif %}" data-class="card" data-semantic="shared_file_{{ sheet_file.id }}">
+              <div class="preview" data-class="image" data-semantic="spreadsheet_preview_{{ sheet_file.id }}">
+                {% for line_width in sheet_file.preview_rows %}<div class="preview-line" style="width:{{ line_width }}%"></div>{% endfor %}
+              </div>
+              <div class="file-info"><div class="file-title"><span class="material-symbols-rounded sheet-icon" data-class="icon" data-semantic="file_type_{{ sheet_file.id }}">table_view</span><span>{{ sheet_file.title }}</span></div><div class="file-meta"><span class="owner-avatar" style="background:{{ sheet_file.owner_color }}" data-class="avatar" data-semantic="owner_avatar_{{ sheet_file.id }}">{{ sheet_file.owner_initial }}</span><span>{{ sheet_file.owner }} · {{ sheet_file.modified }}</span></div></div>
+              <button class="icon-button card-more" data-class="button" data-semantic="file_menu_{{ sheet_file.id }}"><span class="material-symbols-rounded" data-class="icon" data-semantic="file_menu_icon_{{ sheet_file.id }}">more_vert</span></button>
+            </article>
+            {% endfor %}
+          </section>
+          {% endif %}
+        {% endif %}
+      </main>
+    </div>
+
+    {% if shared.state == "details_panel" %}
+    <aside class="details-panel" data-class="section" data-semantic="file_details_panel">
+      <h2>Details</h2><div class="detail-preview" data-class="image" data-semantic="detail_file_preview"><span class="material-symbols-rounded">table_view</span></div>
+      <div class="detail-line"><div class="detail-label">Name</div><div class="detail-value">{{ shared.selected_file.title }}</div></div>
+      <div class="detail-line"><div class="detail-label">Owner</div><div class="detail-value">{{ shared.selected_file.owner }}</div></div>
+      <div class="detail-line"><div class="detail-label">People with access</div><div class="detail-value">{{ shared.selected_file.shared_with }} people</div></div>
+    </aside>
+    {% endif %}
+  </div>
+
+  {% if popup %}<div class="scrim" data-annotation-skip="true"></div>{% endif %}
+
+  {% if shared.state == "context_menu" %}
+  <div class="menu" data-class="dialog" data-semantic="file_context_menu" data-occluder="true">
+    {% for action in shared.context_actions %}<button class="menu-item" data-class="button" data-semantic="context_{{ action.label|lower|replace(' ','_') }}"><span class="material-symbols-rounded" data-class="icon" data-semantic="context_{{ action.icon }}_icon">{{ action.icon }}</span>{{ action.label }}</button>{% endfor %}
+  </div>
+  {% elif shared.state == "share_dialog" %}
+  <section class="dialog" data-class="dialog" data-semantic="share_file_dialog" data-occluder="true">
+    <h2>Share “{{ shared.selected_file.title }}”</h2><div class="dialog-field" data-class="input_field" data-semantic="share_people_input"><input placeholder="Add people, groups, and calendar events"></div>
+    <div class="person-card"><div class="owner-avatar" style="background:{{ shared.selected_file.owner_color }}" data-class="avatar" data-semantic="owner_dialog_avatar">{{ shared.selected_file.owner_initial }}</div><div><strong>{{ shared.selected_file.owner }}</strong><div class="muted">Owner</div></div></div>
+    <div class="dialog-actions"><button class="text-button" data-class="button" data-semantic="copy_link_button">Copy link</button><button class="primary-button" data-class="button" data-semantic="done_button">Done</button></div>
+  </section>
+  {% elif shared.state == "access_request_dialog" %}
+  <section class="dialog" data-class="dialog" data-semantic="access_request_dialog" data-occluder="true">
+    <h2>Request access</h2><p>You need permission to open “{{ shared.selected_file.title }}”. Send a request to the file owner.</p>
+    <div class="person-card"><div class="avatar" data-class="avatar" data-semantic="requester_avatar">{{ shared.account_initial }}</div><div><strong>{{ shared.account_name }}</strong><div class="muted">Signed-in account</div></div></div>
+    <div class="dialog-field" data-class="input_field" data-semantic="request_message_input"><input value="Please grant me access to this spreadsheet." aria-label="Request message"></div>
+    <div class="dialog-actions"><button class="text-button" data-class="button" data-semantic="cancel_request">Cancel</button><button class="primary-button" data-class="button" data-semantic="send_request">Request access</button></div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

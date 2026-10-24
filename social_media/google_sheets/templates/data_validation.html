@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ validation["document_title"] }} – Google Sheets{% endblock %}
+
+{% block styles %}
+.dv-root { min-height: 100vh; background: var(--surface); }
+.appbar { position: sticky; top: 0; z-index: 30; height: 64px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; background: var(--surface); border-bottom: 1px solid var(--border-subtle); }
+.logo { width: 34px; height: 42px; border-radius: 4px; display: grid; place-items: center; flex: 0 0 auto; background: #0f9d58; color: white; }
+.title-group { flex: 1; min-width: 0; }
+.doc-title { overflow: hidden; color: var(--text-primary); font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+.menus { display: flex; gap: 18px; margin-top: 5px; color: var(--text-secondary); font-size: 13px; }
+.avatar { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; color: var(--on-primary-container); background: var(--primary-container); font-weight: 700; }
+.share { height: 38px; min-width: 78px; padding: 0 17px; border-radius: 20px; color: var(--on-primary); background: var(--primary); font-weight: 700; }
+.toolbar { position: sticky; top: 64px; z-index: 25; height: 46px; padding: 5px 12px; display: flex; align-items: center; gap: 4px; overflow: hidden; background: var(--surface); border-bottom: 1px solid var(--border-subtle); }
+.icon-btn { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; border-radius: 50%; color: var(--icon); }
+.divider { width: 1px; height: 25px; margin: 0 5px; background: var(--border-subtle); }
+.zoom { height: 32px; padding: 0 10px; display: grid; place-items: center; border-radius: 5px; background: var(--surface-variant); font-size: 12px; }
+.workspace { min-height: calc(100vh - 110px); display: grid; grid-template-columns: minmax(0, 1fr) 370px; }
+.sheet { min-width: 0; padding-bottom: 44px; overflow: auto; background: var(--surface); }
+.formula { position: sticky; top: 110px; z-index: 15; height: 38px; display: grid; grid-template-columns: 86px 42px minmax(250px, 1fr); align-items: center; background: var(--surface); border-bottom: 1px solid var(--border-subtle); }
+.name-box { height: 100%; display: grid; place-items: center; border-right: 1px solid var(--border-subtle); font-size: 12px; }
+.fx { text-align: center; color: var(--text-secondary); font-style: italic; }
+.formula-field { height: 30px; margin-right: 8px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; }
+.grid { min-width: 1116px; display: grid; grid-template-columns: 46px 230px 150px 140px 120px 150px 110px 105px 145px; font-size: 12px; }
+.cell { min-height: 36px; padding: 8px; overflow: hidden; border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); background: var(--surface); text-overflow: ellipsis; white-space: nowrap; }
+.corner,.letter,.row-number { text-align: center; color: var(--text-secondary); background: var(--surface-variant); font-weight: 600; }
+.header { background: color-mix(in srgb, var(--primary-container) 45%, var(--surface)); font-weight: 700; }
+.selected { border-left: 2px solid #188038; border-right: 2px solid #188038; background: color-mix(in srgb, #34a853 13%, var(--surface)); }
+.chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 4px 8px; border-radius: 12px; color: #3c4043; background: #d2e3fc; font-weight: 600; }
+.chip.progress { background: #fce8b2; }.chip.review { background: #e8d7f1; }.chip.done { background: #b7e1cd; }
+.check { width: 18px; height: 18px; display: inline-grid; place-items: center; border: 2px solid var(--border); border-radius: 2px; }
+.check.checked { color: white; background: #188038; border-color: #188038; }
+.tabsbar { position: fixed; z-index: 20; right: 370px; bottom: 0; left: 0; height: 44px; padding: 0 12px; display: flex; align-items: center; gap: 8px; background: var(--surface); border-top: 1px solid var(--border-subtle); }
+.sheet-tab { height: 34px; padding: 0 16px; color: var(--text-primary); border-bottom: 3px solid #0f9d58; font-weight: 700; }
+.panel { position: relative; z-index: 22; min-height: calc(100vh - 110px); background: var(--surface); border-left: 1px solid var(--border-subtle); }
+.panel-head { min-height: 58px; padding: 12px 14px 10px 18px; display: flex; align-items: center; border-bottom: 1px solid var(--border-subtle); }
+.panel-title { flex: 1; font-size: 16px; font-weight: 700; }
+.panel-body { padding: 16px 18px 90px; }
+.label { margin: 17px 0 7px; color: var(--text-secondary); font-size: 12px; font-weight: 700; }
+.field { min-height: 42px; padding: 8px 10px; display: flex; align-items: center; gap: 7px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); }
+.field-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.field.error { border-color: var(--error); }.error-text { margin-top: 5px; color: var(--error); font-size: 12px; }
+.rules { display: grid; gap: 10px; }
+.rule { padding: 11px; display: grid; grid-template-columns: 38px minmax(0,1fr) 34px; align-items: center; gap: 9px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface); }
+.rule-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 7px; color: var(--primary); background: var(--primary-container); }
+.rule-range { margin-top: 3px; color: var(--text-secondary); font-size: 11px; }
+.add-rule { width: 100%; height: 42px; margin-top: 15px; border: 1px solid var(--primary); border-radius: 21px; color: var(--primary); font-weight: 700; }
+.option-list { display: grid; gap: 8px; margin-top: 9px; }
+.option { min-height: 44px; padding: 6px 8px; display: grid; grid-template-columns: 25px 1fr 34px 34px; align-items: center; gap: 7px; border: 1px solid var(--border-subtle); border-radius: 6px; }
+.drag { color: var(--text-secondary); }.swatch { width: 24px; height: 24px; border-radius: 50%; }
+.add-option { height: 38px; margin-top: 8px; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: 700; }
+.style-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.toggle-row { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.switch { position: relative; width: 38px; height: 22px; border-radius: 11px; background: var(--primary); }
+.switch::after { content: ""; position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--on-primary); }
+.actions { position: absolute; right: 0; bottom: 0; left: 0; min-height: 68px; padding: 12px 18px; display: flex; justify-content: flex-end; gap: 9px; background: var(--surface); border-top: 1px solid var(--border-subtle); }
+.text-btn,.primary-btn { height: 38px; padding: 0 19px; border-radius: 19px; font-weight: 700; }.text-btn { color: var(--primary); }.primary-btn { color: var(--on-primary); background: var(--primary); }
+.empty,.loading { min-height: 340px; display: grid; place-items: center; color: var(--text-secondary); text-align: center; }.empty-icon { color: var(--icon); font-size: 50px; }.spinner { width: 38px; height: 38px; margin: auto; border: 4px solid var(--border-subtle); border-top-color: var(--primary); border-radius: 50%; }
+.scrim { position: fixed; z-index: 90; inset: 0; background: rgba(0,0,0,.42); }
+.dialog { position: fixed; z-index: 100; top: 50%; left: 50%; width: min(440px,calc(100vw - 28px)); padding: 22px; border-radius: 14px; color: var(--on-surface); background: var(--surface); box-shadow: 0 18px 60px rgba(0,0,0,.34); transform: translate(-50%,-50%); }
+.dialog-title { margin-bottom: 10px; font-size: 19px; font-weight: 700; }.dialog-copy { margin-bottom: 17px; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.range-options { display: grid; gap: 7px; margin-top: 10px; }.range-option { min-height: 40px; padding: 0 10px; display: flex; align-items: center; gap: 10px; border-radius: 5px; background: var(--surface-variant); }
+.popup-menu { position: fixed; z-index: 100; top: 145px; right: 24px; width: 220px; padding: 8px 0; border-radius: 9px; background: var(--surface); box-shadow: 0 10px 34px rgba(0,0,0,.3); }.menu-item { width: 100%; height: 42px; padding: 0 14px; display: flex; align-items: center; gap: 12px; }.danger { color: var(--error); }
+@media (max-width: 1023px) {
+  .appbar { top: 28px; height: 58px; padding: 7px 10px; }.menus,.share { display: none; }.toolbar { top: 86px; }.formula { top: 132px; }
+  .workspace { grid-template-columns: 1fr; }.sheet { min-height: 380px; max-height: 46vh; }.panel { min-height: 590px; border-top: 1px solid var(--border-subtle); border-left: 0; }.tabsbar { position: absolute; top: calc(46vh + 88px); right: 0; bottom: auto; }.actions { position: sticky; bottom: 0; }
+}
+@media (max-width: 599px) {
+  .logo { width: 30px; height: 36px; }.doc-title { font-size: 15px; }.toolbar .icon-btn:nth-of-type(n+7) { display: none; }.sheet { max-height: 40vh; }.tabsbar { top: calc(40vh + 88px); }.panel-body { padding: 14px 14px 90px; }.popup-menu { top: 118px; right: 12px; }
+}
+{% endblock %}
+
+{% macro icon_button(icon, semantic) -%}
+<button class="icon-btn" data-class="button" data-semantic="{{ semantic }}"><span class="material-symbols-rounded" data-class="icon" data-semantic="{{ semantic }}_icon">{{ icon }}</span></button>
+{%- endmacro %}
+
+{% block content %}
+<div class="dv-root">
+  <div {% if validation["is_popup"] %}data-annotation-skip="true"{% endif %}>
+    <header class="appbar" data-class="app_bar" data-semantic="sheets_app_bar" data-occluder="true">
+      <div class="logo" data-class="icon" data-semantic="sheets_logo"><span class="material-symbols-rounded">table_view</span></div>
+      <div class="title-group"><div class="doc-title">{{ validation["document_title"] }}</div><div class="menus"><span>File</span><span>Edit</span><span>View</span><span>Insert</span><span>Format</span><span>Data</span><span>Tools</span></div></div>
+      {{ icon_button("history", "version_history") }}{{ icon_button("comment", "comments") }}
+      <button class="share" data-class="button" data-semantic="share_button">Share</button><div class="avatar" data-class="avatar" data-semantic="account_avatar">{{ validation["account_initial"] }}</div>
+    </header>
+    <nav class="toolbar" data-class="navigation_bar" data-semantic="spreadsheet_toolbar">
+      {{ icon_button("undo", "undo") }}{{ icon_button("redo", "redo") }}<span class="divider"></span><div class="zoom">100%</div><span class="divider"></span>{{ icon_button("format_bold", "bold") }}{{ icon_button("format_italic", "italic") }}{{ icon_button("format_color_text", "text_color") }}{{ icon_button("format_color_fill", "fill_color") }}{{ icon_button("borders", "borders") }}
+    </nav>
+    <div class="workspace">
+      <section class="sheet" data-class="section" data-semantic="task_spreadsheet">
+        <div class="formula"><div class="name-box">E2</div><div class="fx">fx</div><div class="formula-field" data-class="input_field" data-semantic="formula_input">{{ validation["rows"][0]["status"] }}</div></div>
+        <div class="grid">
+          <div class="cell corner"></div>{% for letter in ["A","B","C","D","E","F","G","H"] %}<div class="cell letter">{{ letter }}</div>{% endfor %}
+          <div class="cell row-number">1</div>{% for header_text in validation["headers"] %}<div class="cell header">{{ header_text }}</div>{% endfor %}
+          {% for row_record in validation["rows"] %}
+            <div class="cell row-number">{{ row_record["row_number"] }}</div><div class="cell">{{ row_record["task"] }}</div><div class="cell">{{ row_record["owner"] }}</div><div class="cell">{{ row_record["department"] }}</div><div class="cell">{{ row_record["priority"] }}</div>
+            <div class="cell selected"><span class="chip {% if row_record['status'] == 'In progress' %}progress{% elif row_record['status'] == 'In review' %}review{% elif row_record['status'] == 'Done' %}done{% endif %}">{{ row_record["status"] }} <span class="material-symbols-rounded" style="font-size:15px">arrow_drop_down</span></span></div>
+            <div class="cell">{{ row_record["progress_text"] }}</div><div class="cell"><span class="check {% if row_record['approved'] %}checked{% endif %}" data-class="checkbox" data-semantic="approval_{{ loop.index }}">{% if row_record["approved"] %}✓{% endif %}</span></div><div class="cell">{{ row_record["due_date"] }}</div>
+          {% endfor %}
+        </div>
+      </section>
+      <div class="tabsbar" data-class="navigation_bar" data-semantic="sheet_tabs">{{ icon_button("add", "add_sheet") }}<button class="sheet-tab" data-class="tab" data-semantic="active_sheet">{{ validation["sheet_name"] }}</button></div>
+      <aside class="panel" data-class="section" data-semantic="data_validation_panel">
+        <div class="panel-head"><div class="panel-title">Data validation rules</div>{{ icon_button("close", "close_panel") }}</div>
+        {% if validation["state"] == "loading" %}
+          <div class="loading"><div><div class="spinner" data-class="progress_bar" data-semantic="loading_indicator"></div><p>Loading rules…</p></div></div>
+        {% elif validation["state"] == "empty_state" %}
+          <div class="empty"><div><span class="material-symbols-rounded empty-icon" data-class="icon" data-semantic="empty_validation_icon">fact_check</span><h3>No data validation rules</h3><p>Add rules to control what can be entered.</p><button class="primary-btn" data-class="button" data-semantic="add_first_rule">Add rule</button></div></div>
+        {% elif validation["state"] in ["rules_list","rule_menu","delete_dialog"] %}
+          <div class="panel-body"><div class="rules">
+            {% for rule_record in validation["rules"] %}<article class="rule" data-class="card" data-semantic="validation_rule_{{ loop.index }}"><div class="rule-icon"><span class="material-symbols-rounded" data-class="icon" data-semantic="rule_type_icon_{{ loop.index }}">{{ rule_record["icon"] }}</span></div><div><strong>{{ rule_record["criterion"] }}</strong><div>{{ rule_record["summary"] }}</div><div class="rule-range">{{ rule_record["range"] }}</div></div>{{ icon_button("more_vert", "rule_menu_" ~ loop.index) }}</article>{% endfor %}
+          </div><button class="add-rule" data-class="button" data-semantic="add_rule">+ Add rule</button></div>
+        {% else %}
+          <div class="panel-body">
+            <div class="label">Apply to range</div><div class="field"><div class="field-value">{{ validation["apply_range"] }}</div>{{ icon_button("grid_on", "select_range") }}</div>
+            <div class="label">Criteria</div>
+            <div class="field"><div class="field-value">{% if validation["state"] == "checkbox_editor" %}Checkbox{% elif validation["state"] == "number_editor" %}Number is between{% elif validation["state"] == "date_editor" %}Date {{ validation["date_condition"] }}{% else %}Dropdown{% endif %}</div><span class="material-symbols-rounded" data-class="icon" data-semantic="criteria_dropdown">arrow_drop_down</span></div>
+            {% if validation["state"] in ["dropdown_editor","invalid_rule","advanced_options"] %}
+              <div class="option-list">
+                {% for option_record in validation["dropdown_options"] %}<div class="option"><span class="material-symbols-rounded drag" data-class="icon" data-semantic="drag_option_{{ loop.index }}">drag_indicator</span><div class="field-value">{{ option_record["label"] }}</div><span class="swatch" style="background:{{ option_record['color'] }}" data-class="button" data-semantic="option_color_{{ loop.index }}"></span>{{ icon_button("close", "remove_option_" ~ loop.index) }}</div>{% endfor %}
+              </div><button class="add-option" data-class="button" data-semantic="add_dropdown_option"><span class="material-symbols-rounded" data-class="icon" data-semantic="add_option_icon">add</span>Add another item</button>
+              {% if validation["state"] == "invalid_rule" %}<div class="label">Additional item</div><div class="field error" data-class="input_field" data-semantic="invalid_option"><div class="field-value">{{ validation["invalid_value"] }}</div></div><div class="error-text">Dropdown items cannot be empty.</div>{% endif %}
+            {% elif validation["state"] == "checkbox_editor" %}
+              <div class="label">Custom cell values</div><div class="style-row"><div class="field" data-class="input_field" data-semantic="checked_value"><div class="field-value">TRUE</div></div><div class="field" data-class="input_field" data-semantic="unchecked_value"><div class="field-value">FALSE</div></div></div>
+            {% elif validation["state"] == "number_editor" %}
+              <div class="label">Values</div><div class="style-row"><div class="field" data-class="input_field" data-semantic="minimum_value"><div class="field-value">{{ validation["number_min"] }}</div></div><div class="field" data-class="input_field" data-semantic="maximum_value"><div class="field-value">{{ validation["number_max"] }}</div></div></div>
+            {% elif validation["state"] == "date_editor" %}
+              <div class="label">Date requirement</div><div class="field" data-class="input_field" data-semantic="date_requirement"><div class="field-value">Any valid date</div>{{ icon_button("calendar_today", "open_calendar") }}</div>
+            {% endif %}
+            {% if validation["state"] == "advanced_options" %}
+              <div class="label">Advanced options</div><div class="toggle-row"><div><strong>Show help text</strong><div class="rule-range">{{ validation["help_text"] }}</div></div><div class="switch" data-class="switch" data-semantic="show_help_text"></div></div><div class="toggle-row"><div><strong>Reject invalid input</strong><div class="rule-range">Prevent values outside the rule</div></div><div class="switch" data-class="switch" data-semantic="reject_invalid_input"></div></div>
+            {% endif %}
+          </div>
+          <div class="actions"><button class="text-btn" data-class="button" data-semantic="cancel_rule">Cancel</button><button class="primary-btn" data-class="button" data-semantic="save_rule">Done</button></div>
+        {% endif %}
+      </aside>
+    </div>
+  </div>
+  {% if validation["is_popup"] %}<div class="scrim" data-annotation-skip="true"></div>{% endif %}
+  {% if validation["state"] == "range_dialog" %}
+    <section class="dialog" data-class="dialog" data-semantic="select_range_dialog" data-occluder="true"><div class="dialog-title">Select a data range</div><div class="field" data-class="input_field" data-semantic="range_input"><div class="field-value">{{ validation["apply_range"] }}</div>{{ icon_button("grid_on", "range_picker") }}</div><div class="range-options">{% for range_text in validation["range_suggestions"] %}<button class="range-option" data-class="button" data-semantic="range_option_{{ loop.index }}"><span class="material-symbols-rounded" data-class="icon" data-semantic="range_icon_{{ loop.index }}">table_view</span>{{ range_text }}</button>{% endfor %}</div><div class="dialog-actions"><button class="text-btn" data-class="button" data-semantic="cancel_range">Cancel</button><button class="primary-btn" data-class="button" data-semantic="confirm_range">OK</button></div></section>
+  {% elif validation["state"] == "rule_menu" %}
+    <section class="popup-menu" data-class="dialog" data-semantic="rule_options_menu" data-occluder="true"><button class="menu-item" data-class="button" data-semantic="edit_rule"><span class="material-symbols-rounded" data-class="icon" data-semantic="edit_rule_icon">edit</span>Edit rule</button><button class="menu-item" data-class="button" data-semantic="duplicate_rule"><span class="material-symbols-rounded" data-class="icon" data-semantic="duplicate_rule_icon">content_copy</span>Duplicate</button><button class="menu-item danger" data-class="button" data-semantic="delete_rule"><span class="material-symbols-rounded" data-class="icon" data-semantic="delete_rule_icon">delete</span>Delete rule</button></section>
+  {% elif validation["state"] == "delete_dialog" %}
+    <section class="dialog" data-class="dialog" data-semantic="delete_validation_dialog" data-occluder="true"><div class="dialog-title">Delete data validation rule?</div><div class="dialog-copy">The dropdown and validation settings will be removed from {{ validation["selected_rule"]["range"] }}. Existing values will remain.</div><div class="dialog-actions"><button class="text-btn" data-class="button" data-semantic="cancel_delete">Cancel</button><button class="primary-btn" data-class="button" data-semantic="confirm_delete">Delete</button></div></section>
+  {% endif %}
+</div>
+{% endblock %}

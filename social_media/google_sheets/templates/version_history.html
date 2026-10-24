@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Version history – Google Sheets{% endblock %}
+
+{% block styles %}
+.history-page { min-height:100vh; background:var(--background); color:var(--text-primary); }
+.history-bar { position:sticky; top:0; z-index:30; height:68px; display:flex; align-items:center; gap:12px; padding:0 18px; border-bottom:1px solid var(--border-subtle); background:var(--surface); }
+.history-logo { width:36px; height:36px; display:grid; place-items:center; flex:0 0 auto; border-radius:6px; color:#fff; background:#0f9d58; }
+.document-info { min-width:0; flex:1; }
+.document-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:17px; font-weight:600; }
+.document-subtitle { margin-top:3px; color:var(--text-secondary); font-size:12px; }
+.bar-actions { display:flex; align-items:center; gap:6px; }
+.restore-button { min-height:38px; padding:0 18px; border-radius:20px; color:var(--on-primary); background:var(--primary); font-weight:700; }
+.account-avatar { width:34px; height:34px; display:grid; place-items:center; border-radius:50%; color:#fff; background:#7c4dff; font-weight:700; }
+.history-layout { display:grid; grid-template-columns:minmax(0,1fr) 360px; height:calc(100vh - 68px); }
+.sheet-area { min-width:0; display:flex; flex-direction:column; overflow:hidden; background:var(--surface); }
+.version-banner { height:48px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid var(--border-subtle); background:var(--primary-container); color:var(--on-primary-container); }
+.version-banner strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.grid-scroll { flex:1; overflow:auto; }
+.sheet-grid { min-width:820px; border-collapse:collapse; table-layout:fixed; font-size:12px; }
+.sheet-grid th,.sheet-grid td { width:132px; height:34px; padding:5px 8px; overflow:hidden; border-right:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle); text-overflow:ellipsis; white-space:nowrap; }
+.sheet-grid th { position:sticky; top:0; z-index:2; background:var(--surface-variant); color:var(--text-secondary); font-weight:700; }
+.row-number { width:42px !important; text-align:center; background:var(--surface-variant); color:var(--text-secondary); }
+.changed { position:relative; background:color-mix(in srgb,var(--primary) 14%,var(--surface)); }
+.changed::after { content:""; position:absolute; inset:2px auto 2px 2px; width:3px; border-radius:3px; background:var(--primary); }
+.sheet-tabs { height:44px; display:flex; align-items:center; gap:4px; padding:0 12px; border-top:1px solid var(--border-subtle); background:var(--surface); }
+.sheet-tab { height:32px; padding:0 16px; border-radius:6px 6px 0 0; color:var(--text-secondary); }
+.sheet-tab:first-child { color:var(--primary); border-bottom:3px solid var(--primary); font-weight:700; }
+.timeline-panel { overflow:auto; border-left:1px solid var(--border-subtle); background:var(--background); }
+.timeline-head { position:sticky; top:0; z-index:3; padding:20px; border-bottom:1px solid var(--border-subtle); background:var(--background); }
+.timeline-title-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.timeline-title-row h1 { margin:0; font-size:21px; font-weight:500; }
+.toggle-row { display:flex; align-items:center; justify-content:space-between; margin-top:18px; color:var(--text-secondary); font-size:13px; }
+.switch { position:relative; width:38px; height:22px; border-radius:12px; background:var(--border); }
+.switch.on { background:var(--primary); }
+.switch::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#fff; }
+.switch.on::after { left:19px; }
+.version-group { border-bottom:1px solid var(--border-subtle); }
+.group-head { width:100%; min-height:48px; display:flex; align-items:center; gap:9px; padding:0 16px; text-align:left; font-weight:700; }
+.group-head .count { margin-left:auto; color:var(--text-secondary); font-size:12px; font-weight:400; }
+.version-item { position:relative; width:100%; min-height:66px; display:grid; grid-template-columns:34px minmax(0,1fr) 34px; align-items:center; gap:10px; padding:8px 10px 8px 24px; text-align:left; }
+.version-item.selected { background:var(--primary-container); color:var(--on-primary-container); }
+.version-item.selected::before { content:""; position:absolute; inset:0 auto 0 0; width:4px; background:var(--primary); }
+.version-avatar { width:30px; height:30px; display:grid; place-items:center; border-radius:50%; color:#fff; font-size:12px; font-weight:700; }
+.version-main { min-width:0; }
+.version-time { font-size:13px; font-weight:700; }
+.version-name { overflow:hidden; margin-top:4px; color:var(--text-secondary); font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
+.named-badge { display:inline-flex; align-items:center; gap:3px; margin-top:5px; padding:2px 7px; border-radius:10px; background:var(--surface-variant); color:var(--text-secondary); font-size:10px; }
+.contributors { display:flex; align-items:center; gap:0; padding:18px 20px; }
+.contributors .version-avatar { margin-left:-5px; border:2px solid var(--background); }
+.contributors .version-avatar:first-child { margin-left:0; }
+.contributor-text { margin-left:10px; color:var(--text-secondary); font-size:12px; }
+.state-center { min-height:520px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px; text-align:center; }
+.state-center > .material-symbols-rounded { font-size:70px; color:var(--border); }
+.state-center h2 { margin:18px 0 8px; }
+.state-center p { max-width:280px; margin:0; color:var(--text-secondary); line-height:1.5; }
+.spinner { width:46px; height:46px; border:4px solid var(--surface-variant); border-top-color:var(--primary); border-radius:50%; }
+.retry-button { min-height:38px; margin-top:20px; padding:0 18px; border:1px solid var(--border); border-radius:20px; color:var(--primary); font-weight:700; }
+.scrim { position:fixed; inset:0; z-index:80; background:#0009; }
+.dialog { position:fixed; z-index:90; top:50%; left:50%; width:min(480px,calc(100vw - 28px)); transform:translate(-50%,-50%); border-radius:18px; background:var(--surface); color:var(--on-surface); box-shadow:0 15px 50px #0008; }
+.dialog-head { padding:23px 24px 8px; }
+.dialog-head h2 { margin:0; font-size:22px; }
+.dialog-body { padding:8px 24px 20px; color:var(--text-secondary); line-height:1.5; }
+.dialog-field { height:46px; display:flex; align-items:center; margin-top:18px; padding:0 13px; border:1px solid var(--border); border-radius:8px; color:var(--text-primary); }
+.dialog-field input { width:100%; }
+.folder-row { display:flex; align-items:center; gap:10px; margin-top:16px; padding:12px; border-radius:9px; background:var(--surface-variant); color:var(--text-primary); }
+.dialog-actions { display:flex; justify-content:flex-end; gap:10px; padding:14px 24px 22px; border-top:1px solid var(--border-subtle); }
+.secondary-button,.primary-button,.danger-button { min-height:38px; padding:0 18px; border-radius:20px; font-weight:700; }
+.secondary-button { color:var(--primary); border:1px solid var(--border); }
+.primary-button { color:var(--on-primary); background:var(--primary); }
+.danger-button { color:var(--on-error); background:var(--error); }
+@media (max-width:760px) {
+  .history-bar { height:60px; padding:0 10px; }
+  .document-subtitle,.desktop-action { display:none; }
+  .restore-button { padding:0 13px; font-size:12px; }
+  .history-layout { display:block; height:calc(100vh - 60px); }
+  .sheet-area { display:none; }
+  .timeline-panel { height:100%; border-left:0; }
+  .timeline-head { padding:16px; }
+  .version-item { min-height:72px; padding-left:18px; }
+}
+{% endblock %}
+
+{% block content %}
+{% set popup = history.is_popup %}
+<div class="history-page">
+  <div {% if popup %}data-annotation-skip="true"{% endif %}>
+    <header class="history-bar" data-class="app_bar" data-semantic="version_history_app_bar">
+      <button class="icon-button" data-class="button" data-semantic="back_button"><span class="material-symbols-rounded" data-class="icon" data-semantic="back_icon">arrow_back</span></button>
+      <span class="history-logo material-symbols-rounded" data-class="icon" data-semantic="sheets_logo">table_view</span>
+      <div class="document-info"><div class="document-title">{{ history.document_title }}</div><div class="document-subtitle">Version history</div></div>
+      <div class="bar-actions"><button class="icon-button desktop-action" data-class="button" data-semantic="print_button"><span class="material-symbols-rounded" data-class="icon" data-semantic="print_icon">print</span></button><button class="restore-button" data-class="button" data-semantic="restore_version_button">Restore this version</button><div class="account-avatar" data-class="avatar" data-semantic="account_avatar">{{ history.account_initial }}</div></div>
+    </header>
+
+    <main class="history-layout">
+      <section class="sheet-area" data-class="section" data-semantic="historical_spreadsheet">
+        <div class="version-banner"><span class="material-symbols-rounded" data-class="icon" data-semantic="history_icon">history</span><strong>{{ history.selected_version.name or history.selected_version.time }}</strong><span>by {{ history.selected_version.author }}</span></div>
+        <div class="grid-scroll">
+          <table class="sheet-grid"><thead><tr><th class="row-number"></th>{% for heading in history.headers %}<th>{{ heading }}</th>{% endfor %}</tr></thead><tbody>{% for row in history.rows %}<tr><td class="row-number">{{ loop.index }}</td>{% for cell in row %}<td{% if cell.changed %} class="changed"{% endif %}>{{ cell.value }}</td>{% endfor %}</tr>{% endfor %}</tbody></table>
+        </div>
+        <nav class="sheet-tabs" data-class="navigation_bar" data-semantic="sheet_tab_navigation">{% for tab_name in history.sheet_tabs %}<button class="sheet-tab" data-class="tab" data-semantic="sheet_tab_{{ loop.index }}">{{ tab_name }}</button>{% endfor %}</nav>
+      </section>
+
+      <aside class="timeline-panel" data-class="section" data-semantic="version_timeline_panel">
+        <div class="timeline-head"><div class="timeline-title-row"><h1>Version history</h1><button class="icon-button" data-class="button" data-semantic="timeline_more_button"><span class="material-symbols-rounded" data-class="icon" data-semantic="timeline_more_icon">more_vert</span></button></div><div class="toggle-row"><span>Only show named versions</span><button class="switch{% if history.named_only %} on{% endif %}" data-class="switch" data-semantic="named_versions_switch"></button></div></div>
+
+        {% if history.state == "loading" %}
+        <div class="state-center"><div class="spinner" data-class="selection_indicator" data-semantic="history_loading_spinner"></div><h2>Loading version history</h2><p>Retrieving changes and contributors…</p></div>
+        {% elif history.state == "empty" %}
+        <div class="state-center"><span class="material-symbols-rounded" data-class="icon" data-semantic="empty_history_icon">history_toggle_off</span><h2>No earlier versions</h2><p>Changes to this spreadsheet will appear here.</p></div>
+        {% elif history.state == "error" %}
+        <div class="state-center"><span class="material-symbols-rounded" data-class="icon" data-semantic="history_error_icon">cloud_off</span><h2>Couldn’t load history</h2><p>Check your connection and try again.</p><button class="retry-button" data-class="button" data-semantic="retry_history_button">Try again</button></div>
+        {% else %}
+          {% for version_group in history.groups %}
+            {% if not history.named_only or version_group.label == "Yesterday" %}
+            <section class="version-group" data-class="section" data-semantic="version_group_{{ loop.index }}">
+              <button class="group-head" data-class="button" data-semantic="toggle_version_group_{{ loop.index }}"><span class="material-symbols-rounded" data-class="icon" data-semantic="group_arrow_{{ loop.index }}">{% if version_group.expanded %}expand_more{% else %}chevron_right{% endif %}</span><span>{{ version_group.label }}</span><span class="count">{{ version_group.versions|length }} versions</span></button>
+              {% if version_group.expanded %}
+                {% for revision in version_group.versions %}
+                  {% if not history.named_only or revision.named %}
+                  <button class="version-item{% if revision.id == history.selected_version.id %} selected{% endif %}" data-class="card" data-semantic="version_{{ revision.id }}">
+                    <span class="version-avatar" style="background:{{ revision.color }}" data-class="avatar" data-semantic="version_author_{{ revision.id }}">{{ revision.initial }}</span>
+                    <span class="version-main"><span class="version-time">{{ revision.name or revision.time }}</span><span class="version-name">{{ revision.author }} · {{ revision.changes }} changes</span>{% if revision.named %}<span class="named-badge" data-class="badge" data-semantic="named_version_badge"><span class="material-symbols-rounded" style="font-size:12px">bookmark</span>Named</span>{% endif %}</span>
+                    <span class="material-symbols-rounded" data-class="icon" data-semantic="version_menu_{{ revision.id }}">more_vert</span>
+                  </button>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </section>
+            {% endif %}
+          {% endfor %}
+          <div class="contributors">{% for person in history.contributors %}<span class="version-avatar" style="background:{{ person.color }}" data-class="avatar" data-semantic="contributor_{{ loop.index }}">{{ person.initial }}</span>{% endfor %}<span class="contributor-text">Contributors</span></div>
+        {% endif %}
+      </aside>
+    </main>
+  </div>
+
+  {% if popup %}<div class="scrim" data-annotation-skip="true"></div>{% endif %}
+
+  {% if history.state == "restore_dialog" %}
+  <section class="dialog" data-class="dialog" data-semantic="restore_version_dialog" data-occluder="true"><div class="dialog-head"><h2>Restore this version?</h2></div><div class="dialog-body">The current version will remain in version history. Everyone with access will see the restored content.<div class="folder-row"><span class="version-avatar" style="background:{{ history.selected_version.color }}" data-class="avatar" data-semantic="restore_author_avatar">{{ history.selected_version.initial }}</span><span><strong>{{ history.selected_version.name or history.selected_version.time }}</strong><br>{{ history.selected_version.author }}</span></div></div><div class="dialog-actions"><button class="secondary-button" data-class="button" data-semantic="cancel_restore">Cancel</button><button class="primary-button" data-class="button" data-semantic="confirm_restore">Restore</button></div></section>
+  {% elif history.state == "rename_dialog" %}
+  <section class="dialog" data-class="dialog" data-semantic="rename_version_dialog" data-occluder="true"><div class="dialog-head"><h2>Name this version</h2></div><div class="dialog-body">Give this version a memorable name.<div class="dialog-field" data-class="input_field" data-semantic="version_name_input"><input value="Approved quarterly plan" aria-label="Version name"></div></div><div class="dialog-actions"><button class="secondary-button" data-class="button" data-semantic="cancel_rename">Cancel</button><button class="primary-button" data-class="button" data-semantic="save_version_name">Save</button></div></section>
+  {% elif history.state == "make_copy_dialog" %}
+  <section class="dialog" data-class="dialog" data-semantic="make_copy_dialog" data-occluder="true"><div class="dialog-head"><h2>Copy version</h2></div><div class="dialog-body">Create a separate spreadsheet from this version.<div class="dialog-field" data-class="input_field" data-semantic="copy_name_input"><input value="{{ history.copy_name }}" aria-label="Copy name"></div><div class="folder-row"><span class="material-symbols-rounded" data-class="icon" data-semantic="folder_icon">folder</span><span>My Drive</span><span class="material-symbols-rounded" style="margin-left:auto" data-class="icon" data-semantic="folder_dropdown_icon">arrow_drop_down</span></div></div><div class="dialog-actions"><button class="secondary-button" data-class="button" data-semantic="cancel_copy">Cancel</button><button class="primary-button" data-class="button" data-semantic="create_copy">Make a copy</button></div></section>
+  {% endif %}
+</div>
+{% endblock %}
