@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+{% block title %}Write a Review | Sephora Simulator{% endblock %}
+
+{% macro icon(name, filled=false) %}
+<span
+    class="material-symbols-rounded rv-icon"
+    data-class="icon"
+    style="font-variation-settings: 'FILL' {{ 1 if filled else 0 }};"
+    aria-hidden="true"
+>{{ name }}</span>
+{% endmacro %}
+
+{% macro action(label, symbol="", primary=false) %}
+<button
+    class="rv-button {{ 'rv-primary' if primary else '' }}"
+    data-class="button"
+>
+    {% if symbol %}{{ icon(symbol) }}{% endif %}
+    {{ label }}
+</button>
+{% endmacro %}
+
+{% macro stars(rating, controls=false) %}
+<div class="rv-stars">
+    {% for value in range(1, 6) %}
+    {% if controls %}
+    <button
+        class="rv-star-button"
+        data-class="button"
+        aria-label="Rate {{ value }} out of 5"
+        aria-pressed="{{ 'true' if value == rating else 'false' }}"
+    >{{ icon("star", value <= rating) }}</button>
+    {% else %}
+    {{ icon("star", value <= rating) }}
+    {% endif %}
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro review_preview(data) %}
+<article class="rv-preview" data-class="card">
+    <strong>{{ data["nickname"] }}</strong>
+    <p class="rv-muted">Skin type: {{ data["skin_type"] }}</p>
+    {{ stars(data["rating"]) }}
+    <h3>{{ data["title"] }}</h3>
+    <p class="rv-review-body">{{ data["body"] }}</p>
+    <p class="rv-muted">
+        Would recommend: {{ "Yes" if data["recommend"] == "yes" else "No" }}
+    </p>
+
+    {% if data["photos"] %}
+    <div class="rv-photos">
+        {% for photo in data["photos"] %}
+        <img src="{{ photo }}" alt="Review photograph" data-class="image">
+        {% endfor %}
+    </div>
+    {% endif %}
+</article>
+{% endmacro %}
+
+{% block head %}
+<style>
+.rv *, .rv-overlay * { box-sizing: border-box; }
+.rv, .rv-overlay { color: var(--on-surface); }
+.rv button, .rv input, .rv textarea, .rv-overlay button { font: inherit; }
+
+.rv-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 24px; width: 24px; height: 24px;
+    font-size: 24px; line-height: 1; pointer-events: auto;
+}
+.rv-header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; padding: 18px 24px; background: var(--surface);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.rv-logo { font-size: 25px; letter-spacing: 5px; }
+.rv-icon-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; padding: 8px; background: transparent;
+    color: inherit; cursor: pointer;
+}
+.rv-main { max-width: 1100px; margin: auto; padding: 28px 20px 50px; }
+.rv-main h1 { font-size: 29px; margin: 20px 0; }
+.rv-layout {
+    display: grid; grid-template-columns: 260px minmax(0, 1fr);
+    gap: 36px; align-items: start;
+}
+.rv-product {
+    padding: 20px; background: var(--surface);
+    border: 1px solid var(--border-subtle); border-radius: 6px;
+}
+.rv-product img, .rv-placeholder {
+    display: block; width: 100%; aspect-ratio: 1;
+    object-fit: contain; background: var(--surface-variant);
+}
+.rv-placeholder {
+    display: grid; place-items: center;
+    color: var(--on-surface-variant); font-size: 12px;
+}
+.rv-product strong { display: block; margin-top: 18px; overflow-wrap: anywhere; }
+.rv-product p { font-size: 14px; line-height: 1.6; }
+.rv-muted { color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.rv-form {
+    padding: 26px; background: var(--surface);
+    border: 1px solid var(--border-subtle); border-radius: 6px;
+}
+.rv-section {
+    padding-bottom: 24px; margin-bottom: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.rv-section h2 { font-size: 18px; margin: 0 0 14px; }
+.rv-stars { display: flex; align-items: center; gap: 5px; color: var(--on-surface); }
+.rv-star-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 8px; border: 0; background: transparent;
+    color: inherit; cursor: pointer;
+}
+.rv-field { margin-top: 18px; min-width: 0; }
+.rv-field label { display: block; font-size: 13px; margin-bottom: 8px; }
+.rv-field input, .rv-field textarea {
+    display: block; width: 100%; min-width: 0; padding: 12px;
+    border: 1px solid var(--border); border-radius: 5px;
+    background: var(--surface); color: var(--on-surface);
+}
+.rv-field textarea { min-height: 150px; resize: none; }
+.rv-field [aria-invalid="true"] { border: 2px solid var(--error); }
+.rv-error {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px; font-size: 12px; color: var(--error);
+}
+.rv-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 11px 18px; border: 1px solid var(--border);
+    border-radius: 24px; background: var(--surface);
+    color: var(--on-surface); cursor: pointer;
+}
+.rv-primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.rv-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.rv-radio, .rv-consent {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; line-height: 1.6; margin-top: 14px;
+}
+.rv-radio input, .rv-consent input {
+    flex: 0 0 auto; width: 18px; height: 18px;
+    accent-color: var(--primary);
+}
+.rv-recommend { display: flex; flex-wrap: wrap; gap: 24px; }
+.rv-dropdown { margin-top: 18px; }
+.rv-dropdown-trigger {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; width: 100%; padding: 12px;
+    border: 1px solid var(--border); border-radius: 5px;
+    background: var(--surface); color: var(--on-surface); cursor: pointer;
+}
+.rv-menu {
+    margin-top: 6px; padding: 5px; border: 1px solid var(--border);
+    border-radius: 5px; background: var(--surface);
+}
+.rv-option {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; width: 100%; min-height: 42px; padding: 8px 10px;
+    border: 0; background: transparent; color: inherit; cursor: pointer;
+}
+.rv-option.selected { background: var(--primary-container); color: var(--on-primary-container); }
+.rv-upload {
+    padding: 20px; text-align: center; margin-top: 16px;
+    border: 1px dashed var(--border); border-radius: 6px;
+}
+.rv-photos { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.rv-photos img { width: 96px; height: 96px; object-fit: cover; border-radius: 5px; }
+.rv-photo-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.rv-guide { margin-top: 24px; }
+.rv-guide summary {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; list-style: none; cursor: pointer; font-size: 14px;
+}
+.rv-guide summary::-webkit-details-marker { display: none; }
+.rv-guide summary::marker { content: ""; }
+.rv-guide[open] > summary .rv-chevron { transform: rotate(180deg); }
+.rv-preview { padding: 18px; border: 1px solid var(--border-subtle); border-radius: 6px; }
+.rv-preview h3 { font-size: 18px; margin: 18px 0 12px; }
+.rv-review-body { font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.rv-success { max-width: 650px; margin: 30px auto; padding: 32px; text-align: center; }
+.rv-success h2 { font-size: 26px; }
+.rv-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px; background: rgba(0,0,0,.5);
+}
+.rv-dialog {
+    display: flex; flex-direction: column; width: min(650px, 100%);
+    max-height: calc(100dvh - 32px); overflow: hidden;
+    background: var(--surface); border-radius: 10px;
+}
+.rv-dialog-header, .rv-dialog-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    flex: 0 0 auto; flex-wrap: wrap; gap: 12px; padding: 16px 20px;
+}
+.rv-dialog-header { border-bottom: 1px solid var(--border-subtle); }
+.rv-dialog-header h2 { margin: 0; font-size: 20px; }
+.rv-dialog-body { padding: 20px; overflow-y: auto; min-height: 0; }
+.rv-dialog-footer { border-top: 1px solid var(--border-subtle); }
+@media (max-width: 800px) {
+    .rv-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .rv-product {
+        display: grid; grid-template-columns: 90px minmax(0, 1fr);
+        gap: 16px; align-items: center;
+    }
+    .rv-product strong { margin-top: 0; }
+}
+@media (max-width: 450px) {
+    .rv-main { padding: 20px 12px 40px; }
+    .rv-header { padding: 12px; }
+    .rv-logo { font-size: 22px; }
+    .rv-form { padding: 16px; }
+    .rv-star-button { padding: 7px; }
+    .rv-overlay { padding: 10px; }
+    .rv-dialog { max-height: calc(100dvh - 20px); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set state = sephora["state"] %}
+{% set invalid = state == "validation_error" %}
+
+<div class="rv"
+     data-annotation-skip="{{ 'true' if sephora['popup_visible'] else 'false' }}">
+    <header class="rv-header" data-class="app_bar">
+        <div class="rv-logo" data-class="logo">SEPHORA</div>
+        <button class="rv-icon-button" data-class="button"
+                aria-label="Account">{{ icon("person") }}</button>
+    </header>
+
+    <main class="rv-main">
+        {{ action("Back to Product", "chevron_left") }}
+        <h1>Write a Review</h1>
+
+        {% if state == "submitted" %}
+        <section class="rv-form rv-success" data-class="section">
+            {{ icon("check_circle") }}
+            <h2>Thank you for your review</h2>
+            <p class="rv-muted">
+                Your review has been submitted for moderation.
+            </p>
+            {{ action("Return to Product", "arrow_forward", true) }}
+        </section>
+        {% else %}
+        <div class="rv-layout">
+            <aside>
+                <section class="rv-product" data-class="card">
+                    <div>
+                        {% if sephora["product_image"] %}
+                        <img src="{{ sephora['product_image'] }}"
+                             alt="Product being reviewed" data-class="image">
+                        {% else %}
+                        <div class="rv-placeholder">Image unavailable</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <strong>{{ sephora["brand"] }}</strong>
+                        <p>{{ sephora["product_name"] }}</p>
+                    </div>
+                </section>
+                <p class="rv-muted">Tell other shoppers about your experience.</p>
+            </aside>
+
+            <section class="rv-form" data-class="section">
+                <section class="rv-section" data-class="section">
+                    <h2>Overall Rating</h2>
+                    {{ stars(sephora["rating"], true) }}
+                    <p class="rv-muted">
+                        {{ sephora["rating"] ~ " out of 5"
+                           if sephora["rating"] else "Choose your rating" }}
+                    </p>
+
+                    <div class="rv-field">
+                        <label for="review-title">Review Title</label>
+                        <input id="review-title" type="text"
+                               data-class="input_field"
+                               value="{{ sephora['title'] }}"
+                               aria-invalid="{{ 'true' if invalid else 'false' }}"
+                               {% if invalid %}aria-describedby="title-error"{% endif %}>
+                        {% if invalid %}
+                        <div class="rv-error" id="title-error">
+                            {{ icon("error_outline") }}
+                            <span>Add a review title.</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="rv-field">
+                        <label for="review-body">Your Review</label>
+                        <textarea id="review-body" data-class="input_field"
+                                  aria-invalid="{{ 'true' if invalid else 'false' }}"
+                                  {% if invalid %}aria-describedby="body-error"{% endif %}>{{ sephora["body"] }}</textarea>
+                        {% if invalid %}
+                        <div class="rv-error" id="body-error">
+                            {{ icon("error_outline") }}
+                            <span>Describe your product experience.</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <p class="rv-muted">Would you recommend this product?</p>
+                    <div class="rv-recommend">
+                        {% for value, label in [("yes", "Yes"), ("no", "No")] %}
+                        <label class="rv-radio">
+                            <input type="radio" name="recommend"
+                                   data-class="checkbox"
+                                   {% if sephora["recommend"] == value %}checked{% endif %}>
+                            <span>{{ label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="rv-section" data-class="section">
+                    <h2>Add Photos</h2>
+                    <div class="rv-upload">
+                        {{ action("Add a Photo", "add_photo_alternate") }}
+                        <p class="rv-muted">Show the product or your results.</p>
+                    </div>
+
+                    {% if sephora["photos"] %}
+                    <div class="rv-photos">
+                        {% for photo in sephora["photos"] %}
+                        <div class="rv-photo-item">
+                            <img src="{{ photo }}" alt="Attached review photo"
+                                 data-class="image">
+                            <button class="rv-icon-button" data-class="button"
+                                    aria-label="Remove photo {{ loop.index }}">
+                                {{ icon("delete_outline") }}
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </section>
+
+                <section class="rv-section" data-class="section">
+                    <h2>About You</h2>
+                    <div class="rv-field">
+                        <label for="review-nickname">Public Nickname</label>
+                        <input id="review-nickname" type="text"
+                               data-class="input_field"
+                               value="{{ sephora['nickname'] }}">
+                    </div>
+
+                    <div class="rv-dropdown">
+                        <p class="rv-muted" id="skin-type-label">Skin Type</p>
+                        <button class="rv-dropdown-trigger"
+                                data-class="button"
+                                aria-labelledby="skin-type-label skin-type-value"
+                                aria-expanded="{{ 'true' if state == 'skin_type_open' else 'false' }}"
+                                aria-controls="skin-type-options">
+                            <span id="skin-type-value">{{ sephora["skin_type"] }}</span>
+                            {{ icon("expand_more") }}
+                        </button>
+
+                        {% if state == "skin_type_open" %}
+                        <div class="rv-menu" id="skin-type-options"
+                             data-class="section">
+                            {% for skin_type in sephora["skin_types"] %}
+                            <button
+                                class="rv-option {{ 'selected' if skin_type == sephora['skin_type'] else '' }}"
+                                data-class="button"
+                                aria-pressed="{{ 'true' if skin_type == sephora['skin_type'] else 'false' }}"
+                            >
+                                <span>{{ skin_type }}</span>
+                                {% if skin_type == sephora["skin_type"] %}
+                                {{ icon("check") }}
+                                {% endif %}
+                            </button>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <label class="rv-consent">
+                    <input type="checkbox" data-class="checkbox"
+                           {% if sephora["accepted_terms"] %}checked{% endif %}>
+                    <span>I agree to the review terms and guidelines.</span>
+                </label>
+
+                {% if invalid %}
+                <div class="rv-error">
+                    {{ icon("error_outline") }}
+                    <span>Review and accept the terms before submitting.</span>
+                </div>
+                {% endif %}
+
+                <details class="rv-guide">
+                    <summary data-class="button">
+                        <span>Review Guidelines</span>
+                        <span class="rv-chevron">{{ icon("expand_more") }}</span>
+                    </summary>
+                    <p class="rv-muted">
+                        Focus on your product experience.
+                        Avoid sharing personal contact information.
+                    </p>
+                </details>
+
+                <div class="rv-actions">
+                    {{ action("Cancel") }}
+                    {{ action("Preview Review", "visibility", true) }}
+                </div>
+            </section>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+{% if sephora["popup_visible"] %}
+<div class="rv-overlay">
+    <section class="rv-dialog" data-class="dialog" data-occluder="true"
+             role="dialog" aria-modal="true" aria-labelledby="review-preview-title">
+        <header class="rv-dialog-header">
+            <h2 id="review-preview-title">Preview Your Review</h2>
+            <button class="rv-icon-button" data-class="button"
+                    aria-label="Close">{{ icon("close") }}</button>
+        </header>
+        <div class="rv-dialog-body">
+            {{ review_preview(sephora) }}
+        </div>
+        <footer class="rv-dialog-footer">
+            {{ action("Edit Review", "edit") }}
+            {{ action("Submit Review", "send", true) }}
+        </footer>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Sephora Synthetic UI{% endblock %}</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+        rel="stylesheet"
+    >
+
+    <style>
+        :root {
+            {% for role, color in theme["semantic"].items() %}
+            --{{ role | replace("_", "-") }}: {{ color }};
+            {% endfor %}
+
+            --system-height: {{ system["layout"]["height"] }}px;
+            --system-icon-size: {{ system["display"]["icon_size"] }}px;
+            --system-icon-gap: {{ system["display"]["icon_gap"] }}px;
+            --system-bottom:
+                {{ system["layout"]["height"]
+                   if system["layout"]["position"] == "bottom"
+                   else 0 }}px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            background: var(--background);
+            color: var(--on-background);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            padding-bottom: var(--system-bottom);
+        }
+
+        button, input, select {
+            font: inherit;
+        }
+
+        button {
+            cursor: default;
+            color: inherit;
+        }
+
+        button, input {
+            min-width: 0;
+        }
+
+        img {
+            display: block;
+            max-width: 100%;
+        }
+
+        h1, h2, h3, p {
+            margin: 0;
+        }
+
+        .material-symbols-rounded {
+            font-family: "Material Symbols Rounded";
+            font-size: 24px;
+            font-weight: normal;
+            font-style: normal;
+            line-height: 1;
+            display: inline-block;
+            white-space: nowrap;
+            font-feature-settings: "liga";
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .system-bar {
+            height: var(--system-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 0 10px;
+            background: var(--surface);
+            color: var(--on-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            position: relative;
+            z-index: 40;
+            overflow: hidden;
+        }
+
+        .system-bar.position-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-top: 1px solid var(--border-subtle);
+            border-bottom: 0;
+        }
+
+        .system-group {
+            display: flex;
+            align-items: center;
+            gap: var(--system-icon-gap);
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .system-group.right {
+            justify-content: flex-end;
+        }
+
+        .system-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            flex: 0 0 auto;
+        }
+
+        .system-item .material-symbols-rounded {
+            font-size: var(--system-icon-size);
+            width: var(--system-icon-size);
+            height: var(--system-icon-size);
+            color: var(--icon);
+        }
+
+        .system-clock {
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+
+        .system-label {
+            font-size: 10px;
+            white-space: nowrap;
+        }
+
+        .system-menu {
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .ios .system-clock {
+            padding-left: 6px;
+        }
+
+        .device-cutout {
+            background: #000;
+            height: 20px;
+            width: 72px;
+            border-radius: 14px;
+            flex: 0 0 auto;
+        }
+
+        .device-cutout.notch {
+            width: 90px;
+            height: 24px;
+            border-radius: 0 0 14px 14px;
+            align-self: flex-start;
+        }
+
+        #app {
+            min-height: calc(100vh - var(--system-height));
+        }
+
+        @media (max-width: 600px) {
+            .system-menu,
+            .system-label.optional-label {
+                display: none;
+            }
+
+            .system-group {
+                flex: 1 1 0;
+            }
+
+            .system-bar.android .system-clock {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 359px) {
+            .system-bar {
+                gap: 4px;
+                padding-inline: 6px;
+            }
+
+            .system-group {
+                gap: 2px;
+            }
+
+            /* Preserve clock and connectivity icons. */
+            .system-item.low-priority {
+                display: none;
+            }
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+{% macro system_icon(item) %}
+<span
+    class="system-item
+        {% if item['id'] not in [
+            'battery', 'wifi', 'cellular',
+            'start', 'system_menu', 'activities'
+        ] %}low-priority{% endif %}"
+>
+    <span
+        class="material-symbols-rounded"
+        data-class="{{ item['annotation_class'] }}"
+        data-semantic="system_{{ item['id'] }}"
+        aria-label="{{ item['label'] }}"
+    >{{ item["icon"] }}</span>
+
+    {% if item["text"] %}
+    <span class="system-label optional-label">
+        {{ item["text"] }}
+    </span>
+    {% endif %}
+</span>
+{% endmacro %}
+
+<div
+    class="system-bar {{ system['style'] }}
+           position-{{ system['layout']['position'] }}"
+    data-class="status_bar"
+    data-semantic="system_{{ system['layout']['kind'] }}"
+    data-occluder="true"
+    data-occluder="{{ 'false' if popup_visible else 'true' }}"
+>
+    <div class="system-group">
+        {% if system["layout"]["clock_position"] == "left" %}
+        <span class="system-clock">
+            {{ system["time_text"] }}
+            {{ system["time_period"] or "" }}
+        </span>
+        {% endif %}
+
+        {% for item in system["left_icons"] %}
+            {{ system_icon(item) }}
+        {% endfor %}
+
+        {% if system["style"] == "macos" %}
+        <span class="system-menu">{{ system["desktop"]["app_name"] }}</span>
+
+        {% for label in system["desktop"]["menu_items"] %}
+        <span class="system-menu">{{ label }}</span>
+        {% endfor %}
+        {% elif system["style"] == "ubuntu" %}
+        <span class="system-menu">
+            {{ system["desktop"]["activities_text"] }}
+        </span>
+        {% endif %}
+    </div>
+
+    {% if system["style"] == "ios"
+          and system["ios_device_variant"] != "classic" %}
+    <span class="device-cutout {{ system['ios_device_variant'] }}"></span>
+    {% elif system["layout"]["clock_position"] == "center" %}
+    <span class="system-clock">{{ system["desktop_time_text"] }}</span>
+    {% endif %}
+
+    <div class="system-group right">
+        {% for item in system["right_icons"] %}
+            {{ system_icon(item) }}
+        {% endfor %}
+
+        {% if system["layout"]["clock_position"] == "right" %}
+        <span class="system-clock">
+            {{ system["time_text"] }}
+            {{ system["time_period"] or "" }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<div id="app">
+    {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>

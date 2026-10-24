@@ -1,0 +1,482 @@
+{% extends "base.html" %}
+{% block title %}Beauty Insider | Sephora Simulator{% endblock %}
+
+{% macro icon(name) %}
+<span
+    class="material-symbols-rounded bi-icon"
+    data-class="icon"
+    aria-hidden="true"
+>{{ name }}</span>
+{% endmacro %}
+
+{% macro action(label, symbol="", primary=false) %}
+<button
+    class="bi-button {{ 'bi-primary' if primary else '' }}"
+    data-class="button"
+>
+    {% if symbol %}{{ icon(symbol) }}{% endif %}
+    {{ label }}
+</button>
+{% endmacro %}
+
+{% macro reward_photo(reward) %}
+{% if reward["image"] %}
+<img
+    class="bi-reward-photo"
+    src="{{ reward['image'] }}"
+    alt="Beauty reward"
+    data-class="image"
+>
+{% else %}
+<div class="bi-placeholder">Image unavailable</div>
+{% endif %}
+{% endmacro %}
+
+{% block head %}
+<style>
+.bi *, .bi-overlay * { box-sizing: border-box; }
+.bi, .bi-overlay { color: var(--on-surface); }
+.bi button, .bi-overlay button { font: inherit; }
+
+.bi-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 24px; width: 24px; height: 24px;
+    font-size: 24px; line-height: 1; pointer-events: auto;
+}
+.bi-header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; padding: 18px 24px; background: var(--surface);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.bi-logo { font-size: 25px; letter-spacing: 5px; }
+.bi-icon-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; padding: 8px; background: transparent;
+    color: inherit; cursor: pointer;
+}
+.bi-main {
+    display: grid; grid-template-columns: 190px minmax(0, 1fr);
+    gap: 30px; max-width: 1240px; margin: auto; padding: 28px 20px 50px;
+}
+.bi-sidebar { display: flex; flex-direction: column; gap: 8px; }
+.bi-sidebar button {
+    display: flex; align-items: center; gap: 10px; padding: 12px;
+    border: 0; border-radius: 5px; background: transparent;
+    color: inherit; text-align: left; cursor: pointer;
+}
+.bi-sidebar .selected {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+}
+.bi-content { min-width: 0; }
+.bi-content h1 { font-size: 29px; margin: 0 0 20px; }
+.bi-muted { color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.bi-panel {
+    padding: 22px; margin-bottom: 22px; border: 1px solid var(--border-subtle);
+    border-radius: 8px; background: var(--surface);
+}
+.bi-panel h2 { font-size: 20px; margin: 0 0 16px; }
+.bi-membership {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    gap: 20px; align-items: center;
+    background: var(--primary-container); color: var(--on-primary-container);
+}
+.bi-membership h2 { margin-bottom: 10px; }
+.bi-membership p { margin: 8px 0; font-size: 13px; }
+.bi-badge {
+    display: inline-block; padding: 6px 12px; border-radius: 18px;
+    background: var(--badge-background); color: var(--badge-text);
+    font-size: 12px; font-weight: 700;
+}
+.bi-points { text-align: center; }
+.bi-points strong { display: block; font-size: 44px; }
+.bi-points span { font-size: 13px; }
+.bi-tabs {
+    display: flex; overflow-x: auto; gap: 24px; margin: 22px 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.bi-tabs button {
+    flex: 0 0 auto; white-space: nowrap; padding: 12px 0;
+    border: 0; border-bottom: 3px solid transparent;
+    background: transparent; color: var(--text-secondary); cursor: pointer;
+}
+.bi-tabs .selected { color: var(--on-surface); border-bottom-color: var(--primary); }
+.bi-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 10px 16px; border: 1px solid var(--border);
+    border-radius: 24px; background: var(--surface);
+    color: var(--on-surface); cursor: pointer;
+}
+.bi-primary {
+    background: var(--primary); color: var(--on-primary);
+    border-color: var(--primary);
+}
+.bi-button:disabled { opacity: .55; cursor: default; }
+.bi-heading {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+}
+.bi-heading h2 { margin: 0; }
+.bi-rewards {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;
+}
+.bi-reward {
+    display: flex; flex-direction: column; gap: 10px; min-width: 0;
+    padding: 14px; border: 1px solid var(--border-subtle);
+    border-radius: 6px; background: var(--surface);
+}
+.bi-reward-photo, .bi-placeholder {
+    display: block; width: 100%; aspect-ratio: 1; object-fit: contain;
+    background: var(--surface-variant);
+}
+.bi-placeholder {
+    display: grid; place-items: center; text-align: center;
+    color: var(--on-surface-variant); font-size: 11px;
+}
+.bi-reward strong { font-size: 13px; overflow-wrap: anywhere; }
+.bi-reward p { margin: 0; font-size: 13px; line-height: 1.5; }
+.bi-reward .bi-button { margin-top: auto; padding: 9px 10px; font-size: 12px; }
+.bi-benefits {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
+}
+.bi-benefit {
+    padding: 22px; border: 1px solid var(--border-subtle);
+    background: var(--surface); border-radius: 6px;
+}
+.bi-benefit h3 { font-size: 17px; margin: 16px 0 10px; }
+.bi-notice {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 15px; margin-bottom: 22px; border-radius: 5px;
+    background: var(--surface-variant); color: var(--on-surface-variant);
+    font-size: 13px; line-height: 1.6;
+}
+.bi-success { background: var(--success); color: var(--on-success); }
+.bi-error { background: var(--error); color: var(--on-error); }
+.bi-filter { min-width: 200px; }
+.bi-filter-trigger {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; gap: 12px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 5px;
+    background: var(--surface); color: inherit; cursor: pointer;
+}
+.bi-filter-menu {
+    margin-top: 6px; padding: 5px; border: 1px solid var(--border);
+    border-radius: 5px; background: var(--surface);
+}
+.bi-filter-option {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; width: 100%; padding: 10px; border: 0;
+    background: transparent; color: inherit; text-align: left; cursor: pointer;
+}
+.bi-filter-option.selected {
+    background: var(--primary-container); color: var(--on-primary-container);
+}
+.bi-activity { margin-top: 20px; }
+.bi-activity-row {
+    display: grid; grid-template-columns: 70px minmax(0, 1fr) auto;
+    gap: 14px; align-items: center; padding: 18px 0;
+    border-top: 1px solid var(--border-subtle);
+}
+.bi-activity-row strong { font-size: 14px; }
+.bi-activity-row p { margin: 5px 0 0; overflow-wrap: anywhere; }
+.bi-faq { margin-top: 24px; }
+.bi-faq details { padding: 16px 0; border-bottom: 1px solid var(--border-subtle); }
+.bi-faq summary {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; list-style: none; font-size: 14px; cursor: pointer;
+}
+.bi-faq summary::-webkit-details-marker { display: none; }
+.bi-faq summary::marker { content: ""; }
+.bi-faq details[open] > summary .bi-chevron { transform: rotate(180deg); }
+.bi-signed-out { text-align: center; padding: 40px 24px; }
+.bi-signed-out h2 { margin-top: 20px; }
+.bi-overlay {
+    position: fixed; inset: 0; z-index: 1000; padding: 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.5);
+}
+.bi-dialog {
+    display: flex; flex-direction: column; width: min(560px, 100%);
+    max-height: calc(100dvh - 32px); overflow: hidden;
+    background: var(--surface); border-radius: 10px;
+}
+.bi-dialog-header, .bi-dialog-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    flex: 0 0 auto; flex-wrap: wrap; gap: 12px; padding: 16px 20px;
+}
+.bi-dialog-header { border-bottom: 1px solid var(--border-subtle); }
+.bi-dialog-header h2 { margin: 0; font-size: 20px; }
+.bi-dialog-body { padding: 20px; overflow-y: auto; min-height: 0; }
+.bi-dialog-footer { border-top: 1px solid var(--border-subtle); }
+.bi-dialog-reward {
+    display: grid; grid-template-columns: 100px minmax(0, 1fr);
+    gap: 18px; align-items: center; margin-bottom: 20px;
+}
+.bi-dialog-reward p { font-size: 14px; line-height: 1.6; }
+@media (max-width: 950px) {
+    .bi-main { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .bi-sidebar { flex-direction: row; overflow-x: auto; }
+    .bi-sidebar button { flex: 0 0 auto; white-space: nowrap; }
+}
+@media (max-width: 650px) {
+    .bi-rewards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .bi-benefits { grid-template-columns: minmax(0, 1fr); }
+    .bi-main { padding: 20px 12px 40px; }
+    .bi-header { padding: 12px; }
+    .bi-logo { font-size: 22px; }
+    .bi-panel { padding: 16px; }
+    .bi-membership { grid-template-columns: minmax(0, 1fr); }
+    .bi-points { text-align: left; }
+    .bi-activity-row { grid-template-columns: 52px minmax(0, 1fr) auto; gap: 8px; }
+    .bi-overlay { padding: 10px; }
+    .bi-dialog { max-height: calc(100dvh - 20px); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set state = sephora["state"] %}
+{% set history = state in ["history", "history_filter_open"] %}
+
+<div class="bi"
+     data-annotation-skip="{{ 'true' if sephora['popup_visible'] else 'false' }}">
+    <header class="bi-header" data-class="app_bar">
+        <div class="bi-logo" data-class="logo">SEPHORA</div>
+        <button class="bi-icon-button" data-class="button"
+                aria-label="Basket">{{ icon("shopping_bag") }}</button>
+    </header>
+
+    <main class="bi-main">
+        <nav class="bi-sidebar" data-class="navigation_bar">
+            {% for title, symbol in [
+                ("Account", "person"),
+                ("Beauty Insider", "stars"),
+                ("Orders", "receipt_long"),
+                ("Loves", "favorite")
+            ] %}
+            <button class="{{ 'selected' if title == 'Beauty Insider' else '' }}"
+                    data-class="tab">
+                {{ icon(symbol) }} {{ title }}
+            </button>
+            {% endfor %}
+        </nav>
+
+        <div class="bi-content">
+            <h1>Beauty Insider</h1>
+
+            {% if state == "signed_out" %}
+            <section class="bi-panel bi-signed-out" data-class="section">
+                {{ icon("stars") }}
+                <h2>Your rewards start here</h2>
+                <p class="bi-muted">
+                    Sign in to view your points, rewards, and membership.
+                </p>
+                {{ action("Sign In", "person", true) }}
+                {{ action("Join Beauty Insider", "arrow_forward") }}
+            </section>
+
+            {% else %}
+            <section class="bi-panel bi-membership" data-class="section">
+                <div>
+                    <h2>Hello, {{ sephora["name"] }}</h2>
+                    <span class="bi-badge" data-class="badge">
+                        {{ sephora["tier"] }}
+                    </span>
+                    <p>Your Beauty Insider membership</p>
+                </div>
+                <div class="bi-points">
+                    <strong>{{ sephora["points"] }}</strong>
+                    <span>Available Points</span>
+                </div>
+            </section>
+
+            <nav class="bi-tabs" data-class="navigation_bar">
+                {% for title in ["Rewards", "Benefits", "History"] %}
+                <button
+                    class="{{ 'selected' if
+                        (title == 'History' and history)
+                        or (title == 'Benefits' and state == 'benefits')
+                        or (title == 'Rewards' and not history and state != 'benefits')
+                        else '' }}"
+                    data-class="tab"
+                >{{ title }}</button>
+                {% endfor %}
+            </nav>
+
+            {% if state == "reward_added" %}
+            <div class="bi-notice bi-success">
+                {{ icon("check_circle") }}
+                <span>
+                    {{ sephora["selected_reward"]["name"] }} added to your
+                    basket. Your points balance has been updated.
+                </span>
+            </div>
+            {% endif %}
+
+            {% if history %}
+            <section class="bi-panel" data-class="section">
+                <div class="bi-heading">
+                    <h2>Points Activity</h2>
+                    <div class="bi-filter">
+                        <button
+                            class="bi-filter-trigger"
+                            data-class="button"
+                            aria-label="Filter points activity"
+                            aria-expanded="{{ 'true' if state == 'history_filter_open' else 'false' }}"
+                        >
+                            <span>{{ sephora["selected_filter"] }}</span>
+                            {{ icon("expand_more") }}
+                        </button>
+
+                        {% if state == "history_filter_open" %}
+                        <div class="bi-filter-menu" data-class="section">
+                            {% for option in sephora["filters"] %}
+                            <button
+                                class="bi-filter-option {{ 'selected' if option == sephora['selected_filter'] else '' }}"
+                                data-class="button"
+                            >
+                                <span>{{ option }}</span>
+                                {% if option == sephora["selected_filter"] %}
+                                {{ icon("check") }}
+                                {% endif %}
+                            </button>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="bi-activity">
+                    {% for entry in sephora["activity"] %}
+                    <article class="bi-activity-row" data-class="card">
+                        <span class="bi-muted">{{ entry["date"] }}</span>
+                        <div>
+                            <strong>{{ entry["title"] }}</strong>
+                            <p class="bi-muted">{{ entry["detail"] }}</p>
+                        </div>
+                        <strong>
+                            {{ "+" if entry["points"] > 0 else "" }}{{ entry["points"] }}
+                        </strong>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% elif state == "benefits" %}
+            <section data-class="section">
+                <h2>Membership Benefits</h2>
+                <div class="bi-benefits">
+                    {% for benefit in sephora["benefits"] %}
+                    <article class="bi-benefit" data-class="card">
+                        {{ icon(benefit["icon"]) }}
+                        <h3>{{ benefit["title"] }}</h3>
+                        <p class="bi-muted">{{ benefit["description"] }}</p>
+                        {{ action("Explore", "chevron_right") }}
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% else %}
+            <section data-class="section">
+                <div class="bi-heading">
+                    <h2>Rewards Bazaar</h2>
+                    {{ action("View All Rewards", "chevron_right") }}
+                </div>
+
+                <div class="bi-rewards">
+                    {% for reward in sephora["rewards"] %}
+                    <article class="bi-reward" data-class="card">
+                        {{ reward_photo(reward) }}
+                        <strong>{{ reward["brand"] }}</strong>
+                        <p>{{ reward["name"] }}</p>
+                        <span class="bi-badge" data-class="badge">
+                            {{ reward["points"] }} points
+                        </span>
+                        {{ action("Redeem", "redeem") }}
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
+            <section class="bi-faq" data-class="section">
+                <details>
+                    <summary data-class="button">
+                        <span>How do I use my points?</span>
+                        <span class="bi-chevron">{{ icon("expand_more") }}</span>
+                    </summary>
+                    <p class="bi-muted">
+                        Explore available rewards and review their redemption details.
+                    </p>
+                </details>
+                <details>
+                    <summary data-class="button">
+                        <span>Where can I see my activity?</span>
+                        <span class="bi-chevron">{{ icon("expand_more") }}</span>
+                    </summary>
+                    <p class="bi-muted">
+                        Open History to view your points activity.
+                    </p>
+                </details>
+            </section>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+{% if sephora["popup_visible"] %}
+{% set reward = sephora["selected_reward"] %}
+<div class="bi-overlay">
+    <section class="bi-dialog" data-class="dialog" data-occluder="true"
+             role="dialog" aria-modal="true" aria-labelledby="reward-dialog-title">
+        <header class="bi-dialog-header">
+            <h2 id="reward-dialog-title">Redeem Your Reward</h2>
+            <button class="bi-icon-button" data-class="button"
+                    aria-label="Close">{{ icon("close") }}</button>
+        </header>
+
+        <div class="bi-dialog-body">
+            <article class="bi-dialog-reward" data-class="card">
+                <div>{{ reward_photo(reward) }}</div>
+                <div>
+                    <strong>{{ reward["brand"] }}</strong>
+                    <p>{{ reward["name"] }}</p>
+                    <span class="bi-badge" data-class="badge">
+                        {{ reward["points"] }} points
+                    </span>
+                </div>
+            </article>
+
+            <p class="bi-muted">Available points: {{ sephora["points"] }}</p>
+
+            {% if state == "insufficient_points" %}
+            <div class="bi-notice bi-error">
+                {{ icon("error_outline") }}
+                <span>
+                    You need {{ reward["points"] - sephora["points"] }}
+                    more points for this reward.
+                </span>
+            </div>
+            {% else %}
+            <p class="bi-muted">
+                Points after redemption:
+                {{ sephora["points"] - reward["points"] }}
+            </p>
+            {% endif %}
+        </div>
+
+        <footer class="bi-dialog-footer">
+            {{ action("Cancel") }}
+            <button
+                class="bi-button bi-primary"
+                data-class="button"
+                {% if state == "insufficient_points" %}disabled{% endif %}
+            >
+                {{ icon("redeem") }} Add Reward
+            </button>
+        </footer>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

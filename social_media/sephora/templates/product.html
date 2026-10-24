@@ -1,0 +1,880 @@
+{% extends "base.html" %}
+
+{% block title %}{{ sephora["name"] }} | Sephora Simulator{% endblock %}
+
+{% macro icon(name) %}
+<span class="material-symbols-rounded" data-class="icon">
+    {{ name }}
+</span>
+{% endmacro %}
+
+{% macro photo(source, semantic) %}
+{% if source %}
+<img src="{{ source }}" alt="Product photograph"
+     data-class="image" data-semantic="{{ semantic }}">
+{% else %}
+<div class="photo-placeholder">Image unavailable</div>
+{% endif %}
+{% endmacro %}
+
+{% block head %}
+<style>
+    .pd-header {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 20px max(16px, calc((100% - 1280px)/2));
+        background: var(--surface);
+    }
+
+    .pd-logo {
+        font-size: 27px;
+        letter-spacing: 5px;
+    }
+
+    .pd-search {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-radius: 24px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .pd-search input {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    .pd-search input::placeholder {
+        color: inherit;
+        opacity: 1;
+    }
+
+    .pd-nav {
+        display: flex;
+        gap: 26px;
+        overflow-x: auto;
+        padding: 14px 16px;
+        background: var(--on-background);
+        color: var(--background);
+    }
+
+    .pd-nav button {
+        flex: 0 0 auto;
+        min-width: max-content;
+        white-space: nowrap;
+        border: 0;
+        border-radius: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    .pd button {
+        cursor: default;
+    }
+
+    .pd-button {
+        padding: 10px 16px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .pd-primary {
+        background: var(--primary);
+        color: var(--on-primary);
+        font-weight: 700;
+    }
+
+    .pd-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        padding: 8px;
+        background: var(--surface);
+        color: var(--icon);
+    }
+
+    .pd-main {
+        max-width: 1280px;
+        padding: 26px 20px;
+        margin: auto;
+    }
+
+    .pd-breadcrumb {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 28px;
+    }
+
+    .pd-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+        gap: 50px;
+    }
+
+    .pd-gallery {
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr);
+        gap: 20px;
+        align-items: start;
+    }
+
+    .pd-thumbnails {
+        display: grid;
+        gap: 12px;
+    }
+
+    .pd-thumbnail {
+        border: 1px solid var(--border-subtle);
+        padding: 3px;
+        background: var(--surface);
+    }
+
+    .pd-thumbnail.selected {
+        border: 2px solid var(--icon);
+    }
+
+    .pd-thumbnail img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: contain;
+    }
+
+    .pd-main-photo img,
+    .photo-placeholder {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: contain;
+        background: var(--surface);
+    }
+
+    .photo-placeholder {
+        display: grid;
+        place-items: center;
+        color: var(--text-secondary);
+    }
+
+    .pd-main-photo button {
+        margin-top: 12px;
+    }
+
+    .pd-brand {
+        font-weight: 700;
+        margin-bottom: 8px;
+        overflow-wrap: anywhere;
+    }
+
+    .pd-title {
+        font-size: 26px;
+        line-height: 1.3;
+    }
+
+    .pd-muted {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+        margin: 12px 0;
+    }
+
+    .pd-price {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 20px 0;
+    }
+
+    .pd-sizes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 14px 0 24px;
+    }
+
+    .pd-size {
+        padding: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--on-surface);
+        border-radius: 5px;
+        text-align: left;
+    }
+
+    .pd-size.selected {
+        outline: 2px solid var(--icon);
+        outline-offset: 2px;
+    }
+
+    .pd-size span {
+        display: block;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    .pd-fulfillment {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .pd-delivery {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .pd-delivery input {
+        accent-color: var(--primary);
+        margin-top: 3px;
+        flex: 0 0 auto;
+    }
+
+    .pd-delivery strong {
+        font-size: 14px;
+    }
+
+    .pd-delivery p {
+        font-size: 12px;
+        line-height: 1.6;
+        margin-top: 5px;
+        color: var(--text-secondary);
+    }
+
+    .pd-quantity {
+    position: relative;
+    flex: 0 0 76px;
+    width: 76px;
+    }
+
+    .pd-quantity select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+
+        display: block;
+        width: 100%;
+        height: 44px;
+        padding: 10px 34px 10px 12px;
+
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .pd-quantity-chevron {
+    position: absolute;
+    right: 7px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+
+    pointer-events: auto;
+    cursor: pointer;
+    }
+
+    .pd-quantity-chevron > .material-symbols-rounded {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        font-size: 24px;
+        line-height: 1;
+        color: var(--icon);
+        pointer-events: auto;
+    }
+
+    .pd-buy {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 22px;
+    }
+
+    .pd-buy > button {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .pd-section {
+        margin-top: 40px;
+        padding-top: 26px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .pd-section h2 {
+        font-size: 22px;
+        margin-bottom: 20px;
+    }
+
+    .pd-highlights {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+    }
+
+    .pd-highlight {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+    }
+
+    .pd-accordion {
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .pd-accordion summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+    }
+
+    .pd-accordion summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .pd-accordion summary::marker {
+        content: "";
+    }
+
+    .pd-accordion-title {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .pd-accordion-chevron {
+        display: inline-flex;
+        flex: 0 0 24px;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+    }
+
+    .pd-accordion-chevron > .material-symbols-rounded {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        font-size: 24px;
+        line-height: 1;
+        color: var(--icon);
+    }
+
+    .pd-accordion[open] > summary .pd-accordion-chevron {
+        transform: rotate(180deg);
+    }
+
+    .pd-accordion p {
+        max-width: 800px;
+        line-height: 1.7;
+        font-size: 14px;
+        margin-top: 14px;
+    }
+
+    .pd-reviews {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: 40px;
+    }
+
+    .pd-score {
+        font-size: 48px;
+        font-weight: 700;
+    }
+
+    .pd-review {
+        padding: 22px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .pd-review h3 {
+        font-size: 16px;
+        margin: 10px 0;
+    }
+
+    .pd-review p {
+        line-height: 1.6;
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+
+    .pd-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0,0,0,.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 16px;
+    }
+
+    .pd-dialog {
+        width: min(680px, 100%);
+        max-height: calc(100dvh - 32px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-radius: 10px;
+    }
+
+    .pd-dialog.gallery-dialog {
+        width: min(900px, 100%);
+    }
+
+    .pd-dialog-header,
+    .pd-dialog-footer {
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex: 0 0 auto;
+    }
+
+    .pd-dialog-header {
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .pd-dialog-header h2 {
+        font-size: 20px;
+    }
+
+    .pd-dialog-body {
+        padding: 20px;
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    .pd-dialog-footer {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .pd-enlarged img {
+        width: 100%;
+        max-height: 65dvh;
+        object-fit: contain;
+    }
+
+    .pd-location-input {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .pd-store {
+        display: flex;
+        gap: 12px;
+        padding: 20px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .pd-store p {
+        font-size: 13px;
+        line-height: 1.6;
+        margin-top: 5px;
+    }
+
+    @media (max-width: 767px) {
+        .pd-header {
+            flex-wrap: wrap;
+            padding: 12px;
+            gap: 10px;
+        }
+
+        .pd-logo {
+            flex: 1;
+            font-size: 23px;
+        }
+
+        .pd-search {
+            order: 3;
+            flex-basis: 100%;
+        }
+
+        .pd-main {
+            padding: 20px 12px;
+        }
+
+        .pd-layout,
+        .pd-reviews {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 24px;
+        }
+
+        .pd-gallery {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 12px;
+        }
+
+        .pd-main-photo {
+            width: 100%;
+        }
+
+        .pd-main-photo img {
+            max-height: 320px;
+        }
+
+        .pd-thumbnails {
+            display: flex;
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        .pd-thumbnail {
+            flex: 0 0 58px;
+        }
+
+        .pd-title {
+            font-size: 23px;
+        }
+
+        .pd-overlay {
+            padding: 10px;
+        }
+
+        .pd-dialog {
+            max-height: calc(100dvh - 20px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set state = sephora["state"] %}
+{% set selected = sephora["selected_size"] %}
+
+<div class="pd"
+     data-annotation-skip="{{ 'true' if sephora['popup_visible'] else 'false' }}">
+    <header class="pd-header" data-class="app_bar">
+        <div class="pd-logo" data-class="logo">SEPHORA</div>
+
+        <div class="pd-search" data-class="search_bar">
+            {{ icon("search") }}
+            <input aria-label="Search" placeholder="Search">
+        </div>
+
+        <button class="pd-icon-button" data-class="button"
+                aria-label="Account">{{ icon("person") }}</button>
+
+        <button class="pd-icon-button" data-class="button"
+                aria-label="Basket">{{ icon("shopping_bag") }}</button>
+    </header>
+
+    <nav class="pd-nav" data-class="navigation_bar">
+        {% for department in [
+            "New", "Makeup", "Skincare", "Fragrance",
+            "Hair", "Mini Size", "Brands", "Gifts", "Sale & Offers"
+        ] %}
+        <button data-class="tab">{{ department }}</button>
+        {% endfor %}
+    </nav>
+
+    <main class="pd-main">
+        <p class="pd-breadcrumb">Skincare / Moisturizers / Face Creams</p>
+
+        <div class="pd-layout">
+            <section class="pd-gallery" data-class="section">
+                <div class="pd-thumbnails">
+                    {% for source in sephora["gallery"] %}
+                    <button
+                        class="pd-thumbnail {{ 'selected' if loop.index0 == sephora['gallery_index'] else '' }}"
+                        data-class="button"
+                        aria-label="Product image {{ loop.index }}"
+                    >
+                        {{ photo(source, "thumbnail_" ~ loop.index) }}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <div class="pd-main-photo">
+                    {{ photo(
+                        sephora["gallery"][sephora["gallery_index"]],
+                        "main_product_image"
+                    ) }}
+                    <button class="pd-button" data-class="button">
+                        {{ icon("zoom_in") }} View larger
+                    </button>
+                </div>
+            </section>
+
+            <section data-class="section" data-semantic="purchase_panel">
+                <p class="pd-brand">{{ sephora["brand"] }}</p>
+                <h1 class="pd-title">{{ sephora["name"] }}</h1>
+
+                <p class="pd-muted">
+                    {{ sephora["rating"] }} / 5 ·
+                    {{ sephora["review_count"] }} reviews · Ask a question
+                </p>
+
+                <p class="pd-price">{{ sephora["price_text"] }}</p>
+                <p class="pd-muted">
+                    Size: {{ sephora["sizes"][selected]["volume"] }}
+                </p>
+
+                <div class="pd-sizes">
+                    {% for size in sephora["sizes"] %}
+                    <button
+                        class="pd-size {{ 'selected' if loop.index0 == selected else '' }}"
+                        data-class="button"
+                    >
+                        {{ size["label"] }}
+                        <span>{{ size["volume"] }}</span>
+                        <span>${{ size["price"] }}.00</span>
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <div class="pd-fulfillment">
+                    {% for value, title, description in [
+                        ("shipping", "Get It Shipped", "Sign in for shipping options."),
+                        ("delivery", "Same-Day Delivery", "Choose your location to check availability."),
+                        ("pickup", "Buy Online & Pick Up", "Choose a nearby store.")
+                    ] %}
+                    <label class="pd-delivery">
+                        <input type="radio" name="fulfillment"
+                               data-class="checkbox"
+                               {% if sephora["fulfillment"] == value %}checked{% endif %}>
+                        <div>
+                            <strong>{{ title }}</strong>
+                            <p>{{ description }}</p>
+                            {% if value == "pickup"
+                                  and state == "pickup_selected" %}
+                            <p>{{ sephora["selected_store"]["name"] }}</p>
+                            <span data-class="badge">Available for pickup</span>
+                            {% endif %}
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div class="pd-buy">
+                <div class="pd-quantity">
+                    <select data-class="input_field" aria-label="Quantity">
+                        {% for quantity in range(1, 6) %}
+                        <option
+                            value="{{ quantity }}"
+                            {% if quantity == sephora.get('quantity', 1) %}selected{% endif %}
+                        >
+                            {{ quantity }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <span
+                        class="pd-quantity-chevron"
+                        onclick="this.previousElementSibling.focus()"
+                        aria-hidden="true"
+                    >
+                        {{ icon("expand_more") }}
+                    </span>
+                </div>
+
+                <button class="pd-button pd-primary" data-class="button">
+                    Add to Basket
+                </button>
+            </div>
+            </section>
+        </div>
+
+        <section class="pd-section" data-class="section">
+            <h2>Highlights</h2>
+            <div class="pd-highlights">
+                {% for highlight in sephora["highlights"] %}
+                <div class="pd-highlight">
+                    {{ icon(highlight["icon"]) }}
+                    {{ highlight["name"] }}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="pd-section" data-class="section">
+            {% for title, content in [
+                ("About the Product", sephora["description"]),
+                ("How to Use", sephora["directions"]),
+                ("Ingredients", sephora["ingredients"])
+            ] %}
+            <details
+                class="pd-accordion"
+                {% if loop.first %}open{% endif %}
+            >
+                <summary
+
+                    aria-label="{{ title }}"
+                >
+                    <span class="pd-accordion-title"  data-class="button">
+                        {{ title }}
+                    </span>
+
+                    <span
+                        class="pd-accordion-chevron"
+                        aria-hidden="true"
+                    >
+                        {{ icon("expand_more") }}
+                    </span>
+                </summary>
+
+                <p>{{ content }}</p>
+            </details>
+            {% endfor %}
+        </section>
+
+        <section class="pd-section" data-class="section">
+            <h2>Ratings & Reviews</h2>
+
+            <div class="pd-reviews">
+                <div>
+                    <div class="pd-score">{{ sephora["rating"] }}</div>
+                    <p class="pd-muted">
+                        {{ sephora["review_count"] }} reviews
+                    </p>
+                    <button class="pd-button" data-class="button">
+                        Write a review
+                    </button>
+                </div>
+
+                <div>
+                    {% set reviews = sephora["reviews"]
+                        if state == "reviews"
+                        else sephora["reviews"][:2] %}
+
+                    {% for review in reviews %}
+                    <article class="pd-review" data-class="card">
+                        <strong>{{ review["author"] }}</strong>
+                        <p class="pd-muted">
+                            {{ review["rating"] }} / 5 ·
+                            Skin type: {{ review["skin_type"] }}
+                        </p>
+                        <h3>{{ review["title"] }}</h3>
+                        <p>{{ review["body"] }}</p>
+                        <button class="pd-button" data-class="button">
+                            Helpful ({{ review["helpful"] }})
+                        </button>
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+{% if sephora["popup_visible"] %}
+<div class="pd-overlay">
+    <section
+        class="pd-dialog {{ 'gallery-dialog' if state == 'gallery_dialog' else '' }}"
+        data-class="dialog"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+    >
+        <header class="pd-dialog-header">
+            <h2>
+                {% if state == "gallery_dialog" %}Product images
+                {% elif state == "store_dialog" %}Choose a store
+                {% else %}Added to your basket{% endif %}
+            </h2>
+
+            <button class="pd-icon-button" data-class="button"
+                    aria-label="Close">{{ icon("close") }}</button>
+        </header>
+
+        <div class="pd-dialog-body">
+            {% if state == "gallery_dialog" %}
+            <div class="pd-enlarged">
+                {{ photo(
+                    sephora["gallery"][sephora["gallery_index"]],
+                    "enlarged_product"
+                ) }}
+            </div>
+
+            {% elif state == "store_dialog" %}
+            <input class="pd-location-input"
+                   placeholder="ZIP code or city"
+                   aria-label="ZIP code or city"
+                   data-class="input_field">
+
+            {% for store in sephora["stores"] %}
+            <label class="pd-store">
+                <input type="radio" name="store"
+                       data-class="checkbox"
+                       {% if loop.first %}checked{% endif %}
+                       {% if not store["available"] %}disabled{% endif %}>
+                <div>
+                    <strong>{{ store["name"] }}</strong>
+                    <p>{{ store["address"] }}</p>
+                    <p>{{ store["distance"] }} miles away</p>
+                    <span data-class="badge">
+                        {{ "Available" if store["available"] else "Unavailable" }}
+                    </span>
+                </div>
+            </label>
+            {% endfor %}
+
+            {% else %}
+            <p class="pd-brand">{{ sephora["brand"] }}</p>
+            <h3>{{ sephora["name"] }}</h3>
+            <p class="pd-muted">
+                {{ sephora["sizes"][selected]["volume"] }} · Quantity: 1
+            </p>
+            <p class="pd-price">{{ sephora["price_text"] }}</p>
+            {% endif %}
+        </div>
+
+        <footer class="pd-dialog-footer">
+            {% if state == "gallery_dialog" %}
+            <button class="pd-button" data-class="button">
+                {{ icon("chevron_left") }}
+            </button>
+            <span>{{ sephora["gallery_index"] + 1 }} / 4</span>
+            <button class="pd-button" data-class="button">
+                {{ icon("chevron_right") }}
+            </button>
+            {% elif state == "store_dialog" %}
+            <button class="pd-button pd-primary" data-class="button">
+                Select store
+            </button>
+            {% else %}
+            <button class="pd-button" data-class="button">
+                Continue shopping
+            </button>
+            <button class="pd-button pd-primary" data-class="button">
+                View Basket
+            </button>
+            {% endif %}
+        </footer>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

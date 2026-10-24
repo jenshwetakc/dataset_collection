@@ -1,0 +1,984 @@
+{% extends "base.html" %}
+
+{% block title %}Basket | Sephora Simulator{% endblock %}
+
+{% macro icon(name, semantic="") %}
+<span
+    class="material-symbols-rounded bk-icon"
+    data-class="icon"
+    data-semantic="{{ semantic or name }}"
+    aria-hidden="true"
+>{{ name }}</span>
+{% endmacro %}
+
+{% macro photo(source, semantic) %}
+{% if source %}
+<img
+    src="{{ source }}"
+    alt="Beauty product"
+    data-class="image"
+    data-semantic="{{ semantic }}"
+>
+{% else %}
+<div class="bk-placeholder">Image unavailable</div>
+{% endif %}
+{% endmacro %}
+
+{% block head %}
+<style>
+    .bk,
+    .bk-overlay {
+        color: var(--on-surface);
+    }
+
+    .bk *,
+    .bk-overlay * {
+        box-sizing: border-box;
+    }
+
+    .bk button,
+    .bk input,
+    .bk-overlay button {
+        font: inherit;
+    }
+
+    .bk-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 24px;
+        width: 24px;
+        height: 24px;
+        font-size: 24px;
+        line-height: 1;
+        pointer-events: auto;
+    }
+
+    .bk-header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 18px max(16px, calc((100% - 1240px) / 2));
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .bk-logo {
+        font-size: 26px;
+        letter-spacing: 5px;
+        white-space: nowrap;
+    }
+
+    .bk-search {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 24px;
+        padding: 10px 16px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .bk-search input {
+        width: 100%;
+        min-width: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    .bk-search input::placeholder {
+        color: inherit;
+        opacity: 1;
+    }
+
+    .bk-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+    }
+
+    .bk-nav {
+        display: flex;
+        gap: 26px;
+        overflow-x: auto;
+        padding: 14px 16px;
+        background: var(--on-background);
+        color: var(--background);
+    }
+
+    .bk-nav button {
+        flex: 0 0 auto;
+        min-width: max-content;
+        white-space: nowrap;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    .bk-main {
+        max-width: 1240px;
+        margin: auto;
+        padding: 30px 20px 60px;
+    }
+
+    .bk-heading {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .bk-heading h1 {
+        margin: 0;
+        font-size: 30px;
+    }
+
+    .bk-muted {
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .bk-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        align-items: start;
+        gap: 30px;
+    }
+
+    .bk-panel {
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        background: var(--surface);
+    }
+
+    .bk-panel h2 {
+        font-size: 18px;
+        margin: 0;
+    }
+
+    .bk-panel-heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .bk-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 18px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+        cursor: pointer;
+    }
+
+    .bk-primary {
+        background: var(--primary);
+        color: var(--on-primary);
+        border-color: var(--primary);
+        font-weight: 700;
+    }
+
+    .bk-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: 0;
+        padding: 5px 0;
+        background: transparent;
+        color: inherit;
+        text-decoration: underline;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .bk-product {
+        display: grid;
+        grid-template-columns: 100px minmax(0, 1fr) auto;
+        gap: 18px;
+        padding: 22px 0;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .bk-product-photo img,
+    .bk-placeholder {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: contain;
+        background: var(--surface-variant);
+    }
+
+    .bk-placeholder {
+        display: grid;
+        place-items: center;
+        padding: 8px;
+        font-size: 11px;
+        color: var(--on-surface-variant);
+        text-align: center;
+    }
+
+    .bk-brand {
+        font-weight: 700;
+        font-size: 14px;
+        overflow-wrap: anywhere;
+    }
+
+    .bk-product-name {
+        margin: 6px 0;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .bk-product-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 12px;
+    }
+
+    .bk-price {
+        white-space: nowrap;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .bk-quantity {
+        position: relative;
+        width: 86px;
+        margin-top: 12px;
+    }
+
+    .bk-quantity-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 7px 10px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--on-surface);
+        cursor: pointer;
+    }
+
+    .bk-quantity-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        width: 100%;
+        z-index: 20;
+        padding: 4px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--surface);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+    }
+
+    .bk-quantity-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        min-height: 34px;
+        padding: 4px 6px;
+        border: 0;
+        background: transparent;
+        color: var(--on-surface);
+        cursor: pointer;
+    }
+
+    .bk-quantity-option.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .bk-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 16px 0;
+        font-size: 14px;
+    }
+
+    .bk-total {
+        padding-top: 16px;
+        border-top: 1px solid var(--border-subtle);
+        font-weight: 700;
+        font-size: 18px;
+    }
+
+    .bk-checkout {
+        width: 100%;
+        margin-top: 12px;
+    }
+
+    .bk-promo summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-weight: 700;
+        list-style: none;
+        cursor: pointer;
+    }
+
+    .bk-promo summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .bk-promo summary::marker {
+        content: "";
+    }
+
+    .bk-promo[open] > summary .bk-promo-chevron {
+        transform: rotate(180deg);
+    }
+
+    .bk-promo-form {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .bk-promo-form input {
+        flex: 1;
+        width: 100%;
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .bk-message {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 12px;
+        margin-top: 14px;
+        border-radius: 5px;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .bk-success {
+        background: var(--success);
+        color: var(--on-success);
+    }
+
+    .bk-error {
+        background: var(--error);
+        color: var(--on-error);
+    }
+
+    .bk-sample-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+    }
+
+    .bk-sample-link strong {
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .bk-empty {
+        max-width: 650px;
+        margin: 40px auto;
+        padding: 50px 24px;
+        text-align: center;
+        background: var(--surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+    }
+
+    .bk-empty > .bk-icon {
+        margin-bottom: 16px;
+    }
+
+    .bk-empty h2 {
+        font-size: 24px;
+    }
+
+    .bk-empty p {
+        margin: 18px 0;
+    }
+
+    .bk-footer {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .bk-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgba(0, 0, 0, .5);
+    }
+
+    .bk-dialog {
+        display: flex;
+        flex-direction: column;
+        width: min(700px, 100%);
+        max-height: calc(100dvh - 32px);
+        overflow: hidden;
+        border-radius: 10px;
+        background: var(--surface);
+    }
+
+    .bk-dialog-header,
+    .bk-dialog-footer {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 20px;
+    }
+
+    .bk-dialog-header {
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .bk-dialog-header h2 {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    .bk-dialog-body {
+        min-height: 0;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .bk-dialog-footer {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .bk-samples {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 18px;
+    }
+
+    .bk-sample-card {
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+    }
+
+    .bk-sample-card img {
+        display: block;
+        width: 100%;
+        height: 125px;
+        object-fit: contain;
+    }
+
+    .bk-sample-card .bk-placeholder {
+        height: 125px;
+        aspect-ratio: auto;
+    }
+
+    .bk-sample-card p {
+        margin: 8px 0;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .bk-sample-choice {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+    }
+
+    .bk-sample-choice input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+    }
+
+    @media (max-width: 900px) {
+        .bk-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .bk-header {
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px;
+        }
+
+        .bk-logo {
+            flex: 1;
+            font-size: 23px;
+        }
+
+        .bk-search {
+            order: 3;
+            flex-basis: 100%;
+        }
+
+        .bk-main {
+            padding: 22px 12px 40px;
+        }
+
+        .bk-panel {
+            padding: 16px;
+        }
+
+        .bk-product {
+            grid-template-columns: 72px minmax(0, 1fr);
+            gap: 12px;
+        }
+
+        .bk-price {
+            grid-column: 2;
+        }
+
+        .bk-heading h1 {
+            font-size: 26px;
+        }
+
+        .bk-overlay {
+            padding: 10px;
+        }
+
+        .bk-dialog {
+            max-height: calc(100dvh - 20px);
+        }
+
+        .bk-dialog-header,
+        .bk-dialog-body,
+        .bk-dialog-footer {
+            padding: 14px;
+        }
+
+        .bk-dialog-footer {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set state = sephora["state"] %}
+
+<div
+    class="bk"
+    data-annotation-skip="{{ 'true' if sephora['popup_visible'] else 'false' }}"
+>
+    <header class="bk-header" data-class="app_bar">
+        <div class="bk-logo" data-class="logo">SEPHORA</div>
+
+        <div class="bk-search" data-class="search_bar">
+            {{ icon("search", "basket_search") }}
+            <input aria-label="Search" placeholder="Search">
+        </div>
+
+        <button
+            class="bk-icon-button"
+            data-class="button"
+            aria-label="Account"
+        >{{ icon("person") }}</button>
+
+        <button
+            class="bk-icon-button"
+            data-class="button"
+            aria-label="Loves"
+        >{{ icon("favorite") }}</button>
+    </header>
+
+    <nav class="bk-nav" data-class="navigation_bar">
+        {% for title in [
+            "New", "Makeup", "Skincare", "Fragrance",
+            "Hair", "Mini Size", "Brands", "Gifts", "Sale & Offers"
+        ] %}
+        <button data-class="tab">{{ title }}</button>
+        {% endfor %}
+    </nav>
+
+    <main class="bk-main">
+        <div class="bk-heading">
+            <h1>My Basket</h1>
+            <span class="bk-muted">
+                {{ sephora["item_count"] }} items
+            </span>
+        </div>
+
+        {% if state == "empty" %}
+        <section class="bk-empty" data-class="section">
+            {{ icon("shopping_bag", "empty_basket") }}
+            <h2>Your basket is empty</h2>
+            <p class="bk-muted">
+                Discover something new for your beauty routine.
+            </p>
+            <button
+                class="bk-button bk-primary"
+                data-class="button"
+            >Continue Shopping</button>
+        </section>
+
+        {% else %}
+        <div class="bk-layout">
+            <div>
+                <section class="bk-panel" data-class="section">
+                    <div class="bk-panel-heading">
+                        {{ icon("person", "insider_account") }}
+                        <h2>Beauty Insider</h2>
+                    </div>
+
+                    <p class="bk-muted">
+                        Sign in to view your rewards and account benefits.
+                    </p>
+
+                    <button
+                        class="bk-button"
+                        data-class="button"
+                    >Sign In</button>
+                </section>
+
+                {% for fulfillment, title, symbol in [
+                    ("shipping", "Get It Shipped", "local_shipping"),
+                    ("pickup", "Buy Online & Pick Up", "storefront")
+                ] %}
+                {% set group = sephora["products"]
+                    | selectattr("fulfillment", "equalto", fulfillment)
+                    | list %}
+
+                {% if group %}
+                <section class="bk-panel" data-class="section">
+                    <div class="bk-panel-heading">
+                        {{ icon(symbol, fulfillment ~ "_group") }}
+                        <h2>{{ title }}</h2>
+                    </div>
+
+                    {% if fulfillment == "pickup" %}
+                    <p class="bk-muted">
+                        {{ sephora["store_name"] }}
+                    </p>
+                    <button class="bk-link" data-class="button">
+                        Change store {{ icon("chevron_right") }}
+                    </button>
+                    {% else %}
+                    <p class="bk-muted">
+                        Delivery options are confirmed at checkout.
+                    </p>
+                    {% endif %}
+
+                    {% for product in group %}
+                    {% set quantity_open =
+                        state == "quantity_open"
+                        and product["id"] == sephora["quantity_product_id"]
+                    %}
+
+                    <article class="bk-product" data-class="card">
+                        <div class="bk-product-photo">
+                            {{ photo(product["image"], product["id"]) }}
+                        </div>
+
+                        <div>
+                            <div class="bk-brand">
+                                {{ product["brand"] }}
+                            </div>
+
+                            <p class="bk-product-name">
+                                {{ product["name"] }}
+                            </p>
+
+                            <p class="bk-muted">
+                                {{ product["size"] }} ·
+                                {{ product["variant"] }}
+                            </p>
+
+                            <div class="bk-quantity">
+                                <button
+                                    class="bk-quantity-trigger"
+                                    data-class="button"
+                                    aria-label="Quantity for {{ product['name'] }}"
+                                    aria-expanded="{{ 'true' if quantity_open else 'false' }}"
+                                    aria-controls="quantity-{{ product['id'] }}"
+                                >
+                                    <span>{{ product["quantity"] }}</span>
+                                    {{ icon("expand_more", "quantity_arrow") }}
+                                </button>
+
+                                {% if quantity_open %}
+                                <div
+                                    id="quantity-{{ product['id'] }}"
+                                    class="bk-quantity-menu"
+                                    data-class="section"
+                                    data-occluder="true"
+                                >
+                                    {% for quantity in range(1, 6) %}
+                                    <button
+                                        class="bk-quantity-option {{ 'selected' if quantity == product['quantity'] else '' }}"
+                                        data-class="button"
+                                        aria-label="Quantity {{ quantity }}"
+                                    >
+                                        <span>{{ quantity }}</span>
+                                        {% if quantity == product["quantity"] %}
+                                        {{ icon("check", "selected_quantity") }}
+                                        {% endif %}
+                                    </button>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="bk-product-actions">
+                                <button class="bk-link" data-class="button">
+                                    {{ icon("favorite_border") }} Move to Loves
+                                </button>
+
+                                <button class="bk-link" data-class="button">
+                                    {{ icon("delete_outline") }} Remove
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bk-price">
+                            {{ product["price_text"] }}
+                            {% if product["quantity"] > 1 %}
+                            <div class="bk-muted">each</div>
+                            {% endif %}
+                        </div>
+                    </article>
+                    {% endfor %}
+                </section>
+                {% endif %}
+                {% endfor %}
+
+                <section class="bk-panel" data-class="section">
+                    <button class="bk-sample-link" data-class="button">
+                        <span>
+                            <strong>Pick Your Free Samples</strong>
+                            <span class="bk-muted">
+                                Select up to two samples.
+                            </span>
+                        </span>
+                        {{ icon("chevron_right", "samples_arrow") }}
+                    </button>
+                </section>
+            </div>
+
+            <aside>
+                <section class="bk-panel" data-class="section">
+                    <h2>Order Summary</h2>
+
+                    <div class="bk-summary-row">
+                        <span>Merchandise subtotal</span>
+                        <span>{{ sephora["subtotal_text"] }}</span>
+                    </div>
+
+                    {% if state == "promo_applied" %}
+                    <div class="bk-summary-row">
+                        <span>Demo discount</span>
+                        <span>−{{ sephora["discount_text"] }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="bk-summary-row">
+                        <span>Shipping & tax</span>
+                        <span class="bk-muted">At checkout</span>
+                    </div>
+
+                    <div class="bk-summary-row bk-total">
+                        <span>Merchandise total</span>
+                        <span>{{ sephora["total_text"] }}</span>
+                    </div>
+
+                    <button
+                        class="bk-button bk-primary bk-checkout"
+                        data-class="button"
+                    >
+                        Checkout {{ icon("arrow_forward") }}
+                    </button>
+
+                    <p class="bk-muted">
+                        Shipping and tax are calculated at checkout.
+                    </p>
+                </section>
+
+                <section class="bk-panel" data-class="section">
+                    <details class="bk-promo" open>
+                        <summary data-class="button">
+                            <span>Promo or Reward Code</span>
+                            <span class="bk-promo-chevron">
+                                {{ icon("expand_more", "promo_arrow") }}
+                            </span>
+                        </summary>
+
+                        <div class="bk-promo-form">
+                            <input
+                                data-class="input_field"
+                                aria-label="Promo or reward code"
+                                value="{{ sephora['promo_code'] }}"
+                                placeholder="Enter code"
+                            >
+                            <button
+                                class="bk-button"
+                                data-class="button"
+                            >Apply</button>
+                        </div>
+
+                        {% if state in ["promo_applied", "promo_error"] %}
+                        <div
+                            class="bk-message {{ 'bk-success' if state == 'promo_applied' else 'bk-error' }}"
+                        >
+                            {{ icon(
+                                "check_circle"
+                                if state == "promo_applied"
+                                else "error_outline"
+                            ) }}
+                            <span>{{ sephora["promo_message"] }}</span>
+                        </div>
+                        {% endif %}
+                    </details>
+                </section>
+            </aside>
+        </div>
+        {% endif %}
+
+        <footer class="bk-footer" data-class="section">
+            <span class="bk-muted">Need help with your order?</span>
+            <button class="bk-link" data-class="button">
+                {{ icon("help_outline") }} Customer Service
+            </button>
+        </footer>
+    </main>
+</div>
+
+{% if sephora["popup_visible"] %}
+<div class="bk-overlay">
+    <section
+        class="bk-dialog"
+        data-class="dialog"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="basket-dialog-title"
+    >
+        <header class="bk-dialog-header">
+            <h2 id="basket-dialog-title">
+                {{ "Pick Your Free Samples"
+                    if state == "samples_dialog"
+                    else "Remove item?" }}
+            </h2>
+
+            <button
+                class="bk-icon-button"
+                data-class="button"
+                aria-label="Close dialog"
+            >{{ icon("close") }}</button>
+        </header>
+
+        <div class="bk-dialog-body">
+            {% if state == "samples_dialog" %}
+            <p class="bk-muted">
+                {{ sephora["selected_sample_ids"] | length }}
+                of 2 samples selected
+            </p>
+
+            <div class="bk-samples">
+                {% for sample in sephora["samples"] %}
+                <article class="bk-sample-card" data-class="card">
+                    {{ photo(sample["image"], sample["id"]) }}
+
+                    <p><strong>{{ sample["brand"] }}</strong></p>
+                    <p>{{ sample["name"] }}</p>
+
+                    <label class="bk-sample-choice">
+                        <input
+                            type="checkbox"
+                            data-class="checkbox"
+                            {% if sample["id"] in sephora["selected_sample_ids"] %}
+                            checked
+                            {% endif %}
+                        >
+                        <span>Select sample</span>
+                    </label>
+                </article>
+                {% endfor %}
+            </div>
+
+            {% else %}
+            {% set product = sephora["selected_product"] %}
+            <article class="bk-product" data-class="card">
+                <div class="bk-product-photo">
+                    {{ photo(product["image"], "remove_product") }}
+                </div>
+
+                <div>
+                    <div class="bk-brand">{{ product["brand"] }}</div>
+                    <p class="bk-product-name">{{ product["name"] }}</p>
+                    <p class="bk-muted">{{ product["size"] }}</p>
+                </div>
+            </article>
+
+            <p class="bk-muted">
+                Remove this item from your basket?
+            </p>
+            {% endif %}
+        </div>
+
+        <footer class="bk-dialog-footer">
+            {% if state == "samples_dialog" %}
+            <button class="bk-button" data-class="button">Cancel</button>
+            <button
+                class="bk-button bk-primary"
+                data-class="button"
+            >Add Samples</button>
+            {% else %}
+            <button class="bk-button" data-class="button">Keep Item</button>
+            <button
+                class="bk-button bk-primary"
+                data-class="button"
+            >
+                {{ icon("delete_outline") }} Remove Item
+            </button>
+            {% endif %}
+        </footer>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

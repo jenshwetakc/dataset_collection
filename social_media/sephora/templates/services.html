@@ -1,0 +1,894 @@
+{% extends "base.html" %}
+
+{% block title %}Beauty Services | Sephora Simulator{% endblock %}
+
+{% macro icon(name) %}
+<span
+    class="material-symbols-rounded sv-icon"
+    data-class="icon"
+    aria-hidden="true"
+>{{ name }}</span>
+{% endmacro %}
+
+{% macro button(text, symbol="", primary=false) %}
+<button
+    class="sv-button {{ 'sv-primary' if primary else '' }}"
+    data-class="button"
+>
+    {{ text }}
+    {% if symbol %}{{ icon(symbol) }}{% endif %}
+</button>
+{% endmacro %}
+
+{% block head %}
+<style>
+    .sv *,
+    .sv-overlay * {
+        box-sizing: border-box;
+    }
+
+    .sv,
+    .sv-overlay {
+        color: var(--on-surface);
+    }
+
+    .sv button,
+    .sv input,
+    .sv-overlay button,
+    .sv-overlay input {
+        font: inherit;
+    }
+
+    .sv-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 24px;
+        width: 24px;
+        height: 24px;
+        font-size: 24px;
+        line-height: 1;
+        pointer-events: auto;
+    }
+
+    .sv-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px max(16px, calc((100% - 1200px) / 2));
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sv-logo {
+        font-size: 25px;
+        letter-spacing: 5px;
+    }
+
+    .sv-header-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .sv-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+    }
+
+    .sv-main {
+        max-width: 1200px;
+        margin: auto;
+        padding: 24px 20px 50px;
+    }
+
+    .sv-muted {
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .sv-breadcrumb {
+        margin-bottom: 24px;
+    }
+
+    .sv-layout {
+        display: grid;
+        grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+        gap: 36px;
+        align-items: start;
+    }
+
+    .sv-photo {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+
+    .sv-placeholder {
+        display: grid;
+        place-items: center;
+        aspect-ratio: 4 / 3;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        border-radius: 6px;
+    }
+
+    .sv-service h1 {
+        margin: 22px 0 12px;
+        font-size: 32px;
+    }
+
+    .sv-service-description {
+        font-size: 15px;
+        line-height: 1.7;
+        margin: 16px 0;
+    }
+
+    .sv-panel {
+        padding: 24px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        background: var(--surface);
+    }
+
+    .sv-panel h2 {
+        margin: 0 0 20px;
+        font-size: 22px;
+    }
+
+    .sv-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 18px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+        cursor: pointer;
+    }
+
+    .sv-primary {
+        background: var(--primary);
+        color: var(--on-primary);
+        border-color: var(--primary);
+        font-weight: 700;
+    }
+
+    .sv-button:disabled {
+        opacity: .55;
+        cursor: default;
+    }
+
+    .sv-store-trigger {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 14px;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--on-surface);
+        cursor: pointer;
+    }
+
+    .sv-store-trigger .sv-store-copy {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .sv-store-copy strong,
+    .sv-store-copy small {
+        display: block;
+    }
+
+    .sv-steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin: 22px 0;
+    }
+
+    .sv-step {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .sv-step.active {
+        color: var(--on-surface);
+        font-weight: 700;
+    }
+
+    .sv-calendar {
+        margin-top: 24px;
+    }
+
+    .sv-calendar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .sv-calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 5px;
+    }
+
+    .sv-weekday {
+        padding: 7px 0;
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+
+    .sv-day {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        min-height: 38px;
+        padding: 5px;
+        border: 1px solid transparent;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--on-surface);
+        cursor: pointer;
+    }
+
+    .sv-day.selected {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .sv-times {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin: 16px 0 22px;
+    }
+
+    .sv-time {
+        padding: 10px 5px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .sv-time.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        border: 2px solid var(--primary);
+    }
+
+    .sv-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px;
+        margin: 18px 0;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        border-radius: 5px;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .sv-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 22px;
+    }
+
+    .sv-field label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+    }
+
+    .sv-field input {
+        width: 100%;
+        min-width: 0;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .sv-field input[aria-invalid="true"] {
+        border: 2px solid var(--error);
+    }
+
+    .sv-error {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+        color: var(--error);
+        font-size: 12px;
+    }
+
+    .sv-consent {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin: 20px 0;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .sv-consent input,
+    .sv-store-option input {
+        flex: 0 0 auto;
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+    }
+
+    .sv-confirmed {
+        max-width: 700px;
+        margin: 20px auto;
+        padding: 34px;
+        text-align: center;
+    }
+
+    .sv-confirmed h1 {
+        margin: 18px 0;
+        font-size: 28px;
+    }
+
+    .sv-confirmation-details {
+        text-align: left;
+        padding: 20px;
+        margin: 24px 0;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        border-radius: 5px;
+    }
+
+    .sv-detail-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin: 14px 0;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .sv-faq {
+        margin-top: 28px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .sv-faq details {
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sv-faq summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        list-style: none;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .sv-faq summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .sv-faq summary::marker {
+        content: "";
+    }
+
+    .sv-faq details[open] > summary .sv-chevron {
+        transform: rotate(180deg);
+    }
+
+    .sv-faq p {
+        margin-top: 14px;
+    }
+
+    .sv-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 16px;
+        background: rgba(0, 0, 0, .5);
+    }
+
+    .sv-dialog {
+        display: flex;
+        flex-direction: column;
+        width: min(600px, 100%);
+        max-height: calc(100dvh - 32px);
+        overflow: hidden;
+        background: var(--surface);
+        border-radius: 10px;
+    }
+
+    .sv-dialog-header,
+    .sv-dialog-footer {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 20px;
+    }
+
+    .sv-dialog-header {
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sv-dialog-header h2 {
+        font-size: 20px;
+        margin: 0;
+    }
+
+    .sv-dialog-body {
+        overflow-y: auto;
+        min-height: 0;
+        padding: 20px;
+    }
+
+    .sv-dialog-footer {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .sv-location-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+    }
+
+    .sv-location-search input {
+        width: 100%;
+        min-width: 0;
+        border: 0;
+        background: transparent;
+        color: var(--on-surface);
+    }
+
+    .sv-store-option {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 20px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sv-store-option strong {
+        overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 800px) {
+        .sv-layout {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 24px;
+        }
+
+        .sv-photo,
+        .sv-placeholder {
+            max-height: 300px;
+        }
+    }
+
+    @media (max-width: 450px) {
+        .sv-main {
+            padding: 20px 12px 40px;
+        }
+
+        .sv-header {
+            padding: 12px;
+        }
+
+        .sv-logo {
+            font-size: 22px;
+        }
+
+        .sv-panel {
+            padding: 16px;
+        }
+
+        .sv-service h1 {
+            font-size: 27px;
+        }
+
+        .sv-times,
+        .sv-form {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .sv-form {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .sv-overlay {
+            padding: 10px;
+        }
+
+        .sv-dialog {
+            max-height: calc(100dvh - 20px);
+        }
+
+        .sv-confirmed {
+            padding: 22px 16px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set state = sephora["state"] %}
+{% set form_visible = state in ["details_form", "validation_error"] %}
+{% set date_active = state != "overview" %}
+{% set time_active = state in [
+    "time_selected", "details_form", "validation_error"
+] %}
+
+<div
+    class="sv"
+    data-annotation-skip="{{ 'true' if sephora['popup_visible'] else 'false' }}"
+>
+    <header class="sv-header" data-class="app_bar">
+        <div class="sv-logo" data-class="logo">SEPHORA</div>
+
+        <div class="sv-header-actions">
+            <button
+                class="sv-icon-button"
+                data-class="button"
+                aria-label="Account"
+            >{{ icon("person") }}</button>
+
+            <button
+                class="sv-icon-button"
+                data-class="button"
+                aria-label="Basket"
+            >{{ icon("shopping_bag") }}</button>
+        </div>
+    </header>
+
+    <main class="sv-main">
+        <p class="sv-muted sv-breadcrumb">
+            Beauty Services / {{ sephora["service"]["name"] }}
+        </p>
+
+        {% if state == "confirmed" %}
+        <section class="sv-panel sv-confirmed" data-class="section">
+            {{ icon("check_circle") }}
+            <h1>Your appointment is confirmed</h1>
+
+            <p class="sv-muted">
+                Confirmation {{ sephora["confirmation_code"] }}
+            </p>
+
+            <div class="sv-confirmation-details">
+                <div class="sv-detail-row">
+                    {{ icon("brush") }}
+                    <span>{{ sephora["service"]["name"] }}</span>
+                </div>
+                <div class="sv-detail-row">
+                    {{ icon("calendar_month") }}
+                    <span>{{ sephora["date_label"] }}</span>
+                </div>
+                <div class="sv-detail-row">
+                    {{ icon("schedule") }}
+                    <span>{{ sephora["selected_time"] }}</span>
+                </div>
+                <div class="sv-detail-row">
+                    {{ icon("storefront") }}
+                    <span>
+                        {{ sephora["store"]["name"] }}<br>
+                        {{ sephora["store"]["address"] }}
+                    </span>
+                </div>
+            </div>
+
+            {{ button("Add to Calendar", "calendar_month") }}
+            {{ button("Manage Appointment", "arrow_forward", true) }}
+        </section>
+
+        {% else %}
+        <div class="sv-layout">
+            <section class="sv-service" data-class="section">
+                {% if sephora["hero_image"] %}
+                <img
+                    class="sv-photo"
+                    src="{{ sephora['hero_image'] }}"
+                    alt="Beauty service"
+                    data-class="image"
+                >
+                {% else %}
+                <div class="sv-placeholder">Beauty Services</div>
+                {% endif %}
+
+                <h1>{{ sephora["service"]["name"] }}</h1>
+
+                <p class="sv-muted">
+                    {{ sephora["service"]["price"] }} /
+                    {{ sephora["service"]["duration"] }}
+                </p>
+
+                <p class="sv-service-description">
+                    {{ sephora["service"]["description"] }}
+                </p>
+
+                <div class="sv-notice">
+                    {{ icon("info") }}
+                    <span>
+                        Service availability varies by location.
+                        Review the service information before booking.
+                    </span>
+                </div>
+
+                <div class="sv-faq">
+                    {% for faq in sephora["faqs"] %}
+                    <details {% if loop.first %}open{% endif %}>
+                        <summary data-class="button">
+                            <span>{{ faq["title"] }}</span>
+                            <span class="sv-chevron">
+                                {{ icon("expand_more") }}
+                            </span>
+                        </summary>
+                        <p class="sv-muted">{{ faq["body"] }}</p>
+                    </details>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="sv-panel" data-class="section">
+                <h2>Book an Appointment</h2>
+
+                <button
+                    class="sv-store-trigger"
+                    data-class="button"
+                    aria-label="Choose appointment store"
+                >
+                    {{ icon("location_on") }}
+                    <span class="sv-store-copy">
+                        <strong>{{ sephora["store"]["name"] }}</strong>
+                        <small class="sv-muted">
+                            {{ sephora["store"]["address"] }}
+                        </small>
+                    </span>
+                    {{ icon("expand_more") }}
+                </button>
+
+                <div class="sv-steps">
+                    <span class="sv-step {{ 'active' if not form_visible else '' }}">
+                        {{ icon("calendar_month") }} Date & Time
+                    </span>
+                    <span class="sv-step {{ 'active' if form_visible else '' }}">
+                        {{ icon("person") }} Your Details
+                    </span>
+                </div>
+
+                {% if form_visible %}
+                <div class="sv-notice">
+                    {{ icon("event_available") }}
+                    <span>
+                        {{ sephora["date_label"] }} ·
+                        {{ sephora["selected_time"] }}
+                    </span>
+                </div>
+
+                <div class="sv-form">
+                    {% for key, label in [
+                        ("first_name", "First Name"),
+                        ("last_name", "Last Name"),
+                        ("email", "Email"),
+                        ("phone", "Phone")
+                    ] %}
+                    {% set invalid =
+                        state == "validation_error"
+                        and key in ["email", "phone"]
+                    %}
+                    <div class="sv-field">
+                        <label for="service-{{ key }}">{{ label }}</label>
+                        <input
+                            id="service-{{ key }}"
+                            type="text"
+                            data-class="input_field"
+                            value="{{ sephora['customer'][key] }}"
+                            aria-invalid="{{ 'true' if invalid else 'false' }}"
+                            {% if invalid %}
+                            aria-describedby="error-{{ key }}"
+                            {% endif %}
+                        >
+
+                        {% if invalid %}
+                        <p class="sv-error" id="error-{{ key }}">
+                            {{ icon("error_outline") }}
+                            <span>{{ label }} is required.</span>
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <label class="sv-consent">
+                    <input type="checkbox" data-class="checkbox" checked>
+                    <span>
+                        I have reviewed the appointment information
+                        and reservation policies.
+                    </span>
+                </label>
+
+                {{ button("Confirm Appointment", "arrow_forward", true) }}
+
+                {% else %}
+                <section class="sv-calendar" data-class="section">
+                    <div class="sv-calendar-header">
+                        <button
+                            class="sv-icon-button"
+                            data-class="button"
+                            aria-label="Previous month"
+                        >{{ icon("chevron_left") }}</button>
+
+                        <strong>{{ sephora["month_label"] }}</strong>
+
+                        <button
+                            class="sv-icon-button"
+                            data-class="button"
+                            aria-label="Next month"
+                        >{{ icon("chevron_right") }}</button>
+                    </div>
+
+                    <div class="sv-calendar-grid">
+                        {% for weekday in [
+                            "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+                        ] %}
+                        <span class="sv-weekday">{{ weekday }}</span>
+                        {% endfor %}
+
+                        {% for week in sephora["weeks"] %}
+                        {% for day in week %}
+                        {% if day %}
+                        <button
+                            class="sv-day {{ 'selected' if date_active and day == sephora['selected_day'] else '' }}"
+                            data-class="button"
+                            aria-label="{{ sephora['month_label'] }}, day {{ day }}"
+                            aria-pressed="{{ 'true' if date_active and day == sephora['selected_day'] else 'false' }}"
+                        >{{ day }}</button>
+                        {% else %}
+                        <span></span>
+                        {% endif %}
+                        {% endfor %}
+                        {% endfor %}
+                    </div>
+                </section>
+
+                {% if state == "no_availability" %}
+                <div class="sv-notice">
+                    {{ icon("event_busy") }}
+                    <span>
+                        No appointments are available for this date.
+                        Choose another date or store.
+                    </span>
+                </div>
+
+                {{ button("Find Another Store", "location_on") }}
+
+                {% elif date_active %}
+                <p class="sv-muted">
+                    Available times · {{ sephora["date_label"] }}
+                </p>
+
+                <div class="sv-times">
+                    {% for time in sephora["times"] %}
+                    <button
+                        class="sv-time {{ 'selected' if time_active and time == sephora['selected_time'] else '' }}"
+                        data-class="button"
+                        aria-pressed="{{ 'true' if time_active and time == sephora['selected_time'] else 'false' }}"
+                    >{{ time }}</button>
+                    {% endfor %}
+                </div>
+
+                <button
+                    class="sv-button sv-primary"
+                    data-class="button"
+                    {% if not time_active %}disabled{% endif %}
+                >
+                    Continue {{ icon("arrow_forward") }}
+                </button>
+
+                {% else %}
+                <div class="sv-notice">
+                    {{ icon("calendar_month") }}
+                    <span>Select a date to view appointment times.</span>
+                </div>
+                {% endif %}
+                {% endif %}
+            </section>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+{% if sephora["popup_visible"] %}
+<div class="sv-overlay">
+    <section
+        class="sv-dialog"
+        data-class="dialog"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="service-store-title"
+    >
+        <header class="sv-dialog-header">
+            <h2 id="service-store-title">Choose a Store</h2>
+            <button
+                class="sv-icon-button"
+                data-class="button"
+                aria-label="Close"
+            >{{ icon("close") }}</button>
+        </header>
+
+        <div class="sv-dialog-body">
+            <div class="sv-location-search" data-class="search_bar">
+                {{ icon("search") }}
+                <input
+                    type="text"
+                    aria-label="City or ZIP code"
+                    placeholder="City or ZIP code"
+                >
+            </div>
+
+            {% for store in sephora["stores"] %}
+            <label class="sv-store-option">
+                <input
+                    type="radio"
+                    name="service-store"
+                    data-class="selection_indicator"
+                    {% if loop.first %}checked{% endif %}
+                >
+                <span>
+                    <strong>{{ store["name"] }}</strong>
+                    <p class="sv-muted">{{ store["address"] }}</p>
+                    <p class="sv-muted">{{ store["distance"] }}</p>
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <footer class="sv-dialog-footer">
+            {{ button("Cancel") }}
+            {{ button("Select Store", "check", true) }}
+        </footer>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

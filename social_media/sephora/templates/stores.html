@@ -1,0 +1,1087 @@
+{% extends "base.html" %}
+
+{% macro icon(name) -%}
+<svg
+    class="st-icon"
+    data-class="icon"
+    data-icon="{{ name }}"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+>
+    {% if name == "search" %}
+    <circle cx="10.5" cy="10.5" r="6.5"/>
+    <path d="m16 16 5 5"/>
+
+    {% elif name == "pin" %}
+    <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/>
+    <circle cx="12" cy="10" r="2.5"/>
+
+    {% elif name == "location" %}
+    <circle cx="12" cy="12" r="6"/>
+    <circle cx="12" cy="12" r="2"/>
+    <path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
+
+    {% elif name == "filter" %}
+    <path d="M4 6h16M4 12h16M4 18h16"/>
+    <circle cx="8" cy="6" r="2" fill="var(--surface)"/>
+    <circle cx="16" cy="12" r="2" fill="var(--surface)"/>
+    <circle cx="10" cy="18" r="2" fill="var(--surface)"/>
+
+    {% elif name == "chevron" %}
+    <path d="m6 9 6 6 6-6"/>
+
+    {% elif name == "close" %}
+    <path d="m6 6 12 12M18 6 6 18"/>
+
+    {% elif name == "plus" %}
+    <path d="M12 5v14M5 12h14"/>
+
+    {% elif name == "minus" %}
+    <path d="M5 12h14"/>
+
+    {% elif name == "check" %}
+    <path d="m5 12 4 4L19 6"/>
+
+    {% elif name == "clock" %}
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 7v5l3 2"/>
+
+    {% elif name == "phone" %}
+    <path d="m7 3 3 5-2 2a14 14 0 0 0 6 6l2-2 5 3-1 4C10 22 2 14 3 4Z"/>
+
+    {% elif name == "directions" %}
+    <path d="m12 2 10 10-10 10L2 12Z"/>
+    <path d="M8 15v-4h8m-3-3 3 3-3 3"/>
+
+    {% elif name == "bag" %}
+    <path d="M5 7h14l1 14H4Z"/>
+    <path d="M9 7V5a3 3 0 0 1 6 0v2"/>
+
+    {% elif name == "beauty" %}
+    <path d="m15 3 6 6-9 9-6-6Z"/>
+    <path d="m6 12-3 9 9-3M12 6l6 6"/>
+
+    {% elif name == "info" %}
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 11v6M12 7h.01"/>
+
+    {% endif %}
+</svg>
+{%- endmacro %}
+
+
+{% macro button(text, symbol=None, primary=False) -%}
+<button
+    type="button"
+    class="st-button {{ 'st-primary' if primary else '' }}"
+    data-class="button"
+>
+    {% if symbol %}{{ icon(symbol) }}{% endif %}
+    <span>{{ text }}</span>
+</button>
+{%- endmacro %}
+
+
+{% macro store_card(store) -%}
+<article
+    class="st-store
+        {{ 'st-selected'
+            if sephora.state in ['store_selected', 'hours_expanded']
+            and store.id == sephora.selected_store.id
+            else '' }}"
+    data-class="card"
+>
+    <div class="st-store-top">
+        <span class="st-number" data-class="badge">
+            {{ store.number }}
+        </span>
+
+        <div class="st-grow">
+            <h3>{{ store.name }}</h3>
+            <p class="st-muted">
+                {{ store.distance }} miles away
+            </p>
+        </div>
+    </div>
+
+    <p>
+        {{ store.address }}<br>
+        {{ store.city }}, {{ store.region }}
+        {{ store.postal_code }}
+    </p>
+
+    <p class="st-status">
+        {{ icon("clock") }}
+        <span>{{ store.status }}</span>
+    </p>
+
+    <div class="st-features">
+        {% if store.has_services %}
+        <span data-class="badge">
+            {{ icon("beauty") }}
+            Beauty services
+        </span>
+        {% endif %}
+
+        {% if store.pickup %}
+        <span data-class="badge">
+            {{ icon("bag") }}
+            Store pickup
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="st-actions">
+        {{ button("Store details", "pin") }}
+        {{ button("Directions", "directions") }}
+    </div>
+
+    {% if
+        sephora.state == "hours_expanded"
+        and store.id == sephora.selected_store.id
+    %}
+    <details class="st-hours" open>
+        <summary data-class="button">
+            <span>Store hours</span>
+            <span class="st-disclosure">
+                {{ icon("chevron") }}
+            </span>
+        </summary>
+
+        <div class="st-hour-list">
+            {% for item in store.hours %}
+            <div>
+                <span>{{ item.day }}</span>
+                <span>{{ item.hours }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+</article>
+{%- endmacro %}
+
+
+{% block head %}
+{{ super() }}
+
+<style>
+.st-page {
+    color: var(--on_surface);
+    background: var(--background);
+    min-height: 100vh;
+}
+
+.st-page *,
+.st-overlay * {
+    box-sizing: border-box;
+}
+
+.st-icon {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    vertical-align: middle;
+    pointer-events: auto;
+}
+
+.st-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 28px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border_subtle);
+}
+
+.st-logo {
+    font-size: 25px;
+    letter-spacing: 5px;
+    font-weight: 700;
+}
+
+.st-main {
+    max-width: 1440px;
+    margin: auto;
+    padding: 28px;
+}
+
+.st-main h1 {
+    margin: 0 0 8px;
+    font-size: clamp(26px, 3vw, 38px);
+}
+
+.st-muted {
+    color: var(--on_surface_variant);
+}
+
+.st-search-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 24px 0 16px;
+}
+
+.st-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 300px;
+    min-width: 0;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+}
+
+.st-search input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    padding: 14px 0;
+    border: 0;
+    outline-offset: 3px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
+.st-button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: var(--surface);
+    color: var(--on_surface);
+    font: inherit;
+    cursor: pointer;
+}
+
+.st-primary {
+    background: var(--primary);
+    color: var(--on_primary);
+    border-color: var(--primary);
+}
+
+.st-button:focus-visible,
+.st-map-marker:focus-visible,
+.st-hours summary:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+}
+
+.st-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.st-chips button {
+    min-height: 36px;
+    padding: 6px 12px;
+}
+
+.st-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface_variant);
+}
+
+.st-notice p {
+    margin: 0;
+}
+
+.st-layout {
+    display: grid;
+    grid-template-columns: minmax(300px, 410px) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.st-results {
+    min-width: 0;
+}
+
+.st-results-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.st-results-title h2 {
+    font-size: 20px;
+    margin: 0;
+}
+
+.st-store {
+    padding: 20px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border_subtle);
+    border-radius: 8px;
+    background: var(--surface);
+    overflow-wrap: anywhere;
+}
+
+.st-selected {
+    border: 2px solid var(--primary);
+    padding: 19px;
+}
+
+.st-store-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.st-grow {
+    flex: 1;
+    min-width: 0;
+}
+
+.st-store h3 {
+    margin: 0 0 5px;
+    font-size: 17px;
+}
+
+.st-store p {
+    line-height: 1.5;
+}
+
+.st-store-top p {
+    margin: 0;
+}
+
+.st-number {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--on_primary);
+    font-weight: 700;
+}
+
+.st-status {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.st-features,
+.st-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.st-features {
+    margin-bottom: 16px;
+}
+
+.st-features > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: var(--surface_variant);
+    color: var(--on_surface_variant);
+    font-size: 12px;
+}
+
+/* The map is illustrative and contains no external tiles. */
+.st-map {
+    position: sticky;
+    top: 16px;
+    min-width: 0;
+    height: 620px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface_variant);
+    color: var(--on_surface_variant);
+}
+
+.st-map-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Decorative map geometry is not an icon or annotation target. */
+.st-map-art .st-block {
+    fill: var(--surface);
+}
+
+.st-map-art .st-road {
+    fill: none;
+    stroke: var(--border_subtle);
+    stroke-width: 15;
+}
+
+.st-map-art .st-road-center {
+    fill: none;
+    stroke: var(--surface);
+    stroke-width: 7;
+}
+
+.st-map-label {
+    position: absolute;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.st-map-label.one { left: 9%; top: 13%; }
+.st-map-label.two { left: 51%; top: 46%; }
+.st-map-label.three { left: 12%; top: 82%; }
+
+.st-map-marker {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+    border: 2px solid var(--surface);
+    border-radius: 22px;
+    background: var(--primary);
+    color: var(--on_primary);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.st-map-marker.selected {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+}
+
+.st-map-controls {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    display: grid;
+    gap: 8px;
+    z-index: 4;
+}
+
+.st-map-controls .st-button {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 6px;
+}
+
+.st-map-caption {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--on_surface);
+    font-size: 11px;
+}
+
+.st-map-info {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 44px;
+    padding: 16px;
+    background: var(--surface);
+    color: var(--on_surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    z-index: 5;
+}
+
+.st-map-info h3 {
+    margin: 0 0 8px;
+}
+
+.st-empty {
+    padding: 40px 20px;
+    text-align: center;
+    border: 1px solid var(--border_subtle);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.st-empty > .st-icon {
+    width: 40px;
+    height: 40px;
+}
+
+.st-hours {
+    margin-top: 18px;
+    border-top: 1px solid var(--border_subtle);
+}
+
+.st-hours summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 0;
+    list-style: none;
+    cursor: pointer;
+}
+
+.st-hours summary::-webkit-details-marker {
+    display: none;
+}
+
+.st-hours summary::marker {
+    content: "";
+}
+
+.st-disclosure {
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.st-hours[open] .st-disclosure {
+    transform: rotate(180deg);
+}
+
+.st-hour-list > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 7px 0;
+    font-size: 13px;
+}
+
+.st-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgb(0 0 0 / 50%);
+    color: var(--on_surface);
+}
+
+.st-dialog {
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 560px);
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+}
+
+.st-dialog-head,
+.st-dialog-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 20px;
+    flex: 0 0 auto;
+}
+
+.st-dialog-head {
+    border-bottom: 1px solid var(--border_subtle);
+}
+
+.st-dialog-head h2 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.st-dialog-head .st-button {
+    padding: 0;
+    width: 44px;
+    flex: 0 0 44px;
+}
+
+.st-dialog-body {
+    padding: 20px;
+    overflow-y: auto;
+    min-height: 0;
+    overscroll-behavior: contain;
+}
+
+.st-dialog-foot {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border_subtle);
+}
+
+.st-filter-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 16px 0;
+    border: 0;
+    border-bottom: 1px solid var(--border_subtle);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.st-checkbox {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.st-checkbox.checked {
+    background: var(--primary);
+    color: var(--on_primary);
+    border-color: var(--primary);
+}
+
+.st-radius {
+    display: grid;
+    gap: 8px;
+    margin-top: 24px;
+}
+
+.st-radius .st-button {
+    justify-content: space-between;
+    border-radius: 6px;
+}
+
+.st-service-list {
+    display: grid;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.st-service-list > div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+@media (max-width: 850px) {
+    .st-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .st-map {
+        position: relative;
+        top: auto;
+        height: 350px;
+        grid-row: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .st-header {
+        padding: 16px;
+    }
+
+    .st-logo {
+        font-size: 21px;
+        letter-spacing: 3px;
+    }
+
+    .st-main {
+        padding: 20px 12px;
+    }
+
+    .st-search {
+        flex-basis: 100%;
+    }
+
+    .st-search-row > .st-button {
+        flex: 1 1 auto;
+    }
+
+    .st-store {
+        padding: 16px;
+    }
+
+    .st-selected {
+        padding: 15px;
+    }
+
+    .st-actions .st-button {
+        flex: 1 1 120px;
+    }
+
+    .st-map {
+        height: 310px;
+    }
+
+    .st-overlay {
+        padding: 10px;
+    }
+
+    .st-dialog {
+        max-height: calc(100vh - 20px);
+        max-height: calc(100dvh - 20px);
+    }
+
+    .st-dialog-head,
+    .st-dialog-body,
+    .st-dialog-foot {
+        padding: 16px;
+    }
+
+    .st-hour-list > div {
+        flex-wrap: wrap;
+        gap: 4px 12px;
+    }
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div
+    class="st-page"
+    {% if sephora.popup_visible %}
+    data-annotation-skip="true"
+    {% endif %}
+>
+    <header class="st-header" data-class="app_bar">
+        <div class="st-logo" data-class="logo">SEPHORA</div>
+        {{ button("Shop", "bag") }}
+    </header>
+
+    <main class="st-main">
+        <h1>Find a Sephora</h1>
+        <p class="st-muted">
+            Discover stores, beauty services, and events near you.
+        </p>
+
+        <div class="st-search-row">
+            <div class="st-search" data-class="search_bar">
+                {{ icon("search") }}
+                <input
+                    type="text"
+                    aria-label="City, state, or ZIP code"
+                    value="{{ sephora.query }}"
+                    data-class="input_field"
+                >
+            </div>
+
+            {{ button("Search", None, True) }}
+            {{ button("Use my location", "location") }}
+            {{ button("Filters", "filter") }}
+        </div>
+
+        {% if sephora.state == "filtered" %}
+        <div class="st-chips">
+            <button
+                type="button"
+                class="st-button"
+                data-class="chip"
+                aria-label="Remove open now filter"
+            >
+                Open now {{ icon("close") }}
+            </button>
+
+            <button
+                type="button"
+                class="st-button"
+                data-class="chip"
+                aria-label="Remove beauty services filter"
+            >
+                Beauty services {{ icon("close") }}
+            </button>
+        </div>
+        {% endif %}
+
+        {% if sephora.state == "location_denied" %}
+        <div class="st-notice" data-class="card" role="status">
+            {{ icon("info") }}
+            <p>
+                Location access is unavailable.
+                Enter a city or ZIP code to find nearby stores.
+            </p>
+        </div>
+        {% endif %}
+
+        <div class="st-layout">
+            <section class="st-results" data-class="section">
+                <div class="st-results-title">
+                    <h2>{{ sephora.stores|length }} stores nearby</h2>
+                    <span class="st-muted">Within {{ sephora.radius }}</span>
+                </div>
+
+                {% for store in sephora.stores %}
+                    {{ store_card(store) }}
+                {% else %}
+                <div class="st-empty" data-class="card">
+                    {{ icon("search") }}
+                    <h3>No stores found</h3>
+                    <p class="st-muted">
+                        Try another city or ZIP code,
+                        or increase your search area.
+                    </p>
+                    {{ button("Clear search", "close") }}
+                </div>
+                {% endfor %}
+            </section>
+
+            <section
+                class="st-map"
+                data-class="map"
+                aria-label="Illustrative map of nearby stores"
+            >
+                <svg
+                    class="st-map-art"
+                    viewBox="0 0 800 620"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                >
+                    <rect class="st-block" x="35" y="35" width="160" height="110" rx="12"/>
+                    <rect class="st-block" x="275" y="35" width="160" height="110" rx="12"/>
+                    <rect class="st-block" x="520" y="35" width="235" height="110" rx="12"/>
+                    <rect class="st-block" x="35" y="225" width="220" height="130" rx="12"/>
+                    <rect class="st-block" x="340" y="225" width="160" height="130" rx="12"/>
+                    <rect class="st-block" x="585" y="225" width="170" height="130" rx="12"/>
+                    <rect class="st-block" x="35" y="440" width="160" height="140" rx="12"/>
+                    <rect class="st-block" x="280" y="440" width="230" height="140" rx="12"/>
+                    <rect class="st-block" x="595" y="440" width="160" height="140" rx="12"/>
+
+                    <path class="st-road" d="M0 185h800M0 400h800M235 0v620M545 0v620"/>
+                    <path class="st-road-center" d="M0 185h800M0 400h800M235 0v620M545 0v620"/>
+                </svg>
+
+                <span class="st-map-label one">DOWNTOWN</span>
+                <span class="st-map-label two">MARKET DISTRICT</span>
+                <span class="st-map-label three">RIVERSIDE</span>
+
+                {% for store in sephora.stores %}
+                <button
+                    type="button"
+                    class="st-map-marker
+                        {{ 'selected'
+                            if sephora.state == 'store_selected'
+                            and store.id == sephora.selected_store.id
+                            else '' }}"
+                    style="left: {{ store.map_x }}%; top: {{ store.map_y }}%;"
+                    data-class="button"
+                    aria-label="{{ store.name }}"
+                >
+                    {{ icon("pin") }}
+                    <span>{{ store.number }}</span>
+                </button>
+                {% endfor %}
+
+                <div class="st-map-controls">
+                    <button
+                        type="button"
+                        class="st-button"
+                        data-class="button"
+                        aria-label="Zoom in"
+                    >
+                        {{ icon("plus") }}
+                    </button>
+
+                    <button
+                        type="button"
+                        class="st-button"
+                        data-class="button"
+                        aria-label="Zoom out"
+                    >
+                        {{ icon("minus") }}
+                    </button>
+
+                    <button
+                        type="button"
+                        class="st-button"
+                        data-class="button"
+                        aria-label="Center map on your location"
+                    >
+                        {{ icon("location") }}
+                    </button>
+                </div>
+
+                {% if sephora.state == "store_selected" %}
+                <article
+                    class="st-map-info"
+                    data-class="card"
+                    data-occluder="true"
+                >
+                    <h3>{{ sephora.selected_store.name }}</h3>
+                    <p>{{ sephora.selected_store.status }}</p>
+                    {{ button("View store", "pin", True) }}
+                </article>
+                {% endif %}
+
+                <span class="st-map-caption">Illustrative map</span>
+            </section>
+        </div>
+    </main>
+</div>
+
+
+{% if sephora.popup_visible %}
+<div class="st-overlay">
+    <section
+        class="st-dialog"
+        data-class="dialog"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="st-dialog-title"
+    >
+        <header class="st-dialog-head">
+            <h2 id="st-dialog-title">
+                {{ "Filter stores"
+                    if sephora.state == "filter_open"
+                    else "Store details" }}
+            </h2>
+
+            <button
+                type="button"
+                class="st-button"
+                data-class="button"
+                aria-label="Close dialog"
+            >
+                {{ icon("close") }}
+            </button>
+        </header>
+
+        <div class="st-dialog-body">
+            {% if sephora.state == "filter_open" %}
+
+            {% for label, checked in [
+                ("Open now", True),
+                ("Beauty services", True),
+                ("Store pickup", False)
+            ] %}
+            <button
+                type="button"
+                class="st-filter-option"
+                role="checkbox"
+                aria-checked="{{ 'true' if checked else 'false' }}"
+                data-class="button"
+            >
+                <span
+                    class="st-checkbox {{ 'checked' if checked else '' }}"
+                    data-class="checkbox"
+                >
+                    {% if checked %}{{ icon("check") }}{% endif %}
+                </span>
+                <span>{{ label }}</span>
+            </button>
+            {% endfor %}
+
+            <div class="st-radius">
+                <span>Search radius</span>
+                <button
+                    type="button"
+                    class="st-button"
+                    data-class="button"
+                    aria-label="Search radius, 25 miles"
+                >
+                    <span>{{ sephora.radius }}</span>
+                    {{ icon("chevron") }}
+                </button>
+            </div>
+
+            {% else %}
+
+            {% set store = sephora.selected_store %}
+
+            <h3>{{ store.name }}</h3>
+
+            <p>
+                {{ store.address }}<br>
+                {{ store.city }}, {{ store.region }}
+                {{ store.postal_code }}
+            </p>
+
+            <p class="st-status">
+                {{ icon("clock") }}
+                <span>{{ store.status }}</span>
+            </p>
+
+            <p class="st-status">
+                {{ icon("phone") }}
+                <span>{{ store.phone }}</span>
+            </p>
+
+            <h3>Services at this store</h3>
+
+            <div class="st-service-list">
+                {% for service in store.services %}
+                <div>
+                    {{ icon("beauty") }}
+                    <span>{{ service }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <details class="st-hours" open>
+                <summary data-class="button">
+                    <span>Store hours</span>
+                    <span class="st-disclosure">
+                        {{ icon("chevron") }}
+                    </span>
+                </summary>
+
+                <div class="st-hour-list">
+                    {% for item in store.hours %}
+                    <div>
+                        <span>{{ item.day }}</span>
+                        <span>{{ item.hours }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+
+            {% endif %}
+        </div>
+
+        <footer class="st-dialog-foot">
+            {% if sephora.state == "filter_open" %}
+                {{ button("Reset") }}
+                {{ button("Show stores", None, True) }}
+            {% else %}
+                {{ button("Directions", "directions") }}
+                {{ button("Select store", "check", True) }}
+            {% endif %}
+        </footer>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

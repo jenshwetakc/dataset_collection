@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+{% block title %}eGift Cards | Sephora Simulator{% endblock %}
+
+{% macro icon(name) %}
+<span
+    class="material-symbols-rounded gc-icon"
+    data-class="icon"
+    aria-hidden="true"
+>{{ name }}</span>
+{% endmacro %}
+
+{% macro action(label, symbol="", primary=false) %}
+<button
+    class="gc-button {{ 'gc-primary' if primary else '' }}"
+    data-class="button"
+>
+    {{ label }}
+    {% if symbol %}{{ icon(symbol) }}{% endif %}
+</button>
+{% endmacro %}
+
+{% macro gift_preview(data) %}
+<section class="gc-gift" data-class="card">
+    <div class="gc-gift-brand" data-class="logo">SEPHORA</div>
+    {% for design in data["designs"] %}
+        {% if design["id"] == data["selected_design"] %}
+        <div class="gc-gift-symbol">{{ icon(design["symbol"]) }}</div>
+        <p>{{ design["name"] }}</p>
+        {% endif %}
+    {% endfor %}
+    <strong class="gc-gift-amount">${{ data["amount"] }}.00</strong>
+    <span class="gc-gift-label">eGift Card</span>
+</section>
+{% endmacro %}
+
+{% block head %}
+<style>
+.gc *, .gc-overlay * { box-sizing: border-box; }
+.gc, .gc-overlay { color: var(--on-surface); }
+.gc button, .gc input, .gc textarea, .gc-overlay button { font: inherit; }
+.gc-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 24px; width: 24px; height: 24px;
+    font-size: 24px; line-height: 1; pointer-events: auto;
+}
+.gc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 18px 24px; background: var(--surface);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.gc-logo { font-size: 25px; letter-spacing: 5px; }
+.gc-icon-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; padding: 8px; background: transparent;
+    color: inherit; cursor: pointer;
+}
+.gc-main { max-width: 1120px; margin: auto; padding: 28px 20px 50px; }
+.gc-main h1 { margin: 18px 0 12px; font-size: 30px; }
+.gc-muted { color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.gc-layout {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 44px; align-items: start; margin-top: 28px;
+}
+.gc-gift {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 12px; aspect-ratio: 1.6;
+    width: 100%; padding: 24px; border-radius: 14px;
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    border: 1px solid var(--border);
+}
+.gc-gift-brand { font-size: 24px; letter-spacing: 5px; }
+.gc-gift p { margin: 0; font-size: 15px; }
+.gc-gift-amount { font-size: 30px; }
+.gc-gift-label { font-size: 12px; }
+.gc-gift-symbol {
+    display: inline-flex; padding: 10px;
+    border: 1px solid currentColor; border-radius: 50%;
+}
+.gc-designs {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px; margin: 20px 0;
+}
+.gc-design {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 8px; padding: 14px 5px;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); color: var(--on-surface);
+    cursor: pointer; font-size: 12px;
+}
+.gc-design.selected { outline: 2px solid var(--primary); outline-offset: 2px; }
+.gc-panel {
+    padding-bottom: 24px; margin-bottom: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.gc-panel h2 { margin: 0 0 16px; font-size: 19px; }
+.gc-amounts { display: flex; flex-wrap: wrap; gap: 10px; }
+.gc-amount {
+    padding: 10px 14px; border: 1px solid var(--border);
+    border-radius: 5px; background: var(--surface);
+    color: var(--on-surface); cursor: pointer;
+}
+.gc-amount.selected {
+    background: var(--primary-container); color: var(--on-primary-container);
+    outline: 2px solid var(--primary);
+}
+.gc-field { margin-top: 16px; min-width: 0; }
+.gc-field label { display: block; margin-bottom: 7px; font-size: 13px; }
+.gc-field input, .gc-field textarea {
+    display: block; width: 100%; min-width: 0; padding: 12px;
+    border: 1px solid var(--border); border-radius: 5px;
+    background: var(--surface); color: var(--on-surface);
+}
+.gc-field textarea { min-height: 100px; resize: none; }
+.gc-field input[aria-invalid="true"] { border: 2px solid var(--error); }
+.gc-error {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px; font-size: 12px; color: var(--error);
+}
+.gc-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.gc-radio {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; font-size: 14px;
+}
+.gc-radio input { width: 18px; height: 18px; accent-color: var(--primary); }
+.gc-date-trigger {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; width: 100%; padding: 12px;
+    border: 1px solid var(--border); border-radius: 5px;
+    background: var(--surface); color: var(--on-surface); cursor: pointer;
+}
+.gc-date-trigger .gc-date-text { flex: 1; text-align: left; font-size: 13px; }
+.gc-calendar {
+    margin-top: 10px; padding: 14px; border: 1px solid var(--border);
+    background: var(--surface); border-radius: 6px;
+}
+.gc-calendar-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 12px; font-size: 14px;
+}
+.gc-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.gc-weekday { font-size: 11px; text-align: center; padding: 7px 0; color: var(--text-secondary); }
+.gc-day {
+    min-width: 0; min-height: 34px; padding: 4px;
+    border: 0; border-radius: 50%; background: transparent;
+    color: var(--on-surface); cursor: pointer; font-size: 12px;
+}
+.gc-day.selected { background: var(--primary); color: var(--on-primary); }
+.gc-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 11px 18px; border: 1px solid var(--border);
+    border-radius: 24px; background: var(--surface);
+    color: var(--on-surface); cursor: pointer;
+}
+.gc-primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.gc-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+.gc-notice {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 16px; margin-top: 18px; border-radius: 5px;
+    background: var(--surface-variant); color: var(--on-surface-variant);
+    font-size: 13px; line-height: 1.6;
+}
+.gc-success { background: var(--success); color: var(--on-success); }
+.gc-faq { margin-top: 28px; }
+.gc-faq details { padding: 16px 0; border-bottom: 1px solid var(--border-subtle); }
+.gc-faq summary {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; list-style: none; font-size: 14px; cursor: pointer;
+}
+.gc-faq summary::-webkit-details-marker { display: none; }
+.gc-faq summary::marker { content: ""; }
+.gc-faq details[open] > summary .gc-chevron { transform: rotate(180deg); }
+.gc-overlay {
+    position: fixed; inset: 0; z-index: 1000; padding: 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.5);
+}
+.gc-dialog {
+    display: flex; flex-direction: column; width: min(600px, 100%);
+    max-height: calc(100dvh - 32px); overflow: hidden;
+    background: var(--surface); border-radius: 10px;
+}
+.gc-dialog-header, .gc-dialog-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    flex: 0 0 auto; gap: 12px; padding: 16px 20px;
+}
+.gc-dialog-header { border-bottom: 1px solid var(--border-subtle); }
+.gc-dialog-header h2 { margin: 0; font-size: 20px; }
+.gc-dialog-body { min-height: 0; overflow-y: auto; padding: 20px; }
+.gc-dialog-footer { border-top: 1px solid var(--border-subtle); flex-wrap: wrap; }
+.gc-preview-copy { text-align: center; overflow-wrap: anywhere; line-height: 1.7; }
+@media (max-width: 800px) {
+    .gc-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+}
+@media (max-width: 450px) {
+    .gc-header { padding: 12px; }
+    .gc-logo { font-size: 22px; }
+    .gc-main { padding: 20px 12px 40px; }
+    .gc-main h1 { font-size: 26px; }
+    .gc-form-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .gc-gift { gap: 8px; padding: 16px; }
+    .gc-gift-brand { font-size: 20px; }
+    .gc-gift-amount { font-size: 25px; }
+    .gc-designs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .gc-overlay { padding: 10px; }
+    .gc-dialog { max-height: calc(100dvh - 20px); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set state = sephora["state"] %}
+<div
+    class="gc"
+    data-annotation-skip="{{ 'true' if sephora['popup_visible'] else 'false' }}"
+>
+    <header class="gc-header" data-class="app_bar">
+        <div class="gc-logo" data-class="logo">SEPHORA</div>
+        <button class="gc-icon-button" data-class="button"
+                aria-label="Basket">{{ icon("shopping_bag") }}</button>
+    </header>
+
+    <main class="gc-main">
+        <p class="gc-muted">Gift Cards / Digital Gift Cards</p>
+        <h1>Make Their Day</h1>
+        <p class="gc-muted">Create a personalized eGift Card.</p>
+
+        {% if state == "added" %}
+        <div class="gc-notice gc-success" data-class="checkbox">
+            {{ ("check_circle") }}
+            <span>
+                Your ${{ sephora["amount"] }}.00 eGift Card
+                has been added to the basket.
+            </span>
+        </div>
+        {% endif %}
+
+        <div class="gc-layout">
+            <section data-class="section">
+                {{ gift_preview(sephora) }}
+
+                <div class="gc-designs">
+                    {% for design in sephora["designs"] %}
+                    <button
+                        class="gc-design {{ 'selected' if design['id'] == sephora['selected_design'] else '' }}"
+                        data-class="button"
+                        aria-pressed="{{ 'true' if design['id'] == sephora['selected_design'] else 'false' }}"
+                    >
+                        {{ icon(design["symbol"]) }}
+                        <span>{{ design["name"] }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+
+                {{ action("Preview Your Gift", "visibility") }}
+
+                <div class="gc-faq">
+                    <details>
+                        <summary data-class="button">
+                            <span>How does digital delivery work?</span>
+                            <span class="gc-chevron">{{ icon("expand_more") }}</span>
+                        </summary>
+                        <p class="gc-muted">
+                            Your gift is addressed to the recipient email
+                            entered in the form.
+                        </p>
+                    </details>
+                    <details>
+                        <summary data-class="button">
+                            <span>Review your gift details</span>
+                            <span class="gc-chevron">{{ icon("expand_more") }}</span>
+                        </summary>
+                        <p class="gc-muted">
+                            Check the recipient, amount, and message
+                            before continuing.
+                        </p>
+                    </details>
+                </div>
+            </section>
+
+            <div>
+                <section class="gc-panel" data-class="section">
+                    <h2>1. Choose an Amount</h2>
+                    <div class="gc-amounts">
+                        {% for amount in sephora["amounts"] %}
+                        <button
+                            class="gc-amount {{ 'selected' if amount == sephora['amount'] else '' }}"
+                            data-class="button"
+                            aria-pressed="{{ 'true' if amount == sephora['amount'] else 'false' }}"
+                        >${{ amount }}</button>
+                        {% endfor %}
+                    </div>
+
+                    <div class="gc-field">
+                        <label for="gift-amount">Other Amount ($)</label>
+                        <input
+                            id="gift-amount"
+                            type="text"
+                            inputmode="decimal"
+                            data-class="input_field"
+                            value="{{ sephora['custom_amount'] }}"
+                            placeholder="Enter amount"
+                        >
+                    </div>
+                </section>
+
+                <section class="gc-panel" data-class="section">
+                    <h2>2. Personalize Your Gift</h2>
+                    <div class="gc-form-grid">
+                        <div class="gc-field">
+                            <label for="gift-recipient">Recipient Name</label>
+                            <input id="gift-recipient" type="text"
+                                   data-class="input_field"
+                                   value="{{ sephora['recipient_name'] }}">
+                        </div>
+                        <div class="gc-field">
+                            <label for="gift-sender">Your Name</label>
+                            <input id="gift-sender" type="text"
+                                   data-class="input_field"
+                                   value="{{ sephora['sender_name'] }}">
+                        </div>
+                    </div>
+
+                    <div class="gc-field">
+                        <label for="gift-email">Recipient Email</label>
+                        <input
+                            id="gift-email"
+                            type="text"
+                            inputmode="email"
+                            data-class="input_field"
+                            value="{{ sephora['recipient_email'] }}"
+                            aria-invalid="{{ 'true' if state == 'validation_error' else 'false' }}"
+                            {% if state == "validation_error" %}
+                            aria-describedby="gift-email-error"
+                            {% endif %}
+                        >
+                        {% if state == "validation_error" %}
+                        <div class="gc-error" id="gift-email-error">
+                            {{ icon("error_outline") }}
+                            <span>Enter a valid recipient email.</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="gc-field">
+                        <label for="gift-message">Gift Message</label>
+                        <textarea id="gift-message"
+                                  data-class="input_field">{{ sephora["message"] }}</textarea>
+                    </div>
+                </section>
+
+                <section class="gc-panel" data-class="section">
+                    <h2>3. Choose Delivery</h2>
+                    {% for value, title in [
+                        ("now", "Send as soon as possible"),
+                        ("scheduled", "Choose a delivery date")
+                    ] %}
+                    <label class="gc-radio">
+                        <input
+                            type="radio"
+                            name="gift-delivery"
+                            data-class="checkbox"
+                            {% if sephora["delivery_mode"] == value %}checked{% endif %}
+                        >
+                        <span>{{ title }}</span>
+                    </label>
+                    {% endfor %}
+
+                    {% if sephora["delivery_mode"] == "scheduled" %}
+                    <button
+                        class="gc-date-trigger"
+                        data-class="button"
+                        aria-label="Choose delivery date"
+                        aria-expanded="{{ 'true' if state == 'date_picker' else 'false' }}"
+                    >
+                        {{ icon("calendar_month") }}
+                        <span class="gc-date-text">{{ sephora["date_label"] }}</span>
+                        {{ icon("expand_more") }}
+                    </button>
+
+                    {% if state == "date_picker" %}
+                    <section class="gc-calendar" data-class="section">
+                        <div class="gc-calendar-header">
+                            <button class="gc-icon-button" data-class="button"
+                                    aria-label="Previous month">{{ icon("chevron_left") }}</button>
+                            <strong>{{ sephora["month_label"] }}</strong>
+                            <button class="gc-icon-button" data-class="button"
+                                    aria-label="Next month">{{ icon("chevron_right") }}</button>
+                        </div>
+
+                        <div class="gc-calendar-grid">
+                            {% for weekday in ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] %}
+                            <span class="gc-weekday">{{ weekday }}</span>
+                            {% endfor %}
+
+                            {% for week in sephora["weeks"] %}
+                            {% for day in week %}
+                            {% if day %}
+                            <button
+                                class="gc-day {{ 'selected' if day == sephora['selected_day'] else '' }}"
+                                data-class="button"
+                                aria-label="{{ sephora['month_label'] }}, day {{ day }}"
+                                aria-pressed="{{ 'true' if day == sephora['selected_day'] else 'false' }}"
+                            >{{ day }}</button>
+                            {% else %}
+                            <span></span>
+                            {% endif %}
+                            {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </section>
+                    {% endif %}
+                    {% endif %}
+                </section>
+
+                <div class="gc-actions">
+                    {{ action("Preview", "visibility") }}
+                    {{ action("Add to Basket", "shopping_bag", true) }}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+{% if sephora["popup_visible"] %}
+<div class="gc-overlay">
+    <section
+        class="gc-dialog"
+        data-class="dialog"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="gift-preview-title"
+    >
+        <header class="gc-dialog-header">
+            <h2 id="gift-preview-title">Your Gift Preview</h2>
+            <button class="gc-icon-button" data-class="button"
+                    aria-label="Close">{{ icon("close") }}</button>
+        </header>
+
+        <div class="gc-dialog-body">
+            {{ gift_preview(sephora) }}
+            <div class="gc-preview-copy">
+                <h3>For {{ sephora["recipient_name"] }}</h3>
+                <p>{{ sephora["message"] }}</p>
+                <p>From {{ sephora["sender_name"] }}</p>
+                <p class="gc-muted">{{ sephora["recipient_email"] }}</p>
+            </div>
+        </div>
+
+        <footer class="gc-dialog-footer">
+            {{ action("Edit Gift", "edit") }}
+            {{ action("Add to Basket", "shopping_bag", true) }}
+        </footer>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

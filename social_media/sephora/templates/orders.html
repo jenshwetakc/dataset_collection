@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+{% block title %}Order Details | Sephora Simulator{% endblock %}
+
+{% macro icon(name) %}
+<span
+    class="material-symbols-rounded od-icon"
+    data-class="icon"
+    aria-hidden="true"
+>{{ name }}</span>
+{% endmacro %}
+
+{% macro action(label, symbol="", primary=false) %}
+<button
+    class="od-button {{ 'od-primary' if primary else '' }}"
+    data-class="button"
+>
+    {% if symbol %}{{ icon(symbol) }}{% endif %}
+    {{ label }}
+</button>
+{% endmacro %}
+
+{% block head %}
+<style>
+.od *, .od-overlay * { box-sizing: border-box; }
+.od, .od-overlay { color: var(--on-surface); }
+.od button, .od-overlay button { font: inherit; }
+.od-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 24px; width: 24px; height: 24px;
+    font-size: 24px; line-height: 1; pointer-events: auto;
+}
+.od-header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 16px; padding: 18px 24px; background: var(--surface);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.od-logo { font-size: 25px; letter-spacing: 5px; }
+.od-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.od-icon-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 8px; border: 0; background: transparent;
+    color: inherit; cursor: pointer;
+}
+.od-main {
+    display: grid; grid-template-columns: 200px minmax(0, 1fr);
+    gap: 32px; max-width: 1240px; margin: auto; padding: 30px 20px;
+}
+.od-sidebar { display: flex; flex-direction: column; gap: 8px; }
+.od-sidebar button {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px; border: 0; border-radius: 5px;
+    background: transparent; color: inherit; text-align: left;
+}
+.od-sidebar .selected {
+    background: var(--primary-container);
+    color: var(--on-primary-container); font-weight: 700;
+}
+.od-content { min-width: 0; }
+.od-title-row {
+    display: flex; justify-content: space-between; align-items: start;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+}
+.od-title-row h1 { font-size: 28px; margin: 8px 0; }
+.od-muted { font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
+.od-button {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 10px 16px; border: 1px solid var(--border);
+    border-radius: 24px; background: var(--surface);
+    color: var(--on-surface); cursor: pointer;
+}
+.od-primary {
+    background: var(--primary); color: var(--on-primary);
+    border-color: var(--primary);
+}
+.od-panel {
+    padding: 22px; margin-bottom: 20px; border-radius: 6px;
+    border: 1px solid var(--border-subtle); background: var(--surface);
+}
+.od-panel h2 { font-size: 18px; margin: 0 0 16px; }
+.od-status { display: flex; align-items: flex-start; gap: 14px; }
+.od-status h2 { margin: 0 0 8px; font-size: 23px; }
+.od-badge {
+    display: inline-block; padding: 5px 9px; border-radius: 4px;
+    font-size: 12px; background: var(--badge-background);
+    color: var(--badge-text);
+}
+.od-progress {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px; margin: 26px 0;
+}
+.od-stage {
+    padding-top: 12px; border-top: 4px solid var(--border-subtle);
+    font-size: 12px; color: var(--text-secondary);
+}
+.od-stage.complete {
+    border-color: var(--primary); color: var(--on-surface);
+}
+.od-stage .od-icon { display: flex; margin-bottom: 6px; }
+.od-notice {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 14px; border-radius: 5px; margin-top: 18px;
+    background: var(--surface-variant); color: var(--on-surface-variant);
+    font-size: 13px; line-height: 1.6;
+}
+.od-notice.error { background: var(--error); color: var(--on-error); }
+.od-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.od-address { line-height: 1.7; font-size: 14px; overflow-wrap: anywhere; }
+.od-tracking-number { overflow-wrap: anywhere; font-size: 13px; }
+.od-product {
+    display: grid; grid-template-columns: 80px minmax(0, 1fr) auto;
+    gap: 16px; padding: 18px 0; border-top: 1px solid var(--border-subtle);
+}
+.od-product img, .od-placeholder {
+    display: block; width: 100%; aspect-ratio: 1; object-fit: contain;
+    background: var(--surface-variant);
+}
+.od-placeholder {
+    display: grid; place-items: center; font-size: 11px;
+    color: var(--on-surface-variant); text-align: center;
+}
+.od-product strong { font-size: 14px; overflow-wrap: anywhere; }
+.od-product p { margin: 6px 0; font-size: 13px; line-height: 1.5; }
+.od-price { white-space: nowrap; font-weight: 700; font-size: 14px; }
+.od-total-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 9px 0; font-size: 14px;
+}
+.od-total-row.total { border-top: 1px solid var(--border-subtle); font-weight: 700; }
+.od-history summary {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; list-style: none; font-weight: 700; cursor: pointer;
+}
+.od-history summary::-webkit-details-marker { display: none; }
+.od-history summary::marker { content: ""; }
+.od-history[open] > summary .od-chevron { transform: rotate(180deg); }
+.od-events { margin-top: 20px; }
+.od-event { display: flex; gap: 12px; padding: 14px 0; }
+.od-event strong { font-size: 14px; }
+.od-event p { margin: 5px 0; }
+.od-overlay {
+    position: fixed; inset: 0; z-index: 1000; padding: 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.5);
+}
+.od-dialog {
+    display: flex; flex-direction: column; width: min(520px, 100%);
+    max-height: calc(100dvh - 32px); overflow: hidden;
+    border-radius: 10px; background: var(--surface);
+}
+.od-dialog-header, .od-dialog-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    flex: 0 0 auto; gap: 12px; padding: 16px 20px;
+}
+.od-dialog-header { border-bottom: 1px solid var(--border-subtle); }
+.od-dialog-header h2 { font-size: 20px; margin: 0; }
+.od-dialog-body { padding: 20px; overflow-y: auto; min-height: 0; }
+.od-dialog-footer { border-top: 1px solid var(--border-subtle); flex-wrap: wrap; }
+.od-reason {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; font-size: 14px;
+}
+.od-reason input { width: 18px; height: 18px; accent-color: var(--primary); }
+@media (max-width: 850px) {
+    .od-main { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .od-sidebar { flex-direction: row; overflow-x: auto; }
+    .od-sidebar button { flex: 0 0 auto; white-space: nowrap; }
+}
+@media (max-width: 550px) {
+    .od-main { padding: 20px 12px; }
+    .od-header { padding: 12px; }
+    .od-logo { font-size: 22px; }
+    .od-panel { padding: 16px; }
+    .od-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .od-product { grid-template-columns: 64px minmax(0, 1fr); gap: 12px; }
+    .od-price { grid-column: 2; }
+    .od-progress { gap: 6px; }
+    .od-stage { font-size: 11px; }
+    .od-overlay { padding: 10px; }
+    .od-dialog { max-height: calc(100dvh - 20px); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set state = sephora["state"] %}
+{% set pickup = state == "pickup_ready" %}
+
+<div
+    class="od"
+    data-annotation-skip="{{ 'true' if sephora['popup_visible'] else 'false' }}"
+>
+    <header class="od-header" data-class="app_bar">
+        <div class="od-logo" data-class="logo">SEPHORA</div>
+        <div class="od-actions">
+            <button class="od-icon-button" data-class="button"
+                    aria-label="Account">{{ icon("person") }}</button>
+            <button class="od-icon-button" data-class="button"
+                    aria-label="Basket">{{ icon("shopping_bag") }}</button>
+        </div>
+    </header>
+
+    <main class="od-main">
+        <nav class="od-sidebar" data-class="navigation_bar">
+            {% for title, symbol in [
+                ("Account", "person"),
+                ("Orders", "receipt_long"),
+                ("Loves", "favorite"),
+                ("Beauty Insider", "stars"),
+                ("Settings", "settings")
+            ] %}
+            <button
+                class="{{ 'selected' if title == 'Orders' else '' }}"
+                data-class="tab"
+            >{{ icon(symbol) }} {{ title }}</button>
+            {% endfor %}
+        </nav>
+
+        <div class="od-content">
+            <div class="od-title-row">
+                <div>
+                    {{ action("Back to Orders", "chevron_left") }}
+                    <h1>Order Details</h1>
+                    <p class="od-muted">
+                        {{ sephora["order_number"] }} ·
+                        {{ sephora["order_date"] }}
+                    </p>
+                </div>
+                {{ action("Print", "print") }}
+            </div>
+
+            <section class="od-panel" data-class="section">
+                <div class="od-status">
+                    {{ icon(sephora["status_icon"]) }}
+                    <div>
+                        <h2>{{ sephora["status_label"] }}</h2>
+                        <p class="od-muted">{{ sephora["status_message"] }}</p>
+                        <span class="od-badge" data-class="badge">
+                            {{ sephora["status_label"] }}
+                        </span>
+                    </div>
+                </div>
+
+                {% if state != "canceled" %}
+                {% set stages = [
+                    ("Placed", "receipt_long"),
+                    ("In Progress", "inventory_2"),
+                    ("Ready" if pickup else "Shipped",
+                     "storefront" if pickup else "local_shipping"),
+                    ("Collected" if pickup else "Delivered", "check_circle")
+                ] %}
+                <div class="od-progress">
+                    {% for title, symbol in stages %}
+                    <div class="od-stage {{ 'complete' if loop.index0 <= sephora['progress_index'] else '' }}">
+                        {{ icon("check_circle" if loop.index0 < sephora["progress_index"] else symbol) }}
+                        {{ title }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if state == "delivery_exception" %}
+                <div class="od-notice error">
+                    {{ icon("error_outline") }}
+                    <span>
+                        The carrier reported a delay.
+                        A revised delivery estimate is pending.
+                    </span>
+                </div>
+                {% elif pickup %}
+                <div class="od-notice">
+                    {{ icon("storefront") }}
+                    <span>
+                        {{ sephora["store_name"] }}<br>
+                        Review your pickup instructions before visiting.
+                    </span>
+                </div>
+                {% elif state == "delivered" %}
+                <p class="od-muted">
+                    Delivered {{ sephora["delivery_date"] }}
+                </p>
+                {% elif state in ["shipped", "in_progress"] %}
+                <p class="od-muted">
+                    Estimated arrival: {{ sephora["arrival_date"] }}
+                </p>
+                {% endif %}
+
+                <div class="od-actions" style="margin-top: 18px">
+                    {% if state in ["placed", "cancel_dialog"] %}
+                    {{ action("Cancel Order", "cancel") }}
+                    {% elif state == "delivered" %}
+                    {{ action("Buy Again", "shopping_bag", true) }}
+                    {{ action("Get Help", "help_outline") }}
+                    {% elif state in ["shipped", "delivery_exception"] %}
+                    {{ action("Track Package", "open_in_new", true) }}
+                    {% elif pickup %}
+                    {{ action("Pickup Instructions", "info") }}
+                    {% endif %}
+                </div>
+            </section>
+
+            <div class="od-grid">
+                <section class="od-panel" data-class="section">
+                    <h2>{{ "Pickup Location" if pickup else "Ship To" }}</h2>
+                    <div class="od-address">
+                        {% if pickup %}
+                        {{ sephora["store_name"] }}
+                        {% else %}
+                        <strong>{{ sephora["customer_name"] }}</strong><br>
+                        {{ sephora["address"] }}<br>
+                        {{ sephora["city_line"] }}
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="od-panel" data-class="section">
+                    <h2>Payment & Delivery</h2>
+                    <p class="od-muted">
+                        Card ending {{ sephora["payment_last4"] }}
+                    </p>
+                    <p class="od-muted">
+                        {{ "Store Pickup" if pickup else "Standard Shipping" }}
+                    </p>
+                    {% if state in ["shipped", "delivered", "delivery_exception"] %}
+                    <p class="od-tracking-number">
+                        Tracking: {{ sephora["tracking_number"] }}
+                    </p>
+                    {% endif %}
+                </section>
+            </div>
+
+            {% if state in ["shipped", "delivered", "delivery_exception"] %}
+            <section class="od-panel" data-class="section">
+                <details class="od-history" open>
+                    <summary data-class="button">
+                        <span>Tracking History</span>
+                        <span class="od-chevron">{{ icon("expand_more") }}</span>
+                    </summary>
+                    <div class="od-events">
+                        {% if state == "delivered" %}
+                        <div class="od-event">
+                            {{ icon("check_circle") }}
+                            <div>
+                                <strong>Delivered</strong>
+                                <p class="od-muted">{{ sephora["delivery_date"] }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% for event in sephora["events"] %}
+                        <div class="od-event">
+                            {{ icon("local_shipping") }}
+                            <div>
+                                <strong>{{ event["title"] }}</strong>
+                                <p class="od-muted">
+                                    {{ event["location"] }} · {{ event["time"] }}
+                                </p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </details>
+            </section>
+            {% endif %}
+
+            <section class="od-panel" data-class="section">
+                <h2>Order Items</h2>
+                {% for product in sephora["products"] %}
+                <article class="od-product" data-class="card">
+                    <div>
+                        {% if product["image"] %}
+                        <img src="{{ product['image'] }}"
+                             alt="Beauty product" data-class="image">
+                        {% else %}
+                        <div class="od-placeholder">Image unavailable</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <strong>{{ product["brand"] }}</strong>
+                        <p>{{ product["name"] }}</p>
+                        <p class="od-muted">
+                            {{ product["size"] }} · Quantity {{ product["quantity"] }}
+                        </p>
+                    </div>
+                    <span class="od-price">{{ product["price_text"] }}</span>
+                </article>
+                {% endfor %}
+            </section>
+
+            <section class="od-panel" data-class="section">
+                <h2>Order Summary</h2>
+                {% for label, value in [
+                    ("Merchandise", sephora["subtotal_text"]),
+                    ("Shipping", "$0.00"),
+                    ("Estimated Tax", sephora["tax_text"]),
+                    ("Original Order Total", sephora["total_text"])
+                ] %}
+                <div class="od-total-row {{ 'total' if loop.last else '' }}">
+                    <span>{{ label }}</span><span>{{ value }}</span>
+                </div>
+                {% endfor %}
+                {% if state == "canceled" %}
+                <p class="od-muted">No items will ship from this order.</p>
+                {% endif %}
+            </section>
+
+            {{ action("Customer Service", "support_agent") }}
+        </div>
+    </main>
+</div>
+
+{% if sephora["popup_visible"] %}
+<div class="od-overlay">
+    <section class="od-dialog"
+             data-class="dialog" data-occluder="true"
+             role="dialog" aria-modal="true"
+             aria-labelledby="cancel-order-title">
+        <header class="od-dialog-header">
+            <h2 id="cancel-order-title">Cancel this order?</h2>
+            <button class="od-icon-button" data-class="button"
+                    aria-label="Close">{{ icon("close") }}</button>
+        </header>
+
+        <div class="od-dialog-body">
+            <p class="od-muted">Order {{ sephora["order_number"] }}</p>
+            <p class="od-muted">Choose a reason for cancellation.</p>
+
+            {% for reason in [
+                "Ordered the wrong item",
+                "Changed my mind",
+                "Duplicate order",
+                "Other"
+            ] %}
+            <label class="od-reason">
+                <input type="radio" name="cancel-reason"
+                       data-class="checkbox"
+                       {% if loop.first %}checked{% endif %}>
+                <span>{{ reason }}</span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <footer class="od-dialog-footer">
+            {{ action("Keep Order") }}
+            {{ action("Cancel Order", "cancel", true) }}
+        </footer>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

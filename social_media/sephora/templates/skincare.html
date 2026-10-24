@@ -1,0 +1,808 @@
+{% extends "base.html" %}
+
+{% block title %}Skincare Products | Sephora Simulator{% endblock %}
+
+{% macro symbol(name) %}
+<span class="material-symbols-rounded" data-class="icon">
+    {{ name }}
+</span>
+{% endmacro %}
+
+{% macro image(product) %}
+{% if product["image"] %}
+<img
+    src="{{ product['image'] }}"
+    alt="{{ product['name'] }}"
+    data-class="image"
+>
+{% else %}
+<div class="missing-image">Product image unavailable</div>
+{% endif %}
+{% endmacro %}
+
+{% block head %}
+<style>
+    .skincare {
+        color: var(--on-background);
+        padding-bottom: 30px;
+    }
+
+    .retail-header {
+        background: var(--surface);
+        padding: 22px max(16px, calc((100% - 1320px)/2));
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .wordmark {
+        letter-spacing: 5px;
+        font-size: 27px;
+        flex-shrink: 0;
+    }
+
+    .retail-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+        padding: 10px 16px;
+        border-radius: 24px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .retail-search input {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    .retail-search input::placeholder {
+        color: inherit;
+        opacity: 1;
+    }
+
+    button {
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border);
+        padding: 10px 14px;
+        border-radius: 22px;
+    }
+
+    .utility {
+        font-size: 12px;
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .departments {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 24px;
+
+    width: 100%;
+    min-width: 0;
+    padding: 14px 16px;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    background: var(--on-background);
+    color: var(--background);
+
+    scrollbar-width: none;
+    }
+
+    .departments::-webkit-scrollbar {
+        display: none;
+    }
+
+    .departments button {
+        flex: 0 0 auto;
+        width: auto;
+        min-width: max-content;
+
+        margin: 0;
+        padding: 0;
+
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: inherit;
+
+        white-space: nowrap;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    @media (min-width: 1101px) {
+        .departments {
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .departments {
+            justify-content: flex-start;
+            gap: 20px;
+            padding: 12px;
+        }
+    }
+
+    .departments button {
+        background: transparent;
+        color: inherit;
+        border: 0;
+        padding: 0;
+        border-radius: 0;
+        white-space: nowrap;
+        font-size: 13px;
+    }
+
+    .listing {
+        max-width: 1320px;
+        margin: auto;
+        padding: 24px 16px;
+    }
+
+    .breadcrumb {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+    }
+
+    .listing-layout {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 32px;
+    }
+
+    .sidebar h2 {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+    .category-link {
+        display: block;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        text-align: left;
+        padding: 8px 0;
+        font-size: 13px;
+    }
+
+    .filter-row {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 0;
+        border-top: 1px solid var(--border-subtle);
+        border-radius: 0;
+        padding: 15px 0;
+        background: transparent;
+        text-align: left;
+        font-size: 13px;
+    }
+
+    .shortcuts {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 18px;
+    }
+
+    .shortcuts button {
+        flex: 0 0 auto;
+        font-size: 12px;
+    }
+
+    .listing-title {
+        font-size: 30px;
+        margin: 12px 0;
+    }
+
+    .listing-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .compare {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+    }
+
+    input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+    }
+
+    .mobile-filter {
+        display: none;
+    }
+
+    .active-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 14px 0;
+    }
+
+    .active-filters button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        background: var(--surface-variant);
+    }
+
+    .products {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 30px 20px;
+        padding-top: 24px;
+    }
+
+    .product {
+        min-width: 0;
+        position: relative;
+    }
+
+    .product-media {
+        position: relative;
+    }
+
+    .product img,
+    .missing-image {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: contain;
+        background: var(--surface);
+    }
+
+    .missing-image {
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+    }
+
+    .love {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        padding: 7px;
+        display: flex;
+        border: 0;
+    }
+
+    .quicklook-button {
+        display: block;
+        width: 100%;
+        border-radius: 0;
+        border: 0;
+        padding: 8px;
+        background: var(--surface-variant);
+        font-size: 12px;
+    }
+
+    .product-brand {
+        font-size: 13px;
+        font-weight: 700;
+        margin-top: 12px;
+        overflow-wrap: anywhere;
+    }
+
+    .product-name {
+        font-size: 13px;
+        line-height: 1.5;
+        margin: 5px 0;
+    }
+
+    .product-meta {
+        color: var(--text-secondary);
+        font-size: 12px;
+        margin: 6px 0;
+    }
+
+    .price {
+        font-size: 14px;
+        font-weight: 700;
+        margin: 10px 0;
+    }
+
+    .product-badge {
+        display: inline-block;
+        font-size: 10px;
+        padding: 3px 6px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .more {
+        display: grid;
+        justify-items: center;
+        gap: 14px;
+        margin-top: 40px;
+        font-size: 13px;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 70px 16px;
+    }
+
+    .empty p {
+        margin: 14px 0 24px;
+        color: var(--text-secondary);
+    }
+
+    .modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,.45);
+    }
+
+    .modal {
+        width: min(720px, 100%);
+        max-height: calc(100dvh - 32px);
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .modal.small {
+        max-width: 460px;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+
+    .modal-header h2 {
+        font-size: 20px;
+    }
+
+    .modal-header button {
+        display: flex;
+        border: 0;
+        padding: 6px;
+    }
+
+    .modal-body {
+        overflow-y: auto;
+        min-height: 0;
+        padding: 20px;
+    }
+
+    .modal-footer {
+        padding: 16px 20px;
+        border-top: 1px solid var(--border-subtle);
+        display: flex;
+        gap: 10px;
+        flex: 0 0 auto;
+    }
+
+    .modal-footer button {
+        flex: 1;
+    }
+
+    .primary-action {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 0;
+        font-size: 14px;
+    }
+
+    .filter-heading {
+        font-size: 15px;
+        margin: 20px 0 8px;
+    }
+
+    .quicklook-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .quicklook-layout img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: contain;
+    }
+
+    .quicklook-layout h3 {
+        line-height: 1.4;
+        margin: 10px 0;
+    }
+
+    @media (max-width: 1100px) {
+        .utility {
+            display: none;
+        }
+
+        .products {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 767px) {
+        .retail-header {
+            flex-wrap: wrap;
+            padding: 14px 12px;
+            gap: 12px;
+        }
+
+        .wordmark {
+            flex: 1;
+            font-size: 23px;
+        }
+
+        .retail-search {
+            order: 3;
+            flex-basis: 100%;
+        }
+
+        .departments {
+            justify-content: flex-start;
+            gap: 20px;
+        }
+
+        .listing-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .sidebar {
+            display: none;
+        }
+
+        .mobile-filter {
+            display: inline-block;
+        }
+
+        .listing-title {
+            font-size: 26px;
+        }
+
+        .products {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px 12px;
+        }
+
+        .quicklook-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .quicklook-layout img {
+            max-height: 200px;
+        }
+
+        .modal-layer {
+            padding: 10px;
+        }
+
+        .modal {
+            max-height: calc(100dvh - 20px);
+        }
+
+        .modal-header,
+        .modal-body,
+        .modal-footer {
+            padding: 14px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set state = sephora["state"] %}
+{% set popup = sephora["popup_visible"] %}
+
+<div class="skincare"
+     data-annotation-skip="{{ 'true' if popup else 'false' }}">
+
+    <header class="retail-header" data-class="app_bar">
+        <div class="wordmark" data-class="logo">SEPHORA</div>
+
+        <div class="retail-search" data-class="search_bar">
+            {{ symbol("search") }}
+            <input placeholder="Search"
+                   aria-label="Search beauty products">
+        </div>
+
+        <button class="utility" data-class="button">
+            Shop Store & Delivery
+        </button>
+
+        <button class="utility" data-class="button">
+            Services & Events
+        </button>
+
+        <button class="utility" data-class="button">
+            Sign In
+        </button>
+
+        <button data-class="button" aria-label="Loves">
+            {{ symbol("favorite_border") }}
+        </button>
+
+        <button data-class="button" aria-label="Basket">
+            {{ symbol("shopping_bag") }}
+        </button>
+    </header>
+
+    <nav class="departments" data-class="navigation_bar">
+        {% for department in sephora["departments"] %}
+        <button data-class="tab">{{ department }}</button>
+        {% endfor %}
+    </nav>
+
+    <main class="listing">
+        <div class="breadcrumb">Home / Skincare</div>
+
+        <div class="listing-layout">
+            <aside class="sidebar" data-class="section">
+                <h2>Skincare</h2>
+
+                {% for category in sephora["categories"] %}
+                <button class="category-link" data-class="button">
+                    {{ category }}
+                </button>
+                {% endfor %}
+
+                {% for group in sephora["filter_groups"] %}
+                <button class="filter-row" data-class="button">
+                    {{ group }}
+                    {{ symbol("add") }}
+                </button>
+                {% endfor %}
+            </aside>
+
+            <div>
+                <div class="shortcuts">
+                    {% for shortcut in sephora["shortcuts"] %}
+                    <button data-class="chip">{{ shortcut }}</button>
+                    {% endfor %}
+                </div>
+
+                <h1 class="listing-title">Skincare</h1>
+
+                <div class="listing-controls">
+                    <span>{{ sephora["result_count"] }} Results</span>
+
+                    <label class="compare">
+                        <input type="checkbox" data-class="checkbox">
+                        Compare
+                    </label>
+
+                    <button class="mobile-filter" data-class="button">
+                        Filters
+                    </button>
+
+                    <button data-class="button">
+                        Sort by: {{ sephora["sort_selected"] }}
+                    </button>
+                </div>
+
+                <div class="active-filters">
+                    {% for active in sephora["active_filters"] %}
+                    <button data-class="chip">
+                        {{ active }} {{ symbol("close") }}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                {% if state == "empty_results" %}
+                <section class="empty" data-class="section">
+                    <h2>No products match these filters</h2>
+                    <p>Try removing a filter to explore more skincare.</p>
+                    <button data-class="button">Clear all filters</button>
+                </section>
+                {% else %}
+                <section class="products" data-class="section">
+                    {% for product in sephora["visible_products"] %}
+                    <article class="product" data-class="card">
+                        <div class="product-media">
+                            {{ image(product) }}
+
+                            <button class="love" data-class="button"
+                                    aria-label="Save product">
+                                {{ symbol("favorite_border") }}
+                            </button>
+
+                            <button class="quicklook-button"
+                                    data-class="button">
+                                Quicklook
+                            </button>
+                        </div>
+
+                        <div class="product-brand">
+                            {{ product["brand"] }}
+                        </div>
+
+                        <p class="product-name">{{ product["name"] }}</p>
+
+                        {% if product["size_count"] > 1 %}
+                        <p class="product-meta">
+                            {{ product["size_count"] }} Sizes
+                        </p>
+                        {% endif %}
+
+                        <p class="product-meta">
+                            {{ product["rating"] }} / 5
+                            ({{ product["review_count"] }})
+                        </p>
+
+                        <p class="price">{{ product["price_text"] }}</p>
+
+                        {% if product["badge"] %}
+                        <span class="product-badge" data-class="badge">
+                            {{ product["badge"] }}
+                        </span>
+                        {% endif %}
+                    </article>
+                    {% endfor %}
+                </section>
+
+                <div class="more">
+                    <span>
+                        {{ sephora["visible_products"] | length }}
+                        of {{ sephora["result_count"] }} Results
+                    </span>
+                    <button data-class="button">Show More Products</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+{% if popup %}
+<div class="modal-layer">
+    <section
+        class="modal {{ 'small' if state != 'quicklook' else '' }}"
+        data-class="dialog"
+        data-semantic="skincare_{{ state }}"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+    >
+        <header class="modal-header">
+            <h2>
+                {% if state == "sort_open" %}
+                Sort by
+                {% elif state == "filter_open" %}
+                Filters
+                {% else %}
+                Quicklook
+                {% endif %}
+            </h2>
+
+            <button data-class="button" aria-label="Close dialog">
+                {{ symbol("close") }}
+            </button>
+        </header>
+
+        <div class="modal-body">
+            {% if state == "sort_open" %}
+                {% for option in sephora["sort_options"] %}
+                <label class="option">
+                    <input type="radio"
+                           name="sort"
+                           data-class="checkbox"
+                           {% if option == sephora["sort_selected"] %}
+                           checked
+                           {% endif %}>
+                    {{ option }}
+                </label>
+                {% endfor %}
+
+            {% elif state == "filter_open" %}
+                <h3 class="filter-heading">Skin Concerns</h3>
+
+                {% for concern in sephora["concerns"] %}
+                <label class="option">
+                    <input type="checkbox"
+                           data-class="checkbox"
+                           {% if concern == sephora["selected_concern"] %}
+                           checked
+                           {% endif %}>
+                    {{ concern }}
+                </label>
+                {% endfor %}
+
+                <h3 class="filter-heading">Brand</h3>
+
+                {% for brand in sephora["brands"] %}
+                <label class="option">
+                    <input type="checkbox" data-class="checkbox">
+                    {{ brand }}
+                </label>
+                {% endfor %}
+
+                <h3 class="filter-heading">Maximum price</h3>
+                <input type="range"
+                       min="0" max="150" value="100"
+                       data-class="slider"
+                       aria-label="Maximum price"
+                       style="width:100%; accent-color:var(--primary);">
+
+            {% else %}
+                {% set product = sephora["selected_product"] %}
+                <div class="quicklook-layout">
+                    <div>{{ image(product) }}</div>
+                    <div>
+                        <p class="product-brand">{{ product["brand"] }}</p>
+                        <h3>{{ product["name"] }}</h3>
+                        <p class="product-meta">
+                            {{ product["rating"] }} / 5
+                            ({{ product["review_count"] }} reviews)
+                        </p>
+                        <p class="price">{{ product["price_text"] }}</p>
+                        <p class="product-meta">{{ product["size"] }}</p>
+                        <p class="product-name">
+                            {{ product["description"] }}
+                        </p>
+                        <button data-class="button">
+                            View full product details
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <footer class="modal-footer">
+            {% if state == "filter_open" %}
+            <button data-class="button">Reset</button>
+            <button class="primary-action" data-class="button">
+                Show results
+            </button>
+            {% elif state == "quicklook" %}
+            <button class="primary-action" data-class="button">
+                Add to Basket
+            </button>
+            {% else %}
+            <button class="primary-action" data-class="button">
+                Apply
+            </button>
+            {% endif %}
+        </footer>
+    </section>
+</div>
+{% endif %}
+{% endblock %}
