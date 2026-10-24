@@ -1,0 +1,847 @@
+{% extends "base.html" %}
+
+{% block title %}UpToDate — Search results{% endblock %}
+
+{% block head %}
+<style>
+    .search-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .wordmark {
+        font-size: 22px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .header-spacer { flex: 1; }
+
+    .search-page {
+        width: min(1400px, 100%);
+        margin: auto;
+        padding: 28px;
+    }
+
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .search-box input {
+        width: 100%;
+        flex: 1;
+        padding: 10px 0;
+        border: 0;
+        background: transparent;
+        outline: none;
+    }
+
+    .search-box:focus-within {
+        outline: 2px solid var(--on-surface);
+        outline-offset: 2px;
+    }
+
+    .query-row {
+        display: flex;
+        align-items: stretch;
+        gap: 10px;
+        margin: 18px 0;
+    }
+
+    h1 { font-size: 28px; }
+    h2 { font-size: 18px; }
+
+    .muted {
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .category-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 18px 0;
+    }
+
+    .category-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .category-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .count {
+        font-size: 11px;
+        border-radius: 5px;
+        padding: 3px 5px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .results-layout {
+        display: grid;
+        grid-template-columns: 250px minmax(0, 1fr);
+        gap: 22px;
+        align-items: start;
+    }
+
+    .filters-panel {
+        padding: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+    }
+
+    .filters-panel h2 { margin-bottom: 14px; }
+
+    .filter-button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        padding: 12px;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+        margin-top: 10px;
+    }
+
+    .filter-label {
+        display: block;
+        font-size: 12px;
+        margin-top: 20px;
+    }
+
+    .results-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .results-list {
+        display: grid;
+        gap: 14px;
+    }
+
+    .results-list.graphics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .result-card {
+        min-width: 0;
+        padding: 18px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .result-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .result-copy { flex: 1; min-width: 0; }
+
+    .result-title {
+        text-align: left;
+        padding: 0;
+        line-height: 1.5;
+        font-weight: 700;
+        font-size: 17px;
+        color: var(--on-surface);
+        overflow-wrap: anywhere;
+    }
+
+    .result-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-top: 9px;
+    }
+
+    .type-badge {
+        padding: 4px 7px;
+        border-radius: 6px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 11px;
+    }
+
+    .summary { margin-top: 12px; }
+
+    .graphic-preview {
+        width: 100%;
+        height: 180px;
+        border-radius: 9px;
+        margin-bottom: 14px;
+        border: 1px solid var(--border-subtle);
+        object-fit: contain;
+        background: var(--surface-variant);
+    }
+
+    .graphic-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: var(--on-surface-variant);
+        font-size: 12px;
+    }
+
+    .graphic-placeholder .material-symbols-rounded {
+        font-size: 44px;
+    }
+
+    .related {
+        margin-top: 22px;
+        padding: 18px;
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border-subtle);
+    }
+
+    .related-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .related-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 12px;
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .empty-results {
+        padding: 48px 20px;
+        text-align: center;
+        border-radius: 12px;
+        border: 1px solid var(--border-subtle);
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .empty-results > .material-symbols-rounded {
+        font-size: 46px;
+        margin-bottom: 16px;
+    }
+
+    .empty-results p { margin: 12px 0 20px; }
+
+    .modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        padding: 16px;
+        background: rgb(0 0 0 / 48%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .search-dialog {
+        width: min(500px, 100%);
+        max-height: calc(100dvh - 32px);
+        display: flex;
+        flex-direction: column;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--on-surface);
+        overflow: hidden;
+    }
+
+    .dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+
+    .dialog-body {
+        min-height: 0;
+        overflow-y: auto;
+        padding: 18px;
+    }
+
+    .dialog-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+
+    .choice {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        margin-top: 8px;
+        padding: 12px;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .choice.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .choice-heading { margin-top: 18px; }
+
+    .archive-switch {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .switch-control {
+        width: 44px;
+        height: 26px;
+        padding: 3px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        flex: 0 0 auto;
+    }
+
+    .switch-control.on {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .switch-thumb {
+        display: block;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .switch-control.on .switch-thumb {
+        margin-left: auto;
+    }
+
+    .collection-field {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        margin-top: 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .mobile-filter { display: none; }
+
+    @media (max-width: 900px) {
+        .results-layout { grid-template-columns: minmax(0, 1fr); }
+        .filters-panel { display: none; }
+        .mobile-filter { display: inline-flex; }
+    }
+
+    @media (max-width: 600px) {
+        .search-header { padding: 12px; gap: 8px; }
+        .search-page { padding: 20px 12px; }
+        h1 { font-size: 24px; }
+        .query-row { flex-wrap: wrap; }
+        .search-box { flex-basis: 100%; }
+        .query-row > .primary-button { width: 100%; }
+        .category-tab { font-size: 12px; padding: 9px; }
+        .result-card { padding: 14px; }
+        .result-title { font-size: 15px; }
+        .results-list.graphics {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    @media (max-height: 450px) {
+        .modal-layer { padding: 8px; }
+        .search-dialog { max-height: calc(100dvh - 16px); }
+        .dialog-header, .dialog-footer { padding: 8px 14px; }
+        .dialog-body { padding: 12px 14px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if popup_visible else 'false' }}"
+     {% if popup_visible %}inert{% endif %}>
+
+    <header class="search-header"
+            data-class="app_bar"
+            data-semantic="search_app_bar">
+        <button type="button"
+                class="icon-button"
+
+                data-semantic="back_home"
+                aria-label="Back to home">
+            {{ icon("arrow_back", "back_home_icon") }}
+        </button>
+
+        <span class="wordmark"
+              data-class="logo"
+              data-semantic="uptodate_wordmark">UpToDate</span>
+
+        <span class="header-spacer"></span>
+
+        <button type="button"
+                class="icon-button"
+
+                data-semantic="open_saved"
+                aria-label="Saved resources">
+            {{ icon("bookmarks", "header_saved_icon") }}
+        </button>
+
+        <button type="button"
+                class="icon-button"
+
+                data-semantic="open_account"
+                aria-label="Account">
+            {{ icon("account_circle", "account_icon") }}
+        </button>
+    </header>
+
+    <main class="search-page">
+        <h1>Search results</h1>
+
+        <section data-class="section"
+                 data-semantic="search_query_section">
+            <div class="query-row">
+                <div class="search-box"
+                     data-class="search_bar"
+                     data-semantic="results_search_bar">
+                    {{ icon("search", "query_search_icon") }}
+
+                    <input type="text"
+                           value="{{ uptodate['query'] }}"
+                           aria-label="Search reference resources"
+                           autocomplete="off">
+
+                    <button type="button"
+                            class="icon-button"
+
+                            data-semantic="clear_search"
+                            aria-label="Clear query">
+                        {{ icon("close", "clear_search_icon") }}
+                    </button>
+                </div>
+
+                <button type="button"
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="submit_search">
+                    {{ icon("search", "submit_search_icon") }}
+                    Search
+                </button>
+            </div>
+        </section>
+
+        <div class="category-tabs" role="tablist"
+             aria-label="Resource category">
+            {% for category in uptodate["categories"] %}
+            <button type="button"
+                    role="tab"
+                    class="category-tab
+                        {{ 'active'
+                            if category['key'] == uptodate['active_category']
+                            else '' }}"
+                    aria-selected="{{ 'true'
+                        if category['key'] == uptodate['active_category']
+                        else 'false' }}"
+                    data-class="tab"
+                    data-semantic="category_{{ category['key'] }}">
+                {{ category["label"] }}
+                <span class="count"
+                      data-class="badge"
+                      data-semantic="count_{{ category['key'] }}"
+                >{{ uptodate["counts"][category["key"]] }}</span>
+            </button>
+            {% endfor %}
+        </div>
+
+        <div class="results-layout">
+            <aside class="filters-panel"
+                   data-class="section"
+                   data-semantic="desktop_filters">
+                <h2>Refine results</h2>
+
+                <span class="filter-label">Specialty</span>
+                <button type="button"
+                        class="filter-button"
+                        data-class="button"
+                        data-semantic="desktop_specialty_filter">
+                    {{ uptodate["selected_specialty"] }}
+                    {{ icon("expand_more", "desktop_specialty_arrow") }}
+                </button>
+
+                <span class="filter-label">Resource type</span>
+                {% for category in uptodate["categories"] %}
+                <button type="button"
+                        class="filter-button"
+                        data-class="button"
+                        data-semantic="desktop_type_{{ category['key'] }}">
+                    {{ category["label"] }}
+                    {{ icon(
+                        "radio_button_checked"
+                            if category["key"] == uptodate["active_category"]
+                            else "radio_button_unchecked",
+                        "desktop_type_indicator_" ~ category["key"],
+                        annotation_class="checkbox"
+                    ) }}
+                </button>
+                {% endfor %}
+            </aside>
+
+            <div>
+                <div class="results-toolbar">
+                    <p class="muted">
+                        {{ uptodate["result_count"] }} resources for
+                        “{{ uptodate["query"] }}”
+                    </p>
+
+                    <div class="toolbar-actions">
+                        <button type="button"
+                                class="secondary-button mobile-filter"
+                                data-class="button"
+                                data-semantic="open_mobile_filters">
+                            {{ icon("filter_list", "mobile_filter_icon") }}
+                            Filters
+                        </button>
+
+                        <button type="button"
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="sort_results">
+                            {{ icon("sort", "sort_icon") }}
+                            {{ uptodate["sort_label"] }}
+                            {{ icon("expand_more", "sort_arrow") }}
+                        </button>
+                    </div>
+                </div>
+
+                {% if uptodate["results"] %}
+                <section class="results-list
+                         {{ 'graphics'
+                            if uptodate['active_category'] == 'graphic'
+                            else '' }}"
+                         data-class="section"
+                         data-semantic="search_results">
+
+                    {% for result in uptodate["results"] %}
+                    <article class="result-card"
+                             data-class="card"
+                             data-semantic="{{ result['id'] }}">
+
+                        {% if result["type"] == "graphic" %}
+                            {% if result["image"] %}
+                            <img class="graphic-preview"
+                                 src="{{ result['image'] }}"
+                                 alt="{{ result['title'] }}"
+                                 data-class="image"
+                                 data-semantic="preview_{{ result['id'] }}">
+                            {% else %}
+                            <div class="graphic-preview graphic-placeholder">
+                                {{ icon(
+                                    "image",
+                                    "placeholder_" ~ result["id"]
+                                ) }}
+                                <span>Reference graphic preview</span>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+
+                        <div class="result-top">
+                            {{ icon(
+                                result["icon"],
+                                "resource_type_" ~ result["id"]
+                            ) }}
+
+                            <div class="result-copy">
+                                <button type="button"
+                                        class="result-title"
+                                        data-class="button"
+                                        data-semantic="open_{{ result['id'] }}"
+                                >{{ result["title"] }}</button>
+
+                                <div class="result-meta">
+                                    <span class="type-badge"
+                                          data-class="badge"
+                                          data-semantic="type_{{ result['id'] }}"
+                                    >{{ result["type_label"] }}</span>
+                                    <span class="muted">
+                                        {{ result["specialty"] }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button type="button"
+                                    class="icon-button"
+
+                                    data-semantic="save_{{ result['id'] }}"
+                                    aria-label="Save {{ result['title'] }}"
+                                    aria-pressed="{{ 'true'
+                                        if result['saved'] else 'false' }}">
+                                {{ icon(
+                                    "bookmark" if result["saved"]
+                                        else "bookmark_add",
+                                    "save_icon_" ~ result["id"]
+                                ) }}
+                            </button>
+                        </div>
+
+                        <p class="muted summary">{{ result["summary"] }}</p>
+                        <p class="muted summary">{{ result["updated"] }}</p>
+                    </article>
+                    {% endfor %}
+                </section>
+                {% else %}
+                <section class="empty-results"
+                         data-class="section"
+                         data-semantic="empty_results">
+                    {{ icon("search_off", "empty_results_icon") }}
+                    <h2>No matching resources</h2>
+                    <p class="muted">
+                        Try another keyword or remove a filter.
+                    </p>
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button"
+                            data-semantic="reset_search">
+                        {{ icon("restart_alt", "reset_search_icon") }}
+                        Reset search
+                    </button>
+                </section>
+                {% endif %}
+
+                <section class="related"
+                         data-class="section"
+                         data-semantic="related_searches">
+                    <h2>Related searches</h2>
+                    <div class="related-options">
+                        {% for query in uptodate["related_queries"] %}
+                        <button type="button"
+                                class="related-chip"
+                                data-class="chip"
+                                data-semantic="related_query_{{ loop.index0 }}">
+                            {{ icon(
+                                "search",
+                                "related_query_icon_" ~ loop.index0
+                            ) }}
+                            {{ query }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+{% if popup_visible %}
+<div class="modal-layer" data-occluder="true">
+    <section class="search-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="search-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ uptodate['popup_kind'] }}_dialog">
+
+        <div class="dialog-header">
+            <h2 id="search-dialog-title">
+                {{ "Filter results"
+                    if uptodate["popup_kind"] == "filters"
+                    else "Save resource" }}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+
+                    data-semantic="close_search_dialog"
+                    aria-label="Close dialog">
+                {{ icon("close", "close_search_dialog_icon") }}
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            {% if uptodate["popup_kind"] == "filters" %}
+            <h2>Resource type</h2>
+
+            {% for category in uptodate["categories"] %}
+            {% set selected =
+                category["key"] == uptodate["active_category"] %}
+            <button type="button"
+                    class="choice {{ 'selected' if selected else '' }}"
+                    data-class="button"
+                    data-semantic="dialog_type_{{ category['key'] }}"
+                    aria-pressed="{{ 'true' if selected else 'false' }}">
+                {{ icon(
+                    "radio_button_checked" if selected
+                        else "radio_button_unchecked",
+                    "dialog_type_indicator_" ~ category["key"],
+                    annotation_class="checkbox"
+                ) }}
+                {{ category["label"] }}
+            </button>
+            {% endfor %}
+
+            <h2 class="choice-heading">Specialty</h2>
+
+            {% for specialty in uptodate["specialties"] %}
+            {% set selected =
+                specialty == uptodate["selected_specialty"] %}
+            <button type="button"
+                    class="choice {{ 'selected' if selected else '' }}"
+                    data-class="button"
+                    data-semantic="dialog_specialty_{{ loop.index0 }}"
+                    aria-pressed="{{ 'true' if selected else 'false' }}">
+                {{ icon(
+                    "radio_button_checked" if selected
+                        else "radio_button_unchecked",
+                    "dialog_specialty_indicator_" ~ loop.index0,
+                    annotation_class="checkbox"
+                ) }}
+                {{ specialty }}
+            </button>
+            {% endfor %}
+
+            <div class="archive-switch">
+                <span id="archive-label">Include archived resources</span>
+                <button type="button"
+                        role="switch"
+                        aria-labelledby="archive-label"
+                        aria-checked="{{ 'true'
+                            if uptodate['include_archived'] else 'false' }}"
+                        class="switch-control
+                            {{ 'on' if uptodate['include_archived'] else '' }}"
+                        data-class="switch"
+                        data-semantic="include_archived">
+                    <span class="switch-thumb"></span>
+                </button>
+            </div>
+
+            {% else %}
+            <p class="muted">
+                {{ uptodate["selected_result"]["title"] }}
+            </p>
+
+            <h2 class="choice-heading">Choose collections</h2>
+
+            {% for collection in uptodate["collections"] %}
+            <button type="button"
+                    class="choice
+                        {{ 'selected' if collection['selected'] else '' }}"
+                    data-class="button"
+                    data-semantic="collection_{{ collection['id'] }}"
+                    aria-pressed="{{ 'true'
+                        if collection['selected'] else 'false' }}">
+                {{ icon(
+                    "check_box" if collection["selected"]
+                        else "check_box_outline_blank",
+                    "collection_checkbox_" ~ collection["id"],
+                    annotation_class="checkbox"
+                ) }}
+                {{ collection["name"] }}
+            </button>
+            {% endfor %}
+
+            <label class="filter-label" for="new-collection">
+                New collection name
+            </label>
+            <input id="new-collection"
+                   type="text"
+                   class="collection-field"
+                   data-class="input_field"
+                   data-semantic="new_collection_name"
+                   value="Clinical reading">
+            {% endif %}
+        </div>
+
+        <div class="dialog-footer">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_search_dialog">
+                Cancel
+            </button>
+
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_search_dialog">
+                {{ icon(
+                    "filter_list" if uptodate["popup_kind"] == "filters"
+                        else "bookmark",
+                    "confirm_search_dialog_icon"
+                ) }}
+                {{ "Apply filters"
+                    if uptodate["popup_kind"] == "filters"
+                    else "Save" }}
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,845 @@
+{% extends "base.html" %}
+
+{% block title %}UpToDate — Saved resources{% endblock %}
+
+{% block head %}
+<style>
+    .saved-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .saved-brand {
+        font-size: 22px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .header-spacer { flex: 1; }
+
+    .saved-page {
+        width: min(1440px, 100%);
+        margin: auto;
+        padding: 28px;
+    }
+
+    .saved-layout {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+    }
+
+    .collections-panel {
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        padding: 18px;
+        min-width: 0;
+    }
+
+    .collections-panel h2 {
+        font-size: 18px;
+        margin-bottom: 14px;
+    }
+
+    .collection-button {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 6px;
+        border-radius: 9px;
+        text-align: left;
+        color: var(--on-surface);
+    }
+
+    .collection-button.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .collection-name {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .count-badge {
+        display: inline-block;
+        padding: 4px 6px;
+        border-radius: 6px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 11px;
+        flex: 0 0 auto;
+    }
+
+    .create-collection {
+        width: 100%;
+        margin-top: 14px;
+    }
+
+    .saved-main { min-width: 0; }
+
+    .saved-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    h1 { font-size: 28px; }
+    h2 { font-size: 18px; }
+
+    .muted {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .saved-heading p { margin-top: 7px; }
+
+    .heading-actions,
+    .toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .saved-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .saved-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 180px;
+        padding: 5px 10px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .saved-search input {
+        width: 100%;
+        flex: 1;
+        padding: 10px 0;
+        border: 0;
+        background: transparent;
+        outline: none;
+    }
+
+    .saved-search input::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .saved-search:focus-within {
+        outline: 2px solid var(--on-surface);
+        outline-offset: 2px;
+    }
+
+    .mobile-collection {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        margin-bottom: 18px;
+    }
+
+    .selection-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 14px;
+        margin-bottom: 18px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .selection-toolbar .selection-count { flex: 1; }
+
+    .resource-grid {
+        display: grid;
+        gap: 14px;
+    }
+
+    .resource-grid.cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .resource-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 18px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+        min-width: 0;
+    }
+
+    .resource-card.selected {
+        border-color: var(--border);
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .resource-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .resource-title {
+        padding: 0;
+        text-align: left;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.5;
+        color: inherit;
+        overflow-wrap: anywhere;
+    }
+
+    .resource-description {
+        margin-top: 9px;
+        line-height: 1.5;
+        font-size: 13px;
+    }
+
+    .resource-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 12px;
+    }
+
+    .resource-badge {
+        padding: 4px 7px;
+        border-radius: 6px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 11px;
+    }
+
+    .selection-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        color: inherit;
+    }
+
+    .resource-card.selected .icon-button {
+        color: inherit;
+    }
+
+    .empty-collection {
+        text-align: center;
+        padding: 48px 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+    }
+
+    .empty-collection > .material-symbols-rounded {
+        font-size: 48px;
+        margin-bottom: 18px;
+    }
+
+    .empty-collection p { margin: 12px 0 20px; }
+
+    .saved-modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 48%);
+    }
+
+    .saved-dialog {
+        display: flex;
+        flex-direction: column;
+        width: min(480px, 100%);
+        max-height: calc(100dvh - 32px);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+        overflow: hidden;
+    }
+
+    .saved-dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+
+    .saved-dialog-body {
+        padding: 18px;
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    .saved-dialog-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+
+    .field-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 9px;
+    }
+
+    .collection-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .field-help { margin-top: 10px; }
+
+    .destination-button {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 12px;
+        margin-top: 9px;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .destination-button.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .delete-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 16px;
+        min-height: 42px;
+        border-radius: 10px;
+        font-weight: 700;
+        background: var(--error);
+        color: var(--on-error);
+    }
+
+    @media (max-width: 900px) {
+        .saved-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .collections-panel { display: none; }
+        .mobile-collection { display: flex; }
+    }
+
+    @media (max-width: 600px) {
+        .saved-header { padding: 12px; }
+        .saved-page { padding: 20px 12px; }
+        h1 { font-size: 24px; }
+
+        .resource-grid.cards {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .resource-card { padding: 14px; gap: 8px; }
+        .resource-title { font-size: 15px; }
+        .saved-search { flex-basis: 100%; }
+
+        .toolbar-actions .secondary-button,
+        .heading-actions .secondary-button {
+            font-size: 12px;
+            padding: 9px 11px;
+        }
+    }
+
+    @media (max-height: 450px) {
+        .saved-modal-layer { padding: 8px; }
+        .saved-dialog { max-height: calc(100dvh - 16px); }
+
+        .saved-dialog-header,
+        .saved-dialog-footer {
+            padding: 8px 14px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if popup_visible else 'false' }}"
+     {% if popup_visible %}inert{% endif %}>
+
+    <header class="saved-header"
+            data-class="app_bar"
+            data-semantic="saved_app_bar">
+        <button type="button"
+                class="icon-button"
+
+                data-semantic="saved_back"
+                aria-label="Back to home">
+            {{ icon("arrow_back", "saved_back_icon") }}
+        </button>
+
+        <span class="saved-brand"
+              data-class="logo"
+              data-semantic="uptodate_wordmark">
+            UpToDate
+        </span>
+
+        <span class="header-spacer"></span>
+
+        <button type="button"
+                class="icon-button"
+
+                data-semantic="saved_help"
+                aria-label="Help">
+            {{ icon("help", "saved_help_icon") }}
+        </button>
+    </header>
+
+    <main class="saved-page">
+        <div class="saved-layout">
+            <aside class="collections-panel"
+                   data-class="navigation_bar"
+                   data-semantic="collections_navigation">
+                <h2>Collections</h2>
+
+                <button type="button"
+                        class="collection-button
+                            {{ 'active'
+                                if uptodate['active_collection'] == 'all'
+                                else '' }}"
+                        data-class="button"
+                        data-semantic="all_saved_collection">
+                    {{ icon("bookmarks", "all_saved_collection_icon") }}
+                    <span class="collection-name">All saved</span>
+                    <span class="count-badge"
+                          data-class="badge"
+                          data-semantic="all_saved_count">
+                        {{ uptodate["total_count"] }}
+                    </span>
+                </button>
+
+                {% for collection in uptodate["collections"] %}
+                <button type="button"
+                        class="collection-button
+                            {{ 'active'
+                                if collection['id'] == uptodate['active_collection']
+                                else '' }}"
+                        data-class="button"
+                        data-semantic="collection_{{ collection['id'] }}">
+                    {{ icon(
+                        "folder",
+                        "collection_icon_" ~ collection["id"]
+                    ) }}
+                    <span class="collection-name">
+                        {{ collection["name"] }}
+                    </span>
+                    <span class="count-badge"
+                          data-class="badge"
+                          data-semantic="collection_count_{{ collection['id'] }}">
+                        {{ collection["count"] }}
+                    </span>
+                </button>
+                {% endfor %}
+
+                <button type="button"
+                        class="secondary-button create-collection"
+                        data-class="button"
+                        data-semantic="sidebar_create_collection">
+                    {{ icon("create_new_folder", "sidebar_create_icon") }}
+                    New collection
+                </button>
+            </aside>
+
+            <div class="saved-main">
+                <div class="saved-heading" data-class="section">
+                    <div>
+                        <h1>{{ uptodate["page_title"] }}</h1>
+                        <p class="muted">
+                            {{ uptodate["resource_count"] }} saved resources
+                        </p>
+                    </div>
+
+                    <div class="heading-actions">
+                        <button type="button"
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="create_collection">
+                            {{ icon("add", "create_collection_icon") }}
+                            New collection
+                        </button>
+
+                        {% if uptodate["active_collection"] != "all" %}
+                        <button type="button"
+                                class="icon-button"
+
+                                data-semantic="collection_options"
+                                aria-label="Collection options">
+                            {{ icon("more_vert", "collection_options_icon") }}
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <button type="button"
+                        class="secondary-button mobile-collection"
+                        data-class="button"
+                        data-semantic="mobile_collection_chooser">
+                    {{ icon("folder", "mobile_collection_icon") }}
+                    <span>
+                        {{ "All saved"
+                            if uptodate["active_collection"] == "all"
+                            else uptodate["page_title"] }}
+                    </span>
+                    {{ icon("expand_more", "mobile_collection_arrow") }}
+                </button>
+
+                <div class="saved-toolbar" data-class="section">
+                    <div class="saved-search"
+                         data-class="search_bar"
+                         data-semantic="saved_search">
+                        {{ icon("search", "saved_search_icon") }}
+
+                        <input type="text"
+                               value="{{ uptodate['query'] }}"
+                               placeholder="Search saved resources"
+                               aria-label="Search saved resources"
+                               autocomplete="off">
+
+                        {% if uptodate["query"] %}
+                        <button type="button"
+                                class="icon-button"
+
+                                data-semantic="clear_saved_search"
+                                aria-label="Clear search">
+                            {{ icon("close", "clear_saved_search_icon") }}
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <div class="toolbar-actions">
+                        <button type="button"
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="sort_saved">
+                            {{ icon("sort", "sort_saved_icon") }}
+                            {{ uptodate["sort_label"] }}
+                            {{ icon("expand_more", "sort_saved_arrow") }}
+                        </button>
+
+                        {% if uptodate["resources"] %}
+                        <button type="button"
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="toggle_selection"
+                                aria-pressed="{{ 'true'
+                                    if uptodate['selection_mode'] else 'false' }}">
+                            {{ icon(
+                                "close" if uptodate["selection_mode"]
+                                    else "edit",
+                                "toggle_selection_icon"
+                            ) }}
+                            {{ "Done"
+                                if uptodate["selection_mode"] else "Select" }}
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if uptodate["selection_mode"] %}
+                <section class="selection-toolbar"
+                         data-class="section"
+                         data-semantic="bulk_actions">
+                    <span class="selection-count">
+                        {{ uptodate["selected_count"] }} selected
+                    </span>
+
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button"
+                            data-semantic="move_selected">
+                        {{ icon("drive_file_move", "move_selected_icon") }}
+                        Move
+                    </button>
+
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button"
+                            data-semantic="remove_selected">
+                        {{ icon("delete", "remove_selected_icon") }}
+                        Remove
+                    </button>
+                </section>
+                {% endif %}
+
+                {% if uptodate["resources"] %}
+                <section class="resource-grid {{ uptodate['layout_variant'] }}"
+                         data-class="section"
+                         data-semantic="saved_resource_list">
+
+                    {% for resource in uptodate["resources"] %}
+                    <article class="resource-card
+                             {{ 'selected' if resource['selected'] else '' }}"
+                             data-class="card"
+                             data-semantic="{{ resource['id'] }}">
+
+                        {% if uptodate["selection_mode"] %}
+                        <button type="button"
+                                class="selection-button"
+
+                                data-semantic="select_{{ resource['id'] }}"
+                                aria-label="Select {{ resource['title'] }}"
+                                aria-pressed="{{ 'true'
+                                    if resource['selected'] else 'false' }}">
+                            {{ icon(
+                                "check_box" if resource["selected"]
+                                    else "check_box_outline_blank",
+                                "resource_checkbox_" ~ resource["id"],
+                                annotation_class="checkbox"
+                            ) }}
+                        </button>
+                        {% else %}
+                        {{ icon(
+                            resource["icon"],
+                            "resource_type_icon_" ~ resource["id"]
+                        ) }}
+                        {% endif %}
+
+                        <div class="resource-copy">
+                            <button type="button"
+                                    class="resource-title"
+                                    data-class="button"
+                                    data-semantic="open_{{ resource['id'] }}">
+                                {{ resource["title"] }}
+                            </button>
+
+                            <p class="resource-description">
+                                {{ resource["description"] }}
+                            </p>
+
+                            <div class="resource-meta">
+                                <span class="resource-badge"
+                                      data-class="badge"
+                                      data-semantic="type_{{ resource['id'] }}">
+                                    {{ resource["type_label"] }}
+                                </span>
+
+                                <span>{{ resource["collection_name"] }}</span>
+                                <span>{{ resource["saved_label"] }}</span>
+                            </div>
+                        </div>
+
+                        <button type="button"
+                                class="icon-button"
+
+                                data-semantic="options_{{ resource['id'] }}"
+                                aria-label="Options for {{ resource['title'] }}">
+                            {{ icon(
+                                "more_vert",
+                                "resource_options_icon_" ~ resource["id"]
+                            ) }}
+                        </button>
+                    </article>
+                    {% endfor %}
+                </section>
+
+                {% else %}
+                <section class="empty-collection"
+                         data-class="section"
+                         data-semantic="empty_collection">
+                    {{ icon("folder_open", "empty_collection_icon") }}
+
+                    <h2>No resources in this collection</h2>
+
+                    <p class="muted">
+                        Save a resource or move one from another collection.
+                    </p>
+
+                    <button type="button"
+                            class="primary-button"
+                            data-class="button"
+                            data-semantic="browse_resources">
+                        {{ icon("search", "browse_resources_icon") }}
+                        Browse resources
+                    </button>
+                </section>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+{% if popup_visible %}
+<div class="saved-modal-layer" data-occluder="true">
+    <section class="saved-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="saved-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ uptodate['popup_kind'] }}_collection_dialog">
+
+        <div class="saved-dialog-header">
+            <h2 id="saved-dialog-title">
+                {% if uptodate["popup_kind"] == "create" %}
+                New collection
+                {% elif uptodate["popup_kind"] == "move" %}
+                Move resources
+                {% else %}
+                Delete collection?
+                {% endif %}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+
+                    data-semantic="close_saved_dialog"
+                    aria-label="Close dialog">
+                {{ icon("close", "close_saved_dialog_icon") }}
+            </button>
+        </div>
+
+        <div class="saved-dialog-body">
+            {% if uptodate["popup_kind"] == "create" %}
+            <label class="field-label" for="collection-name">
+                Collection name
+            </label>
+
+            <input id="collection-name"
+                   type="text"
+                   class="collection-input"
+                   value="{{ uptodate['new_collection_name'] }}"
+                   maxlength="80"
+                   data-class="input_field"
+                   data-semantic="collection_name_input">
+
+            <p class="muted field-help">
+                Organize saved resources in a personal collection.
+            </p>
+
+            {% elif uptodate["popup_kind"] == "move" %}
+            <p class="muted">
+                Choose a destination for
+                {{ uptodate["selected_count"] }} selected resources.
+            </p>
+
+            {% for collection in uptodate["collections"] %}
+            {% set selected =
+                collection["id"] == uptodate["destination_collection"] %}
+
+            <button type="button"
+                    class="destination-button
+                        {{ 'selected' if selected else '' }}"
+                    data-class="button"
+                    data-semantic="destination_{{ collection['id'] }}"
+                    aria-pressed="{{ 'true' if selected else 'false' }}">
+                {{ icon(
+                    "check_box" if selected else "check_box_outline_blank",
+                    "destination_checkbox_" ~ collection["id"],
+                    annotation_class="checkbox"
+                ) }}
+
+                <span class="collection-name">{{ collection["name"] }}</span>
+
+                <span class="count-badge"
+                      data-class="badge"
+                      data-semantic="destination_count_{{ collection['id'] }}">
+                    {{ collection["count"] }}
+                </span>
+            </button>
+            {% endfor %}
+
+            {% else %}
+            <p>
+                Delete “{{ uptodate["delete_collection"]["name"] }}”?
+            </p>
+            <p class="muted field-help">
+                Its {{ uptodate["delete_collection"]["count"] }}
+                resources will remain in All saved.
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="saved-dialog-footer">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_saved_dialog">
+                Cancel
+            </button>
+
+            <button type="button"
+                    class="{{ 'delete-button'
+                        if uptodate['popup_kind'] == 'delete'
+                        else 'primary-button' }}"
+                    data-class="button"
+                    data-semantic="confirm_saved_dialog">
+                {% if uptodate["popup_kind"] == "create" %}
+                    {{ icon("create_new_folder", "confirm_create_icon") }}
+                    Create
+                {% elif uptodate["popup_kind"] == "move" %}
+                    {{ icon("drive_file_move", "confirm_move_icon") }}
+                    Move
+                {% else %}
+                    {{ icon("delete", "confirm_delete_icon") }}
+                    Delete
+                {% endif %}
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

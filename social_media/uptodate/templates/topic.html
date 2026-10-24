@@ -1,0 +1,870 @@
+{% extends "base.html" %}
+
+{% block title %}UpToDate — {{ uptodate["title"] }}{% endblock %}
+
+{% block head %}
+<style>
+    .topic-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .topic-brand {
+        font-weight: 800;
+        font-size: 22px;
+        white-space: nowrap;
+    }
+
+    .header-space { flex: 1; }
+
+    .topic-page {
+        width: min(1440px, 100%);
+        margin: auto;
+        padding: 28px;
+    }
+
+    .topic-title {
+        font-size: clamp(25px, 3vw, 36px);
+        line-height: 1.25;
+        margin: 12px 0;
+    }
+
+    .muted {
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .topic-meta, .topic-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .topic-badge {
+        display: inline-block;
+        padding: 5px 8px;
+        border-radius: 7px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 12px;
+    }
+
+    .topic-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 24px 0;
+    }
+
+    .topic-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 11px 15px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .topic-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .reader-layout {
+        display: grid;
+        grid-template-columns: 230px minmax(0, 1fr) 240px;
+        gap: 22px;
+        align-items: start;
+    }
+
+    .reader-layout.without-related {
+        grid-template-columns: 230px minmax(0, 1fr);
+    }
+
+    .reader-panel {
+        padding: 18px;
+        border-radius: 12px;
+        border: 1px solid var(--border-subtle);
+        background: var(--surface);
+        color: var(--on-surface);
+        min-width: 0;
+    }
+
+    .reader-panel h2 { font-size: 18px; }
+
+    .contents-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 11px 0;
+        text-align: left;
+        color: var(--on-surface);
+        line-height: 1.4;
+    }
+
+    .contents-link + .contents-link {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .article-content {
+        font-size: {{ uptodate["font_size"] }}px;
+        line-height: {{
+            1.45 if uptodate["line_spacing"] == "Compact"
+            else 1.9 if uptodate["line_spacing"] == "Spacious"
+            else 1.7
+        }};
+    }
+
+    .article-section {
+        margin-top: 26px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .article-section h2 {
+        font-size: 21px;
+        margin-bottom: 12px;
+    }
+
+    .article-section p + p { margin-top: 14px; }
+
+    .summary-card {
+        padding: 18px;
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .summary-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        text-align: left;
+        padding: 0;
+        font-weight: 700;
+        color: inherit;
+    }
+
+    .summary-card ul {
+        padding-left: 22px;
+        margin-bottom: 0;
+    }
+
+    .summary-card li + li { margin-top: 8px; }
+
+    .find-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px;
+        margin-bottom: 18px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .find-control {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .find-control input {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    mark {
+        background: var(--warning);
+        color: var(--on-warning);
+        padding: 1px 2px;
+        border-radius: 3px;
+    }
+
+    .reference-row {
+        display: flex;
+        gap: 12px;
+        padding: 16px 0;
+    }
+
+    .reference-row + .reference-row {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .reference-copy { flex: 1; min-width: 0; }
+
+    .reference-copy p {
+        margin-top: 6px;
+        overflow-wrap: anywhere;
+    }
+
+    .graphic-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+    }
+
+    .graphic-card {
+        padding: 14px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        min-width: 0;
+    }
+
+    .graphic-image {
+        width: 100%;
+        height: 180px;
+        object-fit: contain;
+        border-radius: 8px;
+        background: var(--surface-variant);
+        margin-bottom: 12px;
+    }
+
+    .graphic-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--on-surface-variant);
+    }
+
+    .graphic-placeholder .material-symbols-rounded {
+        font-size: 48px;
+    }
+
+    .graphic-card h3 { font-size: 15px; }
+    .graphic-card p { margin: 8px 0 12px; }
+
+    .related-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 14px 0;
+        text-align: left;
+        color: var(--on-surface);
+        line-height: 1.5;
+    }
+
+    .related-button + .related-button {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .related-button span:first-child { flex: 1; }
+
+    .mobile-contents { display: none; }
+
+    .topic-modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 48%);
+    }
+
+    .topic-dialog {
+        display: flex;
+        flex-direction: column;
+        width: min(480px, 100%);
+        max-height: calc(100dvh - 32px);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+        overflow: hidden;
+    }
+
+    .topic-dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+
+    .topic-dialog-body {
+        padding: 18px;
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    .topic-dialog-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+
+    .setting-label {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .setting-group + .setting-group { margin-top: 22px; }
+
+    .setting-choices {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .setting-choice {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .setting-choice.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .setting-switch-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-top: 22px;
+    }
+
+    .reader-switch {
+        flex: 0 0 auto;
+        width: 44px;
+        height: 26px;
+        padding: 3px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .reader-switch.on {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .reader-switch-thumb {
+        display: block;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .reader-switch.on .reader-switch-thumb { margin-left: auto; }
+
+    @media (max-width: 1150px) {
+        .reader-layout {
+            grid-template-columns: 210px minmax(0, 1fr);
+        }
+
+        .related-panel { grid-column: 2; }
+    }
+
+    @media (max-width: 800px) {
+        .reader-layout,
+        .reader-layout.without-related {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .contents-panel { display: none; }
+        .related-panel { grid-column: auto; }
+        .mobile-contents { display: inline-flex; }
+    }
+
+    @media (max-width: 600px) {
+        .topic-header { padding: 12px; }
+        .topic-page { padding: 20px 12px; }
+        .reader-panel { padding: 16px; }
+        .topic-actions { gap: 7px; }
+        .topic-actions .secondary-button {
+            font-size: 12px;
+            padding: 9px;
+        }
+        .topic-tab { font-size: 12px; padding: 10px; }
+        .graphic-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    @media (max-height: 450px) {
+        .topic-modal-layer { padding: 8px; }
+        .topic-dialog { max-height: calc(100dvh - 16px); }
+        .topic-dialog-header,
+        .topic-dialog-footer { padding: 8px 14px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if popup_visible else 'false' }}"
+     {% if popup_visible %}inert{% endif %}>
+
+    <header class="topic-header"
+            data-class="app_bar"
+            data-semantic="topic_app_bar">
+        <button type="button"
+                class="icon-button"
+
+                data-semantic="back_to_results"
+                aria-label="Back to search results">
+            {{ icon("arrow_back", "back_to_results_icon") }}
+        </button>
+
+        <span class="topic-brand"
+              data-class="logo"
+              data-semantic="uptodate_wordmark">UpToDate</span>
+
+        <span class="header-space"></span>
+
+        <button type="button"
+                class="icon-button"
+
+                data-semantic="topic_search"
+                aria-label="Search">
+            {{ icon("search", "topic_search_icon") }}
+        </button>
+    </header>
+
+    <main class="topic-page">
+        <span class="topic-badge"
+              data-class="badge"
+              data-semantic="topic_specialty">
+            {{ uptodate["specialty"] }}
+        </span>
+
+        <h1 class="topic-title">{{ uptodate["title"] }}</h1>
+
+        <div class="topic-meta muted">
+            <span>Author: {{ uptodate["author"] }}</span>
+            <span>{{ uptodate["review_label"] }}</span>
+        </div>
+
+        <div class="topic-actions" data-class="section">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="save_topic"
+                    aria-pressed="{{ 'true' if uptodate['saved'] else 'false' }}">
+                {{ icon(
+                    "bookmark" if uptodate["saved"] else "bookmark_add",
+                    "save_topic_icon"
+                ) }}
+                {{ "Saved" if uptodate["saved"] else "Save" }}
+            </button>
+
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="find_in_topic">
+                {{ icon("find_in_page", "find_in_topic_icon") }}
+                Find
+            </button>
+
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="reader_settings">
+                {{ icon("text_fields", "reader_settings_icon") }}
+                Reader
+            </button>
+
+            <button type="button"
+                    class="secondary-button mobile-contents"
+                    data-class="button"
+                    data-semantic="open_contents">
+                {{ icon("format_list_bulleted", "open_contents_icon") }}
+                Contents
+            </button>
+        </div>
+
+        {% set tabs = [
+            ("article", "Article", "article"),
+            ("graphics", "Graphics", "image"),
+            ("references", "References", "menu_book")
+        ] %}
+
+        <div class="topic-tabs" role="tablist"
+             aria-label="Topic resources" data-class="section">
+            {% for key, label, glyph in tabs %}
+            <button type="button"
+                    role="tab"
+                    class="topic-tab
+                        {{ 'active' if key == uptodate['active_tab'] else '' }}"
+                    data-class="tab"
+                    data-semantic="topic_tab_{{ key }}"
+                    aria-selected="{{ 'true'
+                        if key == uptodate['active_tab'] else 'false' }}">
+                {{ icon(glyph, "topic_tab_icon_" ~ key) }}
+                {{ label }}
+            </button>
+            {% endfor %}
+        </div>
+
+        {% if uptodate["find_visible"] %}
+        <div class="find-toolbar"
+             data-class="section"
+             data-semantic="find_toolbar">
+            <div class="find-control"
+                 data-class="search_bar"
+                 data-semantic="find_topic_search">
+                {{ icon("search", "find_toolbar_search_icon") }}
+                <input type="text"
+                       value="{{ uptodate['find_query'] }}"
+                       aria-label="Find text in topic">
+            </div>
+
+            <span class="topic-badge"
+                  data-class="badge"
+                  data-semantic="find_match_count">
+                {{ uptodate["find_match_count"] }} matches
+            </span>
+
+            {% for action, glyph, label in [
+                ("previous", "keyboard_arrow_up", "Previous match"),
+                ("next", "keyboard_arrow_down", "Next match"),
+                ("close", "close", "Close find toolbar")
+            ] %}
+            <button type="button"
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="find_{{ action }}"
+                    aria-label="{{ label }}">
+                {{ icon(glyph, "find_" ~ action ~ "_icon") }}
+            </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="reader-layout
+             {{ 'without-related' if not uptodate['show_related'] else '' }}">
+
+            <aside class="reader-panel contents-panel"
+                   data-class="section"
+                   data-semantic="topic_contents">
+                <h2>Contents</h2>
+
+                {% for section in uptodate["sections"] %}
+                <button type="button"
+                        class="contents-link"
+                        data-class="button"
+                        data-semantic="contents_{{ section['id'] }}">
+                    {{ icon(
+                        "chevron_right",
+                        "contents_arrow_" ~ section["id"]
+                    ) }}
+                    {{ section["heading"] }}
+                </button>
+                {% endfor %}
+            </aside>
+
+            <article class="reader-panel"
+                     data-class="section"
+                     data-semantic="topic_reader">
+
+                {% if uptodate["active_tab"] == "article" %}
+                <div class="article-content">
+                    <section class="summary-card"
+                             data-class="card"
+                             data-semantic="topic_summary">
+                        <button type="button"
+                                class="summary-toggle"
+                                data-class="button"
+                                data-semantic="toggle_summary"
+                                aria-expanded="{{ 'true'
+                                    if uptodate['summary_expanded']
+                                    else 'false' }}">
+                            <span>Topic summary</span>
+                            {{ icon(
+                                "expand_less" if uptodate["summary_expanded"]
+                                    else "expand_more",
+                                "summary_expand_icon"
+                            ) }}
+                        </button>
+
+                        {% if uptodate["summary_expanded"] %}
+                        <ul>
+                            {% for point in uptodate["summary_points"] %}
+                            <li>{{ point }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </section>
+
+                    {% for section in uptodate["sections"] %}
+                    <section class="article-section"
+                             id="{{ section['id'] }}"
+                             data-class="section"
+                             data-semantic="{{ section['id'] }}">
+                        <h2>{{ section["heading"] }}</h2>
+
+                        {% for paragraph in section["paragraphs"] %}
+                        <p>
+                            {% if uptodate["find_visible"] %}
+                                {% set parts =
+                                    paragraph.split(uptodate["find_query"]) %}
+                                {% for part in parts %}{{ part }}{% if not loop.last %}<mark>{{ uptodate["find_query"] }}</mark>{% endif %}{% endfor %}
+                            {% else %}
+                                {{ paragraph }}
+                            {% endif %}
+                        </p>
+                        {% endfor %}
+                    </section>
+                    {% endfor %}
+                </div>
+
+                {% elif uptodate["active_tab"] == "references" %}
+                <h2>References</h2>
+
+                {% for reference in uptodate["references"] %}
+                <div class="reference-row">
+                    <span class="topic-badge"
+                          data-class="badge"
+                          data-semantic="number_{{ reference['id'] }}">
+                        {{ reference["number"] }}
+                    </span>
+
+                    <div class="reference-copy">
+                        <p>{{ reference["title"] }}</p>
+                        <p class="muted">{{ reference["source"] }}</p>
+                    </div>
+
+                    <button type="button"
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="open_{{ reference['id'] }}"
+                            aria-label="Open reference {{ reference['number'] }}">
+                        {{ icon(
+                            "open_in_new",
+                            "reference_link_" ~ reference["id"]
+                        ) }}
+                    </button>
+                </div>
+                {% endfor %}
+
+                {% else %}
+                <h2>Topic graphics</h2>
+
+                <div class="graphic-grid">
+                    {% for graphic in uptodate["graphics"] %}
+                    <section class="graphic-card"
+                             data-class="card"
+                             data-semantic="{{ graphic['id'] }}">
+                        {% if graphic["image"] %}
+                        <img class="graphic-image"
+                             src="{{ graphic['image'] }}"
+                             alt="{{ graphic['title'] }}"
+                             data-class="image"
+                             data-semantic="image_{{ graphic['id'] }}">
+                        {% else %}
+                        <div class="graphic-image graphic-placeholder">
+                            {{ icon(
+                                "image",
+                                "graphic_placeholder_" ~ graphic["id"]
+                            ) }}
+                        </div>
+                        {% endif %}
+
+                        <h3>{{ graphic["title"] }}</h3>
+                        <p class="muted">{{ graphic["caption"] }}</p>
+
+                        <button type="button"
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="view_{{ graphic['id'] }}">
+                            {{ icon(
+                                "zoom_in",
+                                "graphic_zoom_" ~ graphic["id"]
+                            ) }}
+                            View figure
+                        </button>
+                    </section>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </article>
+
+            {% if uptodate["show_related"] %}
+            <aside class="reader-panel related-panel"
+                   data-class="card"
+                   data-semantic="related_topic_card">
+                <h2>Related resources</h2>
+
+                {% for topic in uptodate["related_topics"] %}
+                <button type="button"
+                        class="related-button"
+                        data-class="button"
+                        data-semantic="related_topic_{{ loop.index0 }}">
+                    <span>{{ topic }}</span>
+                    {{ icon(
+                        "arrow_forward",
+                        "related_topic_arrow_" ~ loop.index0
+                    ) }}
+                </button>
+                {% endfor %}
+            </aside>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+{% if popup_visible %}
+<div class="topic-modal-layer" data-occluder="true">
+    <section class="topic-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="topic-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ uptodate['popup_kind'] }}_dialog">
+
+        <div class="topic-dialog-header">
+            <h2 id="topic-dialog-title">
+                {{ "Topic contents"
+                    if uptodate["popup_kind"] == "contents"
+                    else "Reader settings" }}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="close_topic_dialog"
+                    aria-label="Close dialog">
+                {{ icon("close", "close_topic_dialog_icon") }}
+            </button>
+        </div>
+
+        <div class="topic-dialog-body">
+            {% if uptodate["popup_kind"] == "contents" %}
+                {% for section in uptodate["sections"] %}
+                <button type="button"
+                        class="contents-link"
+                        data-class="button"
+                        data-semantic="dialog_contents_{{ section['id'] }}">
+                    {{ icon(
+                        "chevron_right",
+                        "dialog_contents_arrow_" ~ section["id"]
+                    ) }}
+                    {{ section["heading"] }}
+                </button>
+                {% endfor %}
+            {% else %}
+                <div class="setting-group">
+                    <span class="setting-label">Text size</span>
+                    <div class="setting-choices">
+                        {% for size in uptodate["font_sizes"] %}
+                        {% set selected = size == uptodate["font_size"] %}
+                        <button type="button"
+                                class="setting-choice
+                                    {{ 'selected' if selected else '' }}"
+                                data-class="button"
+                                data-semantic="font_size_{{ size }}"
+                                aria-pressed="{{ 'true' if selected else 'false' }}">
+                            {{ icon(
+                                "check_box" if selected
+                                    else "check_box_outline_blank",
+                                "font_size_checkbox_" ~ size,
+                                annotation_class="checkbox"
+                            ) }}
+                            {{ size }} px
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <span class="setting-label">Line spacing</span>
+                    <div class="setting-choices">
+                        {% for spacing in uptodate["spacing_options"] %}
+                        {% set selected =
+                            spacing == uptodate["line_spacing"] %}
+                        <button type="button"
+                                class="setting-choice
+                                    {{ 'selected' if selected else '' }}"
+                                data-class="button"
+                                data-semantic="spacing_{{ loop.index0 }}"
+                                aria-pressed="{{ 'true' if selected else 'false' }}">
+                            {{ icon(
+                                "check_box" if selected
+                                    else "check_box_outline_blank",
+                                "spacing_checkbox_" ~ loop.index0,
+                                annotation_class="checkbox"
+                            ) }}
+                            {{ spacing }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="setting-switch-row">
+                    <span id="related-setting-label">Show related resources</span>
+                    <button type="button"
+                            role="switch"
+                            class="reader-switch
+                                {{ 'on' if uptodate['show_related'] else '' }}"
+                            aria-labelledby="related-setting-label"
+                            aria-checked="{{ 'true'
+                                if uptodate['show_related'] else 'false' }}"
+                            data-class="switch"
+                            data-semantic="show_related_switch">
+                        <span class="reader-switch-thumb"></span>
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="topic-dialog-footer">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="dismiss_topic_dialog">
+                Close
+            </button>
+
+            {% if uptodate["popup_kind"] == "reader_settings" %}
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="apply_reader_settings">
+                {{ icon("done", "apply_reader_settings_icon") }}
+                Apply
+            </button>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

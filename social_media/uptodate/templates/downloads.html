@@ -1,0 +1,549 @@
+{% extends "base.html" %}
+{% block title %}UpToDate — Offline downloads{% endblock %}
+
+{% block head %}
+<style>
+    .dl-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .dl-brand { font-size: 22px; font-weight: 800; }
+    .dl-spacer { flex: 1; }
+    .dl-page {
+        width: min(1320px, 100%);
+        margin: auto;
+        padding: 28px;
+    }
+    .dl-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+    .dl-heading h1 { font-size: 28px; }
+    .dl-heading p { margin-top: 8px; }
+    .dl-muted {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+    .dl-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .dl-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 22px;
+        align-items: start;
+    }
+    .dl-panel {
+        padding: 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+        min-width: 0;
+    }
+    .dl-panel h2 { font-size: 18px; }
+    .dl-storage p { margin-top: 12px; }
+    .dl-track {
+        height: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface-variant);
+        overflow: hidden;
+        margin-top: 12px;
+    }
+    .dl-fill {
+        height: 100%;
+        background: var(--on-surface-variant);
+    }
+    .dl-storage .secondary-button { margin-top: 18px; }
+    .dl-list { display: grid; gap: 14px; }
+    .dl-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .dl-card.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        border-color: var(--border);
+    }
+    .dl-card.selected .icon-button { color: inherit; }
+    .dl-card.selected .dl-muted { color: inherit; }
+    .dl-copy { flex: 1; min-width: 0; }
+    .dl-title {
+        padding: 0;
+        text-align: left;
+        color: inherit;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+    .dl-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .dl-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 7px;
+        border-radius: 6px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 11px;
+    }
+    .dl-badge .material-symbols-rounded { font-size: 17px; }
+    .dl-badge.error {
+        background: var(--error);
+        color: var(--on-error);
+    }
+    .dl-progress-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 12px;
+    }
+    .dl-select {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        color: inherit;
+    }
+    .dl-selection-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 14px;
+        margin-bottom: 18px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+    .dl-empty { padding: 50px 20px; text-align: center; }
+    .dl-empty > .material-symbols-rounded { font-size: 48px; }
+    .dl-empty h2 { margin: 18px 0 10px; }
+    .dl-empty .primary-button { margin-top: 20px; }
+    .dl-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px;
+        margin-bottom: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+    }
+    .dl-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgb(0 0 0 / 48%);
+    }
+    .dl-dialog {
+        display: flex;
+        flex-direction: column;
+        width: min(480px, 100%);
+        max-height: calc(100dvh - 32px);
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+    .dl-dialog-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+    .dl-dialog-body {
+        padding: 18px;
+        overflow-y: auto;
+        min-height: 0;
+    }
+    .dl-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+    .dl-setting {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        padding: 16px 0;
+    }
+    .dl-setting + .dl-setting {
+        border-top: 1px solid var(--border-subtle);
+    }
+    .dl-setting p { margin-top: 6px; }
+    .dl-switch {
+        width: 44px;
+        height: 26px;
+        flex: 0 0 auto;
+        padding: 3px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+    .dl-switch.on {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+    .dl-switch-thumb {
+        display: block;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+    .dl-switch.on .dl-switch-thumb { margin-left: auto; }
+    .dl-danger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        background: var(--error);
+        color: var(--on-error);
+        font-weight: 700;
+    }
+    @media (max-width: 900px) {
+        .dl-layout { grid-template-columns: minmax(0, 1fr); }
+        .dl-storage { grid-row: 1; }
+    }
+    @media (max-width: 600px) {
+        .dl-header { padding: 12px; }
+        .dl-page { padding: 20px 12px; }
+        .dl-heading h1 { font-size: 24px; }
+        .dl-panel { padding: 16px; }
+        .dl-card { gap: 8px; }
+        .dl-title { font-size: 15px; }
+        .dl-actions .secondary-button {
+            font-size: 12px;
+            padding: 9px 11px;
+        }
+    }
+    @media (max-height: 450px) {
+        .dl-modal { padding: 8px; }
+        .dl-dialog { max-height: calc(100dvh - 16px); }
+        .dl-dialog-heading, .dl-dialog-actions { padding: 8px 14px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if popup_visible else 'false' }}"
+     {% if popup_visible %}inert{% endif %}>
+    <header class="dl-header" data-class="app_bar"
+            data-semantic="downloads_app_bar">
+        <button type="button" class="icon-button"
+                d data-semantic="downloads_back"
+                aria-label="Back">
+            {{ icon("arrow_back", "downloads_back_icon") }}
+        </button>
+        <span class="dl-brand" data-class="logo"
+              data-semantic="uptodate_wordmark">UpToDate</span>
+        <span class="dl-spacer"></span>
+        <button type="button" class="icon-button"
+                  data-semantic="downloads_settings"
+                aria-label="Download settings">
+            {{ icon("settings", "downloads_settings_icon") }}
+        </button>
+    </header>
+
+    <main class="dl-page">
+        <div class="dl-heading" data-class="section">
+            <div>
+                <h1>Offline downloads</h1>
+                <p class="dl-muted">
+                    {{ uptodate["resource_count"] }} resources on this device
+                </p>
+            </div>
+            <div class="dl-actions">
+                <button type="button" class="secondary-button"
+                        data-class="button" data-semantic="add_download">
+                    {{ icon("download", "add_download_icon") }}
+                    Add resources
+                </button>
+                {% if uptodate["resources"] %}
+                <button type="button" class="secondary-button"
+                        data-class="button" data-semantic="toggle_download_selection"
+                        aria-pressed="{{ 'true' if uptodate['selection_mode'] else 'false' }}">
+                    {{ icon(
+                        "close" if uptodate["selection_mode"] else "edit",
+                        "download_selection_icon"
+                    ) }}
+                    {{ "Done" if uptodate["selection_mode"] else "Select" }}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if uptodate["state"] == "paused" %}
+        <div class="dl-note">
+            {{ icon("pause_circle", "paused_notice_icon") }}
+            <span>Downloads are paused. Resume when you are ready.</span>
+        </div>
+        {% endif %}
+
+        {% if uptodate["selection_mode"] %}
+        <section class="dl-selection-toolbar" data-class="section"
+                 data-semantic="download_bulk_actions">
+            <span>{{ uptodate["selected_count"] }} selected</span>
+            <button type="button" class="secondary-button"
+                    data-class="button" data-semantic="remove_selected_downloads">
+                {{ icon("delete", "remove_selected_downloads_icon") }}
+                Remove
+            </button>
+        </section>
+        {% endif %}
+
+        <div class="dl-layout">
+            {% if uptodate["resources"] %}
+            <section class="dl-list" data-class="section"
+                     data-semantic="download_list">
+                {% for resource in uptodate["resources"] %}
+                <article class="dl-panel dl-card
+                         {{ 'selected' if resource['selected'] else '' }}"
+                         data-class="card"
+                         data-semantic="{{ resource['id'] }}">
+
+                    {% if uptodate["selection_mode"] %}
+                    <button type="button" class="dl-select"
+                            data-class="button"
+                            data-semantic="select_{{ resource['id'] }}"
+                            aria-label="Select {{ resource['title'] }}"
+                            aria-pressed="{{ 'true' if resource['selected'] else 'false' }}">
+                        {{ icon(
+                            "check_box" if resource["selected"] else "check_box_outline_blank",
+                            "download_checkbox_" ~ resource["id"],
+                            annotation_class="checkbox"
+                        ) }}
+                    </button>
+                    {% else %}
+                    {{ icon(resource["icon"], "download_resource_icon_" ~ resource["id"]) }}
+                    {% endif %}
+
+                    <div class="dl-copy">
+                        <button type="button" class="dl-title"
+                                data-class="button"
+                                data-semantic="open_{{ resource['id'] }}">
+                            {{ resource["title"] }}
+                        </button>
+
+                        <div class="dl-meta">
+                            <span class="dl-badge
+                                  {{ 'error' if resource['status'] == 'error' else '' }}"
+                                  data-class="badge"
+                                  data-semantic="status_{{ resource['id'] }}">
+                                {{ icon(
+                                    "offline_pin" if resource["status"] == "ready"
+                                    else "download" if resource["status"] == "downloading"
+                                    else "pause" if resource["status"] == "paused"
+                                    else "error",
+                                    "download_status_icon_" ~ resource["id"]
+                                ) }}
+                                {{ uptodate["status_labels"][resource["status"]] }}
+                            </span>
+                            <span class="dl-muted">{{ resource["size_mb"] }} MB</span>
+                        </div>
+
+                        {% if resource["status"] in ["downloading", "paused", "error"] %}
+                        <div class="dl-progress-label">
+                            <span>{{ resource["progress"] }}%</span>
+                            <span>
+                                {{ (resource["size_mb"] * resource["progress"] / 100)|round(1) }}
+                                / {{ resource["size_mb"] }} MB
+                            </span>
+                        </div>
+                        <div class="dl-track" role="progressbar"
+                             aria-label="Download progress for {{ resource['title'] }}"
+                             aria-valuemin="0" aria-valuemax="100"
+                             aria-valuenow="{{ resource['progress'] }}"
+                             data-class="progress_bar"
+                             data-semantic="progress_{{ resource['id'] }}">
+                            <div class="dl-fill"
+                                 style="width: {{ resource['progress'] }}%;"></div>
+                        </div>
+                        {% else %}
+                        <p class="dl-muted" style="margin-top: 10px;">
+                            {{ resource["updated"] }}
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    {% set action =
+                        "pause" if resource["status"] == "downloading"
+                        else "resume" if resource["status"] == "paused"
+                        else "retry" if resource["status"] == "error"
+                        else "options" %}
+                    <button type="button" class="icon-button"
+
+                            data-semantic="{{ action }}_{{ resource['id'] }}"
+                            aria-label="{{ action|title }} {{ resource['title'] }}">
+                        {{ icon(
+                            "pause" if action == "pause"
+                            else "play_arrow" if action == "resume"
+                            else "refresh" if action == "retry"
+                            else "more_vert",
+                            "download_action_icon_" ~ resource["id"]
+                        ) }}
+                    </button>
+                </article>
+                {% endfor %}
+            </section>
+            {% else %}
+            <section class="dl-panel dl-empty" data-class="section"
+                     data-semantic="empty_downloads">
+                {{ icon("download", "empty_downloads_icon") }}
+                <h2>No offline resources</h2>
+                <p class="dl-muted">Download resources to access them offline.</p>
+                <button type="button" class="primary-button"
+                        data-class="button" data-semantic="browse_download_resources">
+                    {{ icon("add", "browse_download_resources_icon") }}
+                    Browse resources
+                </button>
+            </section>
+            {% endif %}
+
+            <aside class="dl-panel dl-storage" data-class="card"
+                   data-semantic="offline_storage_card">
+                <h2>Offline storage</h2>
+                <p class="dl-muted">
+                    {{ uptodate["used_mb"] }} MB used of
+                    {{ uptodate["storage_limit_mb"] }} MB
+                </p>
+                <div class="dl-track" role="progressbar"
+                     aria-label="Offline storage usage"
+                     aria-valuemin="0" aria-valuemax="100"
+                     aria-valuenow="{{ uptodate['storage_percent'] }}"
+                     data-class="progress_bar"
+                     data-semantic="offline_storage_progress">
+                    <div class="dl-fill"
+                         style="width: {{ uptodate['storage_percent'] }}%;"></div>
+                </div>
+                <p class="dl-muted">
+                    Download preferences apply to this device.
+                </p>
+                <button type="button" class="secondary-button"
+                        data-class="button" data-semantic="manage_download_preferences">
+                    {{ icon("tune", "manage_download_preferences_icon") }}
+                    Preferences
+                </button>
+            </aside>
+        </div>
+    </main>
+</div>
+
+{% if popup_visible %}
+<div class="dl-modal" data-occluder="true">
+    <section class="dl-dialog" role="dialog" aria-modal="true"
+             aria-labelledby="download-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ uptodate['popup_kind'] }}_downloads_dialog">
+        <div class="dl-dialog-heading">
+            <h2 id="download-dialog-title">
+                {{ "Download preferences" if uptodate["popup_kind"] == "settings"
+                    else "Remove downloads?" }}
+            </h2>
+            <button type="button" class="icon-button"
+                     data-semantic="close_download_dialog"
+                    aria-label="Close dialog">
+                {{ icon("close", "close_download_dialog_icon") }}
+            </button>
+        </div>
+
+        <div class="dl-dialog-body">
+            {% if uptodate["popup_kind"] == "settings" %}
+            {% for key, label, description in [
+                ("wifi_only", "Download over Wi-Fi only", "Use Wi-Fi for resource downloads."),
+                ("automatic_updates", "Automatic updates", "Refresh downloaded resources automatically."),
+                ("include_graphics", "Include graphics", "Download available supporting graphics.")
+            ] %}
+            <div class="dl-setting">
+                <div>
+                    <strong id="setting-{{ key }}">{{ label }}</strong>
+                    <p class="dl-muted">{{ description }}</p>
+                </div>
+                <button type="button" role="switch"
+                        class="dl-switch {{ 'on' if uptodate[key] else '' }}"
+                        aria-labelledby="setting-{{ key }}"
+                        aria-checked="{{ 'true' if uptodate[key] else 'false' }}"
+                        data-class="switch"
+                        data-semantic="download_setting_{{ key }}">
+                    <span class="dl-switch-thumb"></span>
+                </button>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p>
+                Remove {{ uptodate["selected_count"] }} selected resources
+                from this device?
+            </p>
+            <p class="dl-muted" style="margin-top: 12px;">
+                You can download them again later.
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="dl-dialog-actions">
+            <button type="button" class="secondary-button"
+                    data-class="button" data-semantic="cancel_download_dialog">
+                Cancel
+            </button>
+            <button type="button"
+                    class="{{ 'dl-danger' if uptodate['popup_kind'] == 'remove'
+                        else 'primary-button' }}"
+                    data-class="button" data-semantic="confirm_download_dialog">
+                {{ icon(
+                    "delete" if uptodate["popup_kind"] == "remove" else "save",
+                    "confirm_download_dialog_icon"
+                ) }}
+                {{ "Remove" if uptodate["popup_kind"] == "remove" else "Save" }}
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

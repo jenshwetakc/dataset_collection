@@ -1,0 +1,603 @@
+{% extends "base.html" %}
+{% block title %}UpToDate — Calculators{% endblock %}
+
+{% block head %}
+<style>
+    .calc-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .calc-brand { font-size: 22px; font-weight: 800; }
+    .calc-spacer { flex: 1; }
+    .calc-page {
+        width: min(1380px, 100%);
+        margin: auto;
+        padding: 28px;
+    }
+    .calc-page h1 { font-size: 28px; margin-bottom: 10px; }
+    .calc-page h2 { font-size: 19px; }
+    .calc-muted {
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.6;
+    }
+    .calc-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 22px 0;
+        padding: 7px 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+    }
+    .calc-search input {
+        flex: 1;
+        width: 100%;
+        padding: 10px 0;
+        border: 0;
+        background: transparent;
+        outline: none;
+    }
+    .calc-search input::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+    .calc-search:focus-within {
+        outline: 2px solid var(--on-surface);
+        outline-offset: 2px;
+    }
+    .calc-directory-layout {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 22px;
+        align-items: start;
+    }
+    .calc-panel {
+        padding: 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+        min-width: 0;
+    }
+    .calc-category {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px;
+        margin-top: 7px;
+        border-radius: 8px;
+        text-align: left;
+        color: var(--on-surface);
+    }
+    .calc-category.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+    .calc-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+    .calc-card h2 { margin: 12px 0; }
+    .calc-card .secondary-button { margin-top: 18px; }
+    .calc-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+    .calc-card-top > .material-symbols-rounded { font-size: 32px; }
+    .calc-badge {
+        display: inline-block;
+        padding: 4px 7px;
+        border-radius: 6px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 11px;
+    }
+    .calc-empty { text-align: center; padding: 46px 20px; }
+    .calc-empty > .material-symbols-rounded { font-size: 48px; }
+    .calc-empty h2 { margin: 16px 0 10px; }
+    .calc-empty .secondary-button { margin-top: 18px; }
+    .calc-form-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 22px;
+        margin-top: 24px;
+        align-items: start;
+    }
+    .calc-form-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .calc-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+    .calc-field label {
+        display: block;
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    .calc-input-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 0 12px;
+        background: var(--surface);
+    }
+    .calc-input-wrap.invalid { border: 2px solid var(--error); }
+    .calc-input-wrap input {
+        flex: 1;
+        width: 100%;
+        padding: 13px 0;
+        border: 0;
+        background: transparent;
+        color: var(--on-surface);
+        outline: none;
+    }
+    .calc-input-wrap:focus-within {
+        outline: 2px solid var(--on-surface);
+        outline-offset: 2px;
+    }
+    .calc-unit { font-size: 13px; color: var(--text-secondary); }
+    .calc-error {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 10px;
+        padding: 9px;
+        border-radius: 7px;
+        background: var(--error);
+        color: var(--on-error);
+        font-size: 12px;
+    }
+    .calc-form-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+    }
+    .calc-result {
+        margin-top: 22px;
+        padding: 24px;
+        border-radius: 12px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+    .calc-result-value {
+        display: block;
+        font-size: 44px;
+        font-weight: 800;
+        margin: 12px 0;
+    }
+    .calc-result p { font-size: 13px; }
+    .calc-info p { margin-top: 12px; }
+    .calc-formula { margin-top: 22px; }
+    .calc-formula-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        padding: 0;
+        text-align: left;
+        font-weight: 700;
+        color: var(--on-surface);
+    }
+    .calc-formula p { margin-top: 14px; line-height: 1.6; }
+    .calc-modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        padding: 16px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgb(0 0 0 / 48%);
+    }
+    .calc-dialog {
+        display: flex;
+        flex-direction: column;
+        width: min(460px, 100%);
+        max-height: calc(100dvh - 32px);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+        overflow: hidden;
+    }
+    .calc-dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+    .calc-dialog-body {
+        padding: 18px;
+        overflow-y: auto;
+        min-height: 0;
+    }
+    .calc-dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border-subtle);
+        flex: 0 0 auto;
+    }
+    .calc-unit-choice {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 14px;
+        margin-bottom: 10px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        text-align: left;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+    .calc-unit-choice.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+    .calc-unit-choice small {
+        display: block;
+        margin-top: 5px;
+        line-height: 1.5;
+    }
+    @media (max-width: 1100px) {
+        .calc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .calc-form-layout { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 800px) {
+        .calc-directory-layout { grid-template-columns: minmax(0, 1fr); }
+        .calc-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+        .calc-categories h2 { flex-basis: 100%; }
+        .calc-category { width: auto; }
+    }
+    @media (max-width: 600px) {
+        .calc-header { padding: 12px; }
+        .calc-page { padding: 20px 12px; }
+        .calc-page h1 { font-size: 24px; }
+        .calc-grid, .calc-fields {
+            grid-template-columns: minmax(0, 1fr);
+        }
+        .calc-panel { padding: 16px; }
+    }
+    @media (max-height: 450px) {
+        .calc-modal-layer { padding: 8px; }
+        .calc-dialog { max-height: calc(100dvh - 16px); }
+        .calc-dialog-header, .calc-dialog-footer {
+            padding: 8px 14px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if popup_visible else 'false' }}"
+     {% if popup_visible %}inert{% endif %}>
+
+    <header class="calc-header"
+            data-class="app_bar"
+            data-semantic="calculators_app_bar">
+        <button type="button" class="icon-button"
+                 data-semantic="calculator_back"
+                aria-label="Back">
+            {{ icon("arrow_back", "calculator_back_icon") }}
+        </button>
+
+        <span class="calc-brand" data-class="logo"
+              data-semantic="uptodate_wordmark">UpToDate</span>
+
+        <span class="calc-spacer"></span>
+
+        <button type="button" class="icon-button"
+                 data-semantic="calculator_help"
+                aria-label="Calculator help">
+            {{ icon("help", "calculator_help_icon") }}
+        </button>
+    </header>
+
+    <main class="calc-page">
+        {% if uptodate["view"] == "directory" %}
+        <h1>Calculators</h1>
+        <p class="calc-muted">Browse calculation tools by category.</p>
+
+        <div class="calc-search" data-class="search_bar"
+             data-semantic="calculator_search">
+            {{ icon("search", "calculator_search_icon") }}
+            <input type="text" value="{{ uptodate['query'] }}"
+                   placeholder="Search calculators"
+                   aria-label="Search calculators">
+            {% if uptodate["query"] %}
+            <button type="button" class="icon-button"
+                     data-semantic="clear_calculator_search"
+                    aria-label="Clear search">
+                {{ icon("close", "clear_calculator_search_icon") }}
+            </button>
+            {% endif %}
+        </div>
+
+        <div class="calc-directory-layout">
+            <nav class="calc-panel calc-categories"
+                 aria-label="Calculator categories"
+                 data-class="navigation_bar"
+                 data-semantic="calculator_categories">
+                <h2>Categories</h2>
+                {% for category in uptodate["categories"] %}
+                <button type="button"
+                        class="calc-category {{ 'active'
+                            if category == uptodate['active_category'] else '' }}"
+                        data-class="button"
+                        data-semantic="calculator_category_{{ loop.index0 }}">
+                    {{ icon("category", "category_icon_" ~ loop.index0) }}
+                    {{ category }}
+                </button>
+                {% endfor %}
+            </nav>
+
+            {% if uptodate["calculators"] %}
+            <section class="calc-grid" data-class="section"
+                     data-semantic="calculator_directory">
+                {% for entry in uptodate["calculators"] %}
+                <article class="calc-panel calc-card" data-class="card"
+                         data-semantic="calculator_{{ entry['id'] }}">
+                    <div class="calc-card-top">
+                        {{ icon(entry["icon"], "calculator_icon_" ~ entry["id"]) }}
+                        <button type="button" class="icon-button"
+                                data-class="button"
+                                data-semantic="save_calculator_{{ entry['id'] }}"
+                                aria-label="Save {{ entry['title'] }}"
+                                aria-pressed="{{ 'true' if entry['saved'] else 'false' }}">
+                            {{ icon(
+                                "bookmark" if entry["saved"] else "bookmark_add",
+                                "calculator_bookmark_" ~ entry["id"]
+                            ) }}
+                        </button>
+                    </div>
+
+                    <h2>{{ entry["title"] }}</h2>
+                    <span class="calc-badge" data-class="badge"
+                          data-semantic="calculator_category_badge_{{ entry['id'] }}">
+                        {{ entry["category"] }}
+                    </span>
+
+                    <div>
+                        <button type="button" class="secondary-button"
+                                data-class="button"
+                                data-semantic="open_calculator_{{ entry['id'] }}">
+                            Open
+                            {{ icon("arrow_forward", "calculator_open_icon_" ~ entry["id"]) }}
+                        </button>
+                    </div>
+                </article>
+                {% endfor %}
+            </section>
+            {% else %}
+            <section class="calc-panel calc-empty" data-class="section"
+                     data-semantic="calculator_empty_search">
+                {{ icon("search_off", "calculator_empty_icon") }}
+                <h2>No matching calculators</h2>
+                <p class="calc-muted">Try another keyword.</p>
+                <button type="button" class="secondary-button"
+                        data-class="button" data-semantic="reset_calculator_search">
+                    {{ icon("restart_alt", "reset_calculator_search_icon") }}
+                    Reset search
+                </button>
+            </section>
+            {% endif %}
+        </div>
+
+        {% else %}
+        <h1>Body mass index</h1>
+        <p class="calc-muted">Enter height and weight to calculate BMI.</p>
+
+        <div class="calc-form-layout">
+            <div>
+                <section class="calc-panel" data-class="section"
+                         data-semantic="bmi_form">
+                    <div class="calc-form-heading">
+                        <h2>Measurements</h2>
+                        <button type="button" class="secondary-button"
+                                data-class="button" data-semantic="choose_bmi_units">
+                            {{ icon("straighten", "bmi_units_icon") }}
+                            {{ "Metric" if uptodate["units"] == "metric" else "Imperial" }}
+                            {{ icon("expand_more", "bmi_units_arrow") }}
+                        </button>
+                    </div>
+
+                    <div class="calc-fields">
+                        {% for key, label in [("height", "Height"), ("weight", "Weight")] %}
+                        {% set error = uptodate["errors"].get(key) %}
+                        <div class="calc-field">
+                            <label for="bmi-{{ key }}">{{ label }}</label>
+                            <div class="calc-input-wrap {{ 'invalid' if error else '' }}" data-class="input_field"
+                                       data-semantic="bmi_{{ key }}"
+                                       aria-invalid="{{ 'true' if error else 'false' }}"
+                                       {% if error %}
+                                       aria-describedby="bmi-{{ key }}-error"
+                                       {% endif %}>
+                                <input id="bmi-{{ key }}" type="text"
+                                       inputmode="decimal"
+                                       value="{{ uptodate[key] }}"
+                                       >
+                                <span class="calc-unit">
+                                    {% if key == "height" %}
+                                    {{ "cm" if uptodate["units"] == "metric" else "in" }}
+                                    {% else %}
+                                    {{ "kg" if uptodate["units"] == "metric" else "lb" }}
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            {% if error %}
+                            <div class="calc-error" id="bmi-{{ key }}-error">
+                                {{ icon("error", "bmi_error_icon_" ~ key) }}
+                                <span>{{ error }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="calc-form-actions">
+                        <button type="button" class="primary-button"
+                                data-class="button" data-semantic="calculate_bmi">
+                            {{ icon("calculate", "calculate_bmi_icon") }}
+                            Calculate
+                        </button>
+                        <button type="button" class="secondary-button"
+                                data-class="button" data-semantic="reset_bmi">
+                            {{ icon("restart_alt", "reset_bmi_icon") }}
+                            Reset
+                        </button>
+                    </div>
+                </section>
+
+                {% if uptodate["bmi"] is not none %}
+                <section class="calc-result" data-class="card"
+                         data-semantic="bmi_result">
+                    <h2>Calculated BMI</h2>
+                    <span class="calc-result-value">{{ uptodate["bmi"] }}</span>
+                    <p>kg/m²</p>
+                </section>
+                {% endif %}
+
+                <section class="calc-panel calc-formula" data-class="section"
+                         data-semantic="bmi_formula">
+                    <button type="button" class="calc-formula-toggle"
+                            data-class="button" data-semantic="toggle_bmi_formula"
+                            aria-expanded="{{ 'true' if uptodate['formula_expanded'] else 'false' }}">
+                        <span>Formula and units</span>
+                        {{ icon(
+                            "expand_less" if uptodate["formula_expanded"] else "expand_more",
+                            "bmi_formula_expand_icon"
+                        ) }}
+                    </button>
+
+                    {% if uptodate["formula_expanded"] %}
+                    <p>BMI = weight in kilograms / height in metres squared.</p>
+                    <p>Imperial inputs are converted to kilograms and metres.</p>
+                    {% endif %}
+                </section>
+            </div>
+
+            <aside class="calc-panel calc-info" data-class="card"
+                   data-semantic="bmi_information">
+                <h2>Calculator details</h2>
+                <p class="calc-muted">
+                    Uses height and weight to produce a numeric BMI result.
+                </p>
+                <p class="calc-muted">
+                    Both measurements must be greater than zero.
+                </p>
+                <div class="calc-form-actions">
+                    <button type="button" class="secondary-button"
+                            data-class="button" data-semantic="save_bmi_calculator"
+                            aria-pressed="{{ 'true' if uptodate['saved'] else 'false' }}">
+                        {{ icon(
+                            "bookmark" if uptodate["saved"] else "bookmark_add",
+                            "save_bmi_calculator_icon"
+                        ) }}
+                        {{ "Saved" if uptodate["saved"] else "Save calculator" }}
+                    </button>
+                </div>
+            </aside>
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+{% if popup_visible %}
+<div class="calc-modal-layer" data-occluder="true">
+    <section class="calc-dialog" role="dialog" aria-modal="true"
+             aria-labelledby="calc-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ uptodate['popup_kind'] }}_calculator_dialog">
+        <div class="calc-dialog-header">
+            <h2 id="calc-dialog-title">
+                {{ "Measurement units" if uptodate["popup_kind"] == "units"
+                    else "Reset measurements?" }}
+            </h2>
+            <button type="button" class="icon-button"
+                     data-semantic="close_calc_dialog"
+                    aria-label="Close dialog">
+                {{ icon("close", "close_calc_dialog_icon") }}
+            </button>
+        </div>
+
+        <div class="calc-dialog-body">
+            {% if uptodate["popup_kind"] == "units" %}
+                {% for option in uptodate["unit_options"] %}
+                {% set selected = option["id"] == uptodate["units"] %}
+                <button type="button"
+                        class="calc-unit-choice {{ 'selected' if selected else '' }}"
+                        data-class="button"
+                        data-semantic="unit_option_{{ option['id'] }}"
+                        aria-pressed="{{ 'true' if selected else 'false' }}">
+                    {{ icon(
+                        "check_box" if selected else "check_box_outline_blank",
+                        "unit_checkbox_" ~ option["id"],
+                        annotation_class="checkbox"
+                    ) }}
+                    <span>
+                        <strong>{{ option["label"] }}</strong>
+                        <small>{{ option["description"] }}</small>
+                    </span>
+                </button>
+                {% endfor %}
+            {% else %}
+            <p class="calc-muted">
+                Clear the entered height, weight, and calculated result?
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="calc-dialog-footer">
+            <button type="button" class="secondary-button"
+                    data-class="button" data-semantic="cancel_calc_dialog">
+                Cancel
+            </button>
+            <button type="button" class="primary-button"
+                    data-class="button" data-semantic="confirm_calc_dialog">
+                {{ icon(
+                    "straighten" if uptodate["popup_kind"] == "units" else "restart_alt",
+                    "confirm_calc_dialog_icon"
+                ) }}
+                {{ "Apply" if uptodate["popup_kind"] == "units" else "Reset" }}
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}
