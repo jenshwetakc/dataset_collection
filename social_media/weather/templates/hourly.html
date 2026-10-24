@@ -1,0 +1,950 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, annotation_class='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ annotation_class }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+{% block title %}
+Hourly Forecast — {{ weather['location'] }}
+{% endblock %}
+
+{% block head %}
+<style>
+    .hourly-app {
+        min-width: 0;
+    }
+
+    .hourly-app-bar {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .hourly-header {
+        max-width: 1440px;
+        margin: auto;
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .hourly-brand {
+        width: 68px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 2px solid currentColor;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .hourly-location {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .hourly-location strong {
+        display: block;
+        overflow-wrap: anywhere;
+    }
+
+    .hourly-location p {
+        margin-top: 5px;
+        font-size: 12px;
+    }
+
+    .hourly-header .icon-button {
+        color: inherit;
+    }
+
+    .hourly-navigation {
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .hourly-tabs {
+        max-width: 1440px;
+        margin: auto;
+        padding-inline: 24px;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+    }
+
+    .hourly-tab {
+        position: relative;
+        flex-shrink: 0;
+        padding: 16px;
+        color: var(--on-surface);
+        font-weight: 700;
+    }
+
+    .hourly-tab.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .hourly-tab-indicator {
+        position: absolute;
+        bottom: 0;
+        left: 12px;
+        right: 12px;
+        height: 3px;
+        background: currentColor;
+    }
+
+    .hourly-main {
+        max-width: 1440px;
+        margin: auto;
+        padding: 26px 24px;
+    }
+
+    .hourly-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .hourly-title-row h1 {
+        font-size: 27px;
+    }
+
+    .hourly-title-row p {
+        margin-top: 8px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .hourly-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .hourly-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .hourly-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .forecast-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 20px;
+    }
+
+    .forecast-heading h2 {
+        font-size: 19px;
+    }
+
+    .forecast-heading span {
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .hourly-notice {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px;
+        margin-bottom: 20px;
+        border-radius: 12px;
+        background: var(--warning);
+        color: var(--on-warning);
+        line-height: 1.5;
+    }
+
+    .forecast-columns,
+    .forecast-row {
+        display: grid;
+        grid-template-columns:
+            64px 100px minmax(110px, 1fr)
+            90px 110px 34px;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .forecast-columns {
+        padding: 13px 20px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .day-separator {
+        padding: 12px 20px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 13px;
+        font-weight: 700;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .forecast-row {
+        padding: 18px 20px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .forecast-row.expanded {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .hour-temperature {
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .feels-like {
+        display: block;
+        margin-top: 5px;
+        font-size: 11px;
+    }
+
+    .hour-condition,
+    .hour-precipitation,
+    .hour-wind {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+    }
+
+    .hour-condition .material-symbols-rounded {
+        font-size: 30px;
+    }
+
+    .hour-precipitation .material-symbols-rounded,
+    .hour-wind .material-symbols-rounded {
+        font-size: 18px;
+    }
+
+    .forecast-row:not(.expanded) .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .hour-expand {
+        color: inherit;
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0;
+    }
+
+    .hour-details {
+        padding: 20px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .hour-details h3 {
+        margin-bottom: 16px;
+        font-size: 15px;
+    }
+
+    .hour-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .hour-detail-label {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        margin-bottom: 8px;
+    }
+
+    .hour-detail-value {
+        font-weight: 700;
+        font-size: 15px;
+    }
+
+    .hourly-side {
+        display: grid;
+        gap: 20px;
+    }
+
+    .side-card {
+        padding: 22px;
+    }
+
+    .side-card h2 {
+        margin-bottom: 14px;
+        font-size: 19px;
+    }
+
+    .side-card p {
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .side-stat {
+        margin-top: 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .side-stat .material-symbols-rounded {
+        color: var(--icon);
+        font-size: 32px;
+    }
+
+    .side-stat strong {
+        display: block;
+        font-size: 24px;
+    }
+
+    .side-stat small {
+        display: block;
+        margin-top: 5px;
+        color: var(--text-secondary);
+    }
+
+    .legend-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 16px;
+        font-size: 13px;
+    }
+
+    .legend-row .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .hourly-footer {
+        padding-top: 25px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .hourly-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .hourly-dialog {
+        width: min(100%, 460px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .hourly-dialog-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .hourly-dialog-heading h2 {
+        font-size: 21px;
+    }
+
+    .day-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 15px 12px;
+        margin-bottom: 8px;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .day-option.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .day-option-copy {
+        flex: 1;
+    }
+
+    .day-option-copy small {
+        display: block;
+        margin-top: 5px;
+    }
+
+    .display-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 18px 0;
+        text-align: left;
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .display-option .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .display-option-copy {
+        flex: 1;
+    }
+
+    .display-option-copy small {
+        display: block;
+        margin-top: 5px;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+
+    .hourly-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    @media (max-width: 1100px) {
+        .hourly-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .hourly-side {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 700px) {
+        .hourly-header {
+            padding: 12px;
+            gap: 12px;
+        }
+
+        .hourly-brand {
+            width: 56px;
+            height: 52px;
+            font-size: 11px;
+        }
+
+        .hourly-tabs {
+            padding-inline: 6px;
+            gap: 0;
+        }
+
+        .hourly-tab {
+            padding: 14px 12px;
+            font-size: 13px;
+        }
+
+        .hourly-main {
+            padding: 20px 12px;
+        }
+
+        .hourly-title-row h1 {
+            font-size: 23px;
+        }
+
+        .hourly-controls {
+            width: 100%;
+        }
+
+        .forecast-columns {
+            display: none;
+        }
+
+        .forecast-heading {
+            padding: 16px 12px;
+            align-items: flex-start;
+        }
+
+        .forecast-row {
+            grid-template-columns: 48px minmax(0, 1fr) 30px;
+            gap: 10px;
+            padding: 16px 12px;
+        }
+
+        .hour-time {
+            grid-column: 1;
+            grid-row: 1;
+            font-size: 12px;
+        }
+
+        .hour-temperature-group {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .hour-expand {
+            grid-column: 3;
+            grid-row: 1;
+            width: 30px;
+        }
+
+        .hour-condition {
+            grid-column: 2 / 4;
+            grid-row: 2;
+        }
+
+        .hour-precipitation {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .hour-wind {
+            grid-column: 2 / 4;
+            grid-row: 4;
+        }
+
+        .day-separator {
+            padding-inline: 12px;
+        }
+
+        .hour-details {
+            padding: 16px 12px;
+        }
+
+        .hour-detail-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .hourly-side {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .hourly-dialog {
+            padding: 18px;
+        }
+
+        .hourly-dialog-actions {
+            flex-wrap: wrap;
+        }
+    }
+
+    @media (max-height: 450px) and (orientation: landscape) {
+        .hourly-backdrop {
+            align-items: flex-start;
+            padding: 10px;
+        }
+
+        .hourly-dialog {
+            max-height: calc(100dvh - 20px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hourly-app"
+     data-annotation-skip="{{ 'true' if weather['popup_visible'] else 'false' }}"
+     {% if weather['popup_visible'] %}inert{% endif %}>
+
+    <header class="hourly-app-bar"
+            data-class="app_bar"
+            data-semantic="hourly_app_bar">
+
+        <div class="hourly-header">
+            <div class="hourly-brand"
+                 data-class="logo"
+                 data-semantic="hourly_weather_logo">
+                The<br>Weather<br>Channel
+            </div>
+
+            <div class="hourly-location">
+                <strong>{{ weather['location'] }}</strong>
+                <p>{{ weather['updated_text'] }}</p>
+            </div>
+
+            <button type="button"
+                    class="icon-button"
+
+                    data-semantic="hourly_search_locations"
+                    aria-label="Search locations">
+                {{ icon('search', 'hourly_header_search', 'Search') }}
+            </button>
+        </div>
+    </header>
+
+    <nav class="hourly-navigation"
+         aria-label="Weather pages"
+         data-class="navigation_bar"
+         data-semantic="hourly_navigation">
+
+        <div class="hourly-tabs">
+            {% for label in ['Today', 'Hourly', '10 Day', 'Radar', 'Video'] %}
+            <button type="button"
+                    class="hourly-tab {{ 'selected' if label == 'Hourly' else '' }}"
+                    data-class="tab"
+                    data-semantic="hourly_nav_tab_{{ loop.index0 }}"
+                    aria-current="{{ 'page' if label == 'Hourly' else 'false' }}">
+                {{ label }}
+
+                {% if label == 'Hourly' %}
+                <span class="hourly-tab-indicator"
+                      data-class="selection_indicator"
+                      data-semantic="hourly_selected_tab"></span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+    </nav>
+
+    <main class="hourly-main">
+        <div class="hourly-title-row" data-class="section">
+            <div>
+                <h1>Hourly Weather</h1>
+                <p>{{ weather['summary'] }}</p>
+            </div>
+
+            <div class="hourly-controls">
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="hourly_day_picker">
+                    {{ icon('calendar_month', 'hourly_calendar_icon', 'Choose day') }}
+                    {{ weather['selected_day_label'] }}
+                    {{ icon('expand_more', 'hourly_day_dropdown', 'Open day picker') }}
+                </button>
+
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="hourly_display_settings">
+                    {{ icon('tune', 'hourly_settings_icon', 'Display settings') }}
+                    Display
+                </button>
+            </div>
+        </div>
+
+        {% if weather['notice'] %}
+        <section class="hourly-notice"
+                 data-class="card"
+                 data-semantic="hourly_wind_notice">
+            {{ icon('warning', 'hourly_warning_icon', 'Wind notice') }}
+            <p>{{ weather['notice'] }}</p>
+        </section>
+        {% endif %}
+
+        <div class="hourly-layout">
+            <section class="hourly-card"
+                     data-class="section"
+                     data-semantic="hourly_forecast_list">
+
+                <div class="forecast-heading">
+                    <h2>Next 24 Hours</h2>
+                    <span>°{{ weather['temperature_unit'] }}</span>
+                </div>
+
+                <div class="forecast-columns">
+                    <span>Time</span>
+                    <span>Temperature</span>
+                    <span>Conditions</span>
+                    <span>Rain / Snow</span>
+                    <span>Wind</span>
+                    <span></span>
+                </div>
+
+                {% for hour in weather['hours'] %}
+                {% if hour['new_day'] %}
+                <div class="day-separator">
+                    {{ hour['date'] }}
+                </div>
+                {% endif %}
+
+                <div class="forecast-row {{ 'expanded' if hour['expanded'] else '' }}">
+                    <strong class="hour-time">
+                        {{ hour['time'] }}
+                    </strong>
+
+                    <div class="hour-temperature-group">
+                        <span class="hour-temperature">
+                            {{ hour['temperature'] }}
+                        </span>
+
+                        {% if weather['show_feels_like'] %}
+                        <span class="feels-like">
+                            Feels {{ hour['feels_like'] }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="hour-condition">
+                        {{ icon(
+                            hour['icon'],
+                            'hourly_condition_' ~ hour['id'],
+                            hour['condition']
+                        ) }}
+                        <span>{{ hour['condition'] }}</span>
+                    </div>
+
+                    <div class="hour-precipitation">
+                        {{ icon(
+                            'water_drop',
+                            'hourly_rain_' ~ hour['id'],
+                            'Precipitation chance'
+                        ) }}
+                        <span>{{ hour['precipitation'] }}%</span>
+                    </div>
+
+                    <div class="hour-wind">
+                        {% if weather['show_wind'] %}
+                        {{ icon(
+                            'air',
+                            'hourly_wind_' ~ hour['id'],
+                            'Wind'
+                        ) }}
+                        <span>
+                            {{ hour['direction'] }}
+                            {{ hour['wind'] }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <button type="button"
+                            class="hour-expand"
+
+                            data-semantic="expand_hour_{{ hour['id'] }}"
+                            aria-label="Details for {{ hour['date'] }} at {{ hour['time'] }}"
+                            aria-expanded="{{ 'true' if hour['expanded'] else 'false' }}">
+                        {{ icon(
+                            'expand_less' if hour['expanded'] else 'expand_more',
+                            'hour_expand_icon_' ~ hour['id'],
+                            'Collapse details' if hour['expanded'] else 'Expand details'
+                        ) }}
+                    </button>
+                </div>
+
+                {% if hour['expanded'] %}
+                <section class="hour-details"
+                         data-class="card"
+                         data-semantic="expanded_hour_{{ hour['id'] }}">
+
+                    <h3>
+                        Conditions at {{ hour['time'] }}
+                    </h3>
+
+                    <div class="hour-detail-grid">
+                        {% set details = [
+                            ('thermostat', 'Feels Like', hour['feels_like']),
+                            ('water_drop', 'Precipitation', hour['precipitation_amount']),
+                            ('air', 'Wind Gusts', hour['gusts']),
+                            ('sunny', 'UV Index', hour['uv_index'] ~ ' of 11'),
+                            ('cloud', 'Cloud Cover', hour['cloud_cover'] ~ '%')
+                        ] %}
+
+                        {% if weather['show_humidity'] %}
+                        {% set details = details + [
+                            ('humidity_percentage', 'Humidity', hour['humidity'] ~ '%')
+                        ] %}
+                        {% endif %}
+
+                        {% for name, label, value in details %}
+                        <div>
+                            <div class="hour-detail-label">
+                                {{ icon(
+                                    name,
+                                    'expanded_metric_' ~ hour['id'] ~ '_' ~ loop.index0,
+                                    label
+                                ) }}
+                                <span>{{ label }}</span>
+                            </div>
+
+                            <p class="hour-detail-value">
+                                {{ value }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+                {% endfor %}
+            </section>
+
+            <aside class="hourly-side">
+                <section class="hourly-card side-card"
+                         data-class="card"
+                         data-semantic="hourly_outlook">
+                    <h2>24-Hour Outlook</h2>
+                    <p>{{ weather['summary'] }}</p>
+
+                    <div class="side-stat">
+                        {{ icon('water_drop', 'outlook_precipitation_icon', 'Precipitation') }}
+                        <div>
+                            <strong>
+                                {{ weather['high_precipitation_hours'] }}
+                            </strong>
+                            <small>Hours with precipitation chance ≥ 50%</small>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="hourly-card side-card"
+                         data-class="card"
+                         data-semantic="hourly_forecast_legend">
+                    <h2>Forecast Guide</h2>
+
+                    <div class="legend-row">
+                        {{ icon('thermostat', 'legend_temperature', 'Temperature') }}
+                        <span>Temperature and feels like</span>
+                    </div>
+
+                    <div class="legend-row">
+                        {{ icon('water_drop', 'legend_precipitation', 'Precipitation') }}
+                        <span>Chance of rain or snow</span>
+                    </div>
+
+                    <div class="legend-row">
+                        {{ icon('air', 'legend_wind', 'Wind') }}
+                        <span>Wind speed and direction</span>
+                    </div>
+                </section>
+            </aside>
+        </div>
+
+        <footer class="hourly-footer">
+            Synthetic forecast for UI dataset generation.
+        </footer>
+    </main>
+</div>
+
+{% if weather['popup_visible'] %}
+<div class="hourly-backdrop"
+     data-occluder="true">
+
+    <section class="hourly-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="hourly-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ weather['popup_type'] }}">
+
+        <div class="hourly-dialog-heading">
+            <h2 id="hourly-dialog-title">
+                {{ 'Choose Forecast Day' if weather['popup_type'] == 'day_picker' else 'Display Settings' }}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="close_hourly_dialog"
+                    aria-label="Close dialog">
+                {{ icon('close', 'hourly_dialog_close', 'Close') }}
+            </button>
+        </div>
+
+        {% if weather['popup_type'] == 'day_picker' %}
+        {% for day in weather['days'] %}
+        <button type="button"
+                class="day-option {{ 'selected' if day['id'] == weather['selected_day'] else '' }}"
+                data-class="button"
+                data-semantic="forecast_day_{{ day['id'] }}"
+                aria-pressed="{{ 'true' if day['id'] == weather['selected_day'] else 'false' }}">
+
+            {{ icon(
+                'calendar_today',
+                'forecast_day_calendar_' ~ day['id'],
+                'Forecast date'
+            ) }}
+
+            <span class="day-option-copy">
+                <strong>{{ day['label'] }}</strong>
+                <small>{{ day['date'] }}</small>
+            </span>
+
+            {% if day['id'] == weather['selected_day'] %}
+            {{ icon(
+                'check',
+                'forecast_day_selected_' ~ day['id'],
+                'Selected'
+            ) }}
+            {% endif %}
+        </button>
+        {% endfor %}
+
+        {% else %}
+        {% set options = [
+            ('show_feels_like', 'Feels Like', 'Show the apparent temperature'),
+            ('show_humidity', 'Humidity', 'Include humidity in expanded details'),
+            ('show_wind', 'Wind', 'Show wind speed and direction')
+        ] %}
+
+        {% for key, label, description in options %}
+        <button type="button"
+                class="display-option"
+                data-class="button"
+                data-semantic="display_option_{{ key }}"
+                aria-pressed="{{ 'true' if weather[key] else 'false' }}">
+
+            {{ icon(
+                'check_box' if weather[key] else 'check_box_outline_blank',
+                'display_checkbox_' ~ key,
+                'Selected' if weather[key] else 'Unselected',
+                'checkbox'
+            ) }}
+
+            <span class="display-option-copy">
+                <strong>{{ label }}</strong>
+                <small>{{ description }}</small>
+            </span>
+        </button>
+        {% endfor %}
+
+        <div class="hourly-dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_hourly_settings">
+                Cancel
+            </button>
+
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="save_hourly_settings">
+                {{ icon('check', 'save_hourly_settings_icon', 'Save') }}
+                Save
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

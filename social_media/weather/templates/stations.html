@@ -1,0 +1,1237 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, annotation_class='icon') -%}
+<span class="material-symbols-rounded"
+      aria-hidden="true"
+      data-class="{{ annotation_class }}"
+      data-semantic="{{ semantic }}">{{ name }}</span>
+{%- endmacro %}
+
+{% macro readings(station, prefix) -%}
+<div class="reading-grid">
+    <div class="reading">
+       <span> {{ icon('air', prefix ~ '_wind') }}</span>
+        <strong>{{ station['wind'] }} km/h</strong>
+        <small>Wind · {{ station['direction'] }}</small>
+    </div>
+
+    {% if weather['settings']['humidity'] %}
+    <div class="reading">
+        <span>{{ icon('water_drop', prefix ~ '_humidity') }}</span>
+
+        <strong>{{ station['humidity'] }}%</strong>
+        <small>Humidity</small>
+    </div>
+    {% endif %}
+
+    {% if weather['settings']['pressure'] %}
+    <div class="reading">
+        <span>
+        {{ icon('speed', prefix ~ '_pressure') }}</span>
+        <strong>{{ station['pressure'] }} hPa</strong>
+        <small>Pressure</small>
+    </div>
+    {% endif %}
+
+    {% if weather['settings']['rainfall'] %}
+    <div class="reading">
+        <span>
+        {{ icon('rainy', prefix ~ '_rainfall') }}</span>
+        <strong>{{ station['rainfall'] }} mm</strong>
+        <small>Rainfall</small>
+    </div>
+    {% endif %}
+</div>
+{%- endmacro %}
+
+{% macro history(station, prefix) -%}
+<div class="history-section"
+     data-class="section"
+     data-semantic="{{ prefix }}_history">
+    <h3>Recent readings</h3>
+
+    <div class="history-list">
+        {% for entry in station['history'] %}
+        <div class="history-row">
+            <span>{{ entry['time'] }}</span>
+            <strong>{{ entry['temperature'] }}°</strong>
+            <span>{{ entry['humidity'] }}% humidity</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{%- endmacro %}
+
+{% block title %}Weather Station Explorer{% endblock %}
+
+{% block head %}
+<style>
+    .station-header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .station-header-inner,
+    .station-nav,
+    .station-main {
+        width: min(1800px, 100%);
+        margin: 0 auto;
+    }
+
+    .station-header-inner,
+    .page-heading,
+    .station-top,
+    .station-footer,
+    .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+    }
+
+    .station-header-inner {
+        padding: 18px 28px;
+    }
+
+    .brand,
+    .inline,
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .brand {
+        min-width: 0;
+    }
+
+    .brand strong {
+        font-size: 21px;
+    }
+
+    .station-logo {
+        display: grid;
+        place-items: center;
+        width: 62px;
+        height: 56px;
+        flex-shrink: 0;
+        border-radius: 10px;
+        background: var(--primary);
+        color: var(--on-primary);
+        font-size: 12px;
+        font-weight: 800;
+        text-align: center;
+        line-height: 1.15;
+    }
+
+    .station-nav,
+    .region-tabs,
+    .view-tabs {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+    }
+
+    .station-nav {
+        padding: 0 28px 12px;
+    }
+
+    .station-tab {
+        flex-shrink: 0;
+        padding: 10px 13px;
+        border-radius: 9px;
+        color: var(--text-secondary);
+        font-weight: 700;
+    }
+
+    .station-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .station-main {
+        padding: 28px;
+    }
+
+    .page-heading {
+        align-items: flex-start;
+        margin-bottom: 24px;
+    }
+
+    .page-heading h1 {
+        font-size: clamp(27px, 3vw, 38px);
+        margin-bottom: 7px;
+    }
+
+    .muted {
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+
+    .summary-card,
+    .station-card,
+    .side-card,
+    .comparison-card,
+    .table-panel {
+        min-width: 0;
+        border: 1px solid var(--border-subtle);
+        border-radius: 15px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .summary-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 18px;
+    }
+
+    .summary-card > .material-symbols-rounded {
+        font-size: 32px;
+        color: var(--icon);
+    }
+
+    .summary-card strong {
+        display: block;
+        margin-top: 5px;
+        font-size: 26px;
+    }
+
+    .station-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        align-items: start;
+        gap: 22px;
+    }
+
+    .station-content,
+    .station-sidebar {
+        min-width: 0;
+    }
+
+    .station-sidebar {
+        display: grid;
+        gap: 18px;
+    }
+
+    .explorer-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+
+    .station-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: min(380px, 100%);
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .station-search input {
+        width: 100%;
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    .station-search input::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .station-search:focus-within {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+    }
+
+    .station-search > .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .region-tabs {
+        margin-bottom: 20px;
+    }
+
+    .region-tabs .station-tab {
+        border: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .region-tabs .station-tab.active {
+        border-color: var(--on-primary-container);
+        background: var(--primary-container);
+    }
+
+    .section-heading {
+        margin-bottom: 16px;
+    }
+
+    .section-heading h2 {
+        font-size: 21px;
+    }
+
+    .station-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .station-card,
+    .comparison-card {
+        padding: 18px;
+    }
+
+    .station-top {
+        align-items: flex-start;
+    }
+
+    .station-top h3 {
+        font-size: 18px;
+        margin-bottom: 5px;
+        overflow-wrap: anywhere;
+    }
+
+    .region-badge {
+        display: inline-block;
+        padding: 5px 8px;
+        border-radius: 7px;
+        background: var(--badge-background);
+        color: var(--badge-text);
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .temperature-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 22px 0 10px;
+    }
+
+    .temperature-row strong {
+        font-size: 44px;
+    }
+
+    .temperature-row .material-symbols-rounded {
+        font-size: 48px;
+        color: var(--icon);
+    }
+
+    .condition-label {
+        margin-bottom: 5px;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .reading-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin: 18px 0;
+    }
+
+    .reading {
+        min-width: 0;
+        padding: 11px;
+        border-radius: 9px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .reading .material-symbols-rounded {
+        display: block;
+        color: inherit;
+        font-size: 20px;
+        margin-bottom: 7px;
+    }
+
+    .reading strong,
+    .reading small {
+        display: block;
+        overflow-wrap: anywhere;
+    }
+
+    .reading strong {
+        font-size: 13px;
+    }
+
+    .reading small {
+        margin-top: 4px;
+        font-size: 10px;
+    }
+
+    .station-footer {
+        border-top: 1px solid var(--border-subtle);
+        padding-top: 12px;
+        font-size: 11px;
+    }
+
+    .details-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 0;
+        font-weight: 700;
+        color: var(--on-surface);
+    }
+
+    .details-button .material-symbols-rounded {
+        font-size: 20px;
+        color: var(--icon);
+    }
+
+    .station-card.expanded {
+        grid-column: span 2;
+    }
+
+    .history-section {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .history-section h3 {
+        font-size: 17px;
+        margin-bottom: 12px;
+    }
+
+    .history-list {
+        display: grid;
+        gap: 9px;
+    }
+
+    .history-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.5fr;
+        gap: 8px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .side-card {
+        padding: 20px;
+    }
+
+    .side-card h2 {
+        font-size: 19px;
+        margin-bottom: 16px;
+    }
+
+    .favorite-list {
+        display: grid;
+        gap: 16px;
+    }
+
+    .favorite-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .favorite-row > .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .favorite-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .favorite-copy strong {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 4px;
+    }
+
+    .network-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 13px;
+    }
+
+    .network-line .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .network-line:last-child {
+        border-bottom: 0;
+    }
+
+    .side-card > .secondary-button {
+        width: 100%;
+        margin-top: 16px;
+    }
+
+    .table-panel {
+        overflow: hidden;
+    }
+
+    .station-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    .station-table th,
+    .station-table td {
+        padding: 14px 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .station-table th {
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 11px;
+    }
+
+    .station-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .table-name {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .comparison-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .comparison-heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .comparison-heading .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .comparison-card h3 {
+        font-size: 19px;
+        margin-bottom: 8px;
+    }
+
+    .page-note {
+        margin-top: 24px;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(0, 0, 0, .48);
+    }
+
+    .station-dialog {
+        width: min(540px, 100%);
+        max-height: calc(100dvh - 40px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .dialog-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .dialog-heading h2 {
+        font-size: 23px;
+    }
+
+    .setting-choice {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 16px 12px;
+        margin-top: 10px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        text-align: left;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .setting-choice.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        border-color: var(--on-primary-container);
+    }
+
+    .setting-choice .material-symbols-rounded {
+        color: inherit;
+        flex-shrink: 0;
+    }
+
+    .setting-choice strong {
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .setting-choice small {
+        display: block;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 24px;
+    }
+
+    @media (min-width: 1500px) {
+        .station-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 1150px) {
+        .station-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .station-layout {
+            grid-template-columns: minmax(0, 1fr) 260px;
+        }
+
+        .comparison-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .station-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .station-sidebar {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .table-wind,
+        .table-region {
+            display: none;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .station-header-inner {
+            padding: 14px 16px;
+        }
+
+        .station-nav {
+            padding: 0 16px 12px;
+        }
+
+        .station-main {
+            padding: 22px 16px;
+        }
+
+        .brand strong {
+            font-size: 16px;
+        }
+
+        .page-heading {
+            flex-direction: column;
+        }
+
+        .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .summary-card {
+            padding: 12px;
+            gap: 8px;
+        }
+
+        .summary-card > .material-symbols-rounded {
+            font-size: 24px;
+        }
+
+        .summary-card .muted {
+            font-size: 11px;
+        }
+
+        .summary-card strong {
+            font-size: 22px;
+        }
+
+        .station-grid,
+        .station-sidebar {
+            grid-template-columns: 1fr;
+        }
+
+        .station-card.expanded {
+            grid-column: auto;
+        }
+
+        .station-search {
+            width: 100%;
+        }
+
+        .station-table th,
+        .station-table td {
+            padding: 12px 8px;
+            font-size: 12px;
+        }
+
+        .table-humidity {
+            display: none;
+        }
+
+        .modal-backdrop {
+            padding: 12px;
+        }
+
+        .station-dialog {
+            padding: 20px;
+            max-height: calc(100dvh - 24px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if weather['popup_visible'] else 'false' }}"
+     {% if weather['popup_visible'] %}inert{% endif %}>
+
+    <header class="station-header"
+            data-class="app_bar"
+            data-semantic="stations_app_bar">
+
+        <div class="station-header-inner">
+            <div class="brand">
+                <div class="station-logo"
+                     data-class="logo"
+                     data-semantic="stations_logo">
+                    The<br>Weather<br>Channel
+                </div>
+                <strong>Station Explorer</strong>
+            </div>
+
+            <div class="header-actions">
+                <button type="button"
+                        class="icon-button"
+                        aria-label="Refresh station readings"
+                        data-class="button"
+                        data-semantic="refresh_stations">
+                    {{ icon('refresh', 'refresh_stations_icon') }}
+                </button>
+
+                <button type="button"
+                        class="icon-button"
+                        aria-label="Display settings"
+                        data-class="button"
+                        data-semantic="station_display_settings">
+                    {{ icon('tune', 'station_display_settings_icon') }}
+                </button>
+            </div>
+        </div>
+
+        <nav class="station-nav"
+             aria-label="Weather pages"
+             data-class="navigation_bar"
+             data-semantic="station_navigation">
+            {% for label in [
+                'Today', 'Hourly', 'Radar',
+                'Monthly', 'News', 'Stations'
+            ] %}
+            <button type="button"
+                    class="station-tab {{ 'active' if label == 'Stations' else '' }}"
+                    data-class="tab"
+                    data-semantic="station_nav_{{ label|lower }}"
+                    {% if label == 'Stations' %}aria-current="page"{% endif %}>
+                {{ label }}
+            </button>
+            {% endfor %}
+        </nav>
+    </header>
+
+    <main class="station-main">
+        <div class="page-heading" data-class="section">
+            <div>
+                <h1>Weather station explorer</h1>
+                <p class="muted">
+                    Compare observations across urban, coastal,
+                    mountain, and inland stations.
+                </p>
+            </div>
+
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="station_compare_button">
+                {{ icon('compare_arrows', 'station_compare_button_icon') }}
+                Compare stations
+            </button>
+        </div>
+
+        <section class="summary-grid"
+                 data-class="section"
+                 data-semantic="station_summary_section">
+            {% for label, value, symbol in [
+                ('Stations shown', weather['summary']['count'], 'sensors'),
+                ('Average temperature', weather['summary']['average'] ~ '°', 'thermostat'),
+                ('Maximum wind', weather['summary']['maximum_wind'] ~ ' km/h', 'air'),
+                ('Reporting rain', weather['summary']['rain_count'], 'rainy')
+            ] %}
+            <div class="summary-card"
+                 data-class="card"
+                 data-semantic="station_summary_{{ loop.index }}">
+                <span>
+                    {{ icon(symbol, 'station_summary_icon_' ~ loop.index) }}
+                </span>
+
+                <div>
+                    <span class="muted">{{ label }}</span>
+                    <strong>{{ value }}</strong>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+
+        <div class="station-layout">
+            <div class="station-content" data-class="section">
+                <div class="explorer-toolbar"
+                     data-class="toolbar"
+                     data-semantic="station_explorer_toolbar">
+
+                    <div class="station-search"
+                         data-class="search_bar"
+                         data-semantic="station_search">
+                        {{ icon('search', 'station_search_icon') }}
+
+                        <input type="text"
+                               aria-label="Search stations"
+                               placeholder="Search station names"
+                               value="{{ weather['query'] }}"
+                               data-class="input_field"
+                               data-semantic="station_search_input">
+
+                        {% if weather['query'] %}
+                        <button type="button"
+                                class="icon-button"
+                                aria-label="Clear search"
+                                data-class="button"
+                                data-semantic="clear_station_search">
+                            {{ icon('close', 'clear_station_search_icon') }}
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <div class="view-tabs">
+                        {% for key, label in [
+                            ('cards', 'Cards'),
+                            ('table', 'Table'),
+                            ('compare', 'Compare')
+                        ] %}
+                        <button type="button"
+                                class="station-tab {{ 'active' if weather['view'] == key else '' }}"
+                                aria-pressed="{{ 'true' if weather['view'] == key else 'false' }}"
+                                data-class="tab"
+                                data-semantic="station_view_{{ key }}">
+                            {{ label }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="region-tabs" data-class="section">
+                    {% for region in weather['regions'] %}
+                    <button type="button"
+                            class="station-tab {{ 'active' if weather['region'] == region else '' }}"
+                            aria-pressed="{{ 'true' if weather['region'] == region else 'false' }}"
+                            data-class="chip"
+                            data-semantic="station_region_{{ region|lower }}">
+                        {{ region }}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <section data-class="section"
+                         data-semantic="station_results_section">
+                    <div class="section-heading">
+                        <h2>
+                            {{ 'Station comparison' if weather['view'] == 'compare' else 'Latest observations' }}
+                        </h2>
+                        <span class="muted">
+                            {{ weather['comparison']|length if weather['view'] == 'compare' else weather['visible_stations']|length }}
+                            stations
+                        </span>
+                    </div>
+
+                    {% if weather['view'] == 'cards' %}
+                    <div class="station-grid">
+                        {% for station in weather['visible_stations'] %}
+                        <article class="station-card {{ 'expanded' if station['expanded'] else '' }}"
+                                 data-class="card"
+                                 data-semantic="station_card_{{ station['id'] }}">
+
+                            <div class="station-top">
+                                <div>
+                                    <h3>{{ station['name'] }}</h3>
+                                    <span class="region-badge"
+                                          data-class="badge"
+                                          data-semantic="station_region_badge_{{ station['id'] }}">
+                                        {{ station['region'] }}
+                                    </span>
+                                </div>
+
+                                <button type="button"
+                                        class="icon-button"
+                                        aria-label="Favorite {{ station['name'] }}"
+                                        aria-pressed="{{ 'true' if station['favorite'] else 'false' }}"
+                                        data-class="button"
+                                        data-semantic="station_favorite_{{ station['id'] }}">
+                                    {{ icon(
+                                        'star' if station['favorite'] else 'star_border',
+                                        'station_favorite_icon_' ~ station['id']
+                                    ) }}
+                                </button>
+                            </div>
+
+                            <div class="temperature-row">
+                                <strong>{{ station['temperature'] }}°</strong>
+                                {{ icon(station['icon'], 'station_condition_' ~ station['id']) }}
+                            </div>
+
+                            <p class="condition-label">{{ station['condition'] }}</p>
+                            <p class="muted">
+                                Feels like {{ station['feels_like'] }}°
+                            </p>
+
+                            {{ readings(station, 'card_' ~ station['id']) }}
+
+                            <div class="station-footer">
+                                <span class="muted">{{ station['updated'] }}</span>
+
+                                <button type="button"
+                                        class="details-button"
+                                        aria-expanded="{{ 'true' if station['expanded'] else 'false' }}"
+                                        data-class="button"
+                                        data-semantic="station_details_{{ station['id'] }}">
+                                    {{ 'Less' if station['expanded'] else 'Details' }}
+                                    {{ icon(
+                                        'expand_less' if station['expanded'] else 'expand_more',
+                                        'station_details_icon_' ~ station['id']
+                                    ) }}
+                                </button>
+                            </div>
+
+                            {% if station['expanded'] %}
+                            {{ history(station, 'expanded_' ~ station['id']) }}
+
+                            <div class="reading-grid">
+                                <div class="reading">
+                                    {{ icon('visibility', 'expanded_visibility_' ~ station['id']) }}
+                                    <strong>{{ station['visibility'] }} km</strong>
+                                    <small>Visibility</small>
+                                </div>
+                                <div class="reading">
+                                    {{ icon('air', 'expanded_gust_' ~ station['id']) }}
+                                    <strong>{{ station['gust'] }} km/h</strong>
+                                    <small>Wind gust</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </article>
+                        {% endfor %}
+                    </div>
+
+                    {% elif weather['view'] == 'table' %}
+                    <div class="table-panel">
+                        <table class="station-table">
+                            <thead>
+                                <tr>
+                                    <th>Station</th>
+                                    <th class="table-region">Region</th>
+                                    <th>Temp.</th>
+                                    <th class="table-humidity">Humidity</th>
+                                    <th class="table-wind">Wind</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for station in weather['visible_stations'] %}
+                                <tr>
+                                    <td>
+                                        <strong class="table-name">
+                                            {{ station['name'] }}
+                                        </strong>
+                                        <span class="muted">{{ station['condition'] }}</span>
+                                    </td>
+                                    <td class="table-region">{{ station['region'] }}</td>
+                                    <td>{{ station['temperature'] }}°</td>
+                                    <td class="table-humidity">{{ station['humidity'] }}%</td>
+                                    <td class="table-wind">{{ station['wind'] }} km/h</td>
+                                    <td>
+                                        <button type="button"
+                                                class="icon-button"
+                                                aria-label="Open {{ station['name'] }}"
+                                                data-class="button"
+                                                data-semantic="table_open_{{ station['id'] }}">
+                                            {{ icon('chevron_right', 'table_open_icon_' ~ station['id']) }}
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% else %}
+                    <div class="comparison-grid">
+                        {% for station in weather['comparison'] %}
+                        <article class="comparison-card"
+                                 data-class="card"
+                                 data-semantic="comparison_{{ station['id'] }}">
+
+                            <div class="comparison-heading">
+                                <button type="button"
+                                        class="icon-button"
+                                        aria-label="Select {{ station['name'] }} for comparison"
+                                        aria-pressed="true"
+                                        data-class="button"
+                                        data-semantic="comparison_select_{{ station['id'] }}">
+                                    {{ icon(
+                                        'check_box',
+                                        'comparison_checkbox_' ~ station['id'],
+                                        'checkbox'
+                                    ) }}
+                                </button>
+                                <span class="region-badge"
+                                      data-class="badge"
+                                      data-semantic="comparison_region_{{ station['id'] }}">
+                                    {{ station['region'] }}
+                                </span>
+                            </div>
+
+                            <h3>{{ station['name'] }}</h3>
+
+                            <div class="temperature-row">
+                                <strong>{{ station['temperature'] }}°</strong>
+                                {{ icon(station['icon'], 'comparison_condition_' ~ station['id']) }}
+                            </div>
+
+                            <p>{{ station['condition'] }}</p>
+                            {{ readings(station, 'comparison_' ~ station['id']) }}
+                            {{ history(station, 'comparison_' ~ station['id']) }}
+                        </article>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </section>
+            </div>
+
+            <aside class="station-sidebar">
+                <section class="side-card"
+                         data-class="card"
+                         data-semantic="favorite_stations_card">
+                    <h2>Favorite stations</h2>
+
+                    <div class="favorite-list">
+                        {% for station in weather['favorites'] %}
+                        <div class="favorite-row">
+                            {{ icon(station['icon'], 'favorite_weather_' ~ station['id']) }}
+
+                            <div class="favorite-copy">
+                                <strong>{{ station['name'] }}</strong>
+                                <span class="muted">{{ station['region'] }}</span>
+                            </div>
+
+                            <strong>{{ station['temperature'] }}°</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="side-card"
+                         data-class="card"
+                         data-semantic="station_network_card">
+                    <h2>Observation network</h2>
+
+                    {% for label, symbol in [
+                        ('18 simulated stations', 'sensors'),
+                        ('Four regional groups', 'public'),
+                        ('Readings in metric units', 'straighten'),
+                        ('Synthetic observation feed', 'info')
+                    ] %}
+                    <div class="network-line">
+                        {{ icon(symbol, 'network_icon_' ~ loop.index) }}
+                        <span>{{ label }}</span>
+                    </div>
+                    {% endfor %}
+                </section>
+
+                <section class="side-card"
+                         data-class="card"
+                         data-semantic="station_compare_help">
+                    <h2>Compare local conditions</h2>
+                    <p class="muted">
+                        View temperature, wind, humidity, and
+                        recent readings for three selected stations.
+                    </p>
+
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button"
+                            data-semantic="sidebar_compare_button">
+                        {{ icon('compare_arrows', 'sidebar_compare_icon') }}
+                        Open comparison
+                    </button>
+                </section>
+            </aside>
+        </div>
+
+        <p class="muted page-note">
+            Synthetic observations · Temperatures in °C
+        </p>
+    </main>
+</div>
+
+{% if weather['popup_visible'] %}
+<div class="modal-backdrop">
+    <section class="station-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="station-dialog-title"
+             data-class="dialog"
+             data-semantic="station_{{ weather['dialog_type'] }}_dialog"
+             data-occluder="true">
+
+        <div class="dialog-heading">
+            <h2 id="station-dialog-title">
+                {{ weather['detail_station']['name'] if weather['dialog_type'] == 'station' else 'Display settings' }}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+                    aria-label="Close dialog"
+                    data-class="button"
+                    data-semantic="close_station_dialog">
+                {{ icon('close', 'close_station_dialog_icon') }}
+            </button>
+        </div>
+
+        {% if weather['dialog_type'] == 'station' %}
+        {% set station = weather['detail_station'] %}
+        <p class="muted">{{ station['region'] }} · {{ station['updated'] }}</p>
+
+        <div class="temperature-row">
+            <strong>{{ station['temperature'] }}°</strong>
+            {{ icon(station['icon'], 'dialog_station_condition') }}
+        </div>
+
+        <p class="condition-label">{{ station['condition'] }}</p>
+        <p class="muted">Feels like {{ station['feels_like'] }}°</p>
+
+        {{ readings(station, 'dialog_station') }}
+        {{ history(station, 'dialog_station') }}
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="dialog_favorite_station">
+                {{ icon('star', 'dialog_favorite_station_icon') }}
+                Favorite
+            </button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="dialog_compare_station">
+                {{ icon('compare_arrows', 'dialog_compare_station_icon') }}
+                Compare
+            </button>
+        </div>
+
+        {% else %}
+        <p class="muted">Choose the readings shown on station cards.</p>
+
+        {% for key, label, description in [
+            ('humidity', 'Humidity', 'Show relative humidity readings.'),
+            ('pressure', 'Pressure', 'Show atmospheric pressure readings.'),
+            ('rainfall', 'Rainfall', 'Show recorded rainfall values.'),
+            ('favorites_first', 'Favorites first', 'Place favorite stations at the beginning.')
+        ] %}
+        {% set enabled = weather['settings'][key] %}
+        <button type="button"
+                class="setting-choice {{ 'selected' if enabled else '' }}"
+                aria-pressed="{{ 'true' if enabled else 'false' }}"
+                data-class="button"
+                data-semantic="station_setting_{{ key }}">
+            {{ icon(
+                'check_box' if enabled else 'check_box_outline_blank',
+                'station_setting_checkbox_' ~ key,
+                'checkbox'
+            ) }}
+            <span>
+                <strong>{{ label }}</strong>
+                <small>{{ description }}</small>
+            </span>
+        </button>
+        {% endfor %}
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_station_settings">
+                Cancel
+            </button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="save_station_settings">
+                {{ icon('save', 'save_station_settings_icon') }}
+                Save
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

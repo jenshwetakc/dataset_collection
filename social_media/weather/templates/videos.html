@@ -1,0 +1,1102 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, annotation_class='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ annotation_class }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+{% macro player_button(name, semantic, label, annotate=false) -%}
+<button type="button"
+        class="player-button"
+        {% if annotate %}data-class="button"{% endif %}
+        data-semantic="{{ semantic }}"
+        aria-label="{{ label }}">
+    {{ icon(name, semantic ~ '_icon', label) }}
+</button>
+{%- endmacro %}
+
+{% block title %}Weather Videos{% endblock %}
+
+{% block head %}
+<style>
+    .videos-header {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .videos-header-inner,
+    .videos-tabs,
+    .videos-main {
+        max-width: 1440px;
+        margin: auto;
+    }
+
+    .videos-header-inner {
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .videos-logo {
+        width: 68px;
+        height: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+        border: 2px solid currentColor;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .videos-location {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .videos-location p {
+        margin-top: 6px;
+        font-size: 12px;
+    }
+
+    .videos-navigation {
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .videos-tabs {
+        display: flex;
+        overflow-x: auto;
+        padding-inline: 24px;
+    }
+
+    .videos-tab {
+        position: relative;
+        flex-shrink: 0;
+        padding: 16px;
+        color: var(--on-surface);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .videos-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .videos-indicator {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 0;
+        height: 3px;
+        background: currentColor;
+    }
+
+    .videos-main {
+        padding: 26px 24px;
+    }
+
+    .videos-title {
+        margin-bottom: 20px;
+    }
+
+    .videos-title h1 {
+        font-size: 27px;
+    }
+
+    .videos-title p {
+        margin-top: 8px;
+        color: var(--text-secondary);
+    }
+
+    .videos-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+        gap: 22px;
+        align-items: start;
+    }
+
+    .featured-card,
+    .video-card,
+    .queue-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .player-media {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        overflow: hidden;
+    }
+
+    .player-poster {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .player-placeholder .material-symbols-rounded {
+        font-size: clamp(60px, 10vw, 120px);
+    }
+
+    .player-center {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        padding: 0;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--icon);
+    }
+
+    .player-center .material-symbols-rounded {
+        font-size: 38px;
+    }
+
+    .player-state {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        padding: 7px 10px;
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .player-controls {
+        padding: 12px;
+        border-top: 1px solid var(--border-subtle);
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .player-control-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .player-button {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: var(--icon);
+    }
+
+    .player-time {
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .player-spacer {
+        flex: 1;
+    }
+
+    .custom-slider {
+        position: relative;
+        height: 24px;
+        min-width: 0;
+    }
+
+    .slider-track,
+    .slider-fill {
+        position: absolute;
+        left: 0;
+        top: 9px;
+        height: 6px;
+        border-radius: 6px;
+    }
+
+    .slider-track {
+        right: 0;
+        background: var(--surface-variant);
+        border: 1px solid var(--border);
+    }
+
+    .slider-fill {
+        background: var(--icon);
+    }
+
+    .slider-thumb {
+        position: absolute;
+        top: 4px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--icon);
+        transform: translateX(-50%);
+    }
+
+    .volume-slider {
+        width: 70px;
+    }
+
+    .featured-copy {
+        padding: 20px;
+    }
+
+    .featured-copy h2 {
+        font-size: 22px;
+        line-height: 1.35;
+    }
+
+    .featured-meta {
+        margin-top: 10px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .featured-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+    }
+
+    .queue-card {
+        padding: 20px;
+    }
+
+    .queue-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .queue-heading h2 {
+        font-size: 19px;
+    }
+
+    .queue-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding-block: 15px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .queue-item > .material-symbols-rounded {
+        color: var(--icon);
+        flex-shrink: 0;
+    }
+
+    .queue-item h3 {
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    .queue-item p {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .video-switch {
+        width: 44px;
+        height: 26px;
+        padding: 3px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        flex-shrink: 0;
+    }
+
+    .video-switch.enabled {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .switch-thumb {
+        display: block;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .video-switch.enabled .switch-thumb {
+        margin-left: auto;
+    }
+
+    .browse-toolbar {
+        margin: 28px 0 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .category-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .category-chip {
+        padding: 9px 13px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .category-chip.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .video-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        max-width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .video-search .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .video-search input {
+        width: 190px;
+        min-width: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    .video-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .thumbnail-wrap {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+    }
+
+    .video-thumbnail,
+    .thumbnail-placeholder {
+        width: 100%;
+        height: 100%;
+    }
+
+    .thumbnail-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .thumbnail-placeholder .material-symbols-rounded {
+        font-size: 56px;
+    }
+
+    .duration-badge {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        padding: 4px 6px;
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 11px;
+    }
+
+    .video-copy {
+        padding: 16px;
+    }
+
+    .video-copy h3 {
+        margin-top: 8px;
+        font-size: 16px;
+        line-height: 1.4;
+    }
+
+    .video-copy p {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .video-card-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .empty-videos {
+        padding: 50px 20px;
+        text-align: center;
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .empty-videos > .material-symbols-rounded {
+        font-size: 56px;
+        color: var(--icon);
+    }
+
+    .empty-videos h2 {
+        margin-top: 16px;
+    }
+
+    .empty-videos p {
+        margin: 12px 0 20px;
+        line-height: 1.5;
+    }
+
+    .videos-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .videos-dialog {
+        width: min(100%, 480px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .dialog-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .dialog-heading h2 {
+        font-size: 21px;
+    }
+
+    .dialog-label {
+        display: block;
+        margin: 18px 0 10px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .share-link {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .settings-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .settings-choice {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .settings-choice.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .caption-setting {
+        width: 100%;
+        margin-top: 18px;
+        text-align: left;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 22px;
+    }
+
+    @media (max-width: 1000px) {
+        .videos-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .video-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 600px) {
+        .videos-header-inner {
+            padding: 12px;
+        }
+
+        .videos-logo {
+            width: 56px;
+            height: 52px;
+            font-size: 11px;
+        }
+
+        .videos-tabs {
+            padding-inline: 6px;
+        }
+
+        .videos-tab {
+            padding: 14px 12px;
+            font-size: 13px;
+        }
+
+        .videos-main {
+            padding: 20px 12px;
+        }
+
+        .video-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .featured-copy {
+            padding: 16px;
+        }
+
+        .featured-copy h2 {
+            font-size: 19px;
+        }
+
+        .volume-slider {
+            display: none;
+        }
+
+        .video-search {
+            width: 100%;
+        }
+
+        .video-search input {
+            flex: 1;
+            width: 100%;
+        }
+
+        .videos-dialog {
+            padding: 18px;
+        }
+    }
+
+    @media (max-height: 450px) and (orientation: landscape) {
+        .videos-backdrop {
+            align-items: flex-start;
+            padding: 10px;
+        }
+
+        .videos-dialog {
+            max-height: calc(100dvh - 20px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if weather['popup_visible'] else 'false' }}"
+     {% if weather['popup_visible'] %}inert{% endif %}>
+
+    <header class="videos-header"
+            data-class="app_bar"
+            data-semantic="videos_app_bar">
+        <div class="videos-header-inner">
+            <div class="videos-logo"
+                 data-class="logo"
+                 data-semantic="videos_logo">
+                The<br>Weather<br>Channel
+            </div>
+
+            <div class="videos-location">
+                <strong>{{ weather['location'] }}</strong>
+                <p>Weather stories and forecasts</p>
+            </div>
+        </div>
+    </header>
+
+    <nav class="videos-navigation"
+         aria-label="Weather pages"
+         data-class="navigation_bar"
+         data-semantic="videos_navigation">
+        <div class="videos-tabs">
+            {% for label in ['Today', 'Hourly', '10 Day', 'Radar', 'Video'] %}
+            <button type="button"
+                    class="videos-tab {{ 'active' if label == 'Video' else '' }}"
+                    data-class="tab"
+                    data-semantic="videos_tab_{{ loop.index0 }}"
+                    aria-current="{{ 'page' if label == 'Video' else 'false' }}">
+                {{ label }}
+
+                {% if label == 'Video' %}
+                <span class="videos-indicator"
+                      data-class="selection_indicator"
+                      data-semantic="videos_selected_indicator"></span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+    </nav>
+
+    <main class="videos-main">
+        <div class="videos-title">
+            <h1>Weather Videos</h1>
+            <p>Forecasts, weather science, and stories from nature.</p>
+        </div>
+
+        {% if weather['state'] != 'empty_results' %}
+        <div class="videos-layout">
+            <section class="featured-card"
+                     data-class="card"
+                     data-semantic="featured_video_card">
+
+                <div class="player-media"
+                     data-class="video"
+                     data-semantic="featured_video_surface">
+
+                    {% if weather['featured']['image'] %}
+                    <img class="player-poster"
+                         src="{{ weather['featured']['image'] }}"
+                         alt="">
+                    {% else %}
+                    <div class="player-placeholder">
+                        {{ icon('partly_cloudy_day', 'featured_placeholder_icon', 'Weather scene') }}
+                    </div>
+                    {% endif %}
+
+                    {% if not weather['playing'] %}
+                    <button type="button"
+                            class="player-center"
+                            data-class="button"
+                            data-semantic="featured_center_play"
+                            aria-label="Play video">
+                        {{ icon('play_arrow', 'featured_center_play_icon', 'Play') }}
+                    </button>
+                    {% endif %}
+
+                    <span class="player-state"
+                          data-class="badge"
+                          data-semantic="featured_playback_state">
+                        {{ 'Playing' if weather['playing'] else 'Paused' if weather['started'] else 'Preview' }}
+                    </span>
+                </div>
+
+                <div class="player-controls">
+                    <div class="custom-slider"
+                         role="slider"
+                         tabindex="0"
+                         aria-label="Video progress"
+                         aria-valuemin="0"
+                         aria-valuemax="{{ weather['featured']['duration_seconds'] }}"
+                         aria-valuenow="{{ weather['elapsed_seconds'] }}"
+                         aria-valuetext="{{ weather['elapsed'] }}"
+                         data-class="slider"
+                         data-semantic="featured_progress_slider">
+                        <span class="slider-track"></span>
+                        <span class="slider-fill"
+                              style="width: {{ weather['progress_percent'] }}%;"></span>
+                        <span class="slider-thumb"
+                              style="left: {{ weather['progress_percent'] }}%;"></span>
+                    </div>
+
+                    <div class="player-control-row">
+                        {{ player_button(
+                            'pause' if weather['playing'] else 'play_arrow',
+                            'featured_play_pause',
+                            'Pause' if weather['playing'] else 'Play', annotate=false
+                        ) }}
+
+                        {{ player_button('volume_up', 'featured_volume', 'Volume', annotate=false) }}
+
+                        <div class="custom-slider volume-slider"
+                             role="slider"
+                             tabindex="0"
+                             aria-label="Volume"
+                             aria-valuemin="0"
+                             aria-valuemax="100"
+                             aria-valuenow="{{ weather['volume'] }}"
+                             data-class="slider"
+                             data-semantic="featured_volume_slider">
+                            <span class="slider-track"></span>
+                            <span class="slider-fill"
+                                  style="width: {{ weather['volume'] }}%;"></span>
+                            <span class="slider-thumb"
+                                  style="left: {{ weather['volume'] }}%;"></span>
+                        </div>
+
+                        <span class="player-time">
+                            {{ weather['elapsed'] }} / {{ weather['featured']['duration'] }}
+                        </span>
+
+                        <span class="player-spacer"></span>
+
+                        {{ player_button('closed_caption', 'featured_captions', 'Captions', annotate=false) }}
+                        {{ player_button('settings', 'featured_settings', 'Playback settings', annotate=false) }}
+                        {{ player_button('fullscreen', 'featured_fullscreen', 'Full screen', annotate=flase) }}
+                    </div>
+                </div>
+
+                <div class="featured-copy">
+                    <h2>{{ weather['featured']['title'] }}</h2>
+                    <p class="featured-meta">
+                        {{ weather['featured']['views'] }}
+                        · {{ weather['featured']['published'] }}
+                    </p>
+
+                    <div class="featured-actions">
+                        <button type="button"
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="share_featured_video">
+                            {{ icon('share', 'featured_share_icon', 'Share') }}
+                            Share
+                        </button>
+
+                        <button type="button"
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="save_featured_video">
+                            {{ icon('bookmark_border', 'featured_save_icon', 'Save') }}
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="queue-card"
+                   data-class="card"
+                   data-semantic="video_up_next">
+                <div class="queue-heading">
+                    <h2>Up Next</h2>
+
+                    <button type="button"
+                            class="video-switch {{ 'enabled' if weather['autoplay'] else '' }}"
+                            role="switch"
+                            aria-label="Autoplay"
+                            aria-checked="{{ 'true' if weather['autoplay'] else 'false' }}"
+                            data-class="switch"
+                            data-semantic="video_autoplay_switch">
+                        <span class="switch-thumb"></span>
+                    </button>
+                </div>
+
+                {% for video in weather['visible_videos'][1:4] %}
+                <div class="queue-item">
+                    {{ icon(
+                        'play_circle',
+                        'queue_play_icon_' ~ video['id'],
+                        'Video'
+                    ) }}
+                    <div>
+                        <h3>{{ video['title'] }}</h3>
+                        <p>{{ video['duration'] }} · {{ video['category'] }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </aside>
+        </div>
+        {% endif %}
+
+        <div class="browse-toolbar" data-class="section">
+            <div class="category-list">
+                {% for category in weather['categories'] %}
+                <button type="button"
+                        class="category-chip {{ 'selected' if weather['active_category'] == category else '' }}"
+                        data-class="chip"
+                        data-semantic="video_category_{{ loop.index0 }}"
+                        aria-pressed="{{ 'true' if weather['active_category'] == category else 'false' }}">
+                    {{ category }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="video-search"
+                 data-class="search_bar"
+                 data-semantic="video_search_bar">
+                {{ icon('search', 'video_search_icon', 'Search videos') }}
+
+                <input type="text"
+                       value="{{ weather['search_query'] }}"
+                       aria-label="Search videos"
+                       data-class="input_field"
+                       data-semantic="video_search_input">
+
+                {% if weather['search_query'] %}
+                <button type="button"
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="clear_video_search"
+                        aria-label="Clear search">
+                    {{ icon('close', 'clear_video_search_icon', 'Clear') }}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if weather['visible_videos'] %}
+        <section class="video-grid"
+                 data-class="section"
+                 data-semantic="weather_video_grid">
+            {% for video in weather['visible_videos'] %}
+            <article class="video-card"
+                     data-class="card"
+                     data-semantic="video_card_{{ video['id'] }}">
+
+                <div class="thumbnail-wrap">
+                    {% if video['image'] %}
+                    <img class="video-thumbnail"
+                         src="{{ video['image'] }}"
+                         alt="{{ video['title'] }}"
+                         data-class="image"
+                         data-semantic="video_thumbnail_{{ video['id'] }}">
+                    {% else %}
+                    <div class="thumbnail-placeholder">
+                        {{ icon(
+                            'landscape',
+                            'video_placeholder_' ~ video['id'],
+                            'Weather scene'
+                        ) }}
+                    </div>
+                    {% endif %}
+
+                    <span class="duration-badge"
+                          data-class="badge"
+                          data-semantic="video_duration_{{ video['id'] }}">
+                        {{ video['duration'] }}
+                    </span>
+                </div>
+
+                <div class="video-copy">
+                    <small>{{ video['category'] }}</small>
+                    <h3>{{ video['title'] }}</h3>
+                    <p>{{ video['views'] }} · {{ video['published'] }}</p>
+
+                    <div class="video-card-actions">
+                        <button type="button"
+                                class="secondary-button"
+                                data-class="button"
+                                data-semantic="watch_video_{{ video['id'] }}">
+                            {{ icon(
+                                'play_arrow',
+                                'watch_video_icon_' ~ video['id'],
+                                'Watch'
+                            ) }}
+                            Watch
+                        </button>
+
+                        <button type="button"
+                                class="icon-button"
+
+                                data-semantic="video_more_{{ video['id'] }}"
+                                aria-label="More video options">
+                            {{ icon(
+                                'more_vert',
+                                'video_more_icon_' ~ video['id'],
+                                'More options'
+                            ) }}
+                        </button>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+
+        {% else %}
+        <section class="empty-videos"
+                 data-class="card"
+                 data-semantic="empty_video_results">
+            {{ icon('search_off', 'empty_video_icon', 'No results') }}
+            <h2>No videos found</h2>
+            <p>Try another search or browse all weather videos.</p>
+
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="reset_video_search">
+                Browse All
+            </button>
+        </section>
+        {% endif %}
+    </main>
+</div>
+
+{% if weather['popup_visible'] %}
+<div class="videos-backdrop"
+     data-occluder="true">
+    <section class="videos-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="videos-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ weather['popup_type'] }}">
+
+        <div class="dialog-heading">
+            <h2 id="videos-dialog-title">
+                {{ 'Share Video' if weather['popup_type'] == 'share_dialog' else 'Playback Settings' }}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="close_video_dialog"
+                    aria-label="Close dialog">
+                {{ icon('close', 'video_dialog_close_icon', 'Close') }}
+            </button>
+        </div>
+
+        {% if weather['popup_type'] == 'share_dialog' %}
+        <p>{{ weather['featured']['title'] }}</p>
+
+        <label class="dialog-label" for="video-share-link">
+            Video Link
+        </label>
+
+        <input id="video-share-link"
+               class="share-link"
+               type="text"
+               readonly
+               value="{{ weather['share_url'] }}"
+               data-class="input_field"
+               data-semantic="video_share_link">
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="copy_video_link">
+                {{ icon('content_copy', 'copy_video_link_icon', 'Copy link') }}
+                Copy Link
+            </button>
+        </div>
+
+        {% else %}
+        <p class="dialog-label">Quality</p>
+        <div class="settings-options">
+            {% for quality in ['Auto', '720p', '1080p'] %}
+            {% set selected = weather['quality'] == quality %}
+            <button type="button"
+                    class="settings-choice {{ 'selected' if selected else '' }}"
+                    data-class="button"
+                    data-semantic="video_quality_{{ loop.index0 }}"
+                    aria-pressed="{{ 'true' if selected else 'false' }}">
+                {{ icon(
+                    'check_box' if selected else 'check_box_outline_blank',
+                    'quality_checkbox_' ~ loop.index0,
+                    'Selected' if selected else 'Unselected',
+                    'checkbox'
+                ) }}
+                {{ quality }}
+            </button>
+            {% endfor %}
+        </div>
+
+        <p class="dialog-label">Playback Speed</p>
+        <div class="settings-options">
+            {% for speed in ['0.5×', '1×', '1.5×', '2×'] %}
+            {% set selected = weather['speed'] == speed %}
+            <button type="button"
+                    class="settings-choice {{ 'selected' if selected else '' }}"
+                    data-class="button"
+                    data-semantic="video_speed_{{ loop.index0 }}"
+                    aria-pressed="{{ 'true' if selected else 'false' }}">
+                {{ icon(
+                    'check_box' if selected else 'check_box_outline_blank',
+                    'speed_checkbox_' ~ loop.index0,
+                    'Selected' if selected else 'Unselected',
+                    'checkbox'
+                ) }}
+                {{ speed }}
+            </button>
+            {% endfor %}
+        </div>
+
+        <button type="button"
+                class="settings-choice caption-setting"
+                data-class="button"
+                data-semantic="video_captions_setting"
+                aria-pressed="{{ 'true' if weather['captions'] else 'false' }}">
+            {{ icon(
+                'check_box' if weather['captions'] else 'check_box_outline_blank',
+                'captions_checkbox',
+                'Selected' if weather['captions'] else 'Unselected',
+                'checkbox'
+            ) }}
+            Closed Captions
+        </button>
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="save_playback_settings">
+                {{ icon('save', 'save_playback_icon', 'Save') }}
+                Save
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

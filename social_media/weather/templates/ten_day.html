@@ -1,0 +1,913 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, annotation_class='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ annotation_class }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+{% block title %}
+10-Day Forecast — {{ weather['location'] }}
+{% endblock %}
+
+{% block head %}
+<style>
+    .forecast-header {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .forecast-header-inner {
+        max-width: 1440px;
+        margin: auto;
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .forecast-logo {
+        width: 68px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 2px solid currentColor;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .forecast-location {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .forecast-location p {
+        margin-top: 6px;
+        font-size: 12px;
+    }
+
+    .forecast-header .icon-button {
+        color: inherit;
+    }
+
+    .forecast-nav {
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .forecast-tabs {
+        max-width: 1440px;
+        margin: auto;
+        padding-inline: 24px;
+        display: flex;
+        overflow-x: auto;
+    }
+
+    .forecast-tab {
+        position: relative;
+        padding: 16px;
+        flex-shrink: 0;
+        color: var(--on-surface);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .forecast-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .forecast-indicator {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 0;
+        height: 3px;
+        background: currentColor;
+    }
+
+    .forecast-main {
+        max-width: 1440px;
+        margin: auto;
+        padding: 26px 24px;
+    }
+
+    .forecast-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .forecast-title h1 {
+        font-size: 27px;
+    }
+
+    .forecast-title p {
+        margin-top: 8px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+    }
+
+    .forecast-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .forecast-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 290px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .forecast-list {
+        min-width: 0;
+        display: grid;
+        gap: 12px;
+    }
+
+    .forecast-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .forecast-row {
+        display: grid;
+        grid-template-columns:
+            75px 95px minmax(100px, 1fr)
+            70px 115px 34px;
+        align-items: center;
+        gap: 12px;
+        padding: 20px;
+    }
+
+    .forecast-row.expanded {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .forecast-date small {
+        display: block;
+        margin-top: 6px;
+        font-size: 12px;
+    }
+
+    .forecast-temperatures {
+        white-space: nowrap;
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .forecast-low {
+        margin-left: 5px;
+        font-size: 17px;
+        font-weight: 400;
+    }
+
+    .forecast-condition,
+    .forecast-rain,
+    .forecast-wind {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+    }
+
+    .forecast-condition .material-symbols-rounded {
+        font-size: 30px;
+    }
+
+    .forecast-rain .material-symbols-rounded,
+    .forecast-wind .material-symbols-rounded {
+        font-size: 18px;
+    }
+
+    .forecast-row:not(.expanded) .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .forecast-expand {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: inherit;
+    }
+
+    .forecast-details {
+        padding: 22px;
+    }
+
+    .period-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .period-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--on-surface);
+        background: var(--surface);
+    }
+
+    .period-tab.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .period-overview {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 16px;
+    }
+
+    .period-overview > .material-symbols-rounded {
+        font-size: 54px;
+        color: var(--icon);
+    }
+
+    .period-overview strong {
+        font-size: 32px;
+    }
+
+    .period-overview p {
+        margin-top: 5px;
+    }
+
+    .period-summary {
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .detail-metric {
+        padding: 14px;
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .detail-label {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        margin-bottom: 10px;
+    }
+
+    .detail-value {
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .forecast-side {
+        display: grid;
+        gap: 18px;
+    }
+
+    .side-card {
+        padding: 22px;
+    }
+
+    .side-card h2 {
+        margin-bottom: 14px;
+        font-size: 19px;
+    }
+
+    .side-card p {
+        line-height: 1.6;
+        font-size: 14px;
+    }
+
+    .outlook-stat {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .outlook-stat .material-symbols-rounded {
+        color: var(--icon);
+        font-size: 36px;
+    }
+
+    .outlook-stat strong {
+        display: block;
+        font-size: 28px;
+    }
+
+    .outlook-stat small {
+        display: block;
+        margin-top: 5px;
+        color: var(--text-secondary);
+    }
+
+    .guide-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 16px;
+        font-size: 13px;
+    }
+
+    .guide-item .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .forecast-footer {
+        padding-top: 26px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .forecast-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .forecast-dialog {
+        width: min(100%, 460px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .dialog-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .dialog-heading h2 {
+        font-size: 21px;
+    }
+
+    .dialog-description {
+        color: var(--text-secondary);
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .forecast-choice {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 16px 12px;
+        margin-bottom: 10px;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .forecast-choice.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .choice-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .choice-copy small {
+        display: block;
+        margin-top: 5px;
+        line-height: 1.4;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    @media (max-width: 1100px) {
+        .forecast-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .forecast-side {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 700px) {
+        .forecast-header-inner {
+            padding: 12px;
+            gap: 12px;
+        }
+
+        .forecast-logo {
+            width: 56px;
+            height: 52px;
+            font-size: 11px;
+        }
+
+        .forecast-tabs {
+            padding-inline: 6px;
+        }
+
+        .forecast-tab {
+            padding: 14px 12px;
+            font-size: 13px;
+        }
+
+        .forecast-main {
+            padding: 20px 12px;
+        }
+
+        .forecast-title h1 {
+            font-size: 23px;
+        }
+
+        .forecast-actions {
+            width: 100%;
+        }
+
+        .forecast-row {
+            grid-template-columns: 60px minmax(0, 1fr) 30px;
+            padding: 16px 12px;
+            gap: 10px;
+        }
+
+        .forecast-date {
+            grid-column: 1;
+            grid-row: 1 / 4;
+            align-self: start;
+        }
+
+        .forecast-temperatures {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .forecast-condition {
+            grid-column: 2 / 4;
+            grid-row: 2;
+        }
+
+        .forecast-rain {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .forecast-wind {
+            grid-column: 2 / 4;
+            grid-row: 4;
+        }
+
+        .forecast-expand {
+            grid-column: 3;
+            grid-row: 1;
+            width: 30px;
+        }
+
+        .forecast-details {
+            padding: 16px 12px;
+        }
+
+        .detail-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .forecast-side {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .forecast-dialog {
+            padding: 18px;
+        }
+    }
+
+    @media (max-height: 450px) and (orientation: landscape) {
+        .forecast-backdrop {
+            align-items: flex-start;
+            padding: 10px;
+        }
+
+        .forecast-dialog {
+            max-height: calc(100dvh - 20px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if weather['popup_visible'] else 'false' }}"
+     {% if weather['popup_visible'] %}inert{% endif %}>
+
+    <header class="forecast-header"
+            data-class="app_bar"
+            data-semantic="ten_day_app_bar">
+
+        <div class="forecast-header-inner">
+            <div class="forecast-logo"
+                 data-class="logo"
+                 data-semantic="ten_day_logo">
+                The<br>Weather<br>Channel
+            </div>
+
+            <div class="forecast-location">
+                <strong>{{ weather['location'] }}</strong>
+                <p>{{ weather['updated_text'] }}</p>
+            </div>
+
+            <button type="button"
+                    class="icon-button"
+
+                    data-semantic="ten_day_search"
+                    aria-label="Search locations">
+                {{ icon('search', 'ten_day_search_icon', 'Search') }}
+            </button>
+        </div>
+    </header>
+
+    <nav class="forecast-nav"
+         aria-label="Weather pages"
+         data-class="navigation_bar"
+         data-semantic="ten_day_navigation">
+
+        <div class="forecast-tabs">
+            {% for label in ['Today', 'Hourly', '10 Day', 'Radar', 'Video'] %}
+            <button type="button"
+                    class="forecast-tab {{ 'active' if label == '10 Day' else '' }}"
+                    data-class="tab"
+                    data-semantic="ten_day_nav_{{ loop.index0 }}"
+                    aria-current="{{ 'page' if label == '10 Day' else 'false' }}">
+                {{ label }}
+
+                {% if label == '10 Day' %}
+                <span class="forecast-indicator"
+                      data-class="selection_indicator"
+                      data-semantic="ten_day_selected_indicator"></span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+    </nav>
+
+    <main class="forecast-main">
+        <div class="forecast-title" data-class="section">
+            <div>
+                <h1>10-Day Weather</h1>
+                <p>{{ weather['summary'] }}</p>
+            </div>
+
+            <div class="forecast-actions">
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="ten_day_units">
+                    °{{ weather['temperature_unit'] }}
+                    {{ icon('expand_more', 'ten_day_units_arrow', 'Choose units') }}
+                </button>
+
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="ten_day_settings">
+                    {{ icon('tune', 'ten_day_settings_icon', 'Forecast settings') }}
+                    Customize
+                </button>
+            </div>
+        </div>
+
+        <div class="forecast-layout">
+            <section class="forecast-list"
+                     data-class="section"
+                     data-semantic="ten_day_forecast_list">
+
+                {% for day in weather['days'] %}
+                <article class="forecast-card"
+                         data-class="card"
+                         data-semantic="forecast_day_card_{{ day['id'] }}">
+
+                    <div class="forecast-row {{ 'expanded' if day['expanded'] else '' }}">
+                        <div class="forecast-date">
+                            <strong>{{ day['label'] }}</strong>
+                            <small>{{ day['date'] }}</small>
+                        </div>
+
+                        <div class="forecast-temperatures">
+                            {{ day['high'] }}
+                            <span class="forecast-low">{{ day['low'] }}</span>
+                        </div>
+
+                        <div class="forecast-condition">
+                            {{ icon(
+                                day['icon'],
+                                'day_condition_' ~ day['id'],
+                                day['condition']
+                            ) }}
+                            <span>{{ day['condition'] }}</span>
+                        </div>
+
+                        <div class="forecast-rain">
+                            {{ icon(
+                                'water_drop',
+                                'day_precipitation_' ~ day['id'],
+                                'Precipitation chance'
+                            ) }}
+                            <span>{{ day['precipitation'] }}%</span>
+                        </div>
+
+                        <div class="forecast-wind">
+                            {{ icon(
+                                'air',
+                                'day_wind_' ~ day['id'],
+                                'Wind'
+                            ) }}
+                            <span>{{ day['direction'] }} {{ day['wind'] }}</span>
+                        </div>
+
+                        <button type="button"
+                                class="forecast-expand"
+
+                                data-semantic="expand_forecast_day_{{ day['id'] }}"
+                                aria-expanded="{{ 'true' if day['expanded'] else 'false' }}"
+                                aria-label="Details for {{ day['full_date'] }}">
+                            {{ icon(
+                                'expand_less' if day['expanded'] else 'expand_more',
+                                'day_expand_icon_' ~ day['id'],
+                                'Collapse details' if day['expanded'] else 'Expand details'
+                            ) }}
+                        </button>
+                    </div>
+
+                    {% if day['expanded'] %}
+                    {% set period = day[weather['expanded_period']] %}
+
+                    <div class="forecast-details">
+                        <div class="period-tabs">
+                            {% for key, label, symbol in [
+                                ('day', 'Day', 'sunny'),
+                                ('night', 'Night', 'clear_night')
+                            ] %}
+                            <button type="button"
+                                    class="period-tab {{ 'selected' if weather['expanded_period'] == key else '' }}"
+                                    data-class="tab"
+                                    data-semantic="period_tab_{{ day['id'] }}_{{ key }}"
+                                    aria-pressed="{{ 'true' if weather['expanded_period'] == key else 'false' }}">
+                                {{ icon(
+                                    symbol,
+                                    'period_icon_' ~ day['id'] ~ '_' ~ key,
+                                    label
+                                ) }}
+                                {{ label }}
+                            </button>
+                            {% endfor %}
+                        </div>
+
+                        <div class="period-overview">
+                            {{ icon(
+                                period['icon'],
+                                'expanded_condition_' ~ day['id'],
+                                period['condition']
+                            ) }}
+
+                            <div>
+                                <strong>{{ period['temperature'] }}</strong>
+                                <p>{{ period['condition'] }}</p>
+                            </div>
+                        </div>
+
+                        <p class="period-summary">
+                            {{ period['summary'] }}
+                        </p>
+
+                        <div class="detail-grid">
+                            {% set metrics = [
+                                ('water_drop', 'Precipitation', period['precipitation'] ~ '%'),
+                                ('air', 'Wind', period['wind'])
+                            ] %}
+
+                            {% if weather['show_humidity'] %}
+                            {% set metrics = metrics + [
+                                ('humidity_percentage', 'Humidity', period['humidity'] ~ '%')
+                            ] %}
+                            {% endif %}
+
+                            {% if weather['show_uv'] %}
+                            {% set metrics = metrics + [
+                                ('sunny', 'UV Index', period['uv'] ~ ' of 11')
+                            ] %}
+                            {% endif %}
+
+                            {% if weather['show_sun_times'] %}
+                            {% set metrics = metrics + [
+                                ('wb_twilight', period['sun_label'], period['sun_time'])
+                            ] %}
+                            {% endif %}
+
+                            {% for symbol, label, value in metrics %}
+                            <div class="detail-metric">
+                                <div class="detail-label">
+                                    {{ icon(
+                                        symbol,
+                                        'day_metric_' ~ day['id'] ~ '_' ~ loop.index0,
+                                        label
+                                    ) }}
+                                    <span>{{ label }}</span>
+                                </div>
+                                <p class="detail-value">{{ value }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </section>
+
+            <aside class="forecast-side">
+                <section class="forecast-card side-card"
+                         data-class="card"
+                         data-semantic="ten_day_outlook">
+                    <h2>Weather Outlook</h2>
+                    <p>{{ weather['summary'] }}</p>
+
+                    <div class="outlook-stat">
+                        {{ icon('rainy', 'wet_days_icon', 'Wet days') }}
+                        <div>
+                            <strong>{{ weather['wet_days'] }} / 10</strong>
+                            <small>Days with precipitation chance ≥ 50%</small>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="forecast-card side-card"
+                         data-class="card"
+                         data-semantic="ten_day_guide">
+                    <h2>Forecast Guide</h2>
+
+                    <div class="guide-item">
+                        {{ icon('thermostat', 'guide_high_low', 'Temperature') }}
+                        <span>Daily high and overnight low</span>
+                    </div>
+
+                    <div class="guide-item">
+                        {{ icon('water_drop', 'guide_rain', 'Precipitation') }}
+                        <span>Chance of rain or snow</span>
+                    </div>
+
+                    <div class="guide-item">
+                        {{ icon('expand_more', 'guide_details', 'Details') }}
+                        <span>Expand a day for more details</span>
+                    </div>
+                </section>
+            </aside>
+        </div>
+
+        <footer class="forecast-footer">
+            Synthetic weather data for UI dataset generation.
+        </footer>
+    </main>
+</div>
+
+{% if weather['popup_visible'] %}
+<div class="forecast-backdrop"
+     data-occluder="true">
+
+    <section class="forecast-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="forecast-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ weather['popup_type'] }}">
+
+        <div class="dialog-heading">
+            <h2 id="forecast-dialog-title">
+                {{ 'Temperature Units' if weather['popup_type'] == 'units_dialog' else 'Forecast Settings' }}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="close_forecast_dialog"
+                    aria-label="Close dialog">
+                {{ icon('close', 'forecast_dialog_close_icon', 'Close') }}
+            </button>
+        </div>
+
+        {% if weather['popup_type'] == 'units_dialog' %}
+        <p class="dialog-description">
+            Choose the temperature units used in your forecast.
+        </p>
+
+        {% for unit, label in [('C', 'Celsius'), ('F', 'Fahrenheit')] %}
+        {% set selected = weather['temperature_unit'] == unit %}
+
+        <button type="button"
+                class="forecast-choice {{ 'selected' if selected else '' }}"
+                data-class="button"
+                data-semantic="forecast_unit_{{ unit }}"
+                aria-pressed="{{ 'true' if selected else 'false' }}">
+
+            {{ icon(
+                'check_box' if selected else 'check_box_outline_blank',
+                'forecast_unit_checkbox_' ~ unit,
+                'Selected' if selected else 'Unselected',
+                'checkbox'
+            ) }}
+
+            <span class="choice-copy">
+                <strong>{{ label }} — °{{ unit }}</strong>
+            </span>
+        </button>
+        {% endfor %}
+
+        {% else %}
+        <p class="dialog-description">
+            Choose which details appear when a day is expanded.
+        </p>
+
+        {% for key, label, description in [
+            ('show_humidity', 'Humidity', 'Show relative humidity'),
+            ('show_uv', 'UV Index', 'Show ultraviolet exposure levels'),
+            ('show_sun_times', 'Sunrise and Sunset', 'Show daily sun times')
+        ] %}
+        <button type="button"
+                class="forecast-choice"
+                data-class="button"
+                data-semantic="forecast_setting_{{ key }}"
+                aria-pressed="{{ 'true' if weather[key] else 'false' }}">
+
+            {{ icon(
+                'check_box' if weather[key] else 'check_box_outline_blank',
+                'forecast_setting_checkbox_' ~ key,
+                'Selected' if weather[key] else 'Unselected',
+                'checkbox'
+            ) }}
+
+            <span class="choice-copy">
+                <strong>{{ label }}</strong>
+                <small>{{ description }}</small>
+            </span>
+        </button>
+        {% endfor %}
+        {% endif %}
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_forecast_settings">
+                Cancel
+            </button>
+
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="save_forecast_settings">
+                {{ icon('save', 'forecast_save_icon', 'Save settings') }}
+                Save
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

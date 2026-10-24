@@ -1,0 +1,1297 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, annotation_class='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ annotation_class }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+{% block title %}
+{{ weather['location'] }} — Weather Today
+{% endblock %}
+
+{% block head %}
+<style>
+    .weather-shell {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .weather-app-bar {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .weather-header {
+        max-width: 1440px;
+        margin: auto;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .weather-brand {
+        width: 72px;
+        height: 64px;
+        padding: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 2px solid currentColor;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.05;
+    }
+
+    .header-location {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .location-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+        padding: 5px 0;
+        color: inherit;
+        font-weight: 700;
+    }
+
+    .location-button .location-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .updated-text {
+        margin-top: 4px;
+        font-size: 12px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .weather-header .icon-button {
+        color: inherit;
+    }
+
+    .weather-nav {
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .weather-nav-inner {
+        max-width: 1440px;
+        margin: auto;
+        display: flex;
+        gap: 10px;
+        padding: 0 24px;
+        overflow-x: auto;
+    }
+
+    .weather-tab {
+        position: relative;
+        flex-shrink: 0;
+        padding: 15px 14px;
+        color: var(--on-surface);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .weather-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .tab-indicator {
+        position: absolute;
+        bottom: 0;
+        left: 12px;
+        right: 12px;
+        height: 3px;
+        background: currentColor;
+    }
+
+    .weather-main {
+        max-width: 1440px;
+        padding: 24px;
+        margin: auto;
+    }
+
+    .main-heading {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .main-heading h1 {
+        font-size: 25px;
+    }
+
+    .muted {
+        color: var(--text-secondary);
+    }
+
+    .weather-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+        gap: 22px;
+        align-items: start;
+    }
+
+    .weather-column {
+        display: grid;
+        gap: 22px;
+        min-width: 0;
+    }
+
+    .weather-card {
+        min-width: 0;
+        padding: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius);
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .card-heading {
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .card-heading h2 {
+        font-size: 19px;
+    }
+
+    .card-heading button {
+        padding: 5px;
+        color: var(--on-surface);
+    }
+
+    .current-card {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        border-color: transparent;
+    }
+
+    .current-overview {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin: 20px 0;
+    }
+
+    .temperature {
+        font-size: clamp(58px, 7vw, 96px);
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .temperature-unit {
+        font-size: 22px;
+        vertical-align: top;
+    }
+
+    .current-condition-icon .material-symbols-rounded {
+        font-size: clamp(70px, 9vw, 110px);
+    }
+
+    .condition-label {
+        margin-top: 12px;
+        font-size: 21px;
+        font-weight: 700;
+    }
+
+    .current-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 22px;
+        margin-bottom: 20px;
+    }
+
+    .current-summary {
+        padding-top: 16px;
+        border-top: 1px solid currentColor;
+        line-height: 1.5;
+    }
+
+    .alert-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 22px;
+        padding: 18px;
+        border-radius: 12px;
+        background: var(--error);
+        color: var(--on-error);
+    }
+
+    .alert-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .alert-copy p {
+        margin-top: 7px;
+        line-height: 1.45;
+    }
+
+    .alert-card .icon-button {
+        color: inherit;
+    }
+
+    .hourly-list {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(82px, 1fr));
+        overflow-x: auto;
+    }
+
+    .hour-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 8px;
+        border-right: 1px solid var(--border-subtle);
+    }
+
+    .hour-item:last-child {
+        border-right: 0;
+    }
+
+    .hour-item > .material-symbols-rounded {
+        font-size: 32px;
+        color: var(--icon);
+    }
+
+    .rain-chance {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 12px;
+    }
+
+    .rain-chance .material-symbols-rounded {
+        font-size: 16px;
+        color: var(--icon-secondary);
+    }
+
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .metric {
+        padding: 15px;
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .metric-title {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 12px;
+        font-size: 13px;
+    }
+
+    .metric-value {
+        font-size: 19px;
+        font-weight: 700;
+    }
+
+    .daily-row {
+        display: grid;
+        grid-template-columns: 50px 32px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        padding: 15px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .daily-row:last-child {
+        border-bottom: 0;
+    }
+
+    .daily-row > .material-symbols-rounded {
+        color: var(--icon);
+        font-size: 28px;
+    }
+
+    .daily-temperatures {
+        white-space: nowrap;
+        font-weight: 700;
+    }
+
+    .daily-low {
+        margin-left: 5px;
+        color: var(--text-secondary);
+    }
+
+    .sun-times {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 20px;
+    }
+
+    .sun-time {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .sun-time .material-symbols-rounded {
+        font-size: 30px;
+        color: var(--icon);
+    }
+
+    .sun-time p {
+        margin-top: 5px;
+        font-weight: 700;
+    }
+
+    .news-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .news-card {
+        overflow: hidden;
+        padding: 0;
+    }
+
+    .news-image,
+    .news-placeholder {
+        width: 100%;
+        height: 170px;
+    }
+
+    .news-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .news-placeholder .material-symbols-rounded {
+        font-size: 64px;
+    }
+
+    .news-copy {
+        padding: 18px;
+    }
+
+    .news-copy h3 {
+        margin-top: 10px;
+        line-height: 1.4;
+        font-size: 17px;
+    }
+
+    .news-copy button {
+        margin-top: 15px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 0;
+        color: var(--on-surface);
+        font-weight: 700;
+    }
+
+    .stories-section {
+        margin-top: 28px;
+    }
+
+    .stories-section > h2 {
+        margin-bottom: 18px;
+        font-size: 22px;
+    }
+
+    .weather-footer {
+        padding: 28px 0 10px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .popup-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgb(0 0 0 / 45%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    .weather-dialog {
+        width: min(100%, 500px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 70px rgb(0 0 0 / 25%);
+    }
+
+    .dialog-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .dialog-heading h2 {
+        font-size: 21px;
+    }
+
+    .search-field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .search-field > .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .search-field input {
+        width: 100%;
+        flex: 1;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: inherit;
+    }
+
+    .search-field input::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .location-result {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 15px 0;
+        text-align: left;
+        border-bottom: 1px solid var(--border-subtle);
+        color: var(--on-surface);
+    }
+
+    .location-result > .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .location-result-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .location-result-copy small {
+        display: block;
+        margin-top: 5px;
+        color: var(--text-secondary);
+    }
+
+    .saved-location-heading {
+        margin: 22px 0 12px;
+        font-size: 15px;
+    }
+
+    .saved-locations {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .saved-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 10px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 12px;
+    }
+
+    .saved-chip .material-symbols-rounded {
+        font-size: 18px;
+    }
+
+    .settings-label {
+        margin: 20px 0 10px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .unit-options {
+        display: flex;
+        gap: 10px;
+    }
+
+    .unit-option {
+        flex: 1;
+        padding: 13px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-weight: 700;
+    }
+
+    .unit-option.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .notification-setting {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin: 24px 0;
+    }
+
+    .notification-setting small {
+        display: block;
+        margin-top: 5px;
+        color: var(--text-secondary);
+    }
+
+    .weather-switch {
+        width: 46px;
+        height: 26px;
+        flex-shrink: 0;
+        padding: 3px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .weather-switch.enabled {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .switch-thumb {
+        display: block;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .weather-switch.enabled .switch-thumb {
+        margin-left: auto;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 24px;
+    }
+
+    @media (max-width: 1000px) {
+        .weather-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .weather-side {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .news-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 600px) {
+        .weather-header {
+            padding: 12px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .weather-brand {
+            width: 58px;
+            height: 53px;
+            font-size: 12px;
+        }
+
+        .header-actions {
+            margin-left: auto;
+        }
+
+        .weather-nav-inner {
+            padding-inline: 8px;
+            gap: 2px;
+        }
+
+        .weather-tab {
+            padding: 14px 12px;
+            font-size: 13px;
+        }
+
+        .weather-main {
+            padding: 16px 12px;
+        }
+
+        .main-heading h1 {
+            font-size: 21px;
+        }
+
+        .weather-card {
+            padding: 18px;
+        }
+
+        .weather-grid,
+        .weather-column {
+            gap: 16px;
+        }
+
+        .weather-side,
+        .news-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .metric-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .metric {
+            padding: 12px;
+        }
+
+        .metric-title {
+            font-size: 12px;
+        }
+
+        .metric-value {
+            font-size: 17px;
+        }
+
+        .news-card {
+            padding: 0;
+        }
+
+        .weather-dialog {
+            padding: 18px;
+        }
+
+        .dialog-actions {
+            flex-wrap: wrap;
+        }
+
+        .unit-options {
+            flex-wrap: wrap;
+        }
+
+        .unit-option {
+            min-width: 100px;
+        }
+    }
+
+    @media (max-height: 450px) and (orientation: landscape) {
+        .popup-backdrop {
+            align-items: flex-start;
+            padding: 10px;
+        }
+
+        .weather-dialog {
+            max-height: calc(100dvh - 20px);
+        }
+
+        .weather-header {
+            padding-block: 8px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="weather-shell"
+     data-annotation-skip="{{ 'true' if weather['popup_visible'] else 'false' }}"
+     {% if weather['popup_visible'] %}inert{% endif %}>
+
+    <header class="weather-app-bar"
+            data-class="app_bar"
+            data-semantic="weather_app_bar">
+
+        <div class="weather-header">
+            <div class="weather-brand"
+                 data-class="logo"
+                 data-semantic="weather_wordmark">
+                The<br>Weather<br>Channel
+            </div>
+
+            <div class="header-location">
+                <button class="location-button"
+                        type="button"
+                        data-class="button"
+                        data-semantic="choose_location"
+                        aria-label="Choose location">
+
+                    {{ icon('location_on', 'header_location_icon', 'Location') }}
+
+                    <span class="location-name">
+                        {{ weather['location'] }}
+                    </span>
+
+                    {{ icon('expand_more', 'location_dropdown_icon', 'Open locations') }}
+                </button>
+
+                <p class="updated-text">
+                    {{ weather['updated_text'] }}
+                </p>
+            </div>
+
+            <div class="header-actions">
+                <button type="button"
+                        class="icon-button"
+
+                        data-semantic="search_locations"
+                        aria-label="Search locations">
+                    {{ icon('search', 'header_search_icon', 'Search') }}
+                </button>
+
+                <button type="button"
+                        class="icon-button"
+
+                        data-semantic="weather_settings"
+                        aria-label="Weather settings">
+                    {{ icon('settings', 'header_settings_icon', 'Settings') }}
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="weather-nav"
+         aria-label="Weather pages"
+         data-class="navigation_bar"
+         data-semantic="weather_navigation">
+
+        <div class="weather-nav-inner">
+            {% for label in ['Today', 'Hourly', '10 Day', 'Radar', 'Video'] %}
+            <button type="button"
+                    class="weather-tab {{ 'active' if loop.first else '' }}"
+                    data-class="tab"
+                    data-semantic="weather_tab_{{ loop.index0 }}"
+                    aria-current="{{ 'page' if loop.first else 'false' }}">
+                {{ label }}
+
+                {% if loop.first %}
+                <span class="tab-indicator"
+                      data-class="selection_indicator"
+                      data-semantic="today_tab_indicator"></span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+    </nav>
+
+    <main class="weather-main">
+        <div class="main-heading" data-class="section">
+            <h1>Today's Weather</h1>
+
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="temperature_units">
+                {{ weather['temperature_unit'] }}°
+                {{ icon('expand_more', 'temperature_unit_dropdown', 'Choose temperature units') }}
+            </button>
+        </div>
+
+        {% if weather['alert'] %}
+        <section class="alert-card"
+                 data-class="card"
+                 data-semantic="severe_weather_alert">
+
+            {{ icon('warning', 'severe_warning_icon', 'Severe weather warning') }}
+
+            <div class="alert-copy">
+                <strong>{{ weather['alert']['title'] }}</strong>
+                <p>{{ weather['alert']['description'] }}</p>
+                <p>{{ weather['alert']['expires'] }}</p>
+            </div>
+
+            <button type="button"
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="open_alert"
+                    aria-label="View warning details">
+                {{ icon('chevron_right', 'alert_details_icon', 'View details') }}
+            </button>
+        </section>
+        {% endif %}
+
+        <div class="weather-grid">
+            <div class="weather-column">
+                <section class="weather-card current-card"
+                         data-class="card"
+                         data-semantic="current_weather">
+
+                    <div class="card-heading">
+                        <h2>{{ weather['location'] }}</h2>
+
+                        <button type="button"
+                                class="icon-button"
+
+                                data-semantic="favorite_location"
+                                aria-label="Favorite location"
+                                aria-pressed="{{ 'true' if weather['favorite'] else 'false' }}">
+                            {{ icon(
+                                'star' if weather['favorite'] else 'star_border',
+                                'favorite_location_icon',
+                                'Favorite'
+                            ) }}
+                        </button>
+                    </div>
+
+                    <div class="current-overview">
+                        <div>
+                            <div class="temperature">
+                                {{ weather['temperature'] }}<span class="temperature-unit">{{ weather['temperature_unit'] }}</span>
+                            </div>
+
+                            <p class="condition-label">
+                                {{ weather['condition'] }}
+                            </p>
+                        </div>
+
+                        <div class="current-condition-icon">
+                            {{ icon(
+                                weather['condition_icon'],
+                                'current_condition_icon',
+                                weather['condition']
+                            ) }}
+                        </div>
+                    </div>
+
+                    <div class="current-details">
+                        <span>Feels like {{ weather['feels_like'] }}</span>
+                        <span>High {{ weather['high'] }}</span>
+                        <span>Low {{ weather['low'] }}</span>
+                    </div>
+
+                    <p class="current-summary">
+                        {{ weather['summary'] }}
+                    </p>
+                </section>
+
+                <section class="weather-card"
+                         data-class="card"
+                         data-semantic="hourly_forecast">
+
+                    <div class="card-heading">
+                        <h2>Hourly Forecast</h2>
+
+                        <button type="button"
+
+                                data-semantic="view_hourly_forecast"
+                                aria-label="View hourly forecast">
+                            {{ icon('chevron_right', 'hourly_more_icon', 'More hourly forecast') }}
+                        </button>
+                    </div>
+
+                    <div class="hourly-list">
+                        {% for hour in weather['hourly'] %}
+                        <div class="hour-item">
+                            <span>{{ hour['time'] }}</span>
+
+                            {{ icon(
+                                hour['icon'],
+                                'hourly_condition_' ~ hour['id'],
+                                hour['condition']
+                            ) }}
+
+                            <strong>{{ hour['temperature'] }}</strong>
+
+                            <span class="rain-chance">
+                                {{ icon(
+                                    'water_drop',
+                                    'hourly_precipitation_' ~ hour['id'],
+                                    'Precipitation chance'
+                                ) }}
+                                {{ hour['precipitation'] }}%
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="weather-card"
+                         data-class="section"
+                         data-semantic="weather_details">
+
+                    <div class="card-heading">
+                        <h2>Weather Details</h2>
+                    </div>
+
+                    <div class="metric-grid">
+                        {% set metrics = [
+                            ('air', 'Wind', weather['wind'] ~ ' ' ~ weather['wind_direction']),
+                            ('humidity_percentage', 'Humidity', weather['humidity'] ~ '%'),
+                            ('rainy', 'Precipitation', weather['precipitation'] ~ '%'),
+                            ('sunny', 'UV Index', weather['uv_index'] ~ ' of 11'),
+                            ('visibility', 'Visibility', weather['visibility']),
+                            ('speed', 'Pressure', weather['pressure'])
+                        ] %}
+
+                        {% for icon_name, label, value in metrics %}
+                        <div class="metric">
+                            <div class="metric-title">
+                                {{ icon(
+                                    icon_name,
+                                    'metric_' ~ loop.index0,
+                                    label
+                                ) }}
+                                <span>{{ label }}</span>
+                            </div>
+
+                            <p class="metric-value">{{ value }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <aside class="weather-column weather-side">
+                <section class="weather-card"
+                         data-class="card"
+                         data-semantic="five_day_forecast">
+
+                    <div class="card-heading">
+                        <h2>Daily Forecast</h2>
+                    </div>
+
+                    {% for day in weather['daily'] %}
+                    <div class="daily-row">
+                        <strong>{{ day['day'] }}</strong>
+
+                        {{ icon(
+                            day['icon'],
+                            'daily_condition_' ~ day['id'],
+                            day['condition']
+                        ) }}
+
+                        <span class="daily-temperatures">
+                            {{ day['high'] }}
+                            <span class="daily-low">
+                                {{ day['low'] }}
+                            </span>
+                        </span>
+
+                        <span class="rain-chance">
+                            {{ icon(
+                                'water_drop',
+                                'daily_precipitation_' ~ day['id'],
+                                'Precipitation chance'
+                            ) }}
+                            {{ day['precipitation'] }}%
+                        </span>
+                    </div>
+                    {% endfor %}
+                </section>
+
+                <section class="weather-card"
+                         data-class="card"
+                         data-semantic="sunrise_sunset">
+
+                    <h2>Sun &amp; Moon</h2>
+
+                    <div class="sun-times">
+                        <div class="sun-time">
+                            {{ icon('wb_twilight', 'sunrise_icon', 'Sunrise') }}
+
+                            <div>
+                                <span class="muted">Sunrise</span>
+                                <p>{{ weather['sunrise'] }}</p>
+                            </div>
+                        </div>
+
+                        <div class="sun-time">
+                            {{ icon('nightlight', 'sunset_icon', 'Sunset') }}
+
+                            <div>
+                                <span class="muted">Sunset</span>
+                                <p>{{ weather['sunset'] }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </div>
+
+        <section class="stories-section"
+                 data-class="section"
+                 data-semantic="weather_stories">
+
+            <h2>Weather Stories</h2>
+
+            <div class="news-grid">
+                {% for story in weather['news'] %}
+                <article class="weather-card news-card"
+                         data-class="card"
+                         data-semantic="weather_story_{{ story['id'] }}">
+
+                    {% if story['image'] %}
+                    <img class="news-image"
+                         src="{{ story['image'] }}"
+                         alt="{{ story['title'] }}"
+                         data-class="image"
+                         data-semantic="story_image_{{ story['id'] }}">
+                    {% else %}
+                    <div class="news-placeholder">
+                        {{ icon(
+                            'partly_cloudy_day',
+                            'story_placeholder_' ~ story['id'],
+                            'Weather illustration'
+                        ) }}
+                    </div>
+                    {% endif %}
+
+                    <div class="news-copy">
+                        <p class="muted">{{ story['category'] }}</p>
+                        <h3>{{ story['title'] }}</h3>
+
+                        <button type="button"
+                                data-class="button"
+                                data-semantic="read_story_{{ story['id'] }}">
+                            Read story
+                            {{ icon(
+                                'arrow_forward',
+                                'story_arrow_' ~ story['id'],
+                                'Read story'
+                            ) }}
+                        </button>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <footer class="weather-footer">
+            Synthetic weather data for UI dataset generation.
+        </footer>
+    </main>
+</div>
+
+{% if weather['popup_visible'] %}
+<div class="popup-backdrop"
+     data-occluder="true">
+
+    <section class="weather-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="weather-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ weather['popup_type'] }}">
+
+        <div class="dialog-heading">
+            <h2 id="weather-dialog-title">
+                {{ 'Search Locations' if weather['popup_type'] == 'location_search' else 'Weather Settings' }}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+
+                    data-semantic="close_weather_dialog"
+                    aria-label="Close dialog">
+                {{ icon('close', 'dialog_close_icon', 'Close') }}
+            </button>
+        </div>
+
+        {% if weather['popup_type'] == 'location_search' %}
+        <div class="search-field"
+             data-class="search_bar"
+             data-semantic="location_search_bar">
+
+            {{ icon('search', 'location_search_icon', 'Search') }}
+
+            <input type="text"
+                   value="{{ weather['search_query'] }}"
+                   placeholder="Search city or postal code"
+                   aria-label="Search city or postal code"
+                   data-class="input_field"
+                   data-semantic="location_search_input">
+
+            <button type="button"
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="clear_location_search"
+                    aria-label="Clear search">
+                {{ icon('close', 'clear_search_icon', 'Clear search') }}
+            </button>
+        </div>
+
+        {% for result in weather['search_results'] %}
+        <button type="button"
+                class="location-result"
+                data-class="button"
+                data-semantic="location_result_{{ loop.index0 }}">
+
+            {{ icon(
+                'location_on',
+                'result_location_icon_' ~ loop.index0,
+                'Location'
+            ) }}
+
+            <span class="location-result-copy">
+                <strong>{{ result['name'] }}</strong>
+                <small>{{ result['region'] }}</small>
+            </span>
+
+            {{ icon(
+                'chevron_right',
+                'result_arrow_' ~ loop.index0,
+                'Choose location'
+            ) }}
+        </button>
+        {% endfor %}
+
+        <h3 class="saved-location-heading">Saved Locations</h3>
+
+        <div class="saved-locations">
+            {% for location in weather['saved_locations'] %}
+            <button type="button"
+                    class="saved-chip"
+                    data-class="chip"
+                    data-semantic="saved_location_{{ loop.index0 }}">
+
+                {{ icon(
+                    'location_on',
+                    'saved_location_icon_' ~ loop.index0,
+                    'Saved location'
+                ) }}
+                {{ location }}
+            </button>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <p class="muted">
+            Choose your preferred weather units.
+        </p>
+
+        <p class="settings-label">Temperature</p>
+
+        <div class="unit-options">
+            {% for unit, label in [('C', 'Celsius'), ('F', 'Fahrenheit')] %}
+            <button type="button"
+                    class="unit-option {{ 'selected' if weather['temperature_unit'] == unit else '' }}"
+                    data-class="button"
+                    data-semantic="temperature_option_{{ unit }}"
+                    aria-pressed="{{ 'true' if weather['temperature_unit'] == unit else 'false' }}">
+
+                {{ label }} °{{ unit }}
+
+                {% if weather['temperature_unit'] == unit %}
+                {{ icon(
+                    'check',
+                    'temperature_selected_' ~ unit,
+                    'Selected'
+                ) }}
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+
+        <p class="settings-label">Wind Speed</p>
+
+        <div class="unit-options">
+            {% for unit in ['km/h', 'mph'] %}
+            <button type="button"
+                    class="unit-option {{ 'selected' if weather['wind_unit'] == unit else '' }}"
+                    data-class="button"
+                    data-semantic="wind_option_{{ loop.index0 }}"
+                    aria-pressed="{{ 'true' if weather['wind_unit'] == unit else 'false' }}">
+
+                {{ unit }}
+
+                {% if weather['wind_unit'] == unit %}
+                {{ icon(
+                    'check',
+                    'wind_selected_' ~ loop.index0,
+                    'Selected'
+                ) }}
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+
+        <div class="notification-setting">
+            <div>
+                <strong>Weather Notifications</strong>
+                <small>Daily updates and weather alerts</small>
+            </div>
+
+            <button type="button"
+                    role="switch"
+                    class="weather-switch {{ 'enabled' if weather['notifications_enabled'] else '' }}"
+                    aria-label="Weather notifications"
+                    aria-checked="{{ 'true' if weather['notifications_enabled'] else 'false' }}"
+                    data-class="switch"
+                    data-semantic="weather_notifications_switch">
+                <span class="switch-thumb"></span>
+            </button>
+        </div>
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_weather_settings">
+                Cancel
+            </button>
+
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="save_weather_settings">
+                {{ icon('check', 'save_settings_icon', 'Save') }}
+                Save
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

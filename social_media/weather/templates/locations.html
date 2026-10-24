@@ -1,0 +1,937 @@
+{% extends "base.html" %}
+
+{% block title %}Saved Locations | Weather{% endblock %}
+
+{% block head %}
+<style>
+    .locations-app {
+        min-height: calc(100vh - var(--chrome-height));
+    }
+
+    .locations-header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .header-inner,
+    .locations-main {
+        width: min(1440px, 100%);
+        margin: 0 auto;
+    }
+
+    .header-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 20px 28px;
+    }
+
+    .weather-logo {
+        display: grid;
+        place-items: center;
+        width: 66px;
+        height: 58px;
+        border-radius: 10px;
+        background: var(--primary);
+        color: var(--on-primary);
+        font-size: 13px;
+        line-height: 1.15;
+        font-weight: 800;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .header-actions,
+    .inline-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .locations-nav {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 0 28px 12px;
+        max-width: 1440px;
+        margin: 0 auto;
+    }
+
+    .nav-tab {
+        flex-shrink: 0;
+        padding: 11px 15px;
+        border-radius: 9px;
+        color: var(--text-secondary);
+        font-weight: 700;
+    }
+
+    .nav-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .locations-main {
+        padding: 30px 28px 48px;
+    }
+
+    .page-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .page-heading h1 {
+        font-size: clamp(25px, 3vw, 36px);
+        margin-bottom: 8px;
+    }
+
+    .muted {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .search-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 26px;
+    }
+
+    .location-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+        max-width: 620px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+    }
+
+    .location-search input {
+        width: 100%;
+        background: transparent;
+        border: 0;
+        outline: 0;
+        color: var(--on-surface);
+    }
+
+    input::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .location-search:focus-within {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+    }
+
+    .location-search .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .section-heading h2 {
+        font-size: 19px;
+    }
+
+    .location-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .location-card {
+        min-width: 0;
+        padding: 22px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .location-card.pinned {
+        border: 2px solid var(--primary);
+        padding: 21px;
+    }
+
+    .card-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .city-name {
+        font-size: 22px;
+        margin-bottom: 4px;
+        overflow-wrap: anywhere;
+    }
+
+    .pinned-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 9px;
+        margin-top: 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        background: var(--badge-background);
+        color: var(--badge-text);
+    }
+
+    .pinned-badge .material-symbols-rounded {
+        font-size: 16px;
+        color: inherit;
+    }
+
+    .weather-reading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 26px 0 14px;
+    }
+
+    .temperature {
+        font-size: clamp(44px, 5vw, 62px);
+        font-weight: 700;
+        letter-spacing: -3px;
+    }
+
+    .weather-symbol {
+        font-size: 66px;
+        color: var(--icon);
+    }
+
+    .condition {
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .card-metrics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 18px;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-subtle);
+        font-size: 14px;
+    }
+
+    .card-metrics .material-symbols-rounded {
+        font-size: 19px;
+        color: var(--icon);
+    }
+
+    .card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .forecast-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 9px 0;
+        font-weight: 700;
+        color: var(--on-surface);
+    }
+
+    .forecast-button .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .manage-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .manage-actions button {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        padding: 10px 8px;
+    }
+
+    .remove-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 42px;
+        border-radius: 10px;
+        background: var(--error);
+        color: var(--on-error);
+        font-weight: 700;
+    }
+
+    .manage-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 22px;
+        padding: 16px;
+        border-radius: 12px;
+        background: var(--info);
+        color: var(--on-info);
+        line-height: 1.5;
+    }
+
+    .manage-note .material-symbols-rounded {
+        flex-shrink: 0;
+        color: inherit;
+    }
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        text-align: center;
+        padding: 64px 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .empty-state > .material-symbols-rounded {
+        font-size: 64px;
+        color: var(--icon);
+    }
+
+    .empty-state p {
+        max-width: 400px;
+    }
+
+    .page-note {
+        margin-top: 28px;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.48);
+    }
+
+    .location-dialog {
+        width: min(480px, 100%);
+        max-height: calc(100dvh - 40px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .dialog-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .dialog-heading h2 {
+        font-size: 23px;
+    }
+
+    .dialog-search {
+        margin: 22px 0 16px;
+    }
+
+    .search-result {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 16px 12px;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .search-result.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        border-color: var(--on-primary-container);
+    }
+
+    .search-result .material-symbols-rounded {
+        color: inherit;
+        flex-shrink: 0;
+    }
+
+    .result-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .result-copy strong,
+    .result-copy small {
+        display: block;
+        overflow-wrap: anywhere;
+    }
+
+    .result-copy small {
+        margin-top: 4px;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 24px;
+    }
+
+    .remove-preview {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 22px 0;
+        padding: 18px;
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .remove-preview .material-symbols-rounded {
+        font-size: 36px;
+        color: inherit;
+    }
+
+    @media (max-width: 1100px) {
+        .location-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 600px) {
+        .header-inner {
+            padding: 14px 16px;
+        }
+
+        .locations-nav {
+            padding: 0 16px 12px;
+        }
+
+        .locations-main {
+            padding: 24px 16px 36px;
+        }
+
+        .page-heading,
+        .search-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .page-heading > button {
+            align-self: flex-start;
+        }
+
+        .location-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .header-label {
+            display: none;
+        }
+
+        .section-heading {
+            align-items: flex-start;
+        }
+
+        .location-dialog {
+            padding: 20px;
+        }
+
+        .modal-backdrop {
+            padding: 12px;
+        }
+
+        .location-dialog {
+            max-height: calc(100dvh - 24px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="locations-app"
+     data-annotation-skip="{{ 'true' if weather.popup_visible else 'false' }}"
+     {% if weather.popup_visible %}inert{% endif %}>
+
+    <header class="locations-header"
+            data-class="app_bar"
+            data-semantic="locations_app_bar">
+
+        <div class="header-inner">
+            <div class="weather-logo"
+                 data-class="logo"
+                 data-semantic="weather_logo">
+                The<br>Weather<br>Channel
+            </div>
+
+            <div class="header-actions">
+                <span class="header-label muted">
+                    Your weather, everywhere
+                </span>
+
+                <button class="icon-button"
+                        aria-label="Account"
+
+                        data-semantic="account_button">
+                    <span class="material-symbols-rounded"
+                          data-class="icon"
+                          data-semantic="account_icon">
+                        account_circle
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <nav class="locations-nav"
+             aria-label="Weather pages"
+             data-class="navigation_bar"
+             data-semantic="weather_navigation">
+
+            {% for label in [
+                'Today', 'Hourly', '10 Day',
+                'Radar', 'Alerts', 'Locations'
+            ] %}
+            <button class="nav-tab {{ 'active' if label == 'Locations' else '' }}"
+                    data-class="tab"
+                    data-semantic="navigation_{{ label|lower|replace(' ', '_') }}"
+                    {% if label == 'Locations' %}
+                    aria-current="page"
+                    {% endif %}>
+                {{ label }}
+            </button>
+            {% endfor %}
+        </nav>
+    </header>
+
+    <main class="locations-main">
+        <div class="page-heading" data-class="section">
+            <div>
+                <h1>Saved locations</h1>
+                <p class="muted">
+                    Keep your favorite forecasts in one place.
+                </p>
+            </div>
+
+            <button class="primary-button"
+                    data-class="button"
+                    data-semantic="add_location_button">
+                <span class="material-symbols-rounded"
+                      data-class="icon"
+                      data-semantic="add_location_icon">
+                    add
+                </span>
+                Add location
+            </button>
+        </div>
+
+        <div class="search-toolbar"
+             data-class="section"
+             data-semantic="locations_toolbar">
+
+            <div class="location-search"
+                 data-class="search_bar"
+                 data-semantic="saved_locations_search">
+                <span class="material-symbols-rounded"
+                      data-class="icon"
+                      data-semantic="saved_search_icon">
+                    search
+                </span>
+
+                <input type="search"
+                       aria-label="Search saved locations"
+                       placeholder="Search saved locations"
+                       value="{{ weather.query if weather.state == 'search_results' else '' }}"
+                       data-class="input_field"
+                       data-semantic="saved_locations_query">
+
+                {% if weather.state == 'search_results' %}
+                <button class="icon-button"
+                        aria-label="Clear search"
+                        data-class="button"
+                        data-semantic="clear_search_button">
+                    <span class="material-symbols-rounded"
+                          data-class="icon"
+                          data-semantic="clear_search_icon">
+                        close
+                    </span>
+                </button>
+                {% endif %}
+            </div>
+
+            <button class="secondary-button"
+                    data-class="button"
+                    data-semantic="manage_locations_button">
+                <span class="material-symbols-rounded"
+                      data-class="icon"
+                      data-semantic="manage_locations_icon">
+                    {{ 'check' if weather.manage_mode else 'edit' }}
+                </span>
+                {{ 'Done' if weather.manage_mode else 'Manage' }}
+            </button>
+        </div>
+
+        {% if weather.manage_mode %}
+        <div class="manage-note">
+            <span class="material-symbols-rounded"
+                  data-class="icon"
+                  data-semantic="manage_information_icon">
+                info
+            </span>
+            <p>
+                Pin a city to make it your default location,
+                or remove cities from your saved list.
+            </p>
+        </div>
+        {% endif %}
+
+        <section data-class="section"
+                 data-semantic="saved_locations_section">
+
+            <div class="section-heading">
+                <h2>
+                    {% if weather.state == 'search_results' %}
+                    Search results
+                    {% else %}
+                    Your locations
+                    {% endif %}
+                </h2>
+
+                <span class="muted">
+                    {% if weather.state == 'search_results' %}
+                    {{ weather.visible_locations|length }} results
+                    {% else %}
+                    {{ weather.saved_count }} saved
+                    {% endif %}
+                </span>
+            </div>
+
+            {% if weather.visible_locations %}
+            <div class="location-grid">
+                {% for city in weather.visible_locations %}
+                <article class="location-card {{ 'pinned' if city.pinned else '' }}"
+                         data-class="card"
+                         data-semantic="location_card_{{ city.id }}">
+
+                    <div class="card-top">
+                        <div>
+                            <h3 class="city-name">{{ city.name }}</h3>
+                            <p class="muted">{{ city.country }}</p>
+
+                            {% if city.pinned %}
+                            <span class="pinned-badge"
+                                  data-class="badge"
+                                  data-semantic="default_location_{{ city.id }}">
+                                <span class="material-symbols-rounded"
+                                      data-class="icon"
+                                      data-semantic="pinned_icon_{{ city.id }}">
+                                    push_pin
+                                </span>
+                                Default
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <button class="icon-button"
+                                aria-label="Options for {{ city.name }}"
+
+                                data-semantic="location_options_{{ city.id }}">
+                            <span class="material-symbols-rounded"
+                                  data-class="icon"
+                                  data-semantic="location_options_icon_{{ city.id }}">
+                                more_vert
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="weather-reading">
+                        <span class="temperature">
+                            {{ city.temperature }}°
+                        </span>
+                        <span class="material-symbols-rounded weather-symbol"
+                              aria-label="{{ city.condition }}"
+                              data-class="icon"
+                              data-semantic="condition_icon_{{ city.id }}">
+                            {{ city.icon }}
+                        </span>
+                    </div>
+
+                    <p class="condition">{{ city.condition }}</p>
+                    <p class="muted">
+                        H: {{ city.high }}° · L: {{ city.low }}°
+                    </p>
+
+                    <div class="card-metrics">
+                        <span class="inline-row">
+                            <span class="material-symbols-rounded"
+                                  data-class="icon"
+                                  data-semantic="precipitation_icon_{{ city.id }}">
+                                water_drop
+                            </span>
+                            {{ city.precipitation }}%
+                        </span>
+
+                        <span class="inline-row">
+                            <span class="material-symbols-rounded"
+                                  data-class="icon"
+                                  data-semantic="local_time_icon_{{ city.id }}">
+                                schedule
+                            </span>
+                            {{ city.local_time }}
+                        </span>
+                    </div>
+
+                    {% if weather.manage_mode %}
+                    <div class="manage-actions">
+                        <button class="secondary-button"
+                                data-class="button"
+                                data-semantic="pin_location_{{ city.id }}">
+                            <span class="material-symbols-rounded"
+                                  data-class="icon"
+                                  data-semantic="pin_action_icon_{{ city.id }}">
+                                {{ 'keep_off' if city.pinned else 'push_pin' }}
+                            </span>
+                            {{ 'Unpin' if city.pinned else 'Pin' }}
+                        </button>
+
+                        <button class="remove-button"
+                                data-class="button"
+                                data-semantic="remove_location_{{ city.id }}">
+                            <span class="material-symbols-rounded"
+                                  data-class="icon"
+                                  data-semantic="remove_action_icon_{{ city.id }}">
+                                delete
+                            </span>
+                            Remove
+                        </button>
+                    </div>
+                    {% else %}
+                    <div class="card-footer">
+                        <button class="forecast-button"
+                                data-class="button"
+                                data-semantic="open_forecast_{{ city.id }}">
+                            View forecast
+                            <span class="material-symbols-rounded"
+                                  data-class="icon"
+                                  data-semantic="forecast_arrow_{{ city.id }}">
+                                arrow_forward
+                            </span>
+                        </button>
+
+                        <span class="muted">°{{ weather.unit }}</span>
+                    </div>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </div>
+
+            {% else %}
+            <div class="empty-state"
+                 data-class="card"
+                 data-semantic="empty_locations_card">
+                <span class="material-symbols-rounded"
+                      data-class="icon"
+                      data-semantic="empty_locations_icon">
+                    location_off
+                </span>
+
+                <h2>No saved locations yet</h2>
+                <p class="muted">
+                    Add a city to see its current conditions
+                    and forecast here.
+                </p>
+
+                <button class="primary-button"
+                        data-class="button"
+                        data-semantic="empty_add_location_button">
+                    <span class="material-symbols-rounded"
+                          data-class="icon"
+                          data-semantic="empty_add_location_icon">
+                        add_location_alt
+                    </span>
+                    Add your first location
+                </button>
+            </div>
+            {% endif %}
+        </section>
+
+        <p class="muted page-note">
+            {{ weather.updated_text }} · Temperatures in °{{ weather.unit }}
+        </p>
+    </main>
+</div>
+
+{% if weather.popup_visible %}
+<div class="modal-backdrop">
+    <section class="location-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="location-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ weather.dialog_type }}_location_dialog"
+             data-occluder="true">
+
+        <div class="dialog-heading">
+            <h2 id="location-dialog-title">
+                {{ 'Add a location' if weather.dialog_type == 'add' else 'Remove location?' }}
+            </h2>
+
+            <button class="icon-button"
+                    aria-label="Close dialog"
+
+                    data-semantic="close_location_dialog">
+                <span class="material-symbols-rounded"
+                      data-class="icon"
+                      data-semantic="close_dialog_icon">
+                    close
+                </span>
+            </button>
+        </div>
+
+        {% if weather.dialog_type == 'add' %}
+        <p class="muted">
+            Search for a city and add it to your saved locations.
+        </p>
+
+        <div class="location-search dialog-search"
+             data-class="search_bar"
+             data-semantic="add_location_search">
+            <span class="material-symbols-rounded"
+                  data-class="icon"
+                  data-semantic="add_search_icon">
+                search
+            </span>
+
+            <input type="search"
+                   aria-label="Search cities"
+                   placeholder="City or postal code"
+                   value="{{ weather.query }}"
+
+                   data-semantic="add_location_query">
+        </div>
+
+        {% for city in weather.search_results %}
+        <button class="search-result {{ 'selected' if city.id == weather.selected_location else '' }}"
+                aria-pressed="{{ 'true' if city.id == weather.selected_location else 'false' }}"
+                data-class="button"
+                data-semantic="select_city_{{ city.id }}">
+
+            <span class="material-symbols-rounded"
+                  data-class="icon"
+                  data-semantic="city_location_icon_{{ city.id }}">
+                location_on
+            </span>
+
+            <span class="result-copy">
+                <strong>{{ city.name }}</strong>
+                <small>{{ city.country }}</small>
+            </span>
+
+            <span class="material-symbols-rounded"
+                  data-class="checkbox"
+                  data-semantic="city_selection_{{ city.id }}">
+                {{ 'check_box' if city.id == weather.selected_location else 'check_box_outline_blank' }}
+            </span>
+        </button>
+        {% endfor %}
+
+        <div class="dialog-actions">
+            <button class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_add_location">
+                Cancel
+            </button>
+
+            <button class="primary-button"
+                    data-class="button"
+                    data-semantic="confirm_add_location">
+                <span class="material-symbols-rounded"
+                      data-class="icon"
+                      data-semantic="confirm_add_icon">
+                    add
+                </span>
+                Add location
+            </button>
+        </div>
+
+        {% else %}
+        <p class="muted">
+            This city will be removed from your saved locations.
+            You can add it again later.
+        </p>
+
+        <div class="remove-preview">
+            <span class="material-symbols-rounded"
+                  data-class="icon"
+                  data-semantic="remove_preview_condition">
+                {{ weather.remove_target.icon }}
+            </span>
+
+            <div>
+                <strong>{{ weather.remove_target.name }}</strong>
+                <p>{{ weather.remove_target.country }}</p>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_remove_location">
+                Keep location
+            </button>
+
+            <button class="remove-button"
+                    style="padding: 10px 16px;"
+                    data-class="button"
+                    data-semantic="confirm_remove_location">
+                <span class="material-symbols-rounded"
+                      data-class="icon"
+                      data-semantic="confirm_remove_icon">
+                    delete
+                </span>
+                Remove
+            </button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

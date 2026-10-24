@@ -1,0 +1,1165 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, annotation_class='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ annotation_class }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+{% macro control(name, semantic, label) -%}
+<button type="button"
+        class="map-control"
+        data-class="button"
+        data-semantic="{{ semantic }}"
+        aria-label="{{ label }}">
+    {{ icon(name, semantic ~ '_icon', label) }}
+</button>
+{%- endmacro %}
+
+{% block title %}
+Weather Radar — {{ weather['location'] }}
+{% endblock %}
+
+{% block head %}
+<style>
+    .radar-header {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .radar-header-inner {
+        max-width: 1500px;
+        margin: auto;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .radar-logo {
+        width: 68px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 2px solid currentColor;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .radar-location {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .radar-location p {
+        margin-top: 6px;
+        font-size: 12px;
+    }
+
+    .radar-header .icon-button {
+        color: inherit;
+    }
+
+    .radar-nav {
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .radar-tabs {
+        max-width: 1500px;
+        margin: auto;
+        display: flex;
+        overflow-x: auto;
+        padding-inline: 24px;
+    }
+
+    .radar-tab {
+        position: relative;
+        padding: 16px;
+        flex-shrink: 0;
+        color: var(--on-surface);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .radar-tab.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .radar-tab-indicator {
+        position: absolute;
+        bottom: 0;
+        left: 12px;
+        right: 12px;
+        height: 3px;
+        background: currentColor;
+    }
+
+    .radar-main {
+        max-width: 1500px;
+        margin: auto;
+        padding: 24px;
+    }
+
+    .radar-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .radar-title h1 {
+        font-size: 27px;
+    }
+
+    .radar-title p {
+        margin-top: 7px;
+        color: var(--text-secondary);
+    }
+
+    .radar-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 290px;
+        gap: 22px;
+        align-items: start;
+    }
+
+    .map-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .map-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .layer-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .layer-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 12px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .layer-chip.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .layer-chip .material-symbols-rounded {
+        font-size: 18px;
+    }
+
+    .map-region {
+        position: relative;
+        height: 540px;
+        overflow: hidden;
+        isolation: isolate;
+        background: var(--surface-variant);
+    }
+
+    .map-geography {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .map-land {
+        fill: var(--surface);
+    }
+
+    .map-water {
+        fill: var(--surface-variant);
+    }
+
+    .map-district {
+        fill: none;
+        stroke: var(--border-subtle);
+        stroke-width: 1.5;
+    }
+
+    .map-road {
+        fill: none;
+        stroke: var(--border);
+        stroke-width: 2;
+        opacity: 0.55;
+    }
+
+    .map-highway {
+        fill: none;
+        stroke: var(--border);
+        stroke-width: 4;
+    }
+
+    .map-river {
+        fill: none;
+        stroke: var(--surface-variant);
+        stroke-width: 13;
+    }
+
+    .map-city {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 6px;
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border-subtle);
+        white-space: nowrap;
+        font-size: 11px;
+        z-index: 2;
+    }
+
+    .map-city .material-symbols-rounded {
+        font-size: 15px;
+        color: var(--icon);
+    }
+
+    .map-city.temperature-city strong {
+        font-size: 14px;
+    }
+
+    .map-controls {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        display: grid;
+        gap: 8px;
+        z-index: 4;
+    }
+
+    .map-control {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--icon);
+    }
+
+    .map-time {
+        position: absolute;
+        left: 14px;
+        top: 14px;
+        z-index: 4;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border-subtle);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .map-scale {
+        position: absolute;
+        bottom: 14px;
+        left: 14px;
+        padding: 5px 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-radius: 5px;
+        font-size: 10px;
+        z-index: 4;
+    }
+
+    .map-scale-line {
+        width: 55px;
+        height: 5px;
+        margin-top: 4px;
+        border: 1px solid currentColor;
+        border-top: 0;
+    }
+
+    .storm-marker {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--error);
+        color: var(--on-error);
+        z-index: 3;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .storm-marker .material-symbols-rounded {
+        font-size: 20px;
+    }
+
+    .playback {
+        padding: 16px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .playback-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .timeline {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+        height: 28px;
+    }
+
+    .slider-track {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 11px;
+        height: 6px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface-variant);
+    }
+
+    .slider-fill {
+        position: absolute;
+        left: 0;
+        top: 11px;
+        height: 6px;
+        border-radius: 10px;
+        background: var(--icon);
+    }
+
+    .slider-thumb {
+        position: absolute;
+        top: 5px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--icon);
+        transform: translateX(-50%);
+    }
+
+    .timeline-labels {
+        margin-top: 8px;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    .legend {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 14px 16px;
+        border-top: 1px solid var(--border-subtle);
+        font-size: 12px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .legend-swatch {
+        width: 16px;
+        height: 12px;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+    }
+
+    .radar-side {
+        display: grid;
+        gap: 18px;
+    }
+
+    .radar-info-card {
+        padding: 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .radar-info-card h2 {
+        font-size: 19px;
+        margin-bottom: 12px;
+    }
+
+    .radar-info-card p {
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .storm-info {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .storm-info-heading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .storm-info-heading .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .radar-footer {
+        margin-top: 24px;
+        color: var(--text-secondary);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .radar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .radar-dialog {
+        width: min(100%, 480px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .radar-dialog-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .radar-dialog-heading h2 {
+        font-size: 21px;
+    }
+
+    .layer-option,
+    .overlay-option,
+    .search-result {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 10px;
+        margin-bottom: 8px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        text-align: left;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .layer-option.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .option-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .option-copy small {
+        display: block;
+        margin-top: 5px;
+        line-height: 1.4;
+    }
+
+    .dialog-label {
+        margin: 20px 0 12px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .opacity-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .search-field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        margin-bottom: 16px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .search-field input {
+        flex: 1;
+        width: 100%;
+        min-width: 0;
+        background: transparent;
+        color: inherit;
+        border: 0;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 22px;
+    }
+
+    @media (max-width: 1100px) {
+        .radar-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .radar-side {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 600px) {
+        .radar-header-inner {
+            padding: 12px;
+            gap: 10px;
+        }
+
+        .radar-logo {
+            width: 56px;
+            height: 52px;
+            font-size: 11px;
+        }
+
+        .radar-tabs {
+            padding-inline: 6px;
+        }
+
+        .radar-tab {
+            padding: 14px 12px;
+            font-size: 13px;
+        }
+
+        .radar-main {
+            padding: 18px 12px;
+        }
+
+        .radar-title h1 {
+            font-size: 23px;
+        }
+
+        .map-region {
+            height: 390px;
+        }
+
+        .map-toolbar {
+            padding: 10px;
+        }
+
+        .layer-chip {
+            padding: 8px;
+            font-size: 11px;
+        }
+
+        .map-city {
+            font-size: 9px;
+            padding: 3px;
+        }
+
+        .map-controls {
+            top: 10px;
+            right: 10px;
+        }
+
+        .map-time {
+            left: 10px;
+            top: 10px;
+        }
+
+        .radar-side {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .radar-dialog {
+            padding: 18px;
+        }
+    }
+
+    @media (max-height: 450px) and (orientation: landscape) {
+        .radar-backdrop {
+            align-items: flex-start;
+            padding: 10px;
+        }
+
+        .radar-dialog {
+            max-height: calc(100dvh - 20px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if weather['popup_visible'] else 'false' }}"
+     {% if weather['popup_visible'] %}inert{% endif %}>
+
+    <header class="radar-header"
+            data-class="app_bar"
+            data-semantic="radar_app_bar">
+
+        <div class="radar-header-inner">
+            <div class="radar-logo"
+                 data-class="logo"
+                 data-semantic="radar_logo">
+                The<br>Weather<br>Channel
+            </div>
+
+            <div class="radar-location">
+                <strong>{{ weather['location'] }}</strong>
+                <p>Radar frame: {{ weather['frame_time'] }}</p>
+            </div>
+
+            <button type="button"
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="radar_location_search"
+                    aria-label="Search locations">
+                {{ icon('search', 'radar_search_icon', 'Search') }}
+            </button>
+        </div>
+    </header>
+
+    <nav class="radar-nav"
+         aria-label="Weather pages"
+         data-class="navigation_bar"
+         data-semantic="radar_navigation">
+
+        <div class="radar-tabs">
+            {% for label in ['Today', 'Hourly', '10 Day', 'Radar', 'Video'] %}
+            <button type="button"
+                    class="radar-tab {{ 'selected' if label == 'Radar' else '' }}"
+                    data-class="tab"
+                    data-semantic="radar_nav_{{ loop.index0 }}"
+                    aria-current="{{ 'page' if label == 'Radar' else 'false' }}">
+                {{ label }}
+
+                {% if label == 'Radar' %}
+                <span class="radar-tab-indicator"
+                      data-class="selection_indicator"
+                      data-semantic="radar_selected_tab"></span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+    </nav>
+
+    <main class="radar-main">
+        <div class="radar-title" data-class="section">
+            <div>
+                <h1>Weather Radar</h1>
+                <p>{{ weather['active_layer_label'] }} map</p>
+            </div>
+
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="open_radar_layers">
+                {{ icon('layers', 'radar_layers_icon', 'Map layers') }}
+                Layers
+            </button>
+        </div>
+
+        <div class="radar-layout">
+            <section class="map-card"
+                     data-class="section"
+                     data-semantic="radar_workspace">
+
+                <div class="map-toolbar">
+                    <div class="layer-chips">
+                        {% for layer in weather['layers'] %}
+                        <button type="button"
+                                class="layer-chip {{ 'selected' if weather['active_layer'] == layer['key'] else '' }}"
+                                data-class="chip"
+                                data-semantic="map_layer_chip_{{ layer['key'] }}"
+                                aria-pressed="{{ 'true' if weather['active_layer'] == layer['key'] else 'false' }}">
+                            {{ icon(
+                                layer['icon'],
+                                'layer_chip_icon_' ~ layer['key'],
+                                layer['label']
+                            ) }}
+                            {{ layer['label'] }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="map-region"
+                     data-class="map"
+                     data-semantic="synthetic_weather_map">
+
+                    <svg class="map-geography"
+                         viewBox="0 0 100 100"
+                         preserveAspectRatio="none"
+                         aria-hidden="true">
+
+                        <rect class="map-water"
+                              width="100"
+                              height="100"/>
+
+                        <path class="map-land"
+                              d="M18 0 H100 V100 H24
+                                 L28 87 L20 75 L25 62
+                                 L17 48 L22 34 L14 20 Z"/>
+
+                        <g class="map-district">
+                            <path d="M25 0 L35 100"/>
+                            <path d="M50 0 L60 100"/>
+                            <path d="M80 0 L75 100"/>
+                            <path d="M18 25 L100 30"/>
+                            <path d="M20 55 L100 50"/>
+                            <path d="M25 78 L100 82"/>
+                        </g>
+
+                        <path class="map-river"
+                              d="M100 36 C80 30 65 45 49 42
+                                 S30 33 18 44"/>
+
+                        <g class="map-road">
+                            <path d="M20 15 L90 85"/>
+                            <path d="M25 85 L90 10"/>
+                            <path d="M35 0 L65 100"/>
+                            <path d="M20 65 L100 65"/>
+                            <path d="M25 20 L100 20"/>
+                        </g>
+
+                        <path class="map-highway"
+                              d="M46 0 C40 25 53 40 50 60
+                                 S58 85 55 100"/>
+
+                        {% if weather['active_layer'] == 'temperature' %}
+                        <g opacity="{{ weather['opacity'] / 100 }}">
+                            <path fill="#4179C6"
+                                  d="M20 0 H100 V35
+                                     C70 48 45 20 20 40 Z"/>
+                            <path fill="#E4CD67"
+                                  d="M20 40 C45 20 70 48 100 35
+                                     V70 C70 60 40 80 20 60 Z"/>
+                            <path fill="#D46D52"
+                                  d="M20 60 C40 80 70 60 100 70
+                                     V100 H24 Z"/>
+                        </g>
+
+                        {% else %}
+                        <g opacity="{{ weather['opacity'] / 100 }}">
+                            {% for cell in weather['cells'] %}
+                            <ellipse
+                                cx="{{ cell['x'] }}"
+                                cy="{{ cell['y'] }}"
+                                rx="{{ cell['rx'] }}"
+                                ry="{{ cell['ry'] }}"
+                                transform="rotate({{ cell['rotation'] }} {{ cell['x'] }} {{ cell['y'] }})"
+                                fill="{% if weather['active_layer'] == 'satellite' %}{{ '#FFFFFF' if cell['intensity'] == 'heavy' else '#D8DFE5' if cell['intensity'] == 'moderate' else '#AAB4BF' }}{% else %}{{ '#D75B55' if cell['intensity'] == 'heavy' else '#E7C653' if cell['intensity'] == 'moderate' else '#4EAF76' }}{% endif %}"/>
+                            {% endfor %}
+                        </g>
+                        {% endif %}
+
+                        {% if weather['show_storm_tracks'] %}
+                        <g fill="none"
+                           stroke="{{ theme['semantic']['icon'] }}"
+                           stroke-width="0.8"
+                           stroke-dasharray="2 1">
+                            {% for storm in weather['storms'] %}
+                            <path d="M{{ storm['x'] }} {{ storm['y'] }}
+                                     L{{ storm['x'] + 14 }} {{ storm['y'] - 12 }}
+                                     L{{ storm['x'] + 20 }} {{ storm['y'] - 18 }}"/>
+                            {% endfor %}
+                        </g>
+                        {% endif %}
+                    </svg>
+
+                    {% if weather['show_city_labels'] %}
+                    {% for city in weather['cities'] %}
+                    <div class="map-city {{ 'temperature-city' if weather['active_layer'] == 'temperature' else '' }}"
+                         style="left: {{ city['x'] }}%; top: {{ city['y'] }}%;">
+
+                        {{ icon(
+                            'location_on',
+                            'map_city_icon_' ~ loop.index0,
+                            city['name']
+                        ) }}
+
+                        <span>{{ city['name'] }}</span>
+
+                        {% if weather['active_layer'] == 'temperature' %}
+                        <strong>{{ city['temperature'] }}</strong>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    {% if weather['show_storm_tracks'] %}
+                    {% for storm in weather['storms'] %}
+                    <button type="button"
+                            class="storm-marker"
+                            style="left: {{ storm['x'] }}%; top: {{ storm['y'] }}%;"
+                            data-class="button"
+                            data-semantic="storm_marker_{{ storm['id'] }}"
+                            aria-label="View {{ storm['name'] }}">
+                        {{ icon(
+                            'thunderstorm',
+                            'storm_marker_icon_' ~ storm['id'],
+                            storm['name']
+                        ) }}
+                        {{ storm['name'] }}
+                    </button>
+                    {% endfor %}
+                    {% endif %}
+
+                    <span class="map-time"
+                          data-class="badge"
+                          data-semantic="radar_frame_badge">
+                        {{ weather['frame_time'] }}
+                    </span>
+
+                    <div class="map-controls">
+                        {{ control('add', 'radar_zoom_in', 'Zoom in') }}
+                        {{ control('remove', 'radar_zoom_out', 'Zoom out') }}
+                        {{ control('my_location', 'radar_center_location', 'Center on location') }}
+                        {{ control('fullscreen', 'radar_fullscreen', 'Full screen') }}
+                    </div>
+
+                    <div class="map-scale">
+                        Illustrative scale
+                        <div class="map-scale-line"></div>
+                    </div>
+                </div>
+
+                <div class="playback">
+                    <div class="playback-top">
+                        {{ control(
+                            'pause' if weather['playing'] else 'play_arrow',
+                            'radar_playback',
+                            'Pause' if weather['playing'] else 'Play'
+                        ) }}
+
+                        <div class="timeline"
+                             role="slider"
+                             tabindex="0"
+                             aria-label="Radar timeline"
+                             aria-valuemin="0"
+                             aria-valuemax="{{ weather['frames']|length - 1 }}"
+                             aria-valuenow="{{ weather['frame_index'] }}"
+                             aria-valuetext="{{ weather['frame_time'] }}"
+                             data-class="slider"
+                             data-semantic="radar_timeline_slider">
+
+                            <span class="slider-track"></span>
+
+                            <span class="slider-fill"
+                                  style="width: {{ weather['timeline_percent'] }}%;"></span>
+
+                            <span class="slider-thumb"
+                                  style="left: {{ weather['timeline_percent'] }}%;"></span>
+                        </div>
+
+                        {{ control('skip_next', 'radar_next_frame', 'Next frame') }}
+                    </div>
+
+                    <div class="timeline-labels">
+                        <span>{{ weather['frames'][0] }}</span>
+                        <span>{{ weather['frame_time'] }}</span>
+                        <span>{{ weather['frames'][-1] }}</span>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <strong>{{ weather['active_layer_label'] }}</strong>
+
+                    {% for item in weather['legend'] %}
+                    <span class="legend-item">
+                        <span class="legend-swatch"
+                              style="background: {{ item['color'] }};"></span>
+                        {{ item['label'] }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <aside class="radar-side">
+                <section class="radar-info-card"
+                         data-class="card"
+                         data-semantic="radar_layer_information">
+                    <h2>{{ weather['active_layer_label'] }}</h2>
+                    <p>
+                        Explore the synthetic weather layer
+                        around {{ weather['location'] }}.
+                    </p>
+                    <p>
+                        Frame time: {{ weather['frame_time'] }}
+                    </p>
+                </section>
+
+                <section class="radar-info-card"
+                         data-class="card"
+                         data-semantic="radar_storm_information">
+                    <h2>Storm Tracking</h2>
+
+                    {% if weather['show_storm_tracks'] %}
+                    {% for storm in weather['storms'] %}
+                    <div class="storm-info">
+                        <div class="storm-info-heading">
+                            {{ icon(
+                                'thunderstorm',
+                                'storm_info_icon_' ~ storm['id'],
+                                storm['name']
+                            ) }}
+                            <strong>{{ storm['name'] }}</strong>
+                        </div>
+
+                        <p>{{ storm['direction'] }} at {{ storm['speed'] }}</p>
+                        <p>{{ storm['arrival'] }}</p>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p>
+                        Enable storm tracks from the Layers panel
+                        to view storm movement.
+                    </p>
+                    {% endif %}
+                </section>
+            </aside>
+        </div>
+
+        <footer class="radar-footer">
+            Synthetic geography, weather overlays, and storm tracks
+            for UI dataset generation.
+        </footer>
+    </main>
+</div>
+
+{% if weather['popup_visible'] %}
+<div class="radar-backdrop"
+     data-occluder="true">
+
+    <section class="radar-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="radar-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ weather['popup_type'] }}">
+
+        <div class="radar-dialog-heading">
+            <h2 id="radar-dialog-title">
+                {{ 'Map Layers' if weather['popup_type'] == 'layers_dialog' else 'Search Locations' }}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+
+                    data-semantic="close_radar_dialog"
+                    aria-label="Close dialog">
+                {{ icon('close', 'radar_dialog_close_icon', 'Close') }}
+            </button>
+        </div>
+
+        {% if weather['popup_type'] == 'layers_dialog' %}
+        {% for layer in weather['layers'] %}
+        {% set selected = weather['active_layer'] == layer['key'] %}
+
+        <button type="button"
+                class="layer-option {{ 'selected' if selected else '' }}"
+                data-class="button"
+                data-semantic="radar_layer_option_{{ layer['key'] }}"
+                aria-pressed="{{ 'true' if selected else 'false' }}">
+
+            {{ icon(
+                layer['icon'],
+                'layer_option_icon_' ~ layer['key'],
+                layer['label']
+            ) }}
+
+            <span class="option-copy">
+                <strong>{{ layer['label'] }}</strong>
+                <small>{{ layer['description'] }}</small>
+            </span>
+
+            {{ icon(
+                'check_box' if selected else 'check_box_outline_blank',
+                'layer_option_checkbox_' ~ layer['key'],
+                'Selected' if selected else 'Unselected',
+                'checkbox'
+            ) }}
+        </button>
+        {% endfor %}
+
+        <p class="dialog-label">Overlays</p>
+
+        {% for key, label in [
+            ('show_city_labels', 'City Labels'),
+            ('show_storm_tracks', 'Storm Tracks')
+        ] %}
+        <button type="button"
+                class="overlay-option"
+                data-class="button"
+                data-semantic="radar_overlay_{{ key }}"
+                aria-pressed="{{ 'true' if weather[key] else 'false' }}">
+
+            {{ icon(
+                'check_box' if weather[key] else 'check_box_outline_blank',
+                'radar_overlay_checkbox_' ~ key,
+                'Selected' if weather[key] else 'Unselected',
+                'checkbox'
+            ) }}
+
+            <span class="option-copy">{{ label }}</span>
+        </button>
+        {% endfor %}
+
+        <p class="dialog-label">Layer Opacity</p>
+
+        <div class="opacity-row">
+            <div class="timeline"
+                 role="slider"
+                 tabindex="0"
+                 aria-label="Layer opacity"
+                 aria-valuemin="0"
+                 aria-valuemax="100"
+                 aria-valuenow="{{ weather['opacity'] }}"
+                 data-class="slider"
+                 data-semantic="radar_opacity_slider">
+
+                <span class="slider-track"></span>
+
+                <span class="slider-fill"
+                      style="width: {{ weather['opacity'] }}%;"></span>
+
+                <span class="slider-thumb"
+                      style="left: {{ weather['opacity'] }}%;"></span>
+            </div>
+
+            <strong>{{ weather['opacity'] }}%</strong>
+        </div>
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_radar_layers">
+                Cancel
+            </button>
+
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="apply_radar_layers">
+                {{ icon('save', 'radar_apply_icon', 'Apply layers') }}
+                Apply
+            </button>
+        </div>
+
+        {% else %}
+        <div class="search-field"
+             data-class="search_bar"
+             data-semantic="radar_location_search_bar">
+
+            {{ icon('search', 'radar_dialog_search_icon', 'Search') }}
+
+            <input type="text"
+                   value="{{ weather['search_query'] }}"
+                   aria-label="Search city"
+                   data-class="input_field"
+                   data-semantic="radar_location_input">
+
+            <button type="button"
+                    class="icon-button"
+
+                    data-semantic="clear_radar_search"
+                    aria-label="Clear search">
+                {{ icon('close', 'radar_clear_search_icon', 'Clear') }}
+            </button>
+        </div>
+
+        {% for result in weather['search_results'] %}
+        <button type="button"
+                class="search-result"
+                data-class="button"
+                data-semantic="radar_search_result_{{ loop.index0 }}">
+
+            {{ icon(
+                'location_on',
+                'radar_result_location_' ~ loop.index0,
+                'Location'
+            ) }}
+
+            <span class="option-copy">
+                <strong>{{ result['name'] }}</strong>
+                <small>{{ result['region'] }}</small>
+            </span>
+
+            {{ icon(
+                'chevron_right',
+                'radar_result_arrow_' ~ loop.index0,
+                'Choose location'
+            ) }}
+        </button>
+        {% endfor %}
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

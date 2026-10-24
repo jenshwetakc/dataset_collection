@@ -1,0 +1,1053 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, annotation_class='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ annotation_class }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+{% block title %}Weather Alerts — {{ weather['location'] }}{% endblock %}
+
+{% block head %}
+<style>
+    .alerts-header {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .alerts-header-inner,
+    .alerts-nav-inner,
+    .alerts-main {
+        max-width: 1400px;
+        margin: auto;
+    }
+
+    .alerts-header-inner {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 24px;
+    }
+
+    .alerts-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 68px;
+        height: 60px;
+        flex-shrink: 0;
+        border: 2px solid currentColor;
+        font-size: 13px;
+        line-height: 1.1;
+        font-weight: 800;
+    }
+
+    .alerts-location {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .alerts-location p {
+        margin-top: 6px;
+        font-size: 12px;
+    }
+
+    .alerts-header .icon-button {
+        color: inherit;
+    }
+
+    .alerts-nav {
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .alerts-nav-inner {
+        display: flex;
+        overflow-x: auto;
+        padding-inline: 24px;
+    }
+
+    .alerts-nav-button {
+        position: relative;
+        padding: 16px;
+        flex-shrink: 0;
+        color: var(--on-surface);
+        white-space: nowrap;
+        font-weight: 700;
+    }
+
+    .alerts-nav-button.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .alerts-indicator {
+        position: absolute;
+        bottom: 0;
+        left: 12px;
+        right: 12px;
+        height: 3px;
+        background: currentColor;
+    }
+
+    .alerts-main {
+        padding: 26px 24px;
+    }
+
+    .alerts-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .alerts-title h1 {
+        font-size: 27px;
+    }
+
+    .alerts-title p {
+        margin-top: 8px;
+        color: var(--text-secondary);
+    }
+
+    .alerts-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .alerts-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 290px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .alerts-column {
+        min-width: 0;
+    }
+
+    .alerts-status-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .status-tab {
+        position: relative;
+        padding: 12px 18px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-weight: 700;
+    }
+
+    .status-tab.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .alert-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .filter-chip {
+        padding: 9px 13px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .filter-chip.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .alert-list {
+        display: grid;
+        gap: 16px;
+    }
+
+    .alert-card,
+    .alerts-side-card {
+        min-width: 0;
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+        overflow: hidden;
+    }
+
+    .alert-heading {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 20px;
+    }
+
+    .alert-weather-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 46px;
+        height: 46px;
+        flex-shrink: 0;
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .alert-weather-icon .material-symbols-rounded {
+        font-size: 28px;
+    }
+
+    .alert-heading-copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .alert-heading-copy h2 {
+        margin-top: 10px;
+        font-size: 20px;
+        line-height: 1.35;
+    }
+
+    .alert-heading-copy p {
+        margin-top: 10px;
+        line-height: 1.6;
+        font-size: 14px;
+    }
+
+    .alert-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+    }
+
+    .severity-badge,
+    .expired-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .severity-badge.warning {
+        background: var(--error);
+        color: var(--on-error);
+    }
+
+    .severity-badge.watch {
+        background: var(--warning);
+        color: var(--on-warning);
+    }
+
+    .severity-badge.advisory {
+        background: var(--info);
+        color: var(--on-info);
+    }
+
+    .expired-badge {
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .severity-badge .material-symbols-rounded,
+    .expired-badge .material-symbols-rounded {
+        font-size: 16px;
+    }
+
+    .alert-times {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 0 20px 18px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .alert-time {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .alert-time .material-symbols-rounded {
+        font-size: 17px;
+        color: var(--icon);
+    }
+
+    .alert-details {
+        padding: 20px;
+        border-top: 1px solid var(--border-subtle);
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .alert-details h3 {
+        margin-bottom: 10px;
+        font-size: 16px;
+    }
+
+    .alert-details p {
+        line-height: 1.6;
+        font-size: 14px;
+    }
+
+    .area-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 14px 0 20px;
+    }
+
+    .area-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 9px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 12px;
+    }
+
+    .area-chip .material-symbols-rounded {
+        font-size: 16px;
+    }
+
+    .alerts-side {
+        display: grid;
+        gap: 18px;
+    }
+
+    .alerts-side-card {
+        padding: 22px;
+    }
+
+    .alerts-side-card h2 {
+        margin-bottom: 14px;
+        font-size: 19px;
+    }
+
+    .alerts-side-card p {
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .warning-summary {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 18px 0;
+    }
+
+    .warning-summary > .material-symbols-rounded {
+        color: var(--icon);
+        font-size: 36px;
+    }
+
+    .warning-summary strong {
+        display: block;
+        font-size: 30px;
+    }
+
+    .warning-summary small {
+        display: block;
+        margin-top: 5px;
+        color: var(--text-secondary);
+    }
+
+    .guide-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 16px;
+        font-size: 13px;
+    }
+
+    .guide-row .material-symbols-rounded {
+        color: var(--icon);
+    }
+
+    .empty-alerts {
+        text-align: center;
+        padding: 50px 20px;
+    }
+
+    .empty-alerts > .material-symbols-rounded {
+        font-size: 56px;
+        color: var(--icon);
+    }
+
+    .empty-alerts h2 {
+        margin: 18px 0 12px;
+    }
+
+    .empty-alerts p {
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .alerts-footer {
+        margin-top: 26px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .alerts-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .alerts-dialog {
+        width: min(100%, 480px);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .dialog-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .dialog-heading h2 {
+        font-size: 21px;
+    }
+
+    .notification-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 0;
+    }
+
+    .notification-row small {
+        display: block;
+        margin-top: 5px;
+        color: var(--text-secondary);
+    }
+
+    .alert-switch {
+        width: 44px;
+        height: 26px;
+        padding: 3px;
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .alert-switch.enabled {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .alert-switch-thumb {
+        display: block;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .alert-switch.enabled .alert-switch-thumb {
+        margin-left: auto;
+    }
+
+    .dialog-label {
+        display: block;
+        margin: 16px 0 10px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .alert-email {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .dialog-choice {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        margin-bottom: 8px;
+        padding: 14px 10px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        text-align: left;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .dialog-choice.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .choice-copy {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    @media (max-width: 1000px) {
+        .alerts-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .alerts-side {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 600px) {
+        .alerts-header-inner {
+            padding: 12px;
+            gap: 10px;
+        }
+
+        .alerts-logo {
+            width: 56px;
+            height: 52px;
+            font-size: 11px;
+        }
+
+        .alerts-nav-inner {
+            padding-inline: 6px;
+        }
+
+        .alerts-nav-button {
+            padding: 14px 12px;
+            font-size: 13px;
+        }
+
+        .alerts-main {
+            padding: 20px 12px;
+        }
+
+        .alerts-title h1 {
+            font-size: 23px;
+        }
+
+        .alerts-actions {
+            width: 100%;
+        }
+
+        .alert-heading {
+            padding: 16px 12px;
+            gap: 8px;
+        }
+
+        .alert-weather-icon {
+            width: 34px;
+            height: 34px;
+        }
+
+        .alert-weather-icon .material-symbols-rounded {
+            font-size: 23px;
+        }
+
+        .alert-heading-copy h2 {
+            font-size: 17px;
+        }
+
+        .alert-times {
+            padding-inline: 12px;
+        }
+
+        .alert-details {
+            padding: 16px 12px;
+        }
+
+        .alerts-side {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .alerts-dialog {
+            padding: 18px;
+        }
+    }
+
+    @media (max-height: 450px) and (orientation: landscape) {
+        .alerts-backdrop {
+            align-items: flex-start;
+            padding: 10px;
+        }
+
+        .alerts-dialog {
+            max-height: calc(100dvh - 20px);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if weather['popup_visible'] else 'false' }}"
+     {% if weather['popup_visible'] %}inert{% endif %}>
+
+    <header class="alerts-header"
+            data-class="app_bar"
+            data-semantic="alerts_app_bar">
+        <div class="alerts-header-inner">
+            <div class="alerts-logo"
+                 data-class="logo"
+                 data-semantic="alerts_logo">
+                The<br>Weather<br>Channel
+            </div>
+
+            <div class="alerts-location">
+                <strong>{{ weather['location'] }}</strong>
+                <p>{{ weather['updated_text'] }}</p>
+            </div>
+
+            <button type="button"
+                    class="icon-button"
+
+                    data-semantic="alerts_header_notifications"
+                    aria-label="Notification settings">
+                {{ icon('notifications', 'alerts_header_bell', 'Notifications') }}
+            </button>
+        </div>
+    </header>
+
+    <nav class="alerts-nav"
+         aria-label="Weather pages"
+         data-class="navigation_bar"
+         data-semantic="alerts_navigation">
+        <div class="alerts-nav-inner" data-class="section">
+            {% for label in ['Today', 'Hourly', '10 Day', 'Radar', 'Alerts'] %}
+            <button type="button"
+                    class="alerts-nav-button {{ 'selected' if label == 'Alerts' else '' }}"
+                    data-class="tab"
+                    data-semantic="alerts_nav_{{ loop.index0 }}"
+                    aria-current="{{ 'page' if label == 'Alerts' else 'false' }}">
+                {{ label }}
+
+                {% if label == 'Alerts' %}
+                <span class="alerts-indicator"
+                      data-class="selection_indicator"
+                      data-semantic="alerts_selected_indicator"></span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+    </nav>
+
+    <main class="alerts-main">
+        <div class="alerts-title">
+            <div>
+                <h1>Weather Alerts</h1>
+                <p>{{ weather['visible_count'] }} alerts shown</p>
+            </div>
+
+            <div class="alerts-actions">
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="alerts_choose_location">
+                    {{ icon('location_on', 'alerts_location_icon', 'Location') }}
+                    Location
+                    {{ icon('expand_more', 'alerts_location_arrow', 'Choose location') }}
+                </button>
+
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button"
+                        data-semantic="alerts_notification_settings">
+                    {{ icon('tune', 'alerts_settings_icon', 'Settings') }}
+                    Settings
+                </button>
+            </div>
+        </div>
+
+        <div class="alerts-layout">
+            <div class="alerts-column">
+                <div class="alerts-status-tabs">
+                    {% for key, label in [('active', 'Active'), ('expired', 'Expired')] %}
+                    <button type="button"
+                            class="status-tab {{ 'selected' if weather['active_tab'] == key else '' }}"
+                            data-class="tab"
+                            data-semantic="alerts_status_{{ key }}"
+                            aria-pressed="{{ 'true' if weather['active_tab'] == key else 'false' }}">
+                        {{ label }}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <div class="alert-filters" data-class="section">
+                    <button type="button"
+                            class="filter-chip {{ 'selected' if weather['active_filter'] == 'all' else '' }}"
+                            data-class="chip"
+                            data-semantic="alerts_filter_all"
+                            aria-pressed="{{ 'true' if weather['active_filter'] == 'all' else 'false' }}">
+                        All Alerts
+                    </button>
+
+                    {% for category in weather['alert_types'] %}
+                    <button type="button"
+                            class="filter-chip {{ 'selected' if weather['active_filter'] == category['key'] else '' }}"
+                            data-class="chip"
+                            data-semantic="alerts_filter_{{ category['key'] }}"
+                            aria-pressed="{{ 'true' if weather['active_filter'] == category['key'] else 'false' }}">
+                        {{ category['label'] }}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                {% if weather['alerts'] %}
+                <section class="alert-list"
+                         data-class="section"
+                         data-semantic="weather_alert_list">
+                    {% for alert in weather['alerts'] %}
+                    <article class="alert-card"
+                             data-class="card"
+                             data-semantic="weather_alert_{{ alert['id'] }}">
+
+                        <div class="alert-heading">
+                            <div class="alert-weather-icon" data-class="button">
+                                {{ icon(
+                                    alert['icon'],
+                                    'alert_weather_icon_' ~ alert['id'],
+                                    alert['title']
+                                ) }}
+                            </div>
+
+                            <div class="alert-heading-copy">
+                                <div class="alert-badges">
+                                    <span class="severity-badge {{ alert['type'] }}"
+                                          data-class="badge"
+                                          data-semantic="alert_severity_{{ alert['id'] }}">
+                                        {{ icon(
+                                            'warning' if alert['type'] == 'warning' else 'visibility' if alert['type'] == 'watch' else 'info',
+                                            'alert_severity_icon_' ~ alert['id'],
+                                            alert['type']
+                                        ) }}
+                                        {{ alert['type']|title }}
+                                    </span>
+
+                                    {% if alert['status'] == 'Expired' %}
+                                    <span class="expired-badge"
+                                          data-class="badge"
+                                          data-semantic="alert_expired_{{ alert['id'] }}">
+                                        {{ icon(
+                                            'history',
+                                            'alert_expired_icon_' ~ alert['id'],
+                                            'Expired'
+                                        ) }}
+                                        Expired
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <h2>{{ alert['title'] }}</h2>
+                                <p>{{ alert['summary'] }}</p>
+                            </div>
+
+                            <button type="button"
+                                    class="icon-button"
+
+                                    data-semantic="expand_alert_{{ alert['id'] }}"
+                                    aria-expanded="{{ 'true' if alert['expanded'] else 'false' }}"
+                                    aria-label="Details for {{ alert['title'] }}">
+                                {{ icon(
+                                    'expand_less' if alert['expanded'] else 'expand_more',
+                                    'alert_expand_icon_' ~ alert['id'],
+                                    'Collapse details' if alert['expanded'] else 'Expand details'
+                                ) }}
+                            </button>
+                        </div>
+
+                        <div class="alert-times">
+                            <span class="alert-time">
+                                {{ icon(
+                                    'schedule',
+                                    'alert_issued_icon_' ~ alert['id'],
+                                    'Issued time'
+                                ) }}
+                                {{ alert['issued'] }}
+                            </span>
+
+                            <span class="alert-time">
+                                {{ icon(
+                                    'event',
+                                    'alert_expiry_icon_' ~ alert['id'],
+                                    'Expiry time'
+                                ) }}
+                                {{ 'Expired' if alert['status'] == 'Expired' else 'Expires' }}
+                                {{ alert['expires'] }}
+                            </span>
+                        </div>
+
+                        {% if alert['expanded'] %}
+                        <section class="alert-details"
+                                 data-class="section"
+                                 data-semantic="alert_details_{{ alert['id'] }}">
+                            <h3>Alert Details</h3>
+                            <p>{{ alert['details'] }}</p>
+
+                            <h3 style="margin-top: 18px;">Affected Areas</h3>
+
+                            <div class="area-chips">
+                                {% for area in alert['areas'] %}
+                                <span class="area-chip"
+                                      data-class="chip"
+                                      data-semantic="alert_area_{{ alert['id'] }}_{{ loop.index0 }}">
+                                    {{ icon(
+                                        'location_on',
+                                        'alert_area_icon_' ~ alert['id'] ~ '_' ~ loop.index0,
+                                        'Affected area'
+                                    ) }}
+                                    {{ area }}
+                                </span>
+                                {% endfor %}
+                            </div>
+
+                            <button type="button"
+                                    class="secondary-button"
+                                    data-class="button"
+                                    data-semantic="alert_details_share_{{ alert['id'] }}">
+                                {{ icon(
+                                    'share',
+                                    'alert_share_icon_' ~ alert['id'],
+                                    'Share'
+                                ) }}
+                                Share Alert
+                            </button>
+                        </section>
+                        {% endif %}
+                    </article>
+                    {% endfor %}
+                </section>
+
+                {% else %}
+                <section class="alert-card empty-alerts"
+                         data-class="card"
+                         data-semantic="empty_weather_alerts">
+                    {{ icon('notifications_none', 'empty_alerts_icon', 'No alerts') }}
+                    <h2>No Active Alerts</h2>
+                    <p>No synthetic alerts are listed for this location.</p>
+
+                    <button type="button"
+                            class="primary-button"
+                            data-class="button"
+                            data-semantic="empty_alerts_settings">
+                        {{ icon('settings', 'empty_alerts_settings_icon', 'Settings') }}
+                        Manage Notifications
+                    </button>
+                </section>
+                {% endif %}
+            </div>
+
+            <aside class="alerts-side">
+                <section class="alerts-side-card"
+                         data-class="card"
+                         data-semantic="alerts_summary">
+                    <h2>Your Location</h2>
+                    <p>{{ weather['location'] }}</p>
+
+                    <div class="warning-summary">
+                        {{ icon('warning', 'warning_summary_icon', 'Warnings') }}
+                        <div>
+                            <strong>{{ weather['warning_count'] }}</strong>
+                            <small>Active warnings shown</small>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="alerts-side-card"
+                         data-class="card"
+                         data-semantic="alerts_guide">
+                    <h2>Alert Categories</h2>
+
+                    {% for category in weather['alert_types'] %}
+                    <div class="guide-row">
+                        {{ icon(
+                            category['icon'],
+                            'alert_guide_' ~ category['key'],
+                            category['label']
+                        ) }}
+                        <span>{{ category['label'] }}</span>
+                    </div>
+                    {% endfor %}
+                </section>
+            </aside>
+        </div>
+
+        <footer class="alerts-footer">
+            Synthetic alerts for UI dataset generation.
+        </footer>
+    </main>
+</div>
+
+{% if weather['popup_visible'] %}
+<div class="alerts-backdrop"
+     data-occluder="true">
+    <section class="alerts-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="alerts-dialog-title"
+             data-class="dialog"
+             data-semantic="{{ weather['popup_type'] }}">
+
+        <div class="dialog-heading">
+            <h2 id="alerts-dialog-title">
+                {{ 'Notification Settings' if weather['popup_type'] == 'notification_settings' else 'Choose Location' }}
+            </h2>
+
+            <button type="button"
+                    class="icon-button"
+
+                    data-semantic="close_alerts_dialog"
+                    aria-label="Close dialog">
+                {{ icon('close', 'alerts_dialog_close_icon', 'Close') }}
+            </button>
+        </div>
+
+        {% if weather['popup_type'] == 'notification_settings' %}
+        {% for key, label, description in [
+            ('push_enabled', 'Push Notifications', 'Show alerts on this device'),
+            ('email_enabled', 'Email Notifications', 'Receive alerts by email')
+        ] %}
+        <div class="notification-row">
+            <div>
+                <strong>{{ label }}</strong>
+                <small>{{ description }}</small>
+            </div>
+
+            <button type="button"
+                    role="switch"
+                    class="alert-switch {{ 'enabled' if weather[key] else '' }}"
+                    aria-label="{{ label }}"
+                    aria-checked="{{ 'true' if weather[key] else 'false' }}"
+                    data-class="switch"
+                    data-semantic="alert_switch_{{ key }}">
+                <span class="alert-switch-thumb"></span>
+            </button>
+        </div>
+        {% endfor %}
+
+        {% if weather['email_enabled'] %}
+        <label class="dialog-label" for="alerts-email">
+            Email Address
+        </label>
+
+        <input id="alerts-email"
+               class="alert-email"
+               type="email"
+               value="{{ weather['email'] }}"
+               data-class="input_field"
+               data-semantic="alerts_email_input">
+        {% endif %}
+
+        <p class="dialog-label">Alert Types</p>
+
+        {% for category in weather['alert_types'] %}
+        {% set selected = category['key'] in weather['enabled_types'] %}
+        <button type="button"
+                class="dialog-choice"
+                data-class="button"
+                data-semantic="notification_type_{{ category['key'] }}"
+                aria-pressed="{{ 'true' if selected else 'false' }}">
+            {{ icon(
+                'check_box' if selected else 'check_box_outline_blank',
+                'notification_checkbox_' ~ category['key'],
+                'Selected' if selected else 'Unselected',
+                'checkbox'
+            ) }}
+            <span class="choice-copy">{{ category['label'] }}</span>
+        </button>
+        {% endfor %}
+
+        {% else %}
+        {% for location in weather['locations'] %}
+        {% set selected = location == weather['location'] %}
+        <button type="button"
+                class="dialog-choice {{ 'selected' if selected else '' }}"
+                data-class="button"
+                data-semantic="alert_location_{{ loop.index0 }}"
+                aria-pressed="{{ 'true' if selected else 'false' }}">
+
+            {{ icon(
+                'location_on',
+                'alert_location_icon_' ~ loop.index0,
+                'Location'
+            ) }}
+
+            <span class="choice-copy">{{ location }}</span>
+
+            {{ icon(
+                'check_box' if selected else 'check_box_outline_blank',
+                'alert_location_checkbox_' ~ loop.index0,
+                'Selected' if selected else 'Unselected',
+                'checkbox'
+            ) }}
+        </button>
+        {% endfor %}
+        {% endif %}
+
+        <div class="dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button"
+                    data-semantic="cancel_alert_preferences">
+                Cancel
+            </button>
+
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    data-semantic="save_alert_preferences">
+                {{ icon('save', 'save_alert_preferences_icon', 'Save') }}
+                Save
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}
