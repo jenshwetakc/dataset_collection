@@ -1,0 +1,1701 @@
+{% macro icon(name, key) -%}
+{% set aliases = {
+    'notifications_none': 'notifications',
+    'delete_outline': 'delete',
+    'check_circle_outline': 'check_circle',
+    'error_outline': 'error',
+    'chat_bubble_outline': 'chat_bubble',
+    'favorite_border': 'favorite',
+    'star_border': 'star',
+    'add_circle_outline': 'add_circle',
+    'play_circle_outline': 'play_circle'
+} %}
+<span
+    class="material-symbols-rounded"
+    data-class="icon"
+    data-semantic="{{ key }}"
+    aria-hidden="true"
+>{{ aliases.get(name, name) }}</span>
+{%- endmacro %}
+
+{% macro btn(name, key, label='', annotate=true) -%}
+<button
+    type="button"
+    {% if annotate %}data-class="button"{% endif %}
+    data-semantic="{{ key }}"
+    aria-label="{{ label or name }}"
+>
+    {{ icon(name, key ~ '_icon') }}
+    {% if label %}<span>{{ label }}</span>{% endif %}
+</button>
+{%- endmacro %}}
+
+{% macro text_btn(key, label, annotate=true) -%}
+<button
+    type="button"
+    class="text-button"
+    {% if annotate %}data-class="button"{% endif %}
+    data-semantic="{{ key }}"
+>{{ label }}</button>
+{%- endmacro %}
+
+{% macro action(key, label, primary=false, annotate=true) -%}
+<button
+    type="button"
+    class="{{ 'primary' if primary else 'secondary' }}"
+    {% if annotate %}data-class="button"{% endif %}
+    data-semantic="{{ key }}"
+>{{ label }}</button>
+{%- endmacro %}
+
+{% macro field(key, label, value='', type='text') -%}
+<label class="field">
+    <span>{{ label }}</span>
+    <input
+        type="{{ type }}"
+        value="{{ value }}"
+        data-class="input_field"
+        data-semantic="{{ key }}"
+    >
+</label>
+{%- endmacro %}
+
+{% macro select(key, label, value, annotate=true) -%}
+<button
+    type="button"
+    class="select-button"
+    {% if annotate %}data-class="button"{% endif %}
+    data-semantic="{{ key }}"
+    aria-label="{{ label }}: {{ value }}"
+>
+    <span>{{ label }}: {{ value }}</span>
+    {{ icon('expand_more', key ~ '_arrow') }}
+</button>
+{%- endmacro %}
+
+{% macro check(key, label, selected=false) -%}
+<label class="check-label">
+    <span
+        class="check-control"
+        data-class="checkbox"
+        data-semantic="{{ key }}"
+    >
+        <input
+            type="checkbox"
+            aria-label="{{ label }}"
+            {% if selected %}checked{% endif %}
+        >
+        <span
+            class="check-box {{ 'selected' if selected else '' }}"
+            aria-hidden="true"
+        ><span>✓</span></span>
+    </span>
+    <span>{{ label }}</span>
+</label>
+{%- endmacro %}
+
+{% macro radio(key, label, selected=false, group='') -%}
+<label class="radio-label">
+    <span
+        class="radio-control"
+        data-class="checkbox"
+        data-semantic="{{ key }}"
+    >
+        <input
+            type="radio"
+            name="{{ group or key.rsplit('_', 1)[0] }}"
+            value="{{ key }}"
+            aria-label="{{ label }}"
+            {% if selected %}checked{% endif %}
+        >
+        <span
+            class="radio-box {{ 'selected' if selected else '' }}"
+            aria-hidden="true"
+        ></span>
+    </span>
+    <span>{{ label }}</span>
+</label>
+{%- endmacro %}
+
+{% macro toggle(key, label, on=true) -%}
+<div class="row between toggle-row">
+    <span>{{ label }}</span>
+    <button
+        type="button"
+        class="switch {{ 'on' if on else '' }}"
+        role="switch"
+        aria-label="{{ label }}"
+        aria-checked="{{ 'true' if on else 'false' }}"
+        data-class="switch"
+        data-semantic="{{ key }}"
+    ><span></span></button>
+</div>
+{%- endmacro %}
+
+{% macro tile(t, key, progress=false) -%}
+<article
+    class="title-card"
+    data-class="card"
+    data-semantic="{{ key }}"
+>
+    <div class="tile-media">
+        <img
+            src="{{ t['image'] }}"
+            alt="{{ t['name'] }}"
+            data-class="image"
+            data-semantic="{{ key }}_image"
+        >
+        <span
+            class="n-mark"
+            data-class="logo"
+            data-semantic="{{ key }}_netflix_mark"
+        >N</span>
+
+        {% if progress %}
+        <div
+            class="progress"
+            data-class="progress_bar"
+            data-semantic="{{ key }}_progress"
+        >
+            <span style="width:{{ t['progress'] }}%"></span>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="tile-info stack">
+        <h3>{{ t['name'] }}</h3>
+
+        <div class="tile-meta row between">
+            <span class="muted small">
+                {{ t['kind'] }} · {{ t['genre'] }}
+            </span>
+            {{ btn(
+                'check' if t['saved'] else 'add',
+                key ~ '_list',
+
+            ) }}
+        </div>
+
+        <div class="tile-actions row">
+            {{ btn('play_arrow', key ~ '_play') }}
+            {{ btn('info', key ~ '_info') }}
+        </div>
+    </div>
+</article>
+{%- endmacro %}
+
+{% macro rail(label, items, key, progress=false) -%}
+<section
+    class="stack title-rail"
+    data-class="section"
+    data-semantic="{{ key }}"
+>
+    <div class="rail-heading row between">
+        <h2>{{ label }}</h2>
+        {{ btn('chevron_right', key ~ '_more', annotate=false) }}
+    </div>
+
+    <div class="grid">
+        {% for t in items %}
+        {{ tile(t, key ~ '_title_' ~ loop.index, progress) }}
+        {% endfor %}
+    </div>
+</section>
+{%- endmacro %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+    <title>Netflix · {{ nf['page']|replace('_', ' ')|title }}</title>
+
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+    >
+
+    <style>
+        :root {
+            {% for role, color in theme['semantic'].items() %}
+            --{{ role|replace('_', '-') }}: {{ color }};
+            {% endfor %}
+
+            --top: {{ system['layout']['height']
+                if system['layout']['position']=='top' else 0 }}px;
+            --bottom: {{ system['layout']['height']
+                if system['layout']['position']=='bottom' else 0 }}px;
+
+            --red: #e50914;
+            --page-padding: clamp(12px, 4vw, 64px);
+            --mobile-nav-height: 64px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            min-width: 0;
+        }
+
+        body {
+            margin: 0;
+            padding-top: var(--top);
+            padding-bottom: var(--bottom);
+            background: var(--background);
+            color: var(--on-background);
+            font: 14px Arial, sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+            overflow-wrap: anywhere;
+        }
+
+        h1 { font-size: clamp(26px, 3vw, 34px); }
+        h2 { font-size: clamp(19px, 2vw, 23px); }
+        h3 { font-size: 16px; }
+        p { line-height: 1.5; }
+
+        button,
+        input,
+        textarea,
+        select {
+            font: inherit;
+            color: inherit;
+        }
+
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: fit-content;
+            max-width: 100%;
+            min-width: 0;
+            min-height: 40px;
+            padding: 10px;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            flex: 0 1 auto;
+            justify-self: start;
+            align-self: center;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        button > span:not(.material-symbols-rounded) {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        textarea:focus-visible,
+        select:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 3px;
+        }
+
+        .icon-button {
+            width: 40px;
+            height: 40px;
+            min-height: 40px;
+            padding: 8px;
+            flex: 0 0 40px;
+        }
+
+        .text-button {
+            padding: 0;
+            min-height: 0;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        .primary {
+            padding: 12px 24px;
+            border-radius: 4px;
+            background: var(--red);
+            color: white;
+        }
+
+        .secondary {
+            padding: 11px 20px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--surface);
+            color: var(--on-surface);
+        }
+
+        .play-button {
+            padding: 10px 24px;
+            border-radius: 4px;
+            background: white;
+            color: #151515;
+            font-weight: bold;
+        }
+
+        .full { width: 100%; }
+
+        button.full {
+            width: 100%;
+            justify-self: stretch;
+        }
+
+        input,
+        textarea,
+        select {
+            min-width: 0;
+            max-width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--surface);
+            color: var(--on-surface);
+        }
+
+        textarea { resize: vertical; }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--text-secondary);
+            opacity: 1;
+        }
+
+        img,
+        video {
+            display: block;
+            max-width: 100%;
+            object-fit: cover;
+        }
+
+        .material-symbols-rounded {
+            --icon-size: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: var(--icon-size);
+            height: var(--icon-size);
+            min-width: var(--icon-size);
+            max-width: var(--icon-size);
+            min-height: var(--icon-size);
+            max-height: var(--icon-size);
+            padding: 0;
+            margin: 0;
+            flex: 0 0 var(--icon-size);
+            justify-self: start;
+            align-self: center;
+            font-family: 'Material Symbols Rounded';
+            font-size: var(--icon-size);
+            font-weight: normal;
+            font-style: normal;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            white-space: nowrap;
+            font-feature-settings: 'liga';
+            font-variation-settings:
+                'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .between { justify-content: space-between; }
+        .wrap { flex-wrap: wrap; }
+        .grow { flex: 1 1 0; min-width: 0; }
+
+        .stack {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            align-content: start;
+            gap: 18px;
+            min-width: 0;
+        }
+
+        .row > *,
+        .stack > *,
+        .grid > *,
+        .form-grid > *,
+        .detail-layout > *,
+        .side-layout > *,
+        .metric-grid > *,
+        .trailers > *,
+        .audio-columns > *,
+        .episode > *,
+        .list-row > * {
+            min-width: 0;
+        }
+
+        .small { font-size: 12px; }
+        .muted { color: var(--text-secondary); }
+        .match { color: #42b86b; font-weight: 700; }
+
+        .card {
+            min-width: 0;
+            max-width: 100%;
+            padding: 22px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            background: var(--surface);
+        }
+
+        /* Header and navigation */
+        .logo {
+            flex: 0 0 auto;
+            color: var(--red);
+            font-size: 30px;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+
+        .header {
+            gap: 10px;
+            min-width: 0;
+            padding: 12px var(--page-padding);
+            border-bottom: 1px solid var(--border-subtle);
+            background: var(--surface);
+        }
+
+        .header > button,
+        .header > .optional {
+            flex: 0 0 auto;
+        }
+
+        .header-avatar {
+            width: 30px;
+            height: 30px;
+            flex: 0 0 30px;
+            border-radius: 4px;
+        }
+
+        .desktop-nav { gap: 2px; }
+
+        .desktop-nav button {
+            flex: 0 0 auto;
+            padding: 8px;
+            white-space: nowrap;
+        }
+
+        .main {
+            width: 100%;
+            max-width: 1600px;
+            min-width: 0;
+            margin: auto;
+            padding: 22px var(--page-padding) 40px;
+        }
+
+        .demo-nav,
+        .tabs {
+            display: flex;
+            min-width: 0;
+            max-width: 100%;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .demo-nav {
+            gap: 5px;
+            margin-bottom: 24px;
+        }
+
+        .demo-nav button {
+            flex: 0 0 auto;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .demo-nav .active,
+        .tabs .active {
+            border-bottom: 3px solid var(--red);
+        }
+
+        .tabs {
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .tabs button {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .page-title { margin-bottom: 24px; }
+
+        .page-title.row,
+        .rail-heading {
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .page-title.row > h1,
+        .rail-heading > h2 {
+            flex: 1 1 180px;
+        }
+
+        .page-title.row > button,
+        .rail-heading > button {
+            flex: 0 0 auto;
+            margin-inline-start: auto;
+        }
+
+        /* Featured title */
+        .hero {
+            position: relative;
+            min-height: 430px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #101010;
+            color: white;
+        }
+
+        .hero > img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, #000d, #0005),
+                linear-gradient(0deg, #000c, transparent 60%);
+            pointer-events: none;
+        }
+
+        .hero-copy {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 18px;
+            width: 100%;
+            max-width: 660px;
+            padding: clamp(22px, 4vw, 50px);
+        }
+
+        .hero-copy h1 { font-size: clamp(28px, 4vw, 46px); }
+        .hero-copy p { line-height: 1.6; }
+
+        .series-mark {
+            color: #ddd;
+            font-size: 12px;
+            letter-spacing: 4px;
+            overflow-wrap: anywhere;
+        }
+
+        /* Cards and rails */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 16px;
+            min-width: 0;
+        }
+
+        .title-card {
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            background: var(--surface);
+        }
+
+        .tile-media {
+            position: relative;
+            min-width: 0;
+        }
+
+        .tile-media img {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+        }
+
+        .n-mark {
+            position: absolute;
+            top: 7px;
+            left: 9px;
+            color: var(--red);
+            font-size: 24px;
+            font-weight: 900;
+            text-shadow: 0 1px 2px black;
+        }
+
+        .tile-info {
+            padding: 12px;
+            gap: 8px;
+        }
+
+        .tile-info h3 {
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        .tile-meta {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 34px;
+            gap: 6px;
+        }
+
+        .tile-meta .small {
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+        }
+
+        .tile-info button {
+            width: 34px;
+            height: 34px;
+            min-height: 34px;
+            padding: 4px;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            flex: 0 0 34px;
+        }
+
+        .tile-meta > button { justify-self: end; }
+        .tile-actions { flex-wrap: wrap; gap: 8px; }
+        .title-rail { margin-top: 28px; }
+
+        .progress {
+            height: 5px;
+            overflow: hidden;
+            background: var(--surface-variant);
+        }
+
+        .progress span {
+            display: block;
+            max-width: 100%;
+            height: 100%;
+            background: var(--red);
+        }
+
+        /* Search and form controls */
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            max-width: 100%;
+            padding: 4px 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--surface);
+        }
+
+        .search-box input {
+            flex: 1 1 0;
+            width: 0;
+            min-width: 0;
+            border: 0;
+            background: transparent;
+        }
+
+        .search-box > button { flex: 0 0 auto; }
+
+        .badge {
+            display: inline-block;
+            max-width: 100%;
+            padding: 3px 7px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .chip {
+            padding: 8px 15px;
+            border: 1px solid var(--border);
+            border-radius: 22px;
+        }
+
+        .field {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 8px;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .field input,
+        .field textarea {
+            width: 100%;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .select-button {
+            justify-content: space-between;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--surface);
+            text-align: left;
+        }
+
+        .check-label,
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            max-width: 100%;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .check-label > span:last-child,
+        .radio-label > span:last-child {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .check-control,
+        .radio-control {
+            position: relative;
+            display: inline-flex;
+            width: 22px;
+            height: 22px;
+            flex: 0 0 22px;
+        }
+
+        .check-control input,
+        .radio-control input {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            margin: 0;
+            padding: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .check-box,
+        .radio-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--icon);
+            pointer-events: none;
+        }
+
+        .check-box > span {
+            visibility: hidden;
+            line-height: 1;
+        }
+
+        .check-control input:checked + .check-box {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: var(--on-primary);
+        }
+
+        .check-control input:checked + .check-box > span {
+            visibility: visible;
+        }
+
+        .radio-box { border-radius: 50%; }
+
+        .radio-control input:checked + .radio-box::after {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        .check-control input:focus-visible + .check-box,
+        .radio-control input:focus-visible + .radio-box {
+            outline: 2px solid var(--primary);
+            outline-offset: 3px;
+        }
+
+        .toggle-row > span {
+            flex: 1 1 0;
+            overflow-wrap: anywhere;
+        }
+
+        .switch {
+            width: 44px;
+            height: 25px;
+            min-height: 25px;
+            padding: 3px;
+            border-radius: 20px;
+            background: var(--border);
+            justify-content: flex-start;
+            flex: 0 0 44px;
+        }
+
+        .switch.on {
+            background: var(--red);
+            justify-content: flex-end;
+        }
+
+        .switch span {
+            width: 19px;
+            height: 19px;
+            flex: 0 0 19px;
+            border-radius: 50%;
+            background: white;
+        }
+
+        /* Detail and list pages */
+        .detail-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 300px;
+            gap: 28px;
+        }
+
+        .episode {
+            display: grid;
+            grid-template-columns: 35px 170px minmax(0, 1fr) 42px;
+            align-items: center;
+            gap: 16px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .episode img {
+            width: 170px;
+            aspect-ratio: 16 / 9;
+            border-radius: 4px;
+        }
+
+        .list-row {
+            display: grid;
+            grid-template-columns: 160px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 20px;
+            padding: 18px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .list-row img {
+            width: 160px;
+            aspect-ratio: 16 / 9;
+            border-radius: 4px;
+        }
+
+        /* Profile pages */
+        .profile-grid {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 28px;
+            margin: 45px 0;
+        }
+
+        .profile-tile {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            justify-items: center;
+            gap: 14px;
+            width: 150px;
+            min-height: 0;
+            padding: 0;
+        }
+
+        .profile-tile img {
+            width: 150px;
+            height: 150px;
+            border-radius: 8px;
+        }
+
+        .profile-media {
+            position: relative;
+            width: 100%;
+        }
+
+        .profile-edit-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0006;
+            pointer-events: none;
+        }
+
+        .profile-tile:focus-visible {
+            outline: none;
+        }
+
+        .profile-tile:focus-visible .profile-media {
+            outline: 2px solid var(--primary);
+            outline-offset: 3px;
+        }
+
+        .profile-form {
+            width: 100%;
+            max-width: 720px;
+            margin: 35px auto;
+        }
+
+        .profile-form > .row { flex-wrap: wrap; }
+        .profile-form > .row > .grow { flex: 1 1 260px; }
+
+        .profile-large {
+            width: 110px;
+            height: 110px;
+            flex-shrink: 0;
+            border-radius: 8px;
+        }
+
+        .empty {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            justify-items: center;
+            gap: 20px;
+            padding: 70px 15px;
+            text-align: center;
+        }
+
+        .empty > button { justify-self: center; }
+
+        .empty > .material-symbols-rounded {
+            --icon-size: 60px;
+            justify-self: center;
+        }
+
+        .side-layout {
+            display: grid;
+            grid-template-columns: 210px minmax(0, 1fr);
+            gap: 30px;
+        }
+
+        .side-nav {
+            display: grid;
+            align-content: start;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .side-nav button { justify-content: flex-start; }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .plan-card {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
+            min-width: 0;
+            padding: 18px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .plan-card.chosen { border: 2px solid var(--red); }
+
+        .device {
+            padding: 18px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .upcoming {
+            display: grid;
+            grid-template-columns: 100px minmax(0, 1fr);
+            gap: 22px;
+            margin: 25px 0;
+        }
+
+        .upcoming img {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: 6px;
+        }
+
+        .date-label { text-align: center; }
+        .date-label strong { display: block; font-size: 38px; }
+
+        .ranking {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .ranking > strong {
+            flex: 0 0 auto;
+            color: var(--text-secondary);
+            font-size: 60px;
+        }
+
+        .ranking > .title-card { flex: 1 1 0; }
+
+        /* Popups */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: #000a;
+        }
+
+        .dialog {
+            display: flex;
+            flex-direction: column;
+            width: min(620px, 100%);
+            min-width: 0;
+            max-height: calc(100dvh - 32px);
+            overflow: hidden;
+            border-radius: 10px;
+            background: var(--surface);
+            color: var(--on-surface);
+        }
+
+        .dialog-head,
+        .dialog-foot {
+            min-width: 0;
+            padding: 16px 22px;
+            flex-shrink: 0;
+        }
+
+        .dialog-head {
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .dialog-head h2 { flex: 1 1 0; }
+        .dialog-head > button { flex: 0 0 auto; }
+
+        .dialog-foot {
+            flex-wrap: wrap;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .dialog-body {
+            min-width: 0;
+            min-height: 0;
+            padding: 22px;
+            overflow: auto;
+        }
+
+        .dialog-body > img { width: 100%; height: auto; }
+        .dialog-body > .row { flex-wrap: wrap; }
+
+        .dialog .audio-columns {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
+        }
+
+        /* System chrome */
+        .system {
+            position: fixed;
+            left: 0;
+            right: 0;
+            z-index: 70;
+            height: {{ system['layout']['height'] }}px;
+            padding: 0 10px;
+            overflow: hidden;
+            background: var(--surface);
+            font-size: 11px;
+        }
+
+        .system.top { top: 0; }
+        .system.bottom { bottom: 0; }
+        .system .material-symbols-rounded { --icon-size: 16px; }
+
+        .system-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .system-group > strong,
+        .system-item {
+            flex: 0 0 auto;
+        }
+
+        .system-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .system-notch {
+            width: 48px;
+            height: 18px;
+            flex: 0 0 48px;
+            border-radius: 20px;
+            background: black;
+        }
+
+        .mobile-nav { display: none; }
+
+        /* Player */
+        .player-main {
+            max-width: none;
+            padding: 0;
+        }
+
+        .player-scene {
+            position: relative;
+            height: calc(100dvh - var(--top) - var(--bottom));
+            min-height: 260px;
+            overflow: hidden;
+            background: #060606;
+            color: white;
+        }
+
+        .player-scene video {
+            width: 100%;
+            height: 100%;
+        }
+
+        .player-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            flex-wrap: wrap;
+            padding: 18px;
+            background: linear-gradient(#000b, transparent);
+        }
+
+        .player-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 14px;
+            padding: 25px;
+            background: linear-gradient(transparent, #000e);
+        }
+
+        .player-bottom input[type=range] {
+            width: 100%;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            accent-color: var(--red);
+        }
+
+        .player-controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .player-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .player-center > * { pointer-events: auto; }
+
+        .player-message {
+            width: min(520px, calc(100% - 24px));
+            max-height: calc(100% - 24px);
+            padding: 28px;
+            overflow: auto;
+            border-radius: 8px;
+            background: #000d;
+            color: white;
+            text-align: center;
+        }
+
+        .subtitle {
+            position: absolute;
+            bottom: 180px;
+            left: 10%;
+            right: 10%;
+            color: white;
+            font-size: 23px;
+            text-align: center;
+            text-shadow: 1px 2px 3px black;
+            overflow-wrap: anywhere;
+        }
+
+        .up-next {
+            position: absolute;
+            right: 15px;
+            bottom: 180px;
+            width: min(320px, calc(100% - 30px));
+            padding: 20px;
+            background: #171717;
+            color: white;
+        }
+
+        .up-next img { width: 100%; aspect-ratio: 16 / 9; }
+
+        .kids-characters {
+            display: flex;
+            gap: 22px;
+            max-width: 100%;
+            margin: 25px 0;
+            overflow-x: auto;
+        }
+
+        .character {
+            display: grid;
+            justify-items: center;
+            gap: 10px;
+            min-width: 110px;
+            flex: 0 0 110px;
+        }
+
+        .character img {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+        }
+
+        .trailers {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .inline-note {
+            padding: 15px;
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+            overflow-wrap: anywhere;
+        }
+
+        /* Tablet and smaller desktop */
+        @media (max-width: 1100px) {
+            .grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+
+            .desktop-nav button { font-size: 12px; }
+
+            .detail-layout {
+                grid-template-columns: minmax(0, 1fr) 240px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .desktop-nav { display: none; }
+
+            .grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .detail-layout,
+            .side-layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .side-nav {
+                display: flex;
+                max-width: 100%;
+                overflow-x: auto;
+            }
+
+            .side-nav button {
+                flex: 0 0 auto;
+                white-space: nowrap;
+            }
+        }
+
+        /* Phones */
+        @media (max-width: 700px) {
+            .header { padding: 10px 12px; }
+            .logo { font-size: 25px; }
+
+            .header .optional,
+            .demo-nav {
+                display: none;
+            }
+
+            .main {
+                padding: 18px 12px;
+                padding-bottom: calc(
+                    var(--mobile-nav-height) + 24px
+                    + env(safe-area-inset-bottom, 0px)
+                );
+            }
+
+            .grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .hero { min-height: 340px; }
+            .hero-copy { padding: 26px 18px; }
+            .tile-info { padding: 10px; }
+            .tile-info h3 { font-size: 14px; }
+            .tile-info .small { font-size: 11px; }
+
+            .form-grid,
+            .metric-grid,
+            .trailers {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .episode {
+                grid-template-columns: 24px 90px minmax(0, 1fr);
+                gap: 8px;
+            }
+
+            .episode img { width: 90px; }
+
+            .episode > button {
+                grid-column: 3;
+                justify-self: end;
+            }
+
+            .episode .description { display: none; }
+
+            .list-row {
+                grid-template-columns: 80px minmax(0, 1fr) auto;
+                gap: 8px;
+            }
+
+            .list-row img { width: 80px; }
+
+            .list-row > .icon-button {
+                width: 36px;
+                height: 36px;
+                min-height: 36px;
+                padding: 6px;
+                flex-basis: 36px;
+            }
+
+            .profile-tile { width: 110px; }
+            .profile-tile img { width: 110px; height: 110px; }
+            .profile-grid { gap: 22px; }
+            .profile-large { width: 80px; height: 80px; }
+
+            .upcoming {
+                grid-template-columns: 48px minmax(0, 1fr);
+                gap: 12px;
+            }
+
+            .date-label strong { font-size: 28px; }
+
+            .mobile-nav {
+                position: fixed;
+                bottom: var(--bottom);
+                left: 0;
+                right: 0;
+                z-index: 40;
+                display: flex;
+                align-items: stretch;
+                min-height: var(--mobile-nav-height);
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+                border-top: 1px solid var(--border-subtle);
+                background: var(--surface);
+            }
+
+            .mobile-nav button {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                justify-items: center;
+                align-content: center;
+                align-self: stretch;
+                gap: 4px;
+                width: auto;
+                max-width: 25%;
+                min-width: 0;
+                padding: 8px 4px;
+                flex: 1 1 0;
+                font-size: 10px;
+                text-align: center;
+            }
+
+            .mobile-nav .material-symbols-rounded {
+                justify-self: center;
+            }
+
+            .mobile-nav button > span:not(.material-symbols-rounded) {
+                line-height: 1.2;
+            }
+
+            .system .low,
+            .system .system-label {
+                display: none;
+            }
+
+            .overlay { padding: 10px; }
+
+            .dialog {
+                max-height: calc(100dvh - 20px);
+            }
+
+            .dialog-head,
+            .dialog-foot,
+            .dialog-body {
+                padding: 14px;
+            }
+
+            .dialog-head h2 { font-size: 21px; }
+            .player-main { padding: 0; }
+            .player-controls { gap: 4px; }
+            .player-controls .optional { display: none; }
+            .player-bottom { padding: 15px; }
+            .player-top { padding: 8px; }
+            .subtitle { bottom: 150px; font-size: 18px; }
+
+            .up-next {
+                bottom: 140px;
+                width: min(260px, calc(100% - 30px));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dialog .audio-columns {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 22px;
+            }
+
+            .profile-grid {
+                gap: 18px;
+                margin: 28px 0;
+            }
+
+            .profile-tile { width: 100px; }
+            .profile-tile img { width: 100px; height: 100px; }
+            .hero-copy .row { gap: 8px; }
+            .hero-copy button { padding: 8px 12px; }
+            .card,
+            .plan-card { padding: 16px; }
+
+            /* Text actions move below list content when needed. */
+            .list-row > button:not(.icon-button) {
+                grid-column: 2 / -1;
+                justify-self: start;
+            }
+        }
+
+        @media (max-width: 359px) {
+            .header { gap: 6px; }
+
+            .header > button:not(.icon-button) {
+                padding: 6px;
+            }
+
+            .tile-info { padding: 8px; }
+            .tile-info h3 { font-size: 13px; }
+
+            .tile-meta {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .list-row {
+                grid-template-columns: 64px minmax(0, 1fr) auto;
+                gap: 6px;
+            }
+
+            .list-row img { width: 64px; }
+
+            .list-row > .icon-button {
+                width: 32px;
+                height: 32px;
+                min-height: 32px;
+                padding: 4px;
+                flex-basis: 32px;
+            }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .dialog-head,
+            .dialog-foot {
+                padding: 10px 14px;
+            }
+
+            .dialog-body { padding: 12px 14px; }
+            .player-message { padding: 16px; }
+            .subtitle { bottom: 110px; font-size: 16px; }
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div
+        class="system {{ system['layout']['position'] }} row between"
+        data-class="status_bar"
+        data-semantic="system_chrome"
+        data-occluder="{{ 'false' if nf['popup_visible'] else 'true' }}"
+        data-annotation-skip="{{ 'true' if nf['popup_visible'] else 'false' }}"
+    >
+        <div class="system-group">
+            <strong>{{ system['time_text'] }}</strong>
+
+            {% for x in system['left_icons'] %}
+            <span class="system-item {{ 'low' if loop.index>2 else '' }}">
+                {{ icon(x['icon'], 'system_left_' ~ x['id']) }}
+            </span>
+            {% endfor %}
+        </div>
+
+        {% if system['style']=='ios'
+            and system['ios_device_variant']!='classic' %}
+        <span class="system-notch" aria-hidden="true"></span>
+        {% endif %}
+
+        <div class="system-group">
+            {% for x in system['right_icons'] %}
+            <span
+                class="system-item {{ 'low'
+                    if x['id'] in system['system_states'] else '' }}"
+            >
+                {{ icon(x['icon'], 'system_right_' ~ x['id']) }}
+
+                {% if x['text'] %}
+                <span class="system-label">{{ x['text'] }}</span>
+                {% endif %}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div data-occluder="{{ 'false' if nf['popup_visible'] else 'true' }}"
+        data-annotation-skip="{{ 'true' if nf['popup_visible'] else 'false' }}"
+    >
+        {% if nf['page']!='player' %}
+        <header
+            class="header row"
+            data-class="app_bar"
+            data-semantic="netflix_header"
+        >
+            <div
+                class="logo"
+                data-class="logo"
+                data-semantic="netflix_logo"
+            >NETFLIX</div>
+
+            <nav
+                class="row desktop-nav"
+                data-class="navigation_bar"
+                data-semantic="primary_navigation"
+            >
+                {% for label in [
+                    'Home', 'TV Shows', 'Movies',
+                    'New & Popular', 'My List'
+                ] %}
+                <button
+                    type="button"
+                    data-class="button"
+                    data-semantic="primary_nav_{{ loop.index }}"
+                >{{ label }}</button>
+                {% endfor %}
+            </nav>
+
+            <div class="grow"></div>
+
+            {{ btn('search', 'header_search', annotate=false) }}
+
+            <span class="optional">
+                {{ btn(
+                    'notifications',
+                    'header_notifications',
+                    annotate=false
+                ) }}
+            </span>
+
+            <button
+                type="button"
+                data-class="button"
+                data-semantic="header_profile"
+                aria-label="Choose profile"
+            >
+                <img
+                    class="header-avatar"
+                    src="{{ nf['profiles'][0]['avatar'] }}"
+                    alt="{{ nf['profiles'][0]['name'] }}"
+                    data-class="avatar"
+                    data-semantic="header_profile_avatar"
+                >
+                {{ icon('expand_more', 'header_profile_arrow') }}
+            </button>
+        </header>
+        {% endif %}
+
+        <main
+            class="main {{ 'player-main' if nf['page']=='player' else '' }}"
+            data-semantic="page_content"
+        >
+            {% if nf['page']!='player' %}
+            <nav
+                class="demo-nav"
+                data-class="navigation_bar"
+                data-semantic="demo_workflow_navigation"
+            >
+                {% for key, name, label in nf['navigation'] %}
+                <button
+                    type="button"
+                    class="{{ 'active' if key==nf['page'] else '' }}"
+                    data-class="button"
+                    data-semantic="workflow_{{ key }}"
+                >
+                    {{ icon(name, 'workflow_icon_' ~ key) }}
+                    <span>{{ label }}</span>
+                </button>
+                {% endfor %}
+            </nav>
+            {% endif %}
+
+            {% block page %}{% endblock %}
+        </main>
+
+        {% if nf['page']!='player' %}
+        <nav
+            class="mobile-nav"
+            data-class="navigation_bar"
+            data-semantic="mobile_navigation"
+            data-occluder="{{ 'false' if nf['popup_visible'] else 'true' }}"
+        >
+            {% for name, key, label in [
+                ('home', 'home', 'Home'),
+                ('local_fire_department', 'new', 'New & Hot'),
+                ('download', 'downloads', 'Downloads'),
+                ('person', 'profile', 'My Netflix')
+            ] %}
+            {{ btn(name, 'mobile_' ~ key, label, annotate=false) }}
+            {% endfor %}
+        </nav>
+        {% endif %}
+    </div>
+
+    {% if nf['popup_visible'] %}
+        {% include 'popup.html' %}
+    {% endif %}
+</body>
+</html>

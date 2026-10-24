@@ -1,0 +1,802 @@
+{% extends 'base.html' %}
+
+{% block head %}
+{{ super() }}
+<style>
+    /* Profile selection is separate from the browsing interface. */
+    .header .desktop-nav,
+    .header > .grow,
+    .header > button,
+    .header > .optional,
+    .demo-nav,
+    .mobile-nav {
+        display: none;
+    }
+
+    .header {
+        background: #141414;
+        border-bottom: 0;
+        padding: 22px 4%;
+    }
+
+    body {
+        background: #141414;
+        color: #fff;
+    }
+
+    .main {
+        max-width: none;
+        padding: 24px 24px 60px;
+    }
+
+    .nf-profiles {
+        --profile-size: clamp(100px, 12vw, 150px);
+
+        max-width: 1000px;
+        margin: 7vh auto 0;
+        text-align: center;
+    }
+
+    .nf-profiles h1 {
+        font-size: clamp(30px, 4vw, 52px);
+        font-weight: 400;
+        line-height: 1.2;
+    }
+
+    .nf-profile-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 24px;
+        margin: 34px 0 44px;
+    }
+
+    .nf-profile-entry {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        align-content: start;
+        gap: 10px;
+        width: var(--profile-size);
+        min-width: 0;
+    }
+
+    .nf-profile-tile {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        gap: 12px;
+
+        width: var(--profile-size);
+        max-width: 100%;
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #a3a3a3;
+        cursor: pointer;
+    }
+
+    .nf-profile-media {
+        position: relative;
+        width: var(--profile-size);
+        height: var(--profile-size);
+        border-radius: 4px;
+    }
+
+    .nf-profile-media > img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+
+    .nf-profile-name {
+        width: 100%;
+        font-size: 18px;
+        line-height: 1.3;
+        text-align: center;
+        overflow-wrap: anywhere;
+    }
+
+    .nf-profile-tile:hover {
+        color: #fff;
+    }
+
+    .nf-profile-tile:hover .nf-profile-media {
+        outline: 3px solid #fff;
+        outline-offset: -3px;
+    }
+
+    .nf-profile-edit-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, .45);
+        border-radius: 4px;
+        pointer-events: none;
+    }
+
+    .nf-profile-edit-overlay .material-symbols-rounded {
+        color: #fff;
+    }
+
+    .nf-profile-lock {
+        color: #a3a3a3;
+    }
+
+    .nf-add-media {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .nf-add-circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 70%;
+        height: 70%;
+        border-radius: 50%;
+        background: #808080;
+        color: #141414;
+    }
+
+    .nf-add-circle .material-symbols-rounded {
+        --icon-size: 48px;
+        font-size: var(--icon-size);
+        width: var(--icon-size);
+        height: var(--icon-size);
+        min-width: var(--icon-size);
+        max-width: var(--icon-size);
+        min-height: var(--icon-size);
+        max-height: var(--icon-size);
+        flex: 0 0 var(--icon-size);
+    }
+
+    .nf-add-tile:hover .nf-add-circle {
+        background: #e5e5e5;
+    }
+
+    .nf-profile-outline,
+    .nf-profile-save {
+        width: fit-content;
+        max-width: 100%;
+        min-height: 40px;
+        border-radius: 0;
+        padding: 9px 24px;
+        font-size: 16px;
+        letter-spacing: 1px;
+    }
+
+    .nf-profile-outline {
+        border: 1px solid #808080;
+        background: transparent;
+        color: #a3a3a3;
+    }
+
+    .nf-profile-outline:hover {
+        border-color: #fff;
+        color: #fff;
+    }
+
+    .nf-profile-save {
+        border: 1px solid #fff;
+        background: #fff;
+        color: #141414;
+        font-weight: 700;
+    }
+
+    .nf-profile-save:hover {
+        border-color: #e50914;
+        background: #e50914;
+        color: #fff;
+    }
+
+    .nf-profile-editor {
+        width: min(640px, 100%);
+        min-width: 0;
+        margin: 3vh auto 0;
+    }
+
+    .nf-profile-editor > h1 {
+        font-size: clamp(32px, 5vw, 52px);
+        font-weight: 400;
+        line-height: 1.2;
+        margin-bottom: 12px;
+    }
+
+    .nf-profile-intro {
+        color: #a3a3a3;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    .nf-profile-edit-body {
+        display: grid;
+        grid-template-columns: 110px minmax(0, 1fr);
+        align-items: start;
+        gap: 24px;
+        padding: 24px 0;
+        border-top: 1px solid #333;
+        border-bottom: 1px solid #333;
+    }
+
+    .nf-profile-avatar-editor {
+        position: relative;
+        width: 110px;
+        height: 110px;
+    }
+
+    .nf-profile-avatar-editor > img {
+        width: 100%;
+        height: 100%;
+        border-radius: 4px;
+        object-fit: cover;
+    }
+
+    .nf-profile-avatar-edit {
+        position: absolute;
+        left: 7px;
+        bottom: 7px;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        min-height: 32px;
+        padding: 4px;
+        border: 1px solid #fff;
+        border-radius: 50%;
+        background: #141414;
+        color: #fff;
+    }
+
+    .nf-profile-fields {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+        min-width: 0;
+    }
+
+    .nf-profile-fields .field {
+        min-width: 0;
+        color: #b3b3b3;
+    }
+
+    .nf-profile-fields input:not([type="checkbox"]) {
+        width: 100%;
+        min-width: 0;
+        padding: 12px;
+        border: 1px solid transparent;
+        border-radius: 0;
+        background: #666;
+        color: #fff;
+    }
+
+    .nf-profile-fields input::placeholder {
+        color: #ddd;
+    }
+
+    .nf-profile-fields .select-button {
+        width: fit-content;
+        max-width: 100%;
+        border: 1px solid #808080;
+        border-radius: 0;
+        background: #141414;
+        color: #fff;
+        gap: 18px;
+        text-align: left;
+    }
+
+    .nf-profile-settings {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        min-width: 0;
+        padding-top: 18px;
+        border-top: 1px solid #333;
+    }
+
+    .nf-profile-settings h3 {
+        color: #b3b3b3;
+        font-size: 19px;
+        font-weight: 400;
+    }
+
+    .nf-maturity-badge {
+        justify-self: start;
+        max-width: 100%;
+        padding: 7px 10px;
+        background: #333;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .nf-profile-settings p {
+        color: #ddd;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .nf-profile-fields .check-label {
+        align-items: flex-start;
+        min-width: 0;
+        color: #ddd;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .nf-profile-fields .check-box {
+        flex: 0 0 22px;
+        margin-top: 1px;
+        border-color: #808080;
+    }
+
+    .nf-profile-fields .check-box.selected {
+        background: transparent;
+        border-color: #808080;
+        color: #fff;
+    }
+
+    .nf-profile-fields .check-label > span:last-child:not(.check-box) {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .nf-profile-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .nf-profile-actions > button {
+        flex: 0 1 auto;
+    }
+
+    @media (max-width: 700px) {
+        .main {
+            padding: 20px 16px 40px;
+        }
+
+        .header {
+            padding: 16px;
+        }
+
+        .nf-profiles {
+            --profile-size: 110px;
+            margin-top: 5vh;
+        }
+
+        .nf-profile-grid {
+            gap: 22px 18px;
+            margin: 28px 0 32px;
+        }
+
+        .nf-profile-name {
+            font-size: 15px;
+        }
+
+        .nf-profile-editor {
+            margin-top: 12px;
+        }
+
+        .nf-profile-edit-body {
+            grid-template-columns: 80px minmax(0, 1fr);
+            gap: 16px;
+        }
+
+        .nf-profile-avatar-editor {
+            width: 80px;
+            height: 80px;
+        }
+
+        .nf-profile-outline,
+        .nf-profile-save {
+            padding: 9px 16px;
+            font-size: 14px;
+        }
+    }
+
+    @media (max-width: 380px) {
+        .nf-profiles {
+            --profile-size: 100px;
+        }
+
+        .nf-profile-edit-body {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .nf-profile-avatar-editor {
+            width: 90px;
+            height: 90px;
+        }
+
+        .nf-profile-actions {
+            gap: 8px;
+        }
+    }
+
+    /* Keep the profile page consistently dark, including popups. */
+body {
+    --background: #141414;
+    --on-background: #fff;
+    --surface: #181818;
+    --on-surface: #fff;
+    --surface-variant: #333;
+    --text-secondary: #b3b3b3;
+    --border: #808080;
+    --border-subtle: #333;
+    --icon: #b3b3b3;
+    --primary: #e50914;
+    --on-primary: #fff;
+}
+
+/* Profile tiles have explicit dimensions independent of base buttons. */
+.nf-profile-entry {
+    width: var(--profile-size);
+    flex: 0 0 var(--profile-size);
+    min-width: 0;
+}
+
+button.nf-profile-tile {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    justify-self: center;
+    align-self: start;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    padding: 0;
+    gap: 12px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    }
+
+    /* Reserve the same square area for every avatar. */
+    .nf-profile-media {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1;
+        border-radius: 4px;
+    }
+
+    .nf-profile-media > img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        object-fit: cover;
+    }
+
+    /* Put the keyboard focus indicator around the avatar only. */
+    button.nf-profile-tile:focus-visible {
+        outline: none;
+    }
+
+    .nf-profile-tile:focus-visible .nf-profile-media {
+        outline: 3px solid white;
+        outline-offset: 3px;
+    }
+
+    /* Hover highlight stays inside the avatar without changing layout. */
+    .nf-profile-tile:hover .nf-profile-media {
+        outline: none;
+        box-shadow: inset 0 0 0 3px white;
+    }
+
+    .nf-profile-tile:hover .nf-profile-media::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        border: 3px solid white;
+        border-radius: inherit;
+        pointer-events: none;
+    }
+
+    .nf-profile-name {
+        display: block;
+        width: 100%;
+        min-height: 2.6em;
+        color: inherit;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+    }
+
+    /* The add symbol remains centered within its circle. */
+    .nf-add-circle {
+        width: 70%;
+        height: auto;
+        aspect-ratio: 1;
+        flex: 0 0 auto;
+    }
+
+    .nf-add-circle .material-symbols-rounded {
+        --icon-size: 40px;
+    }
+
+    /* Center the action beneath the profile grid. */
+    .nf-profiles > button {
+        margin-inline: auto;
+    }
+
+    /* Match checkbox styling to the updated base macro. */
+    .nf-profile-fields .check-control {
+        margin-top: 1px;
+        flex: 0 0 22px;
+    }
+
+    .nf-profile-fields .check-box {
+        margin: 0;
+        border-color: #808080;
+        background: transparent;
+        color: white;
+    }
+
+    .nf-profile-fields
+    .check-control input:checked + .check-box {
+        border-color: #808080;
+        background: transparent;
+        color: white;
+    }
+
+    /* Avoid applying name-field styling to radio inputs. */
+    .nf-profile-fields .radio-control input {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Editor actions remain compact and wrap naturally. */
+    .nf-profile-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .nf-profile-actions > button {
+        width: fit-content;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    /* Stack the editor before its text column becomes cramped. */
+    @media (max-width: 520px) {
+        .nf-profile-edit-body {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 20px;
+        }
+
+        .nf-profile-avatar-editor {
+            width: 90px;
+            height: 90px;
+        }
+
+        .nf-profile-fields {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .nf-profiles {
+            margin-top: 24px;
+        }
+
+        .nf-profile-grid {
+            gap: 20px 18px;
+        }
+    }
+
+    @media (max-height: 500px) {
+        .nf-profiles,
+        .nf-profile-editor {
+            margin-top: 12px;
+        }
+
+        .nf-profile-grid {
+            margin-block: 24px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page %}
+{% set s = nf['state'] %}
+
+{% if s in ['edit', 'add'] %}
+<section
+    class="nf-profile-editor"
+    data-class="section"
+    data-semantic="profile_editor"
+>
+    <h1>{{ 'Add Profile' if s == 'add' else 'Edit Profile' }}</h1>
+
+    {% if s == 'add' %}
+    <p class="nf-profile-intro">
+        Add a profile for another person watching Netflix.
+    </p>
+    {% endif %}
+
+    <div class="nf-profile-edit-body">
+        <div class="nf-profile-avatar-editor">
+            <img
+                src="{{ nf['profile']['avatar'] }}"
+                alt="Profile avatar"
+                data-class="avatar"
+                data-semantic="profile_edit_avatar"
+            >
+
+            <button
+                type="button"
+                class="nf-profile-avatar-edit"
+                aria-label="Change profile avatar"
+                data-semantic="change_profile_avatar"
+
+            >
+                {{ icon('edit', 'change_profile_avatar_icon') }}
+            </button>
+        </div>
+
+        <div class="nf-profile-fields">
+            {{ field(
+                'profile_name',
+                'Name',
+                '' if s == 'add' else nf['profile']['name']
+            ) }}
+
+            {% if s == 'edit' %}
+                {{ select('profile_language', 'Language', 'English') }}
+            {% endif %}
+
+            {{ check(
+                'profile_kids',
+                'Kids profile',
+                nf['profile']['kids']
+            ) }}
+
+            {% if s == 'edit' %}
+            <section class="nf-profile-settings">
+                <h3>Maturity settings</h3>
+
+                <span
+                    class="nf-maturity-badge"
+                    data-class="badge"
+                    data-semantic="profile_maturity"
+                >All maturity ratings</span>
+
+                <p>
+                    Show titles of all maturity ratings for this profile.
+                </p>
+
+                <button
+                    type="button"
+                    class="nf-profile-outline"
+                    data-class="button"
+                    data-semantic="edit_maturity"
+                >Edit</button>
+            </section>
+
+            <section class="nf-profile-settings">
+                <h3>Autoplay controls</h3>
+
+                {{ check(
+                    'autoplay_next',
+                    'Autoplay next episode in a series on all devices',
+                    true
+                ) }}
+
+                {{ check(
+                    'autoplay_previews',
+                    'Autoplay previews while browsing on all devices',
+                    false
+                ) }}
+            </section>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="nf-profile-actions">
+        <button
+            type="button"
+            class="nf-profile-save"
+            data-class="button"
+            data-semantic="profile_save"
+        >{{ 'Continue' if s == 'add' else 'Save' }}</button>
+
+        <button
+            type="button"
+            class="nf-profile-outline"
+            data-class="button"
+            data-semantic="profile_cancel"
+        >Cancel</button>
+
+        {% if s == 'edit' %}
+        <button
+            type="button"
+            class="nf-profile-outline"
+            data-class="button"
+            data-semantic="profile_delete"
+        >Delete Profile</button>
+        {% endif %}
+    </div>
+</section>
+
+{% else %}
+<section class="nf-profiles">
+    <h1>{{ 'Manage Profiles' if s == 'manage' else 'Who’s watching?' }}</h1>
+
+    <div class="nf-profile-grid">
+        {% for p in nf['profiles'] %}
+        <div class="nf-profile-entry">
+            <button
+                type="button"
+                class="nf-profile-tile"
+
+                data-semantic="profile_select_{{ loop.index }}"
+            >
+                <div class="nf-profile-media">
+                    <img
+                        src="{{ p['avatar'] }}"
+                        alt="{{ p['name'] }}"
+                        data-class="avatar"
+                        data-semantic="profile_avatar_{{ loop.index }}"
+                    >
+
+                    {% if s == 'manage' %}
+                    <div class="nf-profile-edit-overlay" data-class="icon">
+                        {{ icon(
+                            'edit',
+                            'profile_edit_icon_' ~ loop.index
+                        ) }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <span class="nf-profile-name">{{ p['name'] }}</span>
+            </button>
+
+            {% if p['locked'] %}
+            <div class="nf-profile-lock">
+                {{ icon('lock', 'profile_locked_' ~ loop.index) }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="nf-profile-entry">
+            <button
+                type="button"
+                class="nf-profile-tile nf-add-tile"
+                data-class="button"
+                data-semantic="add_profile"
+            >
+                <div class="nf-profile-media nf-add-media">
+                    <span class="nf-add-circle">
+                        {{ icon('add', 'add_profile_icon') }}
+                    </span>
+                </div>
+                <span class="nf-profile-name">Add Profile</span>
+            </button>
+        </div>
+    </div>
+
+    <button
+        type="button"
+        class="{{ 'nf-profile-save' if s == 'manage' else 'nf-profile-outline' }}"
+        data-class="button"
+        data-semantic="{{ 'profiles_done' if s == 'manage' else 'manage_profiles' }}"
+    >{{ 'Done' if s == 'manage' else 'Manage Profiles' }}</button>
+</section>
+{% endif %}
+{% endblock %}

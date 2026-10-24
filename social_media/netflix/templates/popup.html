@@ -1,0 +1,838 @@
+{% set s = nf['state'] %}
+{% set media_title = nf['title'] %}
+
+{% set headings = {
+    'notifications': 'Notifications',
+    'category_picker': 'Browse categories',
+    'filters': 'Browse filters',
+    'voice_search': 'Voice search',
+    'rating': 'Rate this title',
+    'share': 'Share title',
+    'audio_subtitles': 'Audio & subtitles',
+    'sort': 'Sort My List',
+    'remove_title': 'Remove from My List',
+    'reminder_options': 'Reminder settings',
+    'preview': 'Preview',
+    'smart_downloads': 'Smart Downloads',
+    'delete_download': 'Delete download',
+    'profile_lock': 'Profile lock',
+    'delete_profile': 'Delete profile',
+    'change_plan': 'Change plan',
+    'sign_out_devices': 'Sign out of devices',
+    'exit_kids': 'Switch profile',
+    'parental_controls': 'Viewing restrictions'
+} %}
+
+{% set confirm_labels = {
+    'filters': 'Apply filters',
+    'rating': 'Done',
+    'share': 'Done',
+    'audio_subtitles': 'Apply',
+    'sort': 'Apply',
+    'remove_title': 'Remove',
+    'reminder_options': 'Save',
+    'smart_downloads': 'Save',
+    'delete_download': 'Delete',
+    'profile_lock': 'Save',
+    'delete_profile': 'Delete profile',
+    'change_plan': 'Continue',
+    'sign_out_devices': 'Sign out',
+    'parental_controls': 'Save'
+} %}
+
+{% set destructive = s in [
+    'remove_title',
+    'delete_download',
+    'delete_profile',
+    'sign_out_devices'
+] %}
+
+<style>
+    .nf-popup-overlay {
+        padding: 24px;
+    }
+
+    .nf-popup {
+        width: min(480px, 100%);
+        max-height: calc(100dvh - 48px);
+        min-width: 0;
+        border: 1px solid var(--border-subtle);
+        box-shadow: 0 18px 60px rgba(0, 0, 0, .4);
+    }
+
+    .nf-popup-wide {
+        width: min(720px, 100%);
+    }
+
+    .nf-popup-preview {
+        width: min(860px, 100%);
+    }
+
+    .nf-popup .dialog-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 24px;
+    }
+
+    .nf-popup .dialog-head h2 {
+        flex: 1;
+        min-width: 0;
+        font-size: 21px;
+        overflow-wrap: anywhere;
+    }
+
+    .nf-popup .dialog-head > button {
+        flex: 0 0 auto;
+        padding: 6px;
+        min-height: 36px;
+    }
+
+    .nf-popup .dialog-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-content: start;
+        gap: 18px;
+        padding: 24px;
+        min-width: 0;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .nf-popup .dialog-body > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .nf-popup h3,
+    .nf-popup p,
+    .nf-popup label {
+        overflow-wrap: anywhere;
+    }
+
+    .nf-popup p {
+        line-height: 1.5;
+    }
+
+    .nf-popup button {
+        width: fit-content;
+        max-width: 100%;
+        min-width: 0;
+        justify-self: start;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .nf-popup button > span:not(.material-symbols-rounded):not(.radio-box) {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .nf-popup .field {
+        min-width: 0;
+    }
+
+    .nf-popup .field input:not([type="checkbox"]),
+    .nf-popup .field textarea {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .nf-popup .select-button {
+        gap: 16px;
+        text-align: left;
+    }
+
+    .nf-popup .check-label {
+        min-width: 0;
+        align-items: flex-start;
+    }
+
+    .nf-popup .check-label > span:last-child:not(.check-box) {
+        min-width: 0;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+
+    .nf-popup .check-box {
+        flex: 0 0 22px;
+        margin-top: 1px;
+    }
+
+    .nf-popup .radio-label {
+        gap: 10px;
+        text-align: left;
+        justify-content: flex-start;
+        padding: 8px 0;
+    }
+
+    .nf-popup .radio-box {
+        flex: 0 0 22px;
+    }
+
+    .nf-popup .switch {
+        width: 44px;
+        height: 25px;
+        min-height: 25px;
+        flex: 0 0 44px;
+    }
+
+    .nf-popup .nf-toggle-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .nf-popup .nf-toggle-row > span {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .nf-popup .dialog-foot {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 24px;
+    }
+
+    .nf-popup .dialog-foot button {
+        flex: 0 0 auto;
+    }
+
+    .nf-popup .nf-danger-action {
+        background: var(--red);
+        color: white;
+    }
+
+    .nf-popup .nf-notification {
+        display: grid;
+        grid-template-columns: 100px minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nf-popup .nf-notification:last-child {
+        border-bottom: 0;
+    }
+
+    .nf-popup .nf-notification > img {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 4px;
+    }
+
+    .nf-popup .nf-notification > div {
+        min-width: 0;
+    }
+
+    .nf-popup .nf-notification h3 {
+        font-size: 15px;
+        line-height: 1.4;
+        margin-bottom: 6px;
+    }
+
+    .nf-popup .nf-notification > button {
+        justify-self: end;
+        padding: 6px;
+    }
+
+    .nf-popup .nf-category-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 20px;
+    }
+
+    .nf-popup .nf-category {
+        width: 100%;
+        justify-content: space-between;
+        text-align: left;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nf-popup .audio-columns {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px;
+    }
+
+    .nf-popup .audio-columns > section {
+        min-width: 0;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+        align-content: start;
+    }
+
+    .nf-popup .audio-columns h3 {
+        margin-bottom: 8px;
+    }
+
+    .nf-popup .nf-centered {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        gap: 16px;
+        text-align: center;
+        padding: 12px 0;
+    }
+
+    .nf-popup .nf-centered > button {
+        justify-self: center;
+    }
+
+    .nf-popup .nf-centered > .material-symbols-rounded {
+        --icon-size: 48px;
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        max-width: 48px;
+        min-height: 48px;
+        max-height: 48px;
+        justify-self: center;
+    }
+
+    .nf-popup .nf-rating-image {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 6px;
+    }
+
+    .nf-popup .nf-rating-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .nf-popup .nf-rating-actions button {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px;
+        justify-content: flex-start;
+    }
+
+    .nf-popup .nf-share-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .nf-popup .nf-preview-video {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        background: black;
+        border-radius: 6px;
+    }
+
+    .nf-popup .nf-preview-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .nf-popup .nf-plans {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .nf-popup .plan-card {
+        min-width: 0;
+        padding: 16px;
+        gap: 10px;
+        align-content: start;
+    }
+
+    .nf-popup .plan-card .radio-label {
+        padding: 0;
+        align-items: flex-start;
+    }
+
+    .nf-popup .nf-profile-choice {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-align: left;
+        padding: 8px 0;
+    }
+
+    .nf-popup .nf-profile-choice > img {
+        width: 45px;
+        height: 45px;
+        flex: 0 0 45px;
+        border-radius: 4px;
+    }
+
+    .nf-popup .nf-profile-choice > span:not(.material-symbols-rounded) {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .nf-popup input[type="range"] {
+        padding: 0;
+        border: 0;
+        accent-color: var(--red);
+    }
+
+    @media (max-width: 700px) {
+        .nf-popup-overlay {
+            padding: 12px;
+        }
+
+        .nf-popup {
+            max-height: calc(100dvh - 24px);
+        }
+
+        .nf-popup .dialog-head {
+            padding: 14px 16px;
+            gap: 10px;
+        }
+
+        .nf-popup .dialog-head h2 {
+            font-size: 19px;
+        }
+
+        .nf-popup .dialog-body {
+            padding: 16px;
+            gap: 16px;
+        }
+
+        .nf-popup .dialog-foot {
+            padding: 12px 16px;
+            gap: 8px;
+        }
+
+        .nf-popup .dialog-foot button {
+            padding: 9px 12px;
+        }
+
+        .nf-popup .audio-columns,
+        .nf-popup .nf-plans {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 18px;
+        }
+
+        .nf-popup .nf-notification {
+            grid-template-columns: 76px minmax(0, 1fr);
+            gap: 10px;
+        }
+
+        .nf-popup .nf-notification > button {
+            grid-column: 2;
+            justify-self: start;
+            padding: 3px 0;
+        }
+
+        .nf-popup .nf-category-list {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+</style>
+
+<div class="overlay nf-popup-overlay" data-occluder="true">
+    <section
+        class="dialog nf-popup
+               {{ 'nf-popup-wide' if s in ['notifications', 'category_picker', 'audio_subtitles', 'change_plan'] else '' }}
+               {{ 'nf-popup-preview' if s == 'preview' else '' }}"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dialog_title"
+        data-class="dialog"
+        data-semantic="{{ nf['page'] }}_{{ s }}_dialog"
+    >
+        <header class="dialog-head">
+            <h2 id="dialog_title">
+                {{ headings.get(s, s|replace('_', ' ')|title) }}
+            </h2>
+            {{ btn('close', 'dialog_close', annotate=false) }}
+        </header>
+
+        <div class="dialog-body">
+            {% if s == 'notifications' %}
+                {% for t in nf['titles'][:6] %}
+                <article
+                    class="nf-notification"
+                    data-class="card"
+                    data-semantic="notification_{{ loop.index }}"
+                >
+                    <img
+                        src="{{ t['image'] }}"
+                        alt="{{ t['name'] }}"
+                        data-class="image"
+                        data-semantic="notification_image_{{ loop.index }}"
+                    >
+                    <div>
+                        <h3>New arrival: {{ t['name'] }}</h3>
+                        <p class="muted small">{{ loop.index }} days ago</p>
+                    </div>
+                    {{ btn(
+                        'play_arrow',
+                        'notification_play_' ~ loop.index,
+                    annotate=false) }}
+                </article>
+                {% endfor %}
+
+            {% elif s == 'category_picker' %}
+                <div class="nf-category-list">
+                    {% for genre in nf['genres'] %}
+                    <button
+                        type="button"
+                        class="nf-category"
+                        data-class="button"
+                        data-semantic="category_{{ loop.index }}"
+                    >
+                        <span>{{ genre }}</span>
+                        {{ icon(
+                            'chevron_right',
+                            'category_' ~ loop.index ~ '_icon'
+                        ) }}
+                    </button>
+                    {% endfor %}
+                </div>
+
+            {% elif s == 'filters' %}
+                <h3>Browse by type</h3>
+                {{ radio('filter_all', 'All', true) }}
+                {{ radio('filter_movies', 'Movies') }}
+                {{ radio('filter_series', 'TV shows') }}
+                {{ select('filter_genre', 'Genre', 'All genres') }}
+                {{ select('filter_language', 'Audio language', 'English') }}
+                {{ check(
+                    'filter_downloadable',
+                    'Available for download',
+                    false
+                ) }}
+
+            {% elif s == 'voice_search' %}
+                <div class="nf-centered">
+                    {{ icon('mic', 'voice_search_mic') }}
+                    <h3>Say a title or genre</h3>
+                    <p class="muted">Try a movie name, actor or category.</p>
+                    {{ action('voice_search_stop', 'Stop listening') }}
+                </div>
+
+            {% elif s == 'rating' %}
+                <img
+                    class="nf-rating-image"
+                    src="{{ media_title['image'] }}"
+                    alt="{{ media_title['name'] }}"
+                    data-class="image"
+                    data-semantic="rate_title_image"
+                >
+                <h3>{{ media_title['name'] }}</h3>
+                <div class="nf-rating-actions">
+                    {{ btn('thumb_down', 'rating_dislike', 'Not for me') }}
+                    {{ btn('thumb_up', 'rating_like', 'I like this') }}
+                    {{ btn('favorite', 'rating_love', 'Love this') }}
+                </div>
+
+            {% elif s == 'share' %}
+                <h3>{{ media_title['name'] }}</h3>
+                {{ field(
+                    'share_link',
+                    'Link',
+                    'https://example.test/netflix/title/0'
+                ) }}
+                <div class="nf-share-actions">
+                    {{ btn('content_copy', 'copy_share_link', 'Copy link') }}
+                    {{ btn('mail', 'share_email', 'Email') }}
+                </div>
+
+            {% elif s == 'audio_subtitles' %}
+                <div class="audio-columns">
+                    <section
+                        class="stack"
+
+                        data-semantic="audio_choices"
+                    >
+                        <h3>Audio</h3>
+                        {% for label in [
+                            'English [Original]',
+                            'English – Audio Description',
+                            'Korean',
+                            'Spanish'
+                        ] %}
+                            {{ radio(
+                                'audio_' ~ loop.index,
+                                label,
+                                loop.first
+                            ) }}
+                        {% endfor %}
+                    </section>
+
+                    <section
+                        class="stack"
+
+                        data-semantic="subtitle_choices"
+                    >
+                        <h3>Subtitles</h3>
+                        {% for label in [
+                            'Off',
+                            'English [CC]',
+                            'Korean',
+                            'Spanish'
+                        ] %}
+                            {{ radio(
+                                'subtitle_' ~ loop.index,
+                                label,
+                                loop.index == 2
+                            ) }}
+                        {% endfor %}
+                    </section>
+                </div>
+
+            {% elif s == 'sort' %}
+                {% for label in [
+                    'Suggested',
+                    'Recently added',
+                    'Alphabetical',
+                    'Release year'
+                ] %}
+                    {{ radio(
+                        'list_sort_' ~ loop.index,
+                        label,
+                        loop.first
+                    ) }}
+                {% endfor %}
+
+            {% elif s == 'remove_title' %}
+                <h3>Remove {{ media_title['name'] }} from My List?</h3>
+                <p class="muted">You can add it again at any time.</p>
+
+            {% elif s == 'reminder_options' %}
+                <h3>Remind me when {{ media_title['name'] }} arrives</h3>
+
+                <div class="nf-toggle-row">
+                    <span>Push notification</span>
+                    <button
+                        type="button"
+                        class="switch on"
+                        role="switch"
+                        aria-label="Push notification"
+                        aria-checked="true"
+                        data-class="switch"
+                        data-semantic="reminder_push"
+                    ><span></span></button>
+                </div>
+
+                <div class="nf-toggle-row">
+                    <span>Email notification</span>
+                    <button
+                        type="button"
+                        class="switch"
+                        role="switch"
+                        aria-label="Email notification"
+                        aria-checked="false"
+                        data-class="switch"
+                        data-semantic="reminder_email"
+                    ><span></span></button>
+                </div>
+
+                {{ check('reminder_auto_list', 'Add to My List', true) }}
+
+            {% elif s == 'preview' %}
+                <video
+                    class="nf-preview-video"
+                    poster="{{ media_title['backdrop'] }}"
+                    preload="none"
+                    aria-label="Preview of {{ media_title['name'] }}"
+                    data-class="video"
+                    data-semantic="preview_video"
+                ></video>
+
+                <h3>{{ media_title['name'] }}</h3>
+                <div class="nf-preview-controls">
+                    {{ btn('play_arrow', 'preview_play') }}
+                    {{ btn('volume_off', 'preview_mute') }}
+                    {{ btn('fullscreen', 'preview_fullscreen') }}
+                </div>
+
+            {% elif s == 'smart_downloads' %}
+                {{ toggle(
+                    'download_next_episode',
+                    'Download next episode',
+                    true
+                ) }}
+                <p class="muted">
+                    Delete watched episodes and download the next one.
+                </p>
+                {{ toggle('downloads_for_you', 'Downloads for You', false) }}
+                {{ check('downloads_wifi_only', 'Wi-Fi only', true) }}
+                {{ select('download_quality', 'Video quality', 'Standard') }}
+
+                <label class="field">
+                    Storage allocation · 2 GB
+                    <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        value="2"
+                        aria-label="Storage allocation in gigabytes"
+                        data-class="slider"
+                        data-semantic="smart_download_storage"
+                    >
+                </label>
+
+            {% elif s == 'delete_download' %}
+                <h3>Delete {{ media_title['name'] }}?</h3>
+                <p class="muted">
+                    You can download it again while it remains available.
+                </p>
+                {{ check(
+                    'delete_all_episodes',
+                    'Delete all downloaded episodes',
+                    false
+                ) }}
+
+            {% elif s == 'profile_lock' %}
+                {{ field(
+                    'lock_account_password',
+                    'Account password',
+                    '',
+                    'password'
+                ) }}
+                {{ check(
+                    'require_profile_pin',
+                    'Require a PIN to access this profile',
+                    true
+                ) }}
+
+                <label class="field">
+                    4-digit PIN
+                    <input
+                        type="password"
+                        inputmode="numeric"
+                        pattern="[0-9]{4}"
+                        maxlength="4"
+                        value="0000"
+                        autocomplete="off"
+                        data-class="input_field"
+                        data-semantic="profile_pin"
+                    >
+                </label>
+
+                {{ check(
+                    'pin_new_profiles',
+                    'Require PIN to add new profiles',
+                    false
+                ) }}
+
+            {% elif s == 'delete_profile' %}
+                <h3>Delete Sam’s profile?</h3>
+                <p class="muted">
+                    This profile’s viewing history and My List will be removed.
+                </p>
+
+            {% elif s == 'change_plan' %}
+                <p class="muted">Choose a plan. Prices shown are demo values.</p>
+
+                <div class="nf-plans">
+                    {% for label, price in [
+                        ('Example Basic', '$10 / month'),
+                        ('Example Standard', '$15 / month'),
+                        ('Example Premium', '$20 / month')
+                    ] %}
+                    <div
+                        class="plan-card {{ 'chosen' if loop.index == 2 else '' }}"
+                        data-class="card"
+                        data-semantic="plan_{{ loop.index }}"
+                    >
+                        {{ radio(
+                            'plan_choice_' ~ loop.index,
+                            label,
+                            loop.index == 2
+                        ) }}
+                        <strong>{{ price }}</strong>
+                        <p class="small muted">
+                            Example video quality and device allowance
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+            {% elif s == 'sign_out_devices' %}
+                <h3>Sign out of all devices?</h3>
+                <p class="muted">
+                    You’ll need to sign in again to watch on those devices.
+                </p>
+                {{ check(
+                    'signout_confirm',
+                    'Sign out of all devices',
+                    false
+                ) }}
+
+            {% elif s == 'exit_kids' %}
+                <p class="muted">Choose a profile to continue.</p>
+
+                {% for p in nf['profiles'][:3] %}
+                <button
+                    type="button"
+                    class="nf-profile-choice"
+
+                    data-semantic="exit_profile_{{ loop.index }}"
+                >
+                    <img
+                        src="{{ p['avatar'] }}"
+                        alt="{{ p['name'] }}"
+                        data-class="avatar"
+                        data-semantic="exit_profile_avatar_{{ loop.index }}"
+                    >
+                    <span>{{ p['name'] }}</span>
+
+                    {% if p['locked'] %}
+                        {{ icon(
+                            'lock',
+                            'exit_profile_lock_' ~ loop.index
+                        ) }}
+                    {% endif %}
+                </button>
+                {% endfor %}
+
+            {% elif s == 'parental_controls' %}
+                {{ field(
+                    'parental_password',
+                    'Account password',
+                    '',
+                    'password'
+                ) }}
+                {{ select('kids_maturity', 'Maturity level', 'TV-Y7') }}
+                {{ toggle(
+                    'kids_experience',
+                    'Display the Kids experience',
+                    true
+                ) }}
+                {{ field('restricted_titles', 'Blocked titles', '') }}
+                {{ check(
+                    'kids_only',
+                    'Show only age-appropriate titles',
+                    true
+                ) }}
+            {% endif %}
+        </div>
+
+        <footer class="dialog-foot">
+            {{ action(
+                'dialog_cancel',
+                'Cancel' if destructive else 'Close'
+            ) }}
+
+            {% if s in confirm_labels %}
+            <button
+                type="button"
+                class="primary {{ 'nf-danger-action' if destructive else '' }}"
+                data-class="button"
+                data-semantic="dialog_confirm"
+            >{{ confirm_labels[s] }}</button>
+            {% endif %}
+        </footer>
+    </section>
+</div>
