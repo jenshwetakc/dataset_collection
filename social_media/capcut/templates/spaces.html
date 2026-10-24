@@ -1,0 +1,738 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, cls='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ cls }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+{% macro action(name, semantic, label, annotate=True) -%}
+<button type="button"
+        class="icon-button"
+        {% if annotate %}data-class="button"{% endif %}
+        aria-label="{{ label }}">
+    {{ icon(name, semantic, label) }}
+</button>
+{%- endmacro %}
+
+{% block title %}CapCut — Spaces{% endblock %}
+
+{% block head %}
+<style>
+    .spaces-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 16px 22px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .spaces-brand { font-size: 25px; font-weight: 800; }
+    .spaces-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+    .spaces-layout {
+        display: grid;
+        grid-template-columns: 225px minmax(0, 1fr);
+    }
+
+    .spaces-sidebar {
+        padding: 20px 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-right: 1px solid var(--border-subtle);
+    }
+
+    .spaces-nav { display: grid; gap: 8px; }
+
+    .spaces-nav button {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 13px;
+        border-radius: 10px;
+        text-align: left;
+    }
+
+    .spaces-nav .active,
+    .spaces-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .spaces-storage {
+        margin-top: 28px;
+        padding: 14px;
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .spaces-storage p { font-size: 12px; margin: 10px 0; }
+
+    .spaces-progress {
+        height: 10px;
+        overflow: hidden;
+        border: 1px solid var(--icon);
+        border-radius: 8px;
+        background: var(--surface);
+    }
+
+    .spaces-progress-fill {
+        height: 100%;
+        background: var(--icon);
+    }
+
+    .spaces-main {
+        width: 100%;
+        max-width: 1900px;
+        min-width: 0;
+        margin-inline: auto;
+        padding: 28px;
+    }
+
+    .spaces-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .spaces-heading h1 { font-size: clamp(24px, 3vw, 34px); }
+    .spaces-heading p { margin-top: 7px; color: var(--text-secondary); }
+
+    .spaces-members {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .spaces-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+        overflow: hidden;
+        border-radius: 50%;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .spaces-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+
+    .spaces-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .spaces-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 24px;
+    }
+
+    .spaces-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1 1 220px;
+        min-width: 0;
+        min-height: 44px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .spaces-search input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    .spaces-search input::placeholder { color: var(--on-surface-variant); }
+
+    .spaces-select { position: relative; }
+
+    .spaces-select select {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 38px 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .spaces-select > .material-symbols-rounded {
+        position: absolute;
+        right: 9px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: var(--icon);
+    }
+
+    .spaces-upload {
+        margin-bottom: 24px;
+        padding: 18px;
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border);
+    }
+
+    .spaces-upload-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .spaces-upload-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .spaces-upload-title div { min-width: 0; }
+    .spaces-upload-title strong { overflow-wrap: anywhere; }
+    .spaces-upload p { margin-top: 5px; font-size: 12px; }
+    .spaces-section-title { margin-bottom: 15px; font-size: 20px; }
+
+    .spaces-folders {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 28px;
+    }
+
+    .spaces-folder {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px;
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border-subtle);
+    }
+
+    .spaces-folder p { margin-top: 4px; font-size: 12px; }
+
+    .spaces-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+        gap: 18px;
+    }
+
+    .spaces-card {
+        min-width: 0;
+        overflow: hidden;
+        border-radius: 14px;
+        border: 1px solid var(--border-subtle);
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .spaces-cover {
+        position: relative;
+        aspect-ratio: 16 / 10;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .spaces-cover img { width: 100%; height: 100%; }
+
+    .spaces-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+    }
+
+    .spaces-placeholder .material-symbols-rounded { font-size: 40px; }
+
+    .spaces-duration {
+        position: absolute;
+        right: 8px;
+        bottom: 8px;
+        padding: 4px 7px;
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 11px;
+    }
+
+    .spaces-card-info { padding: 12px; }
+
+    .spaces-card-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    .spaces-card-title h3 { font-size: 14px; overflow-wrap: anywhere; }
+    .spaces-card-info p { font-size: 12px; margin-top: 5px; }
+
+    .spaces-card-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 11px;
+    }
+
+    .spaces-shared {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 6px;
+        border-radius: 6px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .spaces-shared .material-symbols-rounded { font-size: 16px; }
+
+    .spaces-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        padding: 65px 20px;
+        border-radius: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+        text-align: center;
+    }
+
+    .spaces-empty > .material-symbols-rounded { font-size: 56px; }
+
+    .spaces-modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 55%);
+    }
+
+    .spaces-dialog {
+        width: min(440px, 100%);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 22px;
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .spaces-dialog-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .spaces-dialog h2 { font-size: 21px; }
+    .spaces-field { margin-bottom: 16px; }
+    .spaces-field label { display: block; margin-bottom: 7px; font-size: 13px; }
+
+    .spaces-field input {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .spaces-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 40px;
+        text-align: left;
+    }
+
+    .spaces-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    @media (max-width: 850px) {
+        .spaces-layout { display: block; }
+        .spaces-sidebar { border-right: 0; }
+
+        .spaces-nav {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 5px;
+        }
+
+        .spaces-nav button {
+            flex-direction: column;
+            justify-content: center;
+            padding: 10px 4px;
+            font-size: 11px;
+        }
+
+        .spaces-storage { margin-top: 16px; }
+        .spaces-main { padding: 20px; }
+    }
+
+    @media (max-width: 480px) {
+        .spaces-header { padding: 14px; }
+        .spaces-main { padding: 18px 12px; }
+        .spaces-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .spaces-card-info { padding: 8px; }
+        .spaces-card-title h3 { font-size: 12px; }
+        .spaces-card-title .icon-button { width: 28px; height: 28px; }
+        .spaces-members { width: 100%; }
+        .spaces-folder { padding: 13px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if capcut['popup_visible'] else 'false' }}">
+    <header class="spaces-header" data-class="app_bar">
+        <strong class="spaces-brand">CapCut</strong>
+        <div class="spaces-actions">
+            {{ action('notifications', 'spaces_notifications', 'Notifications' , annotate=false) }}
+            {{ action('settings', 'spaces_settings', 'Settings' , annotate=false) }}
+        </div>
+    </header>
+
+    <div class="spaces-layout">
+        <aside class="spaces-sidebar">
+            <nav class="spaces-nav"
+                 data-class="navigation_bar"
+                 aria-label="Main navigation">
+                {% for name, symbol in [('Edit', 'movie_edit'), ('Templates', 'dashboard'), ('Spaces', 'cloud'), ('Me', 'person')] %}
+                <button type="button"
+                        class="{{ 'active' if name == 'Spaces' else '' }}"
+                        data-class="button">
+                    {{ icon(symbol, 'spaces_nav_' ~ loop.index, name) }}
+                    <span>{{ name }}</span>
+                </button>
+                {% endfor %}
+            </nav>
+
+            <section class="spaces-storage" data-class="card">
+                <strong>Cloud storage</strong>
+                <p>{{ capcut['storage_used'] }} GB of {{ capcut['storage_total'] }} GB used</p>
+
+                <div class="spaces-progress"
+                     role="progressbar"
+                     aria-label="Cloud storage used"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="{{ capcut['storage_percent'] }}"
+                     data-class="progress_bar">
+                    <div class="spaces-progress-fill"
+                         style="width: {{ capcut['storage_percent'] }}%;"></div>
+                </div>
+            </section>
+        </aside>
+
+        <main class="spaces-main">
+            <div class="spaces-heading" data-class="section">
+                <div>
+                    <h1>{{ capcut['space_name'] }}</h1>
+                    <p>Keep your projects together and create with your team.</p>
+                </div>
+
+                <div class="spaces-members">
+                    {% for member in capcut['members'] %}
+                    {% if member['avatar'] %}
+                    <img class="spaces-avatar"
+                         src="{{ member['avatar'] }}"
+                         alt="{{ member['name'] }}"
+                         data-class="avatar">
+                    {% else %}
+                    <span class="spaces-avatar"
+                          data-class="avatar"
+                          aria-label="{{ member['name'] }}">
+                        {{ member['name'][0] }}
+                    </span>
+                    {% endif %}
+                    {% endfor %}
+
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button">
+                        {{ icon('person_add', 'invite_members', 'Invite members') }}
+                        Invite
+                    </button>
+                </div>
+            </div>
+
+            <div class="spaces-tabs" role="tablist" aria-label="Project collections" data-class="section">
+                {% for key, label in [('all', 'All projects'), ('shared', 'Shared with me')] %}
+                <button type="button"
+                        class="spaces-tab {{ 'active' if capcut['active_tab'] == key else '' }}"
+                        role="tab"
+                        aria-selected="{{ 'true' if capcut['active_tab'] == key else 'false' }}"
+                        data-class="tab">
+                    {{ label }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="spaces-toolbar" data-class="section">
+                <div class="spaces-search" data-class="search_bar">
+                    {{ icon('search', 'cloud_project_search', 'Search cloud projects') }}
+                    <input type="text"
+                           placeholder="Search projects"
+                           aria-label="Search cloud projects">
+                </div>
+
+                <div class="spaces-select">
+                    <select aria-label="Sort projects" data-class="input_field">
+                        <option selected>Last updated</option>
+                        <option>Name</option>
+                        <option>Size</option>
+                    </select>
+                    {{ icon('expand_more', 'spaces_sort_arrow', 'Sort options') }}
+                </div>
+
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button">
+                    {{ icon('create_new_folder', 'create_folder', 'Create folder') }}
+                    New folder
+                </button>
+
+                <button type="button"
+                        class="primary-button"
+                        data-class="button">
+                    {{ icon('upload', 'upload_project', 'Upload project') }}
+                    Upload
+                </button>
+            </div>
+
+            {% if capcut['state'] == 'uploading' %}
+            <section class="spaces-upload" data-class="card">
+                <div class="spaces-upload-row">
+                    <div class="spaces-upload-title">
+                        {{ icon('cloud_upload', 'upload_status', 'Uploading') }}
+                        <div>
+                            <strong>{{ capcut['upload_name'] }}</strong>
+                            <p>Uploading · {{ capcut['upload_percent'] }}%</p>
+                        </div>
+                    </div>
+                    {{ action('close', 'cancel_upload', 'Cancel upload', annotate=false) }}
+                </div>
+
+                <div class="spaces-progress"
+                     data-class="progress_bar"
+                     role="progressbar"
+                     aria-label="Upload progress"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="{{ capcut['upload_percent'] }}">
+                    <div class="spaces-progress-fill"
+                         style="width: {{ capcut['upload_percent'] }}%;"></div>
+                </div>
+            </section>
+            {% endif %}
+
+            {% if capcut['folders'] and capcut['active_tab'] == 'all' %}
+            <section data-class="section" aria-label="Folders">
+                <h2 class="spaces-section-title">Folders</h2>
+                <div class="spaces-folders">
+                    {% for folder in capcut['folders'] %}
+                    <article class="spaces-folder" data-class="card">
+                        {{ icon('folder', folder['id'] ~ '_folder', folder['name']) }}
+                        <div>
+                            <strong>{{ folder['name'] }}</strong>
+                            <p>{{ folder['count'] }} projects</p>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
+            <section data-class="section" aria-label="Cloud projects">
+                <h2 class="spaces-section-title">
+                    {{ 'Shared projects' if capcut['active_tab'] == 'shared' else 'Projects' }}
+                </h2>
+
+                {% if capcut['projects'] %}
+                <div class="spaces-grid">
+                    {% for project in capcut['projects'] %}
+                    <article class="spaces-card"
+                             data-class="card"
+                             data-semantic="{{ project['id'] }}">
+                        <div class="spaces-cover">
+                            {% if project['image'] %}
+                            <img src="{{ project['image'] }}"
+                                 alt="{{ project['title'] }}"
+                                 data-class="image">
+                            {% else %}
+                            <div class="spaces-placeholder">
+                                {{ icon('movie', project['id'] ~ '_placeholder', 'Project thumbnail unavailable') }}
+                            </div>
+                            {% endif %}
+                            <span class="spaces-duration" data-class="badge">
+                                {{ project['duration'] }}
+                            </span>
+                        </div>
+
+                        <div class="spaces-card-info">
+                            <div class="spaces-card-title">
+                                <h3>{{ project['title'] }}</h3>
+                                {{ action('more_horiz', project['id'] ~ '_options', 'Project options' , annotate=false) }}
+                            </div>
+                            <p>{{ project['updated'] }}</p>
+                            <p>{{ project['owner'] }}</p>
+
+                            <div class="spaces-card-meta">
+                                <span>{{ project['size'] }}</span>
+                                {% if project['shared'] %}
+                                <span class="spaces-shared" data-class="badge">
+                                    {{ icon('group', project['id'] ~ '_shared', 'Shared project') }}
+                                    Shared
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="spaces-empty" data-class="card">
+                    {{ icon('cloud_upload', 'empty_space', 'Empty workspace') }}
+                    <h3>Your space is ready</h3>
+                    <p>Upload a project to start creating together.</p>
+                    <button type="button"
+                            class="primary-button"
+                            data-class="button">
+                        {{ icon('upload', 'empty_space_upload', 'Upload project') }}
+                        Upload project
+                    </button>
+                </div>
+                {% endif %}
+            </section>
+        </main>
+    </div>
+</div>
+
+{% if capcut['popup_visible'] %}
+<div class="spaces-modal-layer" data-occluder="true">
+    <section class="spaces-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="spaces-dialog-title"
+             data-class="dialog">
+        <div class="spaces-dialog-heading">
+            <h2 id="spaces-dialog-title">
+                {{ 'Create folder' if capcut['state'] == 'create_folder_dialog' else 'Invite to space' }}
+            </h2>
+            {{ action('close', 'close_spaces_dialog', 'Close dialog' , annotate=false) }}
+        </div>
+
+        {% if capcut['state'] == 'create_folder_dialog' %}
+        <div class="spaces-field">
+            <label for="folder-name">Folder name</label>
+            <input id="folder-name"
+                   type="text"
+                   value="{{ capcut['folder_name'] }}"
+                   data-class="input_field">
+        </div>
+        {% else %}
+        <div class="spaces-field">
+            <label for="invite-email">Email address</label>
+            <input id="invite-email"
+                   type="email"
+                   value="{{ capcut['invite_email'] }}"
+                   data-class="input_field">
+        </div>
+
+        <div class="spaces-field">
+            <label for="invite-role">Permission</label>
+            <div class="spaces-select">
+                <select id="invite-role" data-class="input_field">
+                    {% for role in ['Editor', 'Viewer'] %}
+                    <option {{ 'selected' if role == capcut['invite_role'] else '' }}>
+                        {{ role }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {{ icon('expand_more', 'invite_role_arrow', 'Permission options') }}
+            </div>
+        </div>
+
+        <button type="button"
+                class="spaces-checkbox"
+                data-class="button"
+                aria-pressed="{{ 'true' if capcut['notify_member'] else 'false' }}">
+            {{ icon(
+                'check_box' if capcut['notify_member'] else 'check_box_outline_blank',
+                'notify_member_checkbox',
+                'Notify by email',
+                'checkbox'
+            ) }}
+            Notify by email
+        </button>
+        {% endif %}
+
+        <div class="spaces-dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button">Cancel</button>
+
+            <button type="button"
+                    class="primary-button"
+                    data-class="button">
+                {{ icon(
+                    'create_new_folder' if capcut['state'] == 'create_folder_dialog' else 'person_add',
+                    'confirm_spaces_action',
+                    'Create folder' if capcut['state'] == 'create_folder_dialog' else 'Send invitation'
+                ) }}
+                {{ 'Create' if capcut['state'] == 'create_folder_dialog' else 'Send invitation' }}
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

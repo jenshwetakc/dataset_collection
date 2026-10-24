@@ -1,0 +1,982 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, cls='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ cls }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+
+{% macro action(name, semantic, label, annotate=True) -%}
+<button type="button"
+        class="icon-button"
+        {% if annotate %}data-class="button"{% endif %}
+        aria-label="{{ label }}">
+    {{ icon(name, semantic, label) }}
+</button>
+{%- endmacro %}
+
+{% macro dropdown(label, semantic, options, selected) -%}
+<div class="editor-field">
+    <label for="{{ semantic }}">{{ label }}</label>
+    <div class="editor-select">
+        <select id="{{ semantic }}" data-class="input_field">
+            {% for option in options %}
+            <option {{ 'selected' if option == selected else '' }}>
+                {{ option }}
+            </option>
+            {% endfor %}
+        </select>
+        {{ icon('expand_more', semantic ~ '_arrow', label ~ ' options') }}
+    </div>
+</div>
+{%- endmacro %}
+
+{% block title %}CapCut — Video Editor{% endblock %}
+
+{% block head %}
+<style>
+    .editor-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 12px 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .editor-header-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .editor-project-name {
+        max-width: 320px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 700;
+    }
+
+    .editor-layout {
+        display: grid;
+        grid-template-columns: 78px 290px minmax(0, 1fr) 260px;
+        gap: 1px;
+        background: var(--border-subtle);
+    }
+
+    .editor-tools,
+    .editor-library,
+    .editor-preview,
+    .editor-inspector {
+        min-width: 0;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .editor-tools {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 6px;
+    }
+
+    .editor-tool {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 68px;
+        border-radius: 10px;
+        font-size: 11px;
+    }
+
+    .editor-tool.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .editor-library,
+    .editor-inspector {
+        padding: 18px;
+    }
+
+    .editor-panel-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .editor-panel-heading h2 {
+        font-size: 17px;
+    }
+
+    .editor-library .primary-button {
+        width: 100%;
+        margin-bottom: 16px;
+    }
+
+    .editor-media-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .editor-media-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .editor-media-cover {
+        position: relative;
+        aspect-ratio: 4 / 3;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .editor-media-cover img {
+        width: 100%;
+        height: 100%;
+    }
+
+    .editor-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .editor-media-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        padding: 7px;
+        font-size: 11px;
+    }
+
+    .editor-media-info .icon-button {
+        width: 26px;
+        height: 26px;
+    }
+
+    .editor-preview {
+        padding: 18px;
+    }
+
+    .editor-canvas {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: clamp(240px, 40vh, 500px);
+        overflow: hidden;
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .editor-canvas > img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .editor-overlay-text {
+        position: absolute;
+        left: 12%;
+        right: 12%;
+        bottom: 20%;
+        padding: 10px;
+        border: 2px solid var(--icon);
+        background: var(--surface);
+        color: var(--on-surface);
+        text-align: center;
+        font-size: clamp(18px, 2vw, 32px);
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .editor-playback {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .editor-playback-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+    }
+
+    .editor-field {
+        margin-bottom: 15px;
+    }
+
+    .editor-field label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .editor-field input[type="text"],
+    .editor-field textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .editor-field textarea {
+        min-height: 85px;
+        resize: none;
+    }
+
+    .editor-select {
+        position: relative;
+    }
+
+    .editor-select select {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        min-height: 40px;
+        padding: 9px 36px 9px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .editor-select > .material-symbols-rounded {
+        position: absolute;
+        top: 50%;
+        right: 9px;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: var(--icon);
+    }
+
+    .editor-range {
+        appearance: none;
+        -webkit-appearance: none;
+        display: block;
+        width: 100%;
+        height: 24px;
+        margin: 8px 0;
+        background: transparent;
+    }
+
+    .editor-range::-webkit-slider-runnable-track {
+        height: 5px;
+        border-radius: 5px;
+        background: var(--icon);
+    }
+
+    .editor-range::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        margin-top: -5.5px;
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+        background: var(--icon);
+    }
+
+    .editor-range::-moz-range-track {
+        height: 5px;
+        border-radius: 5px;
+        background: var(--icon);
+    }
+
+    .editor-range::-moz-range-thumb {
+        width: 13px;
+        height: 13px;
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+        background: var(--icon);
+    }
+
+    .editor-helper {
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--on-surface-variant);
+    }
+
+    .editor-audio-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        padding: 9px;
+        border-radius: 9px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .editor-audio-row .audio-name {
+        flex: 1;
+        min-width: 0;
+        font-size: 12px;
+    }
+
+    .editor-audio-row small {
+        display: block;
+        margin-top: 4px;
+    }
+
+    .editor-effect-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .editor-effect {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 18px 8px;
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 12px;
+    }
+
+    .editor-effect.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .editor-timeline {
+        padding: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .editor-timeline-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .editor-timeline-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .editor-zoom {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        width: 200px;
+    }
+
+    .editor-tracks {
+        position: relative;
+        padding: 12px;
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .editor-ruler {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 10px;
+    }
+
+    .editor-clip-track {
+        display: flex;
+        gap: 4px;
+        min-height: 72px;
+    }
+
+    .editor-timeline-clip {
+        position: relative;
+        flex-basis: 0;
+        min-width: 0;
+        overflow: hidden;
+        border: 2px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .editor-timeline-clip.selected {
+        border: 3px solid var(--icon);
+    }
+
+    .editor-timeline-clip img {
+        width: 100%;
+        height: 48px;
+    }
+
+    .editor-timeline-clip .editor-placeholder {
+        height: 48px;
+    }
+
+    .editor-clip-label {
+        padding: 4px;
+        font-size: 10px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .editor-audio-track,
+    .editor-text-track {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+        padding: 7px 10px;
+        margin-top: 8px;
+        border-radius: 6px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 11px;
+    }
+
+    .editor-playhead {
+        position: absolute;
+        top: 32px;
+        bottom: 10px;
+        left: {{ capcut['playhead_percent'] }}%;
+        width: 2px;
+        background: var(--icon);
+        pointer-events: none;
+        z-index: 3;
+    }
+
+    .editor-modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 55%);
+    }
+
+    .editor-export-dialog {
+        width: min(450px, 100%);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 22px;
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .editor-export-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .editor-checkbox-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 40px;
+        margin-bottom: 12px;
+    }
+
+    .editor-export-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    @media (max-width: 1250px) {
+        .editor-layout {
+            grid-template-columns: 70px 240px minmax(0, 1fr);
+        }
+
+        .editor-inspector {
+            grid-column: 2 / -1;
+            border-top: 1px solid var(--border-subtle);
+        }
+    }
+
+    @media (max-width: 800px) {
+        .editor-layout {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-preview { order: 1; }
+        .editor-tools { order: 2; }
+        .editor-library { order: 3; }
+        .editor-inspector { order: 4; }
+
+        .editor-tools {
+            flex-direction: row;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .editor-tool {
+            flex: 1 1 65px;
+            max-width: 150px;
+        }
+
+        .editor-media-grid {
+            grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+        }
+
+        .editor-effect-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 480px) {
+        .editor-header { padding: 10px; }
+        .editor-project-name { max-width: 170px; font-size: 13px; }
+
+        .editor-header .primary-button {
+            min-height: 36px;
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+
+        .editor-preview,
+        .editor-library,
+        .editor-inspector,
+        .editor-timeline {
+            padding: 12px;
+        }
+
+        .editor-canvas { height: 220px; }
+        .editor-timeline-clip img { height: 38px; }
+        .editor-timeline-clip .editor-placeholder { height: 38px; }
+        .editor-clip-label { font-size: 8px; }
+        .editor-effect-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if capcut['popup_visible'] else 'false' }}">
+    <header class="editor-header" data-class="app_bar">
+        <div class="editor-header-group">
+            {{ action('arrow_back', 'editor_back', 'Back to projects' , annotate=false) }}
+            <span class="editor-project-name">{{ capcut['project_name'] }}</span>
+            {{ action('edit', 'edit_project_name', 'Rename project' , annotate=false) }}
+        </div>
+
+        <div class="editor-header-group">
+            {{ action('cloud_done', 'editor_saved', 'Project saved' , annotate=false) }}
+            <button type="button"
+                    class="primary-button"
+                    data-class="button">
+                {{ icon('ios_share', 'open_export', 'Export project') }}
+                Export
+            </button>
+        </div>
+    </header>
+
+    <div class="editor-layout">
+        <nav class="editor-tools"
+             data-class="navigation_bar"
+             aria-label="Editor tools">
+            {% for tool in capcut['tools'] %}
+            <button type="button"
+                    class="editor-tool {{ 'active' if tool['id'] == capcut['active_tool'] else '' }}"
+                    data-class="tab"
+                    aria-pressed="{{ 'true' if tool['id'] == capcut['active_tool'] else 'false' }}">
+                {{ icon(tool['icon'], 'tool_' ~ tool['id'], tool['label']) }}
+                <span>{{ tool['label'] }}</span>
+            </button>
+            {% endfor %}
+        </nav>
+
+        <section class="editor-library"
+                 data-class="section"
+                 aria-label="Asset library">
+            <div class="editor-panel-heading">
+                <h2>{{ capcut['active_tool']|title }}</h2>
+                {{ action('more_horiz', 'library_options', 'Library options' , annotate=false) }}
+            </div>
+
+            {% if capcut['active_tool'] == 'media' %}
+            <button type="button"
+                    class="primary-button"
+                    data-class="button">
+                {{ icon('upload', 'import_media', 'Import media') }}
+                Import
+            </button>
+
+            <div class="editor-media-grid">
+                {% for item in capcut['media'] %}
+                <article class="editor-media-card" data-class="card">
+                    <div class="editor-media-cover">
+                        {% if item['image'] %}
+                        <img src="{{ item['image'] }}"
+                             alt="{{ item['name'] }}"
+                             data-class="image">
+                        {% else %}
+                        <div class="editor-placeholder">
+                            {{ icon('movie', item['id'] ~ '_placeholder', 'Media placeholder') }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="editor-media-info">
+                        <span>{{ item['name'] }}</span>
+                        {{ action('add', item['id'] ~ '_add', 'Add clip to timeline' , annotate=false) }}
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+
+            {% elif capcut['active_tool'] == 'text' %}
+            <button type="button"
+                    class="primary-button"
+                    data-class="button">
+                {{ icon('add', 'add_text', 'Add text') }}
+                Add text
+            </button>
+
+            <div class="editor-field">
+                <label for="overlay-text">Text content</label>
+                <textarea id="overlay-text"
+                          data-class="input_field">{{ capcut['overlay_text'] }}</textarea>
+            </div>
+
+            {{ dropdown('Style', 'text_style', ['Regular', 'Bold', 'Italic'], capcut['text_style']) }}
+
+            <div class="editor-field">
+                <label for="font-size">Font size: {{ capcut['font_size'] }}</label>
+                <input id="font-size"
+                       class="editor-range"
+                       type="range"
+                       min="12"
+                       max="72"
+                       value="{{ capcut['font_size'] }}"
+                       data-class="slider">
+            </div>
+
+            {% elif capcut['active_tool'] == 'audio' %}
+            {% for track in capcut['audio_tracks'] %}
+            <div class="editor-audio-row">
+                {{ action('play_arrow', track['id'] ~ '_play', 'Preview audio' ) }}
+                <div class="audio-name">
+                    {{ track['name'] }}
+                    <small>{{ track['duration'] }}</small>
+                </div>
+                {{ action('add', track['id'] ~ '_add', 'Add audio' ) }}
+            </div>
+            {% endfor %}
+
+            {% else %}
+            <div class="editor-effect-grid">
+                {% for effect in capcut['effects'] %}
+                <button type="button"
+                        class="editor-effect {{ 'active' if effect['name'] == capcut['selected_effect'] else '' }}"
+                        data-class="button">
+                    {{ icon(effect['icon'], 'effect_' ~ loop.index, effect['name']) }}
+                    <span>{{ effect['name'] }}</span>
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="editor-preview"
+                 data-class="section"
+                 aria-label="Project preview">
+            <div class="editor-panel-heading">
+                <h2>Preview</h2>
+                {{ action('aspect_ratio', 'preview_ratio', 'Aspect ratio' , annotate=false) }}
+            </div>
+
+            <div class="editor-canvas">
+                {% if capcut['preview_image'] %}
+                <img src="{{ capcut['preview_image'] }}"
+                     alt="Project preview"
+                     data-class="image">
+                {% else %}
+                <div class="editor-placeholder">
+                    {{ icon('movie', 'canvas_placeholder', 'Preview placeholder') }}
+                </div>
+                {% endif %}
+
+                {% if capcut['show_text'] %}
+                <div class="editor-overlay-text"
+                     data-class="input_field"
+                     role="textbox"
+                     aria-label="Selected text overlay">
+                    {{ capcut['overlay_text'] }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="editor-playback">
+                <div class="editor-playback-group">
+                    <span>{{ capcut['current_time'] }} / {{ capcut['duration_text'] }}</span>
+                </div>
+
+                <div class="editor-playback-group">
+                    {{ action('skip_previous', 'preview_previous', 'Previous frame' , annotate=false) }}
+                    {{ action('play_arrow', 'preview_play', 'Play preview' , annotate=false) }}
+                    {{ action('skip_next', 'preview_next', 'Next frame' , annotate=false) }}
+                </div>
+
+                <div class="editor-playback-group">
+                    {{ action('volume_up', 'preview_volume', 'Preview volume' , annotate=false) }}
+                    {{ action('fullscreen', 'preview_fullscreen', 'Fullscreen preview' , annotate=false) }}
+                </div>
+            </div>
+        </section>
+
+        <section class="editor-inspector"
+                 data-class="section"
+                 aria-label="Properties">
+            <div class="editor-panel-heading">
+                <h2>Properties</h2>
+                {{ action('tune', 'properties_settings', 'Properties settings' , annotate=false) }}
+            </div>
+
+            {% if capcut['state'] == 'clip_selected' %}
+            <div class="editor-field">
+                <label>Selected clip</label>
+                <p>{{ capcut['selected_clip']['name'] }}</p>
+            </div>
+
+            {{ dropdown('Speed', 'clip_speed', ['0.5×', '1.0×', '1.5×', '2.0×'], capcut['speed']) }}
+
+            <div class="editor-field">
+                <label for="clip-volume">Volume: {{ capcut['volume'] }}%</label>
+                <input id="clip-volume"
+                       class="editor-range"
+                       type="range"
+                       min="0"
+                       max="100"
+                       value="{{ capcut['volume'] }}"
+                       data-class="slider">
+            </div>
+
+            <div class="editor-timeline-actions">
+                {{ action('content_cut', 'trim_clip', 'Split clip' , annotate=false) }}
+                {{ action('crop', 'crop_clip', 'Crop clip' , annotate=false) }}
+                {{ action('rotate_right', 'rotate_clip', 'Rotate clip' , annotate=false) }}
+                {{ action('delete', 'delete_clip', 'Delete clip' , annotate=false) }}
+            </div>
+
+            {% elif capcut['state'] == 'text_editing' %}
+            {{ dropdown('Alignment', 'text_alignment', ['Center', 'Left', 'Right'], 'Center') }}
+
+            <div class="editor-timeline-actions">
+                {{ action('format_bold', 'text_bold', 'Bold text' , annotate=false) }}
+                {{ action('format_italic', 'text_italic', 'Italic text' , annotate=false) }}
+                {{ action('format_underlined', 'text_underline', 'Underline text' , annotate=false) }}
+            </div>
+
+            {% elif capcut['state'] == 'audio_editing' %}
+            <div class="editor-field">
+                <label for="audio-volume">Volume: {{ capcut['volume'] }}%</label>
+                <input id="audio-volume"
+                       class="editor-range"
+                       type="range"
+                       min="0"
+                       max="100"
+                       value="{{ capcut['volume'] }}"
+                       data-class="slider">
+            </div>
+
+            {{ dropdown('Fade in', 'audio_fade', ['None', '0.5 seconds', '1 second', '2 seconds'], '1 second') }}
+
+            {% elif capcut['state'] == 'effects' %}
+            <p style="margin-bottom: 15px;">{{ capcut['selected_effect'] }}</p>
+
+            <div class="editor-field">
+                <label for="effect-intensity">
+                    Intensity: {{ capcut['effect_intensity'] }}%
+                </label>
+                <input id="effect-intensity"
+                       class="editor-range"
+                       type="range"
+                       min="0"
+                       max="100"
+                       value="{{ capcut['effect_intensity'] }}"
+                       data-class="slider">
+            </div>
+
+            {% else %}
+            <p class="editor-helper">
+                Select a clip or choose an editing tool to adjust
+                your project.
+            </p>
+
+            {{ dropdown('Canvas ratio', 'canvas_ratio', ['16:9', '9:16', '1:1'], '16:9') }}
+            {% endif %}
+        </section>
+    </div>
+
+    <section class="editor-timeline"
+             data-class="section"
+             aria-label="Timeline">
+        <div class="editor-timeline-toolbar">
+            <div class="editor-timeline-actions">
+                {{ action('undo', 'timeline_undo', 'Undo' , annotate=false) }}
+                {{ action('redo', 'timeline_redo', 'Redo' , annotate=false) }}
+                {{ action('content_cut', 'timeline_split', 'Split' , annotate=false) }}
+                {{ action('delete', 'timeline_delete', 'Delete' , annotate=false) }}
+            </div>
+
+            <div class="editor-zoom">
+                {{ icon('remove', 'zoom_out_icon', 'Zoom out') }}
+                <input class="editor-range"
+                       type="range"
+                       min="1"
+                       max="100"
+                       value="45"
+                       aria-label="Timeline zoom"
+                       data-class="slider">
+                {{ icon('add', 'zoom_in_icon', 'Zoom in') }}
+            </div>
+        </div>
+
+        <div class="editor-tracks">
+            <div class="editor-ruler">
+                <span>00:00</span>
+                <span>00:{{ '%02d'|format(capcut['duration'] // 3) }}</span>
+                <span>00:{{ '%02d'|format(capcut['duration'] * 2 // 3) }}</span>
+                <span>{{ capcut['duration_text'] }}</span>
+            </div>
+
+            <div class="editor-clip-track">
+                {% for clip in capcut['clips'] %}
+                <div class="editor-timeline-clip {{ 'selected' if clip['selected'] else '' }}"
+                     style="flex-grow: {{ clip['duration'] }};"
+                     data-class="button"
+                     role="button"
+                     tabindex="0"
+                     aria-label="Select {{ clip['name'] }}">
+                    {% if clip['image'] %}
+                    <img src="{{ clip['image'] }}"
+                         alt="{{ clip['name'] }}"
+                         data-class="image">
+                    {% else %}
+                    <div class="editor-placeholder">
+                        {{ icon('movie', clip['id'] ~ '_placeholder', 'Clip thumbnail') }}
+                    </div>
+                    {% endif %}
+                    <div class="editor-clip-label">{{ clip['name'] }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="editor-audio-track">
+                {{ icon('music_note', 'timeline_audio', 'Audio track') }}
+                <span>Background music</span>
+            </div>
+
+            {% if capcut['show_text'] %}
+            <div class="editor-text-track">
+                {{ icon('title', 'timeline_text', 'Text track') }}
+                <span>{{ capcut['overlay_text'] }}</span>
+            </div>
+            {% endif %}
+
+            <div class="editor-playhead"
+                 data-class="selection_indicator"
+                 data-semantic="timeline_playhead"></div>
+        </div>
+    </section>
+</div>
+
+{% if capcut['popup_visible'] %}
+<div class="editor-modal-layer" data-occluder="true">
+    <section class="editor-export-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="export-title"
+             data-class="dialog">
+        <div class="editor-export-heading">
+            <h2 id="export-title">Export video</h2>
+            {{ action('close', 'close_export', 'Close export dialog' , annotate=false) }}
+        </div>
+
+        <div class="editor-field">
+            <label for="export-name">File name</label>
+            <input id="export-name"
+                   type="text"
+                   value="{{ capcut['export_name'] }}"
+                   data-class="input_field">
+        </div>
+
+        {{ dropdown('Resolution', 'export_resolution', ['720p', '1080p', '1440p', '4K'], capcut['resolution']) }}
+        {{ dropdown('Frame rate', 'export_frame_rate', ['24 fps', '30 fps', '60 fps'], capcut['frame_rate']) }}
+        {{ dropdown('Format', 'export_format', ['MP4', 'MOV'], capcut['format']) }}
+
+        <button type="button"
+                class="editor-checkbox-button"
+                data-class="button"
+                aria-pressed="{{ 'true' if capcut['save_to_device'] else 'false' }}">
+            {{ icon(
+                'check_box' if capcut['save_to_device'] else 'check_box_outline_blank',
+                'save_to_device_checkbox',
+                'Save to device',
+                'checkbox'
+            ) }}
+            Save to device
+        </button>
+
+        <p class="editor-helper">
+            Estimated file size: {{ capcut['estimated_size'] }}
+        </p>
+
+        <div class="editor-export-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button">
+                Cancel
+            </button>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button">
+                {{ icon('download', 'confirm_export', 'Export video') }}
+                Export
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, cls='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ cls }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+{% macro action(name, semantic, label, annotate=True) -%}
+<button type="button"
+        class="icon-button"
+        {% if annotate %}data-class="button"{% endif %}
+        aria-label="{{ label }}">
+    {{ icon(name, semantic, label) }}
+</button>
+{%- endmacro %}
+
+{% macro slider(label, semantic, value) -%}
+<div class="bg-field">
+    <label for="{{ semantic }}">{{ label }}: {{ value }}</label>
+    <input id="{{ semantic }}"
+           class="bg-range"
+           type="range"
+           min="1"
+           max="100"
+           value="{{ value }}"
+           data-class="slider">
+</div>
+{%- endmacro %}
+
+{% block title %}CapCut — Remove Background{% endblock %}
+
+{% block head %}
+<style>
+    .bg-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 14px 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .bg-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 9px;
+    }
+
+    .bg-header h1 { font-size: 20px; }
+
+    .bg-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 22px;
+        max-width: 1600px;
+        margin-inline: auto;
+        padding: 24px;
+    }
+
+    .bg-panel {
+        min-width: 0;
+        padding: 20px;
+        border-radius: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .bg-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .bg-heading h2 { font-size: 19px; }
+
+    .bg-canvas {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: clamp(260px, 48vh, 540px);
+        overflow: hidden;
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .bg-canvas.transparent {
+        background-color: var(--surface);
+        background-image:
+            linear-gradient(45deg, var(--surface-variant) 25%, transparent 25%),
+            linear-gradient(-45deg, var(--surface-variant) 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, var(--surface-variant) 75%),
+            linear-gradient(-45deg, transparent 75%, var(--surface-variant) 75%);
+        background-size: 24px 24px;
+        background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+    }
+
+    .bg-canvas.studio { background: var(--surface-variant); }
+    .bg-canvas.brand { background: var(--primary-container); }
+    .bg-canvas.soft {
+        background: linear-gradient(
+            135deg,
+            var(--surface-variant),
+            var(--primary-container)
+        );
+    }
+
+    .bg-preview-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .bg-preview-image.cutout {
+        width: 72%;
+        height: 88%;
+        object-fit: cover;
+        clip-path: ellipse(38% 48% at 50% 50%);
+    }
+
+    .bg-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .bg-placeholder .material-symbols-rounded { font-size: 60px; }
+
+    .bg-brush-cursor {
+        position: absolute;
+        top: 45%;
+        left: 58%;
+        width: 44px;
+        height: 44px;
+        border: 3px solid var(--icon);
+        border-radius: 50%;
+        background: var(--surface);
+        pointer-events: none;
+    }
+
+    .bg-preview-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 14px;
+    }
+
+    .bg-helper {
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--on-surface-variant);
+    }
+
+    .bg-tabs {
+        display: flex;
+        gap: 7px;
+        margin-bottom: 22px;
+    }
+
+    .bg-tab {
+        flex: 1;
+        min-width: 0;
+        min-height: 42px;
+        padding: 9px 6px;
+        border-radius: 9px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 12px;
+    }
+
+    .bg-tab.active,
+    .bg-preset.active,
+    .bg-mode.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        border: 2px solid var(--icon);
+    }
+
+    .bg-feature {
+        padding: 20px;
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        margin-bottom: 18px;
+    }
+
+    .bg-feature h3 { margin: 10px 0; }
+    .bg-feature p { font-size: 13px; line-height: 1.6; }
+
+    .bg-main-button {
+        width: 100%;
+        margin-top: 16px;
+    }
+
+    .bg-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 44px;
+        margin-top: 12px;
+        text-align: left;
+        font-size: 13px;
+    }
+
+    .bg-preset-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .bg-preset {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        min-height: 100px;
+        padding: 18px 8px;
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 12px;
+    }
+
+    .bg-modes {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .bg-mode {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        flex: 1;
+        padding: 12px 8px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .bg-field { margin-bottom: 20px; }
+    .bg-field label { display: block; font-size: 13px; margin-bottom: 8px; }
+
+    .bg-range {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        height: 24px;
+        background: transparent;
+    }
+
+    .bg-range::-webkit-slider-runnable-track {
+        height: 5px;
+        border-radius: 5px;
+        background: var(--icon);
+    }
+
+    .bg-range::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        margin-top: -5.5px;
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+        background: var(--icon);
+    }
+
+    .bg-range::-moz-range-track {
+        height: 5px;
+        background: var(--icon);
+    }
+
+    .bg-range::-moz-range-thumb {
+        width: 13px;
+        height: 13px;
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+        background: var(--icon);
+    }
+
+    .bg-progress {
+        height: 12px;
+        margin: 18px 0;
+        overflow: hidden;
+        border: 1px solid var(--icon);
+        border-radius: 8px;
+        background: var(--surface);
+    }
+
+    .bg-progress-fill { height: 100%; background: var(--icon); }
+
+    .bg-modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 55%);
+    }
+
+    .bg-dialog {
+        width: min(430px, 100%);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 22px;
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .bg-dialog p { line-height: 1.6; }
+
+    .bg-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    @media (max-width: 850px) {
+        .bg-layout { grid-template-columns: 1fr; padding: 16px; }
+    }
+
+    @media (max-width: 480px) {
+        .bg-header { padding: 12px; }
+        .bg-header h1 { font-size: 16px; }
+        .bg-layout { padding: 12px; gap: 14px; }
+        .bg-panel { padding: 14px; }
+        .bg-canvas { height: 245px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if capcut['popup_visible'] else 'false' }}">
+    <header class="bg-header" data-class="app_bar">
+        <div class="bg-row">
+            {{ action('arrow_back', 'background_back', 'Back to editor', annotate=false) }}
+            <h1>Remove background</h1>
+        </div>
+
+        <div class="bg-row">
+            {{ action('help_outline', 'background_help', 'Background removal help',  annotate=false) }}
+            <button type="button" class="primary-button" data-class="button">
+                {{ icon('done', 'background_done', 'Done') }}
+                Done
+            </button>
+        </div>
+    </header>
+
+    <main class="bg-layout">
+        <section class="bg-panel" data-class="section" aria-label="Background preview">
+            <div class="bg-heading">
+                <h2>{{ capcut['project_name'] }}</h2>
+                {{ action('fullscreen', 'background_fullscreen', 'Fullscreen preview') }}
+            </div>
+
+            <div class="bg-canvas {{ capcut['selected_background'] if capcut['show_removed'] else '' }}">
+                {% if capcut['image'] %}
+                <img class="bg-preview-image {{ 'cutout' if capcut['show_removed'] else '' }}"
+                     src="{{ capcut['image'] }}"
+                     alt="Background removal preview"
+                     data-class="image">
+                {% else %}
+                <div class="bg-placeholder">
+                    {{ icon('person', 'background_placeholder', 'Preview unavailable' , annotate=false) }}
+                </div>
+                {% endif %}
+
+                {% if capcut['state'] == 'manual_refine' %}
+                <div class="bg-brush-cursor"
+                     data-class="selection_indicator"
+                     data-semantic="refinement_brush_cursor"></div>
+                {% endif %}
+            </div>
+
+            <div class="bg-preview-footer">
+                <span class="bg-helper">
+                    {{ 'Background removed' if capcut['show_removed'] else 'Original image' }}
+                </span>
+                <div class="bg-row">
+                    {{ action('undo', 'background_undo', 'Undo' , annotate=false) }}
+                    {{ action('redo', 'background_redo', 'Redo', annotate=false) }}
+                    {{ action('restart_alt', 'background_reset', 'Reset background' , annotate=false) }}
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-panel" data-class="section" aria-label="Background tools">
+            <div class="bg-tabs" role="tablist" aria-label="Background tools">
+                {% for key, label in [('remove', 'Remove'), ('background', 'Background'), ('refine', 'Refine')] %}
+                <button type="button"
+                        class="bg-tab {{ 'active' if capcut['active_tab'] == key else '' }}"
+                        role="tab"
+                        aria-selected="{{ 'true' if capcut['active_tab'] == key else 'false' }}"
+                        data-class="tab">
+                    {{ label }}
+                </button>
+                {% endfor %}
+            </div>
+
+            {% if capcut['state'] == 'processing' %}
+            <div class="bg-feature" data-class="card">
+                {{ icon('auto_awesome', 'background_processing', 'Processing background') }}
+                <h3>Removing background</h3>
+                <p>{{ capcut['progress'] }}% complete</p>
+
+                <div class="bg-progress"
+                     data-class="progress_bar"
+                     role="progressbar"
+                     aria-label="Background removal progress"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="{{ capcut['progress'] }}">
+                    <div class="bg-progress-fill"
+                         style="width: {{ capcut['progress'] }}%;"></div>
+                </div>
+
+                <button type="button" class="secondary-button" data-class="button">
+                    Cancel
+                </button>
+            </div>
+
+            {% elif capcut['active_tab'] == 'background' %}
+            <div class="bg-heading"><h2>Choose background</h2></div>
+
+            <div class="bg-preset-grid">
+                {% for background in capcut['backgrounds'] %}
+                <button type="button"
+                        class="bg-preset {{ 'active' if background['id'] == capcut['selected_background'] else '' }}"
+                        data-class="button"
+                        aria-pressed="{{ 'true' if background['id'] == capcut['selected_background'] else 'false' }}">
+                    {{ icon(background['icon'], 'preset_' ~ background['id'], background['label']) }}
+                    <span>{{ background['label'] }}</span>
+                </button>
+                {% endfor %}
+            </div>
+
+            <button type="button"
+                    class="secondary-button bg-main-button"
+                    data-class="button">
+                {{ icon('upload', 'upload_background', 'Upload background') }}
+                Upload background
+            </button>
+
+            {% elif capcut['active_tab'] == 'refine' %}
+            <div class="bg-modes">
+                <button type="button"
+                        class="bg-mode {{ 'active' if capcut['brush_mode'] == 'erase' else '' }}"
+                        data-class="button"
+                        aria-pressed="{{ 'true' if capcut['brush_mode'] == 'erase' else 'false' }}">
+                    {{ icon('ink_eraser', 'erase_background', 'Erase') }}
+                    Erase
+                </button>
+                <button type="button"
+                        class="bg-mode {{ 'active' if capcut['brush_mode'] == 'restore' else '' }}"
+                        data-class="button"
+                        aria-pressed="{{ 'true' if capcut['brush_mode'] == 'restore' else 'false' }}">
+                    {{ icon('brush', 'restore_background', 'Restore') }}
+                    Restore
+                </button>
+            </div>
+
+            {{ slider('Brush size', 'background_brush_size', capcut['brush_size']) }}
+            {{ slider('Edge feather', 'background_feather', capcut['feather']) }}
+
+            <p class="bg-helper">
+                Refine the selected area using the erase or restore brush.
+            </p>
+
+            {% else %}
+            <div class="bg-feature" data-class="card">
+                {{ icon('person_remove', 'auto_background_feature', 'Auto background removal') }}
+                <h3>Auto removal</h3>
+                <p>Separate your subject and choose a new background.</p>
+            </div>
+
+            <button type="button"
+                    class="primary-button bg-main-button"
+                    data-class="button">
+                {{ icon('auto_awesome', 'remove_background', 'Remove background') }}
+                {{ 'Remove again' if capcut['show_removed'] else 'Remove background' }}
+            </button>
+
+            <button type="button"
+                    class="bg-checkbox"
+                    data-class="button"
+                    aria-pressed="{{ 'true' if capcut['apply_all'] else 'false' }}">
+                {{ icon(
+                    'check_box' if capcut['apply_all'] else 'check_box_outline_blank',
+                    'apply_all_background_checkbox',
+                    'Apply to all clips',
+                    'checkbox'
+                ) }}
+                Apply to all clips
+            </button>
+            {% endif %}
+        </section>
+    </main>
+</div>
+
+{% if capcut['popup_visible'] %}
+<div class="bg-modal-layer" data-occluder="true">
+    <section class="bg-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="background-reset-title"
+             data-class="dialog">
+        <div class="bg-heading">
+            <h2 id="background-reset-title">Reset background?</h2>
+            {{ action('close', 'close_background_reset', 'Close dialog',  annotate=false) }}
+        </div>
+        <p>Restore the original background and remove your refinements?</p>
+        <div class="bg-dialog-actions">
+            <button type="button" class="secondary-button" data-class="button">
+                Cancel
+            </button>
+            <button type="button" class="danger-button" data-class="button">
+                {{ icon('restart_alt', 'confirm_background_reset', 'Reset background') }}
+                Reset
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

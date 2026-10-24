@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, cls='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ cls }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+
+{% macro action(name, semantic, label, annotate=True) -%}
+<button type="button"
+        class="icon-button"
+        {% if annotate %}data-class="button"{% endif %}
+        aria-label="{{ label }}">
+    {{ icon(name, semantic, label) }}
+</button>
+{%- endmacro %}
+
+{% block title %}CapCut — Import Media{% endblock %}
+
+{% block head %}
+<style>
+    .import-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 14px 22px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .import-header-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .import-header h1 { font-size: 21px; }
+
+    .import-main {
+        max-width: 1800px;
+        margin-inline: auto;
+        padding: 24px;
+    }
+
+    .import-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .import-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .import-tab {
+        min-height: 42px;
+        padding: 10px 17px;
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .import-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .import-album {
+        position: relative;
+    }
+
+    .import-album select {
+        appearance: none;
+        -webkit-appearance: none;
+        min-height: 42px;
+        padding: 9px 38px 9px 12px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .import-album > .material-symbols-rounded {
+        position: absolute;
+        right: 9px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: var(--icon);
+    }
+
+    .import-description {
+        margin-bottom: 20px;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .import-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 14px;
+    }
+
+    .import-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .import-card.selected {
+        border: 2px solid var(--icon);
+    }
+
+    .import-cover {
+        position: relative;
+        aspect-ratio: 1;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .import-cover img {
+        width: 100%;
+        height: 100%;
+    }
+
+    .import-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .import-placeholder .material-symbols-rounded {
+        font-size: 40px;
+    }
+
+    .import-select {
+        position: absolute;
+        top: 7px;
+        right: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .import-cover-bottom {
+        position: absolute;
+        bottom: 7px;
+        left: 7px;
+        right: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    .import-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 6px;
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 10px;
+    }
+
+    .import-badge .material-symbols-rounded {
+        font-size: 16px;
+    }
+
+    .import-cover-bottom .icon-button {
+        width: 30px;
+        height: 30px;
+    }
+
+    .import-card-info {
+        padding: 9px;
+        font-size: 12px;
+    }
+
+    .import-card-info strong {
+        display: block;
+        overflow-wrap: anywhere;
+    }
+
+    .import-card-info p {
+        margin-top: 5px;
+        font-size: 11px;
+    }
+
+    .import-selection-panel {
+        margin-top: 25px;
+        padding: 18px;
+        border-radius: 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border: 1px solid var(--border);
+    }
+
+    .import-selection-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 15px;
+    }
+
+    .import-selection-heading h2 {
+        font-size: 17px;
+    }
+
+    .import-selected-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 140px));
+        gap: 12px;
+    }
+
+    .import-selected-item {
+        position: relative;
+        height: 100px;
+        overflow: hidden;
+        border-radius: 9px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .import-selected-item img {
+        width: 100%;
+        height: 100%;
+    }
+
+    .import-selected-item .icon-button {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 27px;
+        height: 27px;
+    }
+
+    .import-selected-order {
+        position: absolute;
+        bottom: 5px;
+        left: 5px;
+        padding: 4px 7px;
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 11px;
+    }
+
+    .import-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+        padding: 16px;
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .import-footer button:disabled {
+        cursor: default;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .import-modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 55%);
+    }
+
+    .import-dialog {
+        width: min(560px, 100%);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 20px;
+        border-radius: 17px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .import-dialog-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .import-dialog-heading h2 {
+        font-size: 19px;
+        overflow-wrap: anywhere;
+    }
+
+    .import-preview {
+        height: clamp(150px, 36vh, 360px);
+        overflow: hidden;
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .import-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .import-preview-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+        font-size: 12px;
+    }
+
+    .import-preview-actions {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .import-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .import-progress {
+        height: 12px;
+        margin: 22px 0 14px;
+        overflow: hidden;
+        border: 1px solid var(--icon);
+        border-radius: 8px;
+        background: var(--surface-variant);
+    }
+
+    .import-progress-fill {
+        height: 100%;
+        background: var(--icon);
+    }
+
+    .import-progress-description {
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    @media (max-width: 600px) {
+        .import-main { padding: 16px 12px; }
+        .import-header { padding: 12px; }
+        .import-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .import-card-info { padding: 7px; font-size: 10px; }
+        .import-card-info p { font-size: 10px; }
+        .import-select { width: 27px; height: 27px; top: 4px; right: 4px; }
+        .import-select .material-symbols-rounded { font-size: 20px; }
+        .import-cover-bottom { left: 4px; right: 4px; bottom: 4px; }
+        .import-cover-bottom .icon-button { width: 25px; height: 25px; }
+        .import-cover-bottom .icon-button .material-symbols-rounded { font-size: 18px; }
+        .import-badge { padding: 3px 4px; font-size: 9px; }
+        .import-badge .material-symbols-rounded { display: none; }
+    }
+
+    @media (max-width: 359px) {
+        .import-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if capcut['popup_visible'] else 'false' }}">
+    <header class="import-header" data-class="app_bar">
+        <div class="import-header-group">
+            {{ action('arrow_back', 'import_back', 'Back to projects' , annotate=false) }}
+            <h1>Import media</h1>
+        </div>
+        {{ action('help_outline', 'import_help', 'Import help' , annotate=false) }}
+    </header>
+
+    <main class="import-main" data-class="section">
+        <div class="import-toolbar" data-class="section">
+            <div class="import-tabs" role="tablist" aria-label="Media type">
+                {% for key, label in [('all', 'All'), ('video', 'Videos'), ('photo', 'Photos')] %}
+                <button type="button"
+                        class="import-tab {{ 'active' if capcut['active_tab'] == key else '' }}"
+                        role="tab"
+                        aria-selected="{{ 'true' if capcut['active_tab'] == key else 'false' }}"
+                        data-class="tab">
+                    {{ label }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="import-album">
+                <select aria-label="Album" data-class="input_field">
+                    {% for album in capcut['albums'] %}
+                    <option {{ 'selected' if album == capcut['album'] else '' }}>
+                        {{ album }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {{ icon('expand_more', 'album_arrow', 'Album options') }}
+            </div>
+        </div>
+
+        <p class="import-description">
+            Select clips and photos in the order you want to use them.
+        </p>
+
+        <section class="import-grid"
+                 data-class="section"
+                 aria-label="Available media">
+            {% for item in capcut['media'] %}
+            <article class="import-card {{ 'selected' if item['selected'] else '' }}"
+                     data-class="card"
+                     data-semantic="{{ item['id'] }}">
+                <div class="import-cover">
+                    {% if item['image'] %}
+                    <img src="{{ item['image'] }}"
+                         alt="{{ item['name'] }}"
+                         data-class="image">
+                    {% else %}
+                    <div class="import-placeholder">
+                        {{ icon(
+                            'movie' if item['kind'] == 'video' else 'photo',
+                            item['id'] ~ '_placeholder',
+                            'Media thumbnail unavailable'
+                        ) }}
+                    </div>
+                    {% endif %}
+
+                    <button type="button"
+                            class="import-select"
+                            data-class="button"
+                            aria-pressed="{{ 'true' if item['selected'] else 'false' }}"
+                            aria-label="Select {{ item['name'] }}">
+                        {{ icon(
+                            'check_box' if item['selected'] else 'check_box_outline_blank',
+                            item['id'] ~ '_checkbox',
+                            'Selected media' if item['selected'] else 'Unselected media',
+                            'checkbox'
+                        ) }}
+                    </button>
+
+                    <div class="import-cover-bottom">
+                        <span class="import-badge" data-class="badge">
+                            {{ icon(
+                                'videocam' if item['kind'] == 'video' else 'photo',
+                                item['id'] ~ '_type',
+                                item['kind']|title
+                            ) }}
+                            {{ item['duration'] if item['kind'] == 'video' else 'Photo' }}
+                        </span>
+                        {{ action('open_in_full', item['id'] ~ '_preview', 'Preview media') }}
+                    </div>
+                </div>
+
+                <div class="import-card-info">
+                    <strong>{{ item['name'] }}</strong>
+                    <p>{{ item['size'] }}</p>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+
+        {% if capcut['selected_media'] %}
+        <section class="import-selection-panel"
+                 data-class="section"
+                 aria-label="Selected media">
+            <div class="import-selection-heading">
+                <h2>Selected media · {{ capcut['selected_count'] }}</h2>
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button">
+                    {{ icon('clear_all', 'clear_media_selection', 'Clear selection') }}
+                    Clear
+                </button>
+            </div>
+
+            <div class="import-selected-grid">
+                {% for item in capcut['selected_media'] %}
+                <div class="import-selected-item" data-class="card">
+                    {% if item['image'] %}
+                    <img src="{{ item['image'] }}"
+                         alt="{{ item['name'] }}"
+                         data-class="image">
+                    {% else %}
+                    <div class="import-placeholder">
+                        {{ icon('movie', item['id'] ~ '_selected_placeholder', 'Selected media') }}
+                    </div>
+                    {% endif %}
+
+                    {{ action('close', item['id'] ~ '_remove', 'Remove selected media' , annotate=false) }}
+
+                    <span class="import-selected-order" data-class="badge">
+                        {{ item['selection_order'] }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <div class="import-footer" data-class="section">
+            <span>{{ capcut['selected_count'] }} items selected</span>
+            <button type="button"
+                    class="primary-button"
+                    data-class="button"
+                    {{ 'disabled' if capcut['selected_count'] == 0 else '' }}>
+                {{ icon('add', 'import_selected_media', 'Add selected media') }}
+                Add ({{ capcut['selected_count'] }})
+            </button>
+        </div>
+    </main>
+</div>
+
+{% if capcut['popup_visible'] %}
+<div class="import-modal-layer" data-occluder="true">
+    <section class="import-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="import-dialog-title"
+             data-class="dialog">
+
+        {% if capcut['state'] == 'preview_dialog' %}
+        {% set target = capcut['target_media'] %}
+        <div class="import-dialog-heading">
+            <h2 id="import-dialog-title">{{ target['name'] }}</h2>
+            {{ action('close', 'close_media_preview', 'Close preview', annotate=false) }}
+        </div>
+
+        <div class="import-preview">
+            {% if target['image'] %}
+            <img src="{{ target['image'] }}"
+                 alt="{{ target['name'] }}"
+                 data-class="image">
+            {% else %}
+            <div class="import-placeholder">
+                {{ icon('movie', 'preview_media_placeholder', 'Preview unavailable') }}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if target['kind'] == 'video' %}
+        <div class="import-preview-controls">
+            <span>00:00 / {{ target['duration'] }}</span>
+            <div class="import-preview-actions">
+                {{ action('play_arrow', 'play_import_preview', 'Play preview' , annotate=false) }}
+                {{ action('volume_up', 'import_preview_volume', 'Preview volume' , annotate=false) }}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="import-dialog-actions">
+            <button type="button"
+                    class="primary-button"
+                    data-class="button">
+                {{ icon('add', 'add_preview_media', 'Select this media') }}
+                Select
+            </button>
+        </div>
+
+        {% else %}
+        <div class="import-dialog-heading">
+            <h2 id="import-dialog-title">Importing media</h2>
+            {{ action('close', 'close_import_progress', 'Close import progress', annotate=false) }}
+        </div>
+
+        <p class="import-progress-description">
+            Preparing {{ capcut['import_total'] }} items for your project.
+        </p>
+
+        <div class="import-progress"
+             data-class="progress_bar"
+             role="progressbar"
+             aria-label="Import progress"
+             aria-valuemin="0"
+             aria-valuemax="100"
+             aria-valuenow="{{ capcut['progress'] }}">
+            <div class="import-progress-fill"
+                 style="width: {{ capcut['progress'] }}%;"></div>
+        </div>
+
+        <p class="import-progress-description">
+            {{ capcut['progress'] }}% ·
+            {{ capcut['imported_count'] }} of {{ capcut['import_total'] }} items ready
+        </p>
+
+        <div class="import-dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button">Cancel import</button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

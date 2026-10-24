@@ -1,0 +1,964 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label) -%}
+<span class="material-symbols-rounded"
+      data-class="icon"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+{% macro action(name, semantic, label, annotate=True) -%}
+<button type="button"
+        class="icon-button"
+        {% if annotate %}data-class="button"{% endif %}
+        aria-label="{{ label }}">
+    {{ icon(name, semantic, label) }}
+</button>
+{%- endmacro %}
+
+{% block title %}CapCut — Templates{% endblock %}
+
+{% block head %}
+<style>
+    .templates-shell {
+        padding-bottom: 76px;
+    }
+
+    .templates-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 24px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand {
+        font-size: 25px;
+        font-weight: 800;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .templates-layout {
+        display: grid;
+        grid-template-columns: 200px minmax(0, 1fr);
+    }
+
+    .templates-sidebar {
+        padding: 22px 14px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-right: 1px solid var(--border-subtle);
+    }
+
+    .sidebar-nav {
+        display: grid;
+        gap: 8px;
+    }
+
+    .sidebar-nav button {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px;
+        border-radius: 10px;
+        text-align: left;
+    }
+
+    .sidebar-nav .active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .templates-main {
+        min-width: 0;
+        width: 100%;
+        max-width: 2000px;
+        margin-inline: auto;
+        padding: 28px;
+    }
+
+    .page-heading {
+        margin-bottom: 22px;
+    }
+
+    .page-heading h1 {
+        font-size: clamp(24px, 3vw, 36px);
+    }
+
+    .page-heading p {
+        margin-top: 8px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .collection-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 18px;
+    }
+
+    .collection-tabs button,
+    .category {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 9px 15px;
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .collection-tabs .active,
+    .category.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .search-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .template-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1 1 260px;
+        min-width: 0;
+        min-height: 46px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .template-search input {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: var(--on-surface);
+        outline: 0;
+    }
+
+    .template-search input::placeholder {
+        color: var(--on-surface-variant);
+    }
+
+    .sort-wrapper {
+        position: relative;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-radius: 10px;
+    }
+
+    .sort-wrapper select {
+        appearance: none;
+        -webkit-appearance: none;
+        min-height: 46px;
+        padding: 10px 40px 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: transparent;
+        color: inherit;
+    }
+
+    .sort-wrapper > .material-symbols-rounded {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: var(--icon);
+    }
+
+    .categories {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 24px;
+    }
+
+    .featured {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 18px;
+        margin-bottom: 26px;
+        padding: 26px;
+        border-radius: 18px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .featured h2 {
+        margin: 8px 0;
+        font-size: 26px;
+    }
+
+    .featured p {
+        max-width: 550px;
+        line-height: 1.5;
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .section-heading h2 {
+        font-size: 22px;
+    }
+
+    .result-count {
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .template-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 18px;
+    }
+
+    .template-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 15px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .template-cover {
+        position: relative;
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .template-cover img {
+        width: 100%;
+        height: 100%;
+    }
+
+    .placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .placeholder .material-symbols-rounded {
+        font-size: 44px;
+    }
+
+    .cover-top,
+    .cover-bottom {
+        position: absolute;
+        left: 9px;
+        right: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .cover-top { top: 9px; }
+    .cover-bottom { bottom: 9px; }
+
+    .cover-top .icon-button,
+    .cover-bottom .icon-button {
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .template-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 7px;
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 11px;
+    }
+
+    .pro-badge {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .template-badge .material-symbols-rounded {
+        font-size: 16px;
+    }
+
+    .template-info {
+        padding: 12px;
+    }
+
+    .template-info h3 {
+        font-size: 14px;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+    }
+
+    .creator-row {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 9px;
+        font-size: 12px;
+        color: var(--on-surface-variant);
+    }
+
+    .creator-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        overflow: hidden;
+        border-radius: 50%;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 11px;
+    }
+
+    .template-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+        color: var(--on-surface-variant);
+        font-size: 11px;
+    }
+
+    .template-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .template-meta .material-symbols-rounded {
+        font-size: 17px;
+    }
+
+    .empty-saved {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        padding: 65px 20px;
+        border-radius: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+        text-align: center;
+    }
+
+    .empty-saved > .material-symbols-rounded {
+        font-size: 54px;
+    }
+
+    .mobile-nav { display: none; }
+
+    .preview-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 55%);
+    }
+
+    .preview-dialog {
+        width: min(850px, 100%);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .preview-header h2 { font-size: 20px; }
+
+    .preview-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 22px;
+        padding: 20px;
+    }
+
+    .preview-media {
+        position: relative;
+        height: min(52vh, 470px);
+        min-height: 150px;
+        overflow: hidden;
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .preview-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .preview-play {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .preview-controls {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px;
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+        font-size: 12px;
+    }
+
+    .preview-details {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-width: 0;
+    }
+
+    .preview-details h3 {
+        font-size: 23px;
+        overflow-wrap: anywhere;
+    }
+
+    .preview-details p {
+        color: var(--on-surface-variant);
+        line-height: 1.6;
+    }
+
+    .preview-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .preview-stat {
+        padding: 12px 6px;
+        border-radius: 9px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        text-align: center;
+        font-size: 12px;
+    }
+
+    .preview-stat strong {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 16px;
+    }
+
+    .preview-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    @media (min-width: 900px) {
+        .templates-shell { padding-bottom: 0; }
+        .templates-sidebar {
+            min-height: calc(100vh - var(--chrome-height) - 75px);
+        }
+    }
+
+    @media (max-width: 899px) {
+        .templates-layout { display: block; }
+        .templates-sidebar { display: none; }
+        .templates-main { padding: 20px; }
+
+        .mobile-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: var(--system-bottom);
+            z-index: 45;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            height: 65px;
+            background: var(--surface);
+            color: var(--on-surface);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .mobile-nav button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 11px;
+        }
+
+        .mobile-nav .active {
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .preview-body {
+            grid-template-columns: 1fr;
+            padding: 14px;
+            gap: 14px;
+        }
+
+        .preview-media {
+            height: clamp(150px, 30vh, 250px);
+        }
+
+        .preview-details { gap: 12px; }
+    }
+
+    @media (max-width: 480px) {
+        .templates-header { padding: 14px; }
+        .templates-main { padding: 20px 12px; }
+        .featured { padding: 18px; }
+        .featured h2 { font-size: 22px; }
+
+        .template-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .template-info { padding: 9px; }
+        .template-info h3 { font-size: 12px; }
+        .creator-row { font-size: 10px; }
+        .template-meta { font-size: 10px; }
+
+        .cover-top,
+        .cover-bottom {
+            left: 6px;
+            right: 6px;
+        }
+
+        .cover-top .icon-button,
+        .cover-bottom .icon-button {
+            width: 30px;
+            height: 30px;
+        }
+
+        .preview-layer { padding: 10px; }
+        .preview-dialog { max-height: calc(100dvh - 20px); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="templates-shell"
+     data-annotation-skip="{{ 'true' if capcut['popup_visible'] else 'false' }}">
+
+    <header class="templates-header" data-class="app_bar">
+        <strong class="brand">CapCut</strong>
+        <div class="header-actions">
+            {{ action('notifications', 'templates_notifications', 'Notifications', annotate=false) }}
+            {{ action('settings', 'templates_settings', 'Settings' , annotate=false) }}
+        </div>
+    </header>
+
+    <div class="templates-layout">
+        <aside class="templates-sidebar">
+            <nav class="sidebar-nav"
+                 data-class="navigation_bar"
+                 aria-label="Main navigation">
+                <button type="button" data-class="button">
+                    {{ icon('movie_edit', 'sidebar_edit', 'Edit') }}
+                    Edit
+                </button>
+                <button type="button"
+                        class="active"
+                        data-class="button">
+                    {{ icon('dashboard', 'sidebar_templates', 'Templates') }}
+                    Templates
+                </button>
+                <button type="button" data-class="button">
+                    {{ icon('cloud', 'sidebar_spaces', 'Spaces') }}
+                    Spaces
+                </button>
+                <button type="button" data-class="button">
+                    {{ icon('person', 'sidebar_profile', 'Me') }}
+                    Me
+                </button>
+            </nav>
+        </aside>
+
+        <main class="templates-main" >
+            <div class="page-heading">
+                <h1>Find your next inspiration</h1>
+                <p>Choose a template and make it your own.</p>
+            </div>
+
+            <div class="collection-tabs"
+                 role="tablist"
+                 aria-label="Template collections" >
+                <button type="button"
+                        role="tab"
+                        data-class="tab"
+                        class="{{ 'active' if capcut['active_collection'] == 'discover' else '' }}"
+                        aria-selected="{{ 'true' if capcut['active_collection'] == 'discover' else 'false' }}">
+                    {{ icon('explore', 'discover_collection', 'Discover') }}
+                    Discover
+                </button>
+
+                <button type="button"
+                        role="tab"
+                        data-class="tab"
+                        class="{{ 'active' if capcut['active_collection'] == 'saved' else '' }}"
+                        aria-selected="{{ 'true' if capcut['active_collection'] == 'saved' else 'false' }}">
+                    {{ icon('bookmark', 'saved_collection', 'Saved templates') }}
+                    Saved
+                </button>
+            </div>
+
+            <div class="search-toolbar" data-class="section">
+                <div class="template-search" data-class="search_bar">
+                    {{ icon('search', 'template_search_icon', 'Search templates') }}
+                    <input type="text"
+                           value="{{ capcut['query'] }}"
+                           placeholder="Search templates"
+                           aria-label="Search templates">
+                    {% if capcut['query'] %}
+                    {{ action('close', 'clear_template_search', 'Clear search', annotate=false) }}
+                    {% endif %}
+                </div>
+
+                <div class="sort-wrapper">
+                    <select data-class="input_field"
+                            aria-label="Sort templates">
+                        <option selected>Popular</option>
+                        <option>Newest</option>
+                        <option>Most used</option>
+                    </select>
+                    {{ icon('expand_more', 'template_sort_arrow', 'Sort options') }}
+                </div>
+            </div>
+
+            {% if capcut['active_collection'] == 'discover' %}
+            <div class="categories" aria-label="Template categories" data-class="section">
+                {% for category in capcut['categories'] %}
+                <button type="button"
+                        class="category {{ 'active' if category == capcut['active_category'] else '' }}"
+                        data-class="chip"
+                        aria-pressed="{{ 'true' if category == capcut['active_category'] else 'false' }}">
+                    {{ category }}
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if capcut['show_featured'] %}
+            <section class="featured" data-class="card">
+                <div>
+                    {{ icon('auto_awesome', 'featured_sparkle', 'Featured templates') }}
+                    <h2>Your moments, beautifully edited</h2>
+                    <p>
+                        Explore creative layouts, photo stories,
+                        and transitions ready for your next video.
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="primary-button"
+                        data-class="button">
+                    Explore templates
+                    {{ icon('arrow_forward', 'featured_explore', 'Explore templates') }}
+                </button>
+            </section>
+            {% endif %}
+
+            <section data-class="section" aria-label="Template results">
+                <div class="section-heading">
+                    <h2>
+                        {% if capcut['active_collection'] == 'saved' %}
+                        Saved templates
+                        {% elif capcut['query'] %}
+                        Results for “{{ capcut['query'] }}”
+                        {% elif capcut['active_category'] != 'For you' %}
+                        {{ capcut['active_category'] }} templates
+                        {% else %}
+                        Recommended for you
+                        {% endif %}
+                    </h2>
+
+                    <span class="result-count">
+                        {{ capcut['templates']|length }} templates
+                    </span>
+                </div>
+
+                {% if capcut['templates'] %}
+                <div class="template-grid">
+                    {% for item in capcut['templates'] %}
+                    <article class="template-card"
+                             data-class="card"
+                             data-semantic="{{ item['id'] }}">
+
+                        <div class="template-cover">
+                            {% if item['thumbnail'] %}
+                            <img src="{{ item['thumbnail'] }}"
+                                 alt="{{ item['title'] }}"
+                                 data-class="image">
+                            {% else %}
+                            <div class="placeholder">
+                                {{ icon('movie', item['id'] ~ '_placeholder', 'Template image unavailable') }}
+                            </div>
+                            {% endif %}
+
+                            <div class="cover-top">
+                                {% if item['premium'] %}
+                                <span class="template-badge pro-badge"
+                                      data-class="badge">
+                                    {{ icon('workspace_premium', item['id'] ~ '_pro', 'Pro template') }}
+                                    Pro
+                                </span>
+                                {% else %}
+                                <span></span>
+                                {% endif %}
+
+                                {{ action(
+                                    'bookmark' if item['saved'] else 'bookmark_border',
+                                    item['id'] ~ '_save',
+                                    'Unsave template' if item['saved'] else 'Save template'
+                                ) }}
+                            </div>
+
+                            <div class="cover-bottom">
+                                <span class="template-badge"
+                                      data-class="badge">
+                                    {{ item['duration'] }}
+                                </span>
+                                {{ action('play_arrow', item['id'] ~ '_preview', 'Preview template' ) }}
+                            </div>
+                        </div>
+
+                        <div class="template-info">
+                            <h3>{{ item['title'] }}</h3>
+
+                            <div class="creator-row">
+                                {% if item['avatar'] %}
+                                <img class="creator-avatar"
+                                     src="{{ item['avatar'] }}"
+                                     alt="{{ item['creator'] }}"
+                                     data-class="avatar">
+                                {% else %}
+                                <span class="creator-avatar"
+                                      data-class="avatar">
+                                    {{ item['creator'][0] }}
+                                </span>
+                                {% endif %}
+                                <span>{{ item['creator'] }}</span>
+                            </div>
+
+                            <div class="template-meta">
+                                <span>
+                                    {{ icon('people', item['id'] ~ '_uses', 'Template uses') }}
+                                    {{ item['uses'] }}
+                                </span>
+                                <span>{{ item['clips'] }} clips</span>
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-saved" data-class="card">
+                    {{ icon('bookmark_border', 'empty_saved_templates', 'No saved templates') }}
+                    <h3>No saved templates yet</h3>
+                    <p>Save templates you like to find them here.</p>
+                    <button type="button"
+                            class="primary-button"
+                            data-class="button">
+                        {{ icon('explore', 'browse_templates', 'Browse templates') }}
+                        Browse templates
+                    </button>
+                </div>
+                {% endif %}
+            </section>
+        </main>
+    </div>
+
+    <nav class="mobile-nav"
+         data-class="navigation_bar"
+         data-occluder="{{ 'false' if capcut['popup_visible'] else 'true' }}"
+         aria-label="Main navigation">
+        <button type="button" >
+            {{ icon('movie_edit', 'mobile_edit', 'Edit') }}
+            <span>Edit</span>
+        </button>
+        <button type="button" class="active" >
+            {{ icon('dashboard', 'mobile_templates', 'Templates') }}
+            <span>Templates</span>
+        </button>
+        <button type="button" >
+            {{ icon('cloud', 'mobile_spaces', 'Spaces') }}
+            <span>Spaces</span>
+        </button>
+        <button type="button" >
+            {{ icon('person', 'mobile_profile', 'Me') }}
+            <span>Me</span>
+        </button>
+    </nav>
+</div>
+
+{% if capcut['popup_visible'] %}
+{% set target = capcut['target_template'] %}
+<div class="preview-layer" data-occluder="true">
+    <section class="preview-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="preview-title"
+             data-class="dialog">
+
+        <header class="preview-header">
+            <h2 id="preview-title">Template preview</h2>
+            {{ action('close', 'close_template_preview', 'Close preview', annotate=false) }}
+        </header>
+
+        <div class="preview-body">
+            <div class="preview-media">
+                {% if target['thumbnail'] %}
+                <img src="{{ target['thumbnail'] }}"
+                     alt="{{ target['title'] }}"
+                     data-class="image">
+                {% else %}
+                <div class="placeholder">
+                    {{ icon('movie', 'preview_placeholder', 'Preview image unavailable') }}
+                </div>
+                {% endif %}
+
+                <button type="button"
+                        class="icon-button preview-play"
+                        data-class="button"
+                        aria-label="Play preview">
+                    {{ icon('play_arrow', 'preview_play', 'Play preview') }}
+                </button>
+
+                <div class="preview-controls">
+                    <span>00:00 / {{ target['duration'] }}</span>
+                    {{ action('volume_up', 'preview_volume', 'Preview volume' , annotate=false) }}
+                </div>
+            </div>
+
+            <div class="preview-details">
+                <h3>{{ target['title'] }}</h3>
+
+                <div class="creator-row">
+                    {% if target['avatar'] %}
+                    <img class="creator-avatar"
+                         src="{{ target['avatar'] }}"
+                         alt="{{ target['creator'] }}"
+                         data-class="avatar">
+                    {% else %}
+                    <span class="creator-avatar" data-class="avatar">
+                        {{ target['creator'][0] }}
+                    </span>
+                    {% endif %}
+                    <span>{{ target['creator'] }}</span>
+                </div>
+
+                <p>{{ target['description'] }}</p>
+
+                <div class="preview-stats">
+                    <div class="preview-stat">
+                        <strong>{{ target['clips'] }}</strong>
+                        Clips
+                    </div>
+                    <div class="preview-stat">
+                        <strong>{{ target['duration'] }}</strong>
+                        Duration
+                    </div>
+                    <div class="preview-stat">
+                        <strong>{{ target['aspect_ratio'] }}</strong>
+                        Ratio
+                    </div>
+                </div>
+
+                <div class="preview-actions">
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button">
+                        {{ icon(
+                            'bookmark' if target['saved'] else 'bookmark_border',
+                            'save_preview_template',
+                            'Save template'
+                        ) }}
+                        {{ 'Saved' if target['saved'] else 'Save' }}
+                    </button>
+
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button">
+                        {{ icon('share', 'share_preview_template', 'Share template') }}
+                        Share
+                    </button>
+                </div>
+
+                <button type="button"
+                        class="primary-button"
+                        data-class="button">
+                    {{ icon('movie_edit', 'use_template', 'Use template') }}
+                    Use template
+                </button>
+            </div>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

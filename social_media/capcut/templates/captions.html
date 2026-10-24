@@ -1,0 +1,675 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label, cls='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ cls }}"
+      data-semantic="{{ semantic }}"
+      aria-label="{{ label }}">{{ name }}</span>
+{%- endmacro %}
+
+{% macro action(name, semantic, label, annotate=True) -%}
+<button type="button"
+        class="icon-button"
+        {% if annotate %}data-class="button"{% endif %}
+        aria-label="{{ label }}">
+    {{ icon(name, semantic, label) }}
+</button>
+{%- endmacro %}
+
+{% macro dropdown(label, semantic, options, value) -%}
+<div class="caption-field">
+    <label for="{{ semantic }}">{{ label }}</label>
+    <div class="caption-select">
+        <select id="{{ semantic }}" data-class="input_field">
+            {% for option in options %}
+            <option {{ 'selected' if option == value else '' }}>
+                {{ option }}
+            </option>
+            {% endfor %}
+        </select>
+        {{ icon('expand_more', semantic ~ '_arrow', label ~ ' options') }}
+    </div>
+</div>
+{%- endmacro %}
+
+{% macro checkbox(label, semantic, checked) -%}
+<button type="button"
+        class="caption-checkbox"
+
+        aria-pressed="{{ 'true' if checked else 'false' }}">
+    {{ icon(
+        'check_box' if checked else 'check_box_outline_blank',
+        semantic,
+        label,
+        'checkbox'
+    ) }}
+    <span>{{ label }}</span>
+</button>
+{%- endmacro %}
+
+{% block title %}CapCut — Auto Captions{% endblock %}
+
+{% block head %}
+<style>
+    .caption-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 14px 20px;
+        background: var(--surface);
+        color: var(--on-surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .caption-header-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .caption-header h1 { font-size: 19px; }
+
+    .caption-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.8fr);
+        gap: 22px;
+        max-width: 1700px;
+        margin-inline: auto;
+        padding: 24px;
+    }
+
+    .caption-preview-panel,
+    .caption-controls {
+        min-width: 0;
+        padding: 20px;
+        border-radius: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .caption-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .caption-heading h2 { font-size: 19px; }
+
+    .caption-canvas {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: clamp(260px, 48vh, 560px);
+        overflow: hidden;
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .caption-canvas > img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .caption-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .caption-placeholder .material-symbols-rounded { font-size: 56px; }
+
+    .caption-overlay {
+        position: absolute;
+        left: 10%;
+        right: 10%;
+        padding: 10px 12px;
+        background: var(--surface);
+        color: var(--on-surface);
+        text-align: center;
+        font-size: clamp(17px, 2vw, 30px);
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+    }
+
+    .caption-overlay.bottom { bottom: 12%; }
+    .caption-overlay.top { top: 12%; }
+    .caption-overlay.center { top: 50%; transform: translateY(-50%); }
+    .caption-overlay.bold { font-weight: 800; }
+    .caption-overlay.boxed { border: 2px solid var(--icon); font-weight: 700; }
+    .caption-overlay.rounded { border-radius: 18px; font-weight: 600; }
+
+    .caption-playback {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+        font-size: 12px;
+    }
+
+    .caption-playback-actions { display: flex; align-items: center; gap: 6px; }
+
+    .caption-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .caption-tab {
+        flex: 1;
+        min-height: 42px;
+        padding: 9px;
+        border-radius: 9px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .caption-tab.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .caption-field { margin-bottom: 17px; }
+
+    .caption-field label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .caption-select { position: relative; }
+
+    .caption-select select {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 38px 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .caption-select > .material-symbols-rounded {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: var(--icon);
+    }
+
+    .caption-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        width: 100%;
+        min-height: 43px;
+        text-align: left;
+        font-size: 13px;
+    }
+
+    .caption-generate {
+        width: 100%;
+        margin-top: 18px;
+    }
+
+    .caption-helper {
+        margin-top: 14px;
+        color: var(--on-surface-variant);
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .caption-progress-card {
+        padding: 28px 15px;
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        text-align: center;
+    }
+
+    .caption-progress-card > .material-symbols-rounded {
+        font-size: 44px;
+        margin-bottom: 15px;
+    }
+
+    .caption-progress-card h3 { margin-bottom: 12px; }
+
+    .caption-progress {
+        height: 12px;
+        margin: 18px 0;
+        overflow: hidden;
+        border: 1px solid var(--icon);
+        border-radius: 8px;
+        background: var(--surface);
+    }
+
+    .caption-progress-fill {
+        height: 100%;
+        background: var(--icon);
+    }
+
+    .caption-segments {
+        display: grid;
+        gap: 10px;
+    }
+
+    .caption-segment {
+        padding: 13px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .caption-segment.selected {
+        border: 2px solid var(--icon);
+    }
+
+    .caption-segment-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 7px;
+        font-size: 11px;
+    }
+
+    .caption-segment p { font-size: 13px; line-height: 1.5; }
+    .caption-segment .icon-button { width: 28px; height: 28px; }
+
+    .caption-editor {
+        margin-bottom: 20px;
+        padding: 14px;
+        border-radius: 11px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .caption-editor label {
+        display: block;
+        margin-bottom: 9px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .caption-editor textarea {
+        width: 100%;
+        min-height: 90px;
+        resize: none;
+        padding: 11px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--on-surface);
+        line-height: 1.5;
+    }
+
+    .caption-editor-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .caption-style-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .caption-style {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        min-height: 90px;
+        padding: 16px 10px;
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .caption-style.active {
+        border: 2px solid var(--icon);
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .caption-style-sample { font-size: 24px; }
+
+    .caption-range {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        height: 24px;
+        margin: 8px 0;
+        background: transparent;
+    }
+
+    .caption-range::-webkit-slider-runnable-track {
+        height: 5px;
+        border-radius: 5px;
+        background: var(--icon);
+    }
+
+    .caption-range::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        margin-top: -5.5px;
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+        background: var(--icon);
+    }
+
+    .caption-range::-moz-range-track {
+        height: 5px;
+        background: var(--icon);
+    }
+
+    .caption-range::-moz-range-thumb {
+        width: 13px;
+        height: 13px;
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+        background: var(--icon);
+    }
+
+    .caption-modal-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgb(0 0 0 / 55%);
+    }
+
+    .caption-dialog {
+        width: min(430px, 100%);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 22px;
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .caption-dialog p { line-height: 1.6; }
+
+    .caption-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    @media (max-width: 850px) {
+        .caption-layout {
+            grid-template-columns: 1fr;
+            padding: 16px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .caption-header { padding: 12px; }
+        .caption-header h1 { font-size: 16px; }
+        .caption-layout { padding: 12px; gap: 14px; }
+        .caption-preview-panel,
+        .caption-controls { padding: 14px; }
+        .caption-canvas { height: 235px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div data-annotation-skip="{{ 'true' if capcut['popup_visible'] else 'false' }}">
+    <header class="caption-header" data-class="app_bar">
+        <div class="caption-header-group">
+            {{ action('arrow_back', 'captions_back', 'Back to editor', annotate=false) }}
+            <h1>Auto captions</h1>
+        </div>
+
+        <div class="caption-header-group">
+            {{ action('help_outline', 'captions_help', 'Caption help', annotate=false) }}
+            <button type="button"
+                    class="primary-button"
+                    data-class="button">
+                {{ icon('done', 'captions_done', 'Done') }}
+                Done
+            </button>
+        </div>
+    </header>
+
+    <main class="caption-layout">
+        <section class="caption-preview-panel"
+                 data-class="section"
+                 aria-label="Caption preview">
+            <div class="caption-heading">
+                <h2>{{ capcut['project_name'] }}</h2>
+                {{ action('aspect_ratio', 'caption_preview_ratio', 'Preview ratio' , annotate=false) }}
+            </div>
+
+            <div class="caption-canvas">
+                {% if capcut['preview_image'] %}
+                <img src="{{ capcut['preview_image'] }}"
+                     alt="Caption preview"
+                     data-class="image">
+                {% else %}
+                <div class="caption-placeholder">
+                    {{ icon('movie', 'caption_preview_placeholder', 'Preview unavailable') }}
+                </div>
+                {% endif %}
+
+                {% if capcut['show_captions'] %}
+                <div class="caption-overlay {{ capcut['position']|lower }} {{ capcut['selected_style'] }}"
+                     data-class="text">
+                    {{ capcut['selected_caption']['text'] }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="caption-playback">
+                <span>00:04 / {{ capcut['duration'] }}</span>
+                <div class="caption-playback-actions">
+                    {{ action('skip_previous', 'caption_previous', 'Previous segment', annotate =false ) }}
+                    {{ action('play_arrow', 'caption_play', 'Play preview', annotate =false) }}
+                    {{ action('skip_next', 'caption_next', 'Next segment' , annotate =false) }}
+                    {{ action('volume_up', 'caption_volume', 'Preview volume' , annotate =false) }}
+                </div>
+            </div>
+        </section>
+
+        <section class="caption-controls"
+                 data-class="section"
+                 aria-label="Caption controls">
+            <div class="caption-tabs" role="tablist" aria-label="Caption tools">
+                <button type="button"
+                        class="caption-tab {{ 'active' if capcut['state'] != 'style_editing' else '' }}"
+                        role="tab"
+                        aria-selected="{{ 'true' if capcut['state'] != 'style_editing' else 'false' }}"
+                        data-class="tab">
+                    Captions
+                </button>
+                <button type="button"
+                        class="caption-tab {{ 'active' if capcut['state'] == 'style_editing' else '' }}"
+                        role="tab"
+                        aria-selected="{{ 'true' if capcut['state'] == 'style_editing' else 'false' }}"
+                        data-class="tab">
+                    Style
+                </button>
+            </div>
+
+            {% if capcut['state'] == 'setup' %}
+            {{ dropdown('Spoken language', 'caption_language', capcut['languages'], capcut['language']) }}
+            {{ dropdown('Audio source', 'caption_source', capcut['sources'], capcut['source']) }}
+
+            {{ checkbox('Remove filler words', 'remove_filler_checkbox', capcut['remove_filler']) }}
+            {{ checkbox('Generate bilingual captions', 'bilingual_checkbox', capcut['bilingual']) }}
+
+            <button type="button"
+                    class="primary-button caption-generate"
+                    data-class="button">
+                {{ icon('auto_awesome', 'generate_captions', 'Generate captions') }}
+                Generate captions
+            </button>
+
+            <p class="caption-helper">
+                Captions are created from the selected audio source.
+                You can edit the text after generation.
+            </p>
+
+            {% elif capcut['state'] == 'generating' %}
+            <div class="caption-progress-card" data-class="card">
+                {{ icon('closed_caption', 'caption_generating', 'Generating captions') }}
+                <h3>Generating captions</h3>
+                <p>{{ capcut['progress'] }}% complete</p>
+
+                <div class="caption-progress"
+                     data-class="progress_bar"
+                     role="progressbar"
+                     aria-label="Caption generation progress"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="{{ capcut['progress'] }}">
+                    <div class="caption-progress-fill"
+                         style="width: {{ capcut['progress'] }}%;"></div>
+                </div>
+
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button">
+                    Cancel
+                </button>
+            </div>
+
+            {% elif capcut['state'] == 'style_editing' %}
+            <div class="caption-style-grid">
+                {% for style in capcut['styles'] %}
+                <button type="button"
+                        class="caption-style {{ 'active' if style['id'] == capcut['selected_style'] else '' }}"
+                        data-class="button"
+                        aria-pressed="{{ 'true' if style['id'] == capcut['selected_style'] else 'false' }}">
+                    <span class="caption-style-sample"
+                          style="font-weight: {{ style['weight'] }};">Aa</span>
+                    <span>{{ style['name'] }}</span>
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="caption-field">
+                <label for="caption-font-size">
+                    Font size: {{ capcut['font_size'] }}
+                </label>
+                <input id="caption-font-size"
+                       class="caption-range"
+                       type="range"
+                       min="16"
+                       max="60"
+                       value="{{ capcut['font_size'] }}"
+                       data-class="slider">
+            </div>
+
+            {{ dropdown('Position', 'caption_position', capcut['positions'], capcut['position']) }}
+
+            <button type="button"
+                    class="primary-button caption-generate"
+                    data-class="button">
+                {{ icon('format_paint', 'apply_caption_style', 'Apply to all captions') }}
+                Apply to all
+            </button>
+
+            {% else %}
+            <div class="caption-heading">
+                <h2>{{ capcut['segments']|length }} segments</h2>
+                {{ action('delete', 'clear_captions', 'Clear all captions',  annotate =false) }}
+            </div>
+
+            {% if capcut['state'] == 'caption_editing' %}
+            <div class="caption-editor">
+                <label for="caption-edit-text">Edit selected caption</label>
+                <textarea id="caption-edit-text"
+                          data-class="input_field">{{ capcut['selected_caption']['text'] }}</textarea>
+                <div class="caption-editor-actions">
+                    <button type="button"
+                            class="primary-button"
+                            data-class="button">
+                        {{ icon('save', 'save_caption', 'Save caption') }}
+                        Save
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="caption-segments">
+                {% for segment in capcut['segments'] %}
+                <article class="caption-segment {{ 'selected' if segment['selected'] else '' }}"
+                         data-class="card"
+                         data-semantic="{{ segment['id'] }}">
+                    <div class="caption-segment-top">
+                        <span>{{ segment['start'] }} — {{ segment['end'] }}</span>
+                        {{ action('edit', segment['id'] ~ '_edit', 'Edit caption' ) }}
+                    </div>
+                    <p>{{ segment['text'] }}</p>
+                </article>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+    </main>
+</div>
+
+{% if capcut['popup_visible'] %}
+<div class="caption-modal-layer" data-occluder="true">
+    <section class="caption-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="clear-caption-title"
+             data-class="dialog">
+        <div class="caption-heading">
+            <h2 id="clear-caption-title">Clear all captions?</h2>
+            {{ action('close', 'close_clear_captions', 'Close dialog',  annotate =false) }}
+        </div>
+
+        <p>
+            Remove all {{ capcut['segments']|length }} caption segments
+            from this project?
+        </p>
+
+        <div class="caption-dialog-actions">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button">Cancel</button>
+            <button type="button"
+                    class="danger-button"
+                    data-class="button">
+                {{ icon('delete', 'confirm_clear_captions', 'Clear captions') }}
+                Clear captions
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

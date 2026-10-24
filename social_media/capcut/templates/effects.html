@@ -1,0 +1,1010 @@
+{% extends "base.html" %}
+
+{% block title %}CapCut — Effects Library{% endblock %}
+
+{% block head %}
+<style>
+    .fx-shell {
+        max-width: 2100px;
+        margin: auto;
+        padding: 18px;
+    }
+
+    .fx-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .fx-between {
+        justify-content: space-between;
+    }
+
+    .fx-wrap {
+        flex-wrap: wrap;
+    }
+
+    .fx-muted {
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .fx-appbar {
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .fx-project {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .fx-heading {
+        margin: 22px 0;
+    }
+
+    .fx-heading h1 {
+        font-size: clamp(24px, 3vw, 34px);
+        margin-bottom: 6px;
+    }
+
+    .fx-workspace {
+        display: grid;
+        grid-template-columns: 170px minmax(0, 1fr) 330px;
+        gap: 16px;
+        align-items: start;
+    }
+
+    .fx-panel {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .fx-panel h2 {
+        font-size: 17px;
+    }
+
+    .fx-nav {
+        display: grid;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .fx-category {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 12px;
+        border-radius: 10px;
+        text-align: left;
+        color: var(--on-surface);
+        background: var(--surface);
+    }
+
+    .fx-category.active,
+    .fx-tab.active {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .fx-tip {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .fx-tip p {
+        margin-top: 10px;
+    }
+
+    .fx-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .fx-tab {
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .fx-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--background);
+        color: var(--on-background);
+    }
+
+    .fx-search input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    .fx-library-meta {
+        margin: 16px 0;
+    }
+
+    .fx-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .fx-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--background);
+        color: var(--on-background);
+    }
+
+    .fx-card.selected {
+        outline: 2px solid var(--primary);
+        outline-offset: -2px;
+    }
+
+    .fx-thumb {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 4 / 3;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .fx-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .fx-placeholder {
+        font-size: 42px;
+    }
+
+    .fx-favorite {
+        position: absolute;
+        top: 7px;
+        right: 7px;
+        border: 1px solid var(--border);
+    }
+
+    .fx-card-body {
+        padding: 12px;
+    }
+
+    .fx-card h3 {
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+
+    .fx-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 6px;
+        border-radius: 6px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 11px;
+    }
+
+    .fx-card-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    .fx-card-actions .secondary-button {
+        min-height: 34px;
+        padding: 7px 9px;
+        font-size: 12px;
+    }
+
+    .fx-card-actions .icon-button {
+        width: 32px;
+        height: 32px;
+    }
+
+    .fx-inspector {
+        display: grid;
+        gap: 16px;
+    }
+
+    .fx-preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        aspect-ratio: 16 / 10;
+        margin-top: 14px;
+        border-radius: 10px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .fx-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .fx-preview.glow img {
+        filter:
+            brightness({{ 1 + capcut['intensity'] / 250 }})
+            saturate({{ 1 + capcut['intensity'] / 150 }})
+            blur({{ capcut['size'] / 100 }}px);
+    }
+
+    .fx-preview-controls {
+        margin: 12px 0;
+    }
+
+    .fx-preview-controls .icon-button {
+        width: 32px;
+        height: 32px;
+    }
+
+    .fx-rule {
+        margin: 18px 0;
+        border: 0;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .fx-setting {
+        margin: 16px 0;
+    }
+
+    .fx-range {
+        appearance: none;
+        display: block;
+        width: 100%;
+        height: 6px;
+        margin-top: 12px;
+        border-radius: 8px;
+        background: var(--icon);
+    }
+
+    .fx-range::-webkit-slider-thumb {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+        background: var(--icon);
+    }
+
+    .fx-range::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--surface);
+        border-radius: 50%;
+        background: var(--icon);
+    }
+
+    .fx-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 18px 0;
+        text-align: left;
+    }
+
+    .fx-full {
+        width: 100%;
+    }
+
+    .fx-applied {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .fx-applied-card {
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--background);
+        color: var(--on-background);
+    }
+
+    .fx-applied-card.active {
+        border-color: var(--primary);
+    }
+
+    .fx-applied-card .fx-muted {
+        margin: 8px 0;
+    }
+
+    .fx-applied-card .icon-button {
+        width: 30px;
+        height: 30px;
+    }
+
+    .fx-download {
+        margin-top: 16px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--background);
+        color: var(--on-background);
+    }
+
+    .fx-progress {
+        height: 8px;
+        margin: 12px 0;
+        overflow: hidden;
+        border-radius: 6px;
+        background: var(--surface-variant);
+    }
+
+    .fx-progress > div {
+        height: 100%;
+        background: var(--icon);
+    }
+
+    .fx-timeline {
+        margin-top: 18px;
+    }
+
+    .fx-time-labels {
+        display: flex;
+        justify-content: space-between;
+        margin: 18px 0 10px;
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    .fx-clips {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .fx-clip {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--background);
+        color: var(--on-background);
+    }
+
+    .fx-clip.selected {
+        outline: 2px solid var(--primary);
+    }
+
+    .fx-clip-picture {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 65px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .fx-clip-picture img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .fx-clip-label {
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    .fx-effect-track {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .fx-track-block {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px;
+        border-radius: 8px;
+        background: var(--primary);
+        color: var(--on-primary);
+        font-size: 12px;
+    }
+
+    .fx-status {
+        margin: 16px 0 4px;
+    }
+
+    .fx-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow-y: auto;
+        padding: 16px;
+        background: rgb(0 0 0 / 60%);
+    }
+
+    .fx-dialog {
+        width: min(440px, 100%);
+        max-height: calc(100dvh - 32px);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .fx-dialog p {
+        margin: 18px 0 24px;
+        line-height: 1.6;
+    }
+
+    @media (min-width: 1800px) {
+        .fx-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 1100px) {
+        .fx-workspace {
+            grid-template-columns: 140px minmax(0, 1fr);
+        }
+
+        .fx-inspector {
+            grid-column: 1 / -1;
+            grid-template-columns: 1fr 1fr;
+            align-items: start;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .fx-workspace {
+            grid-template-columns: 1fr;
+        }
+
+        .fx-nav {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .fx-category {
+            width: auto;
+            padding: 10px;
+        }
+
+        .fx-tip {
+            display: none;
+        }
+
+        .fx-inspector {
+            grid-template-columns: 1fr;
+        }
+
+        .fx-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .fx-clips {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .fx-effect-track {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 380px) {
+        .fx-shell {
+            padding: 10px;
+        }
+
+        .fx-panel {
+            padding: 12px;
+        }
+
+        .fx-appbar .fx-project {
+            max-width: 95px;
+            font-size: 12px;
+        }
+
+        .fx-appbar .secondary-button {
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .fx-card-actions {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% macro icon(name, annotation_class='icon') -%}
+<span class="material-symbols-rounded"
+      data-class="{{ annotation_class }}">{{ name }}</span>
+{%- endmacro %}
+
+<div class="fx-shell"
+     data-annotation-skip="{{ 'true' if capcut['popup_visible'] else 'false' }}">
+
+    <header class="fx-appbar fx-row fx-between"
+            data-class="app_bar">
+        <div class="fx-row">
+            <button type="button"
+                    class="icon-button"
+                    aria-label="Back to editor"
+                    data-class="button"
+                    >
+                {{ icon('arrow_back') }}
+            </button>
+            <strong>CapCut</strong>
+        </div>
+
+        <span class="fx-project">{{ capcut['project_name'] }}</span>
+
+        <button type="button"
+                class="secondary-button"
+                data-class="button">
+            {{ icon('ios_share') }}
+            Export
+        </button>
+    </header>
+
+    <div class="fx-heading fx-row fx-between" data-class="section">
+        <div>
+            <h1>Effects library</h1>
+            <p class="fx-muted">
+                Discover, preview, and layer effects on your clips.
+            </p>
+        </div>
+
+        <button type="button"
+                class="icon-button"
+                aria-label="Effects help"
+                data-class="button"
+                >
+            {{ icon('help') }}
+        </button>
+    </div>
+
+    <main class="fx-workspace">
+        <aside class="fx-panel" data-class="section">
+            <h2>Categories</h2>
+
+            <nav class="fx-nav"
+                 aria-label="Effect categories"
+                 data-class="navigation_bar">
+                {% for category in capcut['categories'] %}
+                <button type="button"
+                        class="fx-category {{ 'active' if category['name'] == capcut['active_category'] else '' }}"
+                        aria-pressed="{{ 'true' if category['name'] == capcut['active_category'] else 'false' }}"
+                        data-class="button">
+                    {{ icon(category['icon']) }}
+                    {{ category['name'] }}
+                </button>
+                {% endfor %}
+            </nav>
+
+            <div class="fx-tip">
+                {{ icon('tips_and_updates') }}
+                <p class="fx-muted">
+                    Combine subtle effects to build a consistent look.
+                    Adjust intensity before adding an effect.
+                </p>
+            </div>
+        </aside>
+
+        <section class="fx-panel" data-class="section">
+            <div class="fx-tabs"
+                 role="tablist"
+                 aria-label="Effect libraries">
+                {% for tab in capcut['tabs'] %}
+                <button type="button"
+                        role="tab"
+                        class="fx-tab {{ 'active' if tab == capcut['active_tab'] else '' }}"
+                        aria-selected="{{ 'true' if tab == capcut['active_tab'] else 'false' }}"
+                        data-class="tab">
+                    {{ tab }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="fx-search" data-class="search_bar">
+                {{ icon('search') }}
+                <input type="text"
+                       aria-label="Search effects"
+                       placeholder="Search video effects"
+                       value="{{ capcut['query'] }}">
+
+                {% if capcut['query'] %}
+                <button type="button"
+                        class="icon-button"
+                        aria-label="Clear search"
+                        data-class="button">
+                    {{ icon('close') }}
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="fx-library-meta fx-row fx-between">
+                <span class="fx-muted">
+                    {{ capcut['effects']|length }} effects
+                </span>
+
+                <button type="button"
+                        class="secondary-button"
+                        data-class="button">
+                    {{ icon('sort') }}
+                    Popular
+                </button>
+            </div>
+
+            <div class="fx-grid">
+                {% for effect in capcut['effects'] %}
+                <article class="fx-card {{ 'selected' if effect['id'] == capcut['selected_effect_id'] else '' }}"
+                         data-class="card">
+                    <div class="fx-thumb">
+                        {% if effect['image'] %}
+                        <img src="{{ effect['image'] }}"
+                             alt="{{ effect['name'] }} sample"
+                             data-class="image">
+                        {% else %}
+                        <span class="material-symbols-rounded fx-placeholder"
+                              data-class="icon">{{ effect['icon'] }}</span>
+                        {% endif %}
+
+                        <button type="button"
+                                class="icon-button fx-favorite"
+                                aria-label="Favorite {{ effect['name'] }}"
+                                aria-pressed="{{ 'true' if effect['favorite'] else 'false' }}"
+                                data-class="button">
+                            {{ icon('bookmark' if effect['favorite'] else 'bookmark_border') }}
+                        </button>
+                    </div>
+
+                    <div class="fx-card-body">
+                        <h3>{{ effect['name'] }}</h3>
+                        <p class="fx-muted">{{ effect['category'] }}</p>
+
+                        <div class="fx-row fx-wrap">
+                            {% if effect['premium'] %}
+                            <span class="fx-badge" data-class="badge">
+                                {{ icon('workspace_premium') }}
+                                Pro
+                            </span>
+                            {% endif %}
+
+                            {% if effect['tag'] %}
+                            <span class="fx-badge" data-class="badge">
+                                {{ effect['tag'] }}
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="fx-card-actions">
+                            <button type="button"
+                                    class="secondary-button"
+                                    data-class="button">
+                                {{ icon('play_arrow') }}
+                                Preview
+                            </button>
+
+                            <button type="button"
+                                    class="icon-button"
+                                    aria-label="{{ 'Add' if effect['downloaded'] else 'Download' }} {{ effect['name'] }}"
+                                    data-class="button">
+                                {{ icon('add' if effect['downloaded'] else 'download') }}
+                            </button>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <aside class="fx-inspector">
+            <section class="fx-panel" data-class="section">
+                <div class="fx-row fx-between">
+                    <h2>Preview</h2>
+                    <span class="fx-badge" data-class="badge">16:9</span>
+                </div>
+
+                <div class="fx-preview {{ capcut['preview_effect'] }}">
+                    {% if capcut['preview_image'] %}
+                    <img src="{{ capcut['preview_image'] }}"
+                         alt="{{ capcut['preview_label'] }}"
+                         data-class="image">
+                    {% else %}
+                    <span class="material-symbols-rounded fx-placeholder"
+                          data-class="icon">movie</span>
+                    {% endif %}
+                </div>
+
+                <div class="fx-preview-controls fx-row fx-between">
+                    <button type="button"
+                            class="icon-button"
+                            aria-label="Play preview"
+                            >
+                        {{ icon('play_arrow') }}
+                    </button>
+
+                    <span class="fx-muted">00:04 / 00:30</span>
+
+                    <button type="button"
+                            class="icon-button"
+                            aria-label="Expand preview"
+                            >
+                        {{ icon('fullscreen') }}
+                    </button>
+                </div>
+
+                <p class="fx-muted">{{ capcut['preview_label'] }}</p>
+
+                <hr class="fx-rule">
+
+                <div class="fx-row fx-between">
+                    <h2>{{ capcut['selected_effect']['name'] }}</h2>
+                    <button type="button"
+                            class="icon-button"
+                            aria-label="Reset adjustments"
+                            >
+                        {{ icon('restart_alt') }}
+                    </button>
+                </div>
+
+                {% for key, label in [
+                    ('intensity', 'Intensity'),
+                    ('speed', 'Speed'),
+                    ('size', 'Size')
+                ] %}
+                <div class="fx-setting">
+                    <div class="fx-row fx-between">
+                        <label for="fx-{{ key }}">{{ label }}</label>
+                        <span class="fx-muted">{{ capcut[key] }}</span>
+                    </div>
+
+                    <input id="fx-{{ key }}"
+                           class="fx-range"
+                           type="range"
+                           min="0"
+                           max="100"
+                           value="{{ capcut[key] }}"
+                           data-class="slider">
+                </div>
+                {% endfor %}
+
+                <button type="button"
+                        class="fx-check"
+                        aria-pressed="{{ 'true' if capcut['apply_all'] else 'false' }}"
+                        >
+                    {{ icon(
+                        'check_box' if capcut['apply_all'] else 'check_box_outline_blank',
+                        'checkbox'
+                    ) }}
+                    Apply to all clips
+                </button>
+
+                <button type="button"
+                        class="primary-button fx-full"
+                        data-class="button"
+                        {% if capcut['download_visible'] %}disabled{% endif %}>
+                    {{ icon('download' if not capcut['selected_effect']['downloaded'] else 'add') }}
+                    {{ 'Download effect' if not capcut['selected_effect']['downloaded'] else 'Add effect' }}
+                </button>
+
+                {% if capcut['download_visible'] %}
+                <div class="fx-download" data-class="card">
+                    <div class="fx-row fx-between">
+                        <strong>Downloading effect</strong>
+                        <span class="fx-muted">
+                            {{ capcut['download_progress'] }}%
+                        </span>
+                    </div>
+
+                    <div class="fx-progress"
+                         role="progressbar"
+                         aria-label="Effect download"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         aria-valuenow="{{ capcut['download_progress'] }}"
+                         data-class="progress_bar">
+                        <div style="width: {{ capcut['download_progress'] }}%;"></div>
+                    </div>
+
+                    <button type="button"
+                            class="secondary-button"
+                            data-class="button">Cancel download</button>
+                </div>
+                {% endif %}
+            </section>
+
+            <section class="fx-panel" data-class="section">
+                <div class="fx-row fx-between">
+                    <h2>Applied effects</h2>
+                    <span class="fx-badge" data-class="badge">
+                        {{ capcut['applied']|length }}
+                    </span>
+                </div>
+
+                <div class="fx-applied">
+                    {% for applied in capcut['applied'] %}
+                    <article class="fx-applied-card {{ 'active' if applied['selected'] else '' }}"
+                             data-class="card">
+                        <div class="fx-row">
+                            {{ icon(applied['icon']) }}
+                            <strong>{{ applied['name'] }}</strong>
+                        </div>
+
+                        <p class="fx-muted">{{ applied['range'] }}</p>
+
+                        <div class="fx-row fx-between">
+                            <button type="button"
+                                    class="icon-button"
+                                    aria-label="{{ 'Disable' if applied['enabled'] else 'Enable' }} {{ applied['name'] }}"
+                                    aria-pressed="{{ 'true' if applied['enabled'] else 'false' }}"
+                                    >
+                                {{ icon('visibility' if applied['enabled'] else 'visibility_off') }}
+                            </button>
+
+                            <div class="fx-row">
+                                <button type="button"
+                                        class="icon-button"
+                                        aria-label="Duplicate {{ applied['name'] }}"
+                                        >
+                                    {{ icon('content_copy') }}
+                                </button>
+
+                                <button type="button"
+                                        class="icon-button"
+                                        aria-label="Remove {{ applied['name'] }}"
+                                        >
+                                    {{ icon('delete') }}
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+        </aside>
+    </main>
+
+    <section class="fx-panel fx-timeline" data-class="section">
+        <div class="fx-row fx-between fx-wrap">
+            <h2>Timeline</h2>
+
+            <div class="fx-row">
+                <button type="button"
+                        class="icon-button"
+                        aria-label="Undo"
+                        >{{ icon('undo') }}</button>
+
+                <button type="button"
+                        class="icon-button"
+                        aria-label="Redo"
+                        >{{ icon('redo') }}</button>
+
+                <button type="button"
+                        class="icon-button"
+                        aria-label="Split clip"
+                        >{{ icon('content_cut') }}</button>
+
+                <button type="button"
+                        class="icon-button"
+                        aria-label="Zoom timeline"
+                        >{{ icon('zoom_in') }}</button>
+            </div>
+        </div>
+
+        <div class="fx-time-labels">
+            <span>00:00</span>
+            <span>00:10</span>
+            <span>00:20</span>
+            <span>00:30</span>
+        </div>
+
+        <div class="fx-clips">
+            {% for clip in capcut['clips'] %}
+            <article class="fx-clip {{ 'selected' if clip['selected'] else '' }}"
+                     data-class="card">
+                <div class="fx-clip-picture">
+                    {% if clip['image'] %}
+                    <img src="{{ clip['image'] }}"
+                         alt="{{ clip['name'] }}"
+                         data-class="image">
+                    {% else %}
+                    {{ icon('movie') }}
+                    {% endif %}
+                </div>
+
+                <div class="fx-clip-label">
+                    <strong>{{ clip['name'] }}</strong>
+                    <p class="fx-muted">{{ clip['duration'] }}</p>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <div class="fx-effect-track">
+            {% for applied in capcut['applied'] %}
+            <div class="fx-track-block" data-class="card">
+                {{ icon(applied['icon']) }}
+                <span>{{ applied['name'] }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <p class="fx-status fx-muted" role="status">
+        {{ capcut['status_text'] }}
+    </p>
+</div>
+
+{% if capcut['popup_visible'] %}
+<div class="fx-overlay" data-occluder="true">
+    <section class="fx-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="fx-remove-title"
+             data-class="dialog">
+        <div class="fx-row fx-between">
+            <h2 id="fx-remove-title">Remove Soft glow?</h2>
+
+            <button type="button"
+                    class="icon-button"
+                    aria-label="Close dialog"
+                    >
+                {{ icon('close') }}
+            </button>
+        </div>
+
+        <p>
+            This removes Soft glow from the selected timeline segment.
+            Your other effects and original media will remain.
+        </p>
+
+        <div class="fx-row fx-between fx-wrap">
+            <button type="button"
+                    class="secondary-button"
+                    data-class="button">Keep effect</button>
+
+            <button type="button"
+                    class="danger-button"
+                    data-class="button">
+                {{ icon('delete') }}
+                Remove effect
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}
