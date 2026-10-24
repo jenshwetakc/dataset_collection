@@ -1,0 +1,876 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label) -%}
+<span
+    class="material-symbols-outlined search-icon"
+    data-class="icon"
+    data-semantic="{{ semantic }}"
+    role="img"
+    aria-label="{{ label }}"
+>{{ name }}</span>
+{%- endmacro %}
+
+{% block title %}Search | WEBTOON{% endblock %}
+
+{% block head %}
+<style>
+.search-page {
+    min-height: 70vh;
+}
+
+.search-page button,
+.search-overlay button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.search-icon {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    font-size: 22px;
+    line-height: 22px;
+    pointer-events: auto !important;
+}
+
+.search-page [data-class="icon"],
+.search-overlay [data-class="icon"] {
+    pointer-events: auto !important;
+}
+
+.search-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 5%;
+    background: var(--surface);
+    border-bottom: 1px solid var(--outline);
+}
+
+.search-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+.search-brand img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+}
+
+.search-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.search-shell {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+}
+
+.search-shell h1 {
+    margin: 0 0 24px;
+    font-size: clamp(26px, 4vw, 38px);
+}
+
+.search-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.search-field input {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    padding: 10px 0;
+    background: transparent;
+    color: var(--on-surface);
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.search-field input::-ms-clear {
+    display: none;
+}
+
+.search-field input:focus-visible {
+    outline-offset: 2px;
+}
+
+.search-clear {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+}
+
+.search-submit,
+.search-primary {
+    padding: 10px 18px;
+    border-radius: 6px;
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+.search-tabs {
+    display: flex;
+    gap: 28px;
+    margin-top: 28px;
+    border-bottom: 1px solid var(--outline);
+}
+
+.search-tabs button {
+    padding: 14px 0;
+    border-bottom: 3px solid transparent;
+}
+
+.search-tabs button[aria-selected="true"] {
+    border-bottom-color: var(--primary);
+    font-weight: bold;
+}
+
+.search-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: 22px 0;
+}
+
+.search-platforms,
+.search-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.search-chip {
+    padding: 9px 14px;
+    border: 1px solid var(--outline);
+    border-radius: 22px;
+    background: var(--surface);
+}
+
+.search-chip[aria-pressed="true"] {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    border-color: var(--primary);
+}
+
+.search-filter {
+    position: relative;
+}
+
+.search-filter-trigger {
+    padding: 10px 14px;
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+    background: var(--surface);
+}
+
+.search-filter-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 220px;
+    padding: 6px;
+    border: 1px solid var(--outline);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--on-surface);
+    box-shadow: 0 8px 24px #0003;
+    z-index: 20;
+}
+
+.search-filter-menu button {
+    width: 100%;
+    min-height: 42px;
+    justify-content: space-between;
+    padding: 10px;
+    text-align: left;
+}
+
+.search-filter-menu button[aria-checked="true"] {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+}
+
+.search-result-count {
+    margin: 20px 0;
+    color: var(--on-surface-variant);
+}
+
+.search-series-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 28px 20px;
+}
+
+.search-series-card {
+    min-width: 0;
+}
+
+.search-cover {
+    position: relative;
+}
+
+.search-cover img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 0.78;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.search-new {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.search-series-card h3 {
+    margin: 12px 0 6px;
+    font-size: 17px;
+    overflow-wrap: anywhere;
+}
+
+.search-series-card p {
+    margin: 5px 0;
+    color: var(--on-surface-variant);
+    font-size: 13px;
+}
+
+.search-card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+.search-likes {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.search-likes .search-icon {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+    font-size: 18px;
+    line-height: 18px;
+}
+
+.search-creator-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.search-creator-card {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 16px;
+    padding: 22px;
+    border: 1px solid var(--outline);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.search-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.search-creator-card h3 {
+    margin: 0 0 8px;
+    overflow-wrap: anywhere;
+}
+
+.search-creator-card p {
+    margin: 6px 0;
+    color: var(--on-surface-variant);
+    font-size: 13px;
+}
+
+.search-follow {
+    margin-top: 12px;
+    padding: 8px 14px;
+    border: 1px solid var(--outline);
+    border-radius: 20px;
+}
+
+.search-empty {
+    padding: 70px 20px;
+    text-align: center;
+    background: var(--surface);
+    border-radius: 8px;
+}
+
+.search-empty > .search-icon {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+    font-size: 48px;
+    line-height: 48px;
+    color: var(--on-surface-variant);
+}
+
+.search-empty p {
+    color: var(--on-surface-variant);
+    overflow-wrap: anywhere;
+}
+
+.search-discovery-section {
+    margin-top: 36px;
+}
+
+.search-trending {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.search-trending-card {
+    display: grid;
+    grid-template-columns: 24px 64px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+    background: var(--surface);
+}
+
+.search-trending-card img {
+    width: 64px;
+    height: 76px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.search-trending-card h3 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+}
+
+.search-trending-card p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--on-surface-variant);
+}
+
+.search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #0008;
+}
+
+.search-dialog {
+    width: min(420px, 100%);
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+    padding: 26px;
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--on-surface);
+}
+
+.search-dialog-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.search-dialog-heading h2 {
+    margin: 0;
+}
+
+.search-dialog-close {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+}
+
+.search-dialog p {
+    color: var(--on-surface-variant);
+    line-height: 1.5;
+}
+
+.search-dialog-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.search-secondary {
+    padding: 12px 18px;
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+}
+
+@media (max-width: 900px) {
+    .search-series-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .search-creator-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .search-header {
+        padding: 12px 16px;
+    }
+
+    .search-header-label {
+        display: none;
+    }
+
+    .search-header-actions {
+        gap: 10px;
+    }
+
+    .search-shell {
+        padding: 28px 16px 44px;
+    }
+
+    .search-field {
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .search-submit {
+        padding: 10px;
+    }
+
+    .search-submit-text {
+        display: none;
+    }
+
+    .search-series-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 22px 12px;
+    }
+
+    .search-trending {
+        grid-template-columns: 1fr;
+    }
+
+    .search-creator-card {
+        padding: 16px;
+        grid-template-columns: 56px minmax(0, 1fr);
+    }
+
+    .search-avatar {
+        width: 56px;
+        height: 56px;
+    }
+
+    .search-tabs {
+        gap: 18px;
+    }
+
+    .search-dialog {
+        padding: 20px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-page">
+
+    <header class="search-header" data-class="app_bar">
+        <a
+            class="search-brand"
+            href="#"
+            data-class="button"
+            aria-label="WEBTOON home"
+        >
+            <img
+                src="{{ webtoon['branding']['webtoon_logo'] }}"
+                alt="WEBTOON"
+                data-class="logo"
+                data-semantic="webtoon_logo"
+            >
+            <strong class="search-header-label">Search</strong>
+        </a>
+
+        <nav class="search-header-actions" aria-label="Header actions">
+            <a href="#" data-class="button" aria-label="Home">
+                {{ icon('home', 'home', 'Home') }}
+            </a>
+
+            <button type="button" data-class="button" aria-label="Log in">
+                {{ icon('person', 'account', 'Account') }}
+                <span class="search-header-label">Log in</span>
+            </button>
+        </nav>
+    </header>
+
+    <main class="search-shell">
+        <h1>Search series or creators</h1>
+
+        <div class="search-field" data-class="search_bar">
+            {{ icon('search', 'search', 'Search') }}
+
+            <input
+                id="search-query"
+                type="text"
+                value="{{ webtoon['query'] }}"
+                placeholder="Search series or creators"
+                aria-label="Search series or creators"
+                autocomplete="off"
+                spellcheck="false"
+                data-class="input_field"
+            >
+
+            {% if webtoon['query'] %}
+            <button
+                type="button"
+                class="search-clear"
+                data-class="button"
+                aria-label="Clear search"
+            >
+                {{ icon('close', 'clear_search', 'Clear search') }}
+            </button>
+            {% endif %}
+
+            <button
+                type="button"
+                class="search-submit"
+                data-class="button"
+                aria-label="Submit search"
+            >
+                {{ icon('arrow_forward', 'submit_search', 'Submit search') }}
+                <span class="search-submit-text">Search</span>
+            </button>
+        </div>
+
+        {% if webtoon['state'] == 'discovery' %}
+
+        <section class="search-discovery-section" data-class="section">
+            <h2>Trending Series</h2>
+
+            <div class="search-trending">
+                {% for item in webtoon['trending'] %}
+                <article class="search-trending-card" data-class="card">
+                    <strong>{{ loop.index }}</strong>
+
+                    <img
+                        src="{{ item['cover'] }}"
+                        alt="{{ item['title'] }}"
+                        data-class="image"
+                    >
+
+                    <div>
+                        <h3>{{ item['title'] }}</h3>
+                        <p>{{ item['genre'] }}</p>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="search-discovery-section" data-class="section">
+            <h2>Categories</h2>
+
+            <div class="search-categories">
+                {% for genre in webtoon['genres'] %}
+                {% if genre != 'All genres' %}
+                <button
+                    type="button"
+                    class="search-chip"
+                    data-class="button"
+                >
+                    {{ genre }}
+                    {{ icon(
+                        'chevron_right',
+                        'browse_' ~ loop.index,
+                        'Browse ' ~ genre
+                    ) }}
+                </button>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+
+        {% else %}
+
+        <div
+            class="search-tabs"
+            role="tablist"
+            aria-label="Search result types"
+        >
+            <button
+                type="button"
+                role="tab"
+                aria-selected="{{ 'true' if webtoon['active_tab'] == 'series' else 'false' }}"
+                data-class="tab"
+            >
+                Series
+                <span>{{ webtoon['series_results']|length }}</span>
+            </button>
+
+            <button
+                type="button"
+                role="tab"
+                aria-selected="{{ 'true' if webtoon['active_tab'] == 'creators' else 'false' }}"
+                data-class="tab"
+            >
+                Creators
+                <span>{{ webtoon['creator_results']|length }}</span>
+            </button>
+        </div>
+
+        {% if webtoon['active_tab'] == 'series' %}
+        <div class="search-toolbar">
+            <div class="search-platforms" aria-label="Series platform">
+                {% for platform in ['All', 'ORIGINALS', 'CANVAS'] %}
+                <button
+                    type="button"
+                    class="search-chip"
+                    aria-pressed="{{ 'true' if webtoon['platform'] == platform else 'false' }}"
+                    data-class="button"
+                >
+                    {{ platform }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="search-filter">
+                <button
+                    type="button"
+                    class="search-filter-trigger"
+                    aria-expanded="{{ 'true' if webtoon['filter_open'] else 'false' }}"
+                    aria-controls="genre-menu"
+                    data-class="button"
+                >
+                    {{ icon('tune', 'genre_filter', 'Genre filter') }}
+                    {{ webtoon['selected_genre'] }}
+                    {{ icon(
+                        'expand_less' if webtoon['filter_open'] else 'expand_more',
+                        'genre_menu_toggle',
+                        'Collapse genres' if webtoon['filter_open'] else 'Expand genres'
+                    ) }}
+                </button>
+
+                {% if webtoon['filter_open'] %}
+                <div
+                    id="genre-menu"
+                    class="search-filter-menu"
+                    role="menu"
+                    aria-label="Genres"
+                    data-class="navigation_bar"
+                    data-occluder="true"
+                >
+                    {% for genre in webtoon['genres'] %}
+                    <button
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked="{{ 'true' if genre == webtoon['selected_genre'] else 'false' }}"
+                        data-class="button"
+                    >
+                        <span>{{ genre }}</span>
+
+                        {% if genre == webtoon['selected_genre'] %}
+                        {{ icon('check', 'selected_genre', 'Selected genre') }}
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <p class="search-result-count">
+            {{ webtoon['result_count'] }} results for
+            “{{ webtoon['query'] }}”
+        </p>
+
+        {% if webtoon['result_count'] == 0 %}
+
+        <section class="search-empty" data-class="section">
+            {{ icon('search_off', 'no_results', 'No search results') }}
+            <h2>No results found</h2>
+            <p>Try another title or creator name.</p>
+
+            <button
+                type="button"
+                class="search-primary"
+                data-class="button"
+            >
+                {{ icon('refresh', 'reset_search', 'Reset search') }}
+                Search again
+            </button>
+        </section>
+
+        {% elif webtoon['active_tab'] == 'creators' %}
+
+        <section
+            class="search-creator-grid"
+            aria-label="Creator results"
+            data-class="section"
+        >
+            {% for creator in webtoon['creator_results'] %}
+            <article class="search-creator-card" data-class="card">
+                <img
+                    class="search-avatar"
+                    src="{{ creator['avatar'] }}"
+                    alt="{{ creator['name'] }}"
+                    data-class="avatar"
+                >
+
+                <div>
+                    <h3>{{ creator['name'] }}</h3>
+                    <p>{{ creator['bio'] }}</p>
+
+                    <p>
+                        {{ "{:,}".format(creator['followers']) }} followers
+                        · {{ creator['series_count'] }} series
+                    </p>
+
+                    <button
+                        type="button"
+                        class="search-follow"
+                        data-class="button"
+                    >
+                        {{ icon('add', 'follow_creator', 'Follow creator') }}
+                        Follow
+                    </button>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+
+        {% else %}
+
+        <section
+            class="search-series-grid"
+            aria-label="Series results"
+            data-class="section"
+        >
+            {% for item in webtoon['series_results'] %}
+            <article class="search-series-card" data-class="card">
+                <div class="search-cover">
+                    <img
+                        src="{{ item['cover'] }}"
+                        alt="{{ item['title'] }}"
+                        data-class="image"
+                    >
+
+                    {% if item['is_new'] %}
+                    <span class="search-new" data-class="badge">NEW</span>
+                    {% endif %}
+                </div>
+
+                <h3>{{ item['title'] }}</h3>
+                <p>{{ item['creator'] }}</p>
+                <p>{{ item['genre'] }}</p>
+
+                <div class="search-card-bottom">
+                    <span>{{ item['platform'] }}</span>
+
+                    <span class="search-likes">
+                        {{ icon('favorite', 'series_likes', 'Likes') }}
+                        {{ "{:,}".format(item['likes']) }}
+                    </span>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+
+        {% endif %}
+        {% endif %}
+    </main>
+
+    {% include "footer.html" %}
+</div>
+{% endblock %}
+
+{% block overlays %}
+{% if webtoon['popup'] %}
+<div class="search-overlay">
+    <section
+        class="search-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="search-login-heading"
+        data-class="dialog"
+        data-occluder="true"
+    >
+        <div class="search-dialog-heading">
+            <h2 id="search-login-heading">Log in to WEBTOON</h2>
+
+            <button
+                type="button"
+                class="search-dialog-close"
+                data-class="button"
+                aria-label="Close dialog"
+            >
+                {{ icon('close', 'close_login_dialog', 'Close dialog') }}
+            </button>
+        </div>
+
+        <p>
+            Log in to follow creators and keep up with their latest updates.
+        </p>
+
+        <div class="search-dialog-actions">
+            <button
+                type="button"
+                class="search-primary"
+                data-class="button"
+            >
+                {{ icon('login', 'login', 'Log in') }}
+                Log in
+            </button>
+
+            <button
+                type="button"
+                class="search-secondary"
+                data-class="button"
+            >
+                {{ icon('person_add', 'create_account', 'Create account') }}
+                Create an account
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

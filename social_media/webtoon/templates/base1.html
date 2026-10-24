@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    {% block title %}WEBTOON Simulator{% endblock %}
+  </title>
+
+  <!-- Load Material Symbols once for all child templates. -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+  >
+
+  <style>
+    /* ==================================================
+       Theme and System Layout
+       ================================================== */
+
+    :root {
+      {% for key, value in theme["semantic"].items() %}
+      --{{ key | replace("_", "-") }}: {{ value }};
+      {% endfor %}
+
+      --system-height: {{ system["layout"]["height"] }}px;
+
+      --system-top-space:
+        {{ system["layout"]["height"]
+           if system["layout"]["position"] == "top"
+           else 0 }}px;
+
+      --system-bottom-space:
+        {{ system["layout"]["height"]
+           if system["layout"]["position"] == "bottom"
+           else 0 }}px;
+
+      --system-icon-size:
+        {{ system["display"]["icon_size"] }}px;
+
+      --system-icon-gap:
+        {{ system["display"]["icon_gap"] }}px;
+    }
+
+    /* ==================================================
+       Global Styles
+       ================================================== */
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+
+      min-height: 100vh;
+
+      padding-top: var(--system-top-space);
+      padding-bottom: var(--system-bottom-space);
+
+      background: var(--background);
+      color: var(--on-background);
+
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    /* ==================================================
+       Material Symbols
+       ================================================== */
+
+    .material-symbols-outlined {
+      display: inline-block;
+      flex-shrink: 0;
+
+      font-family: "Material Symbols Outlined";
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+
+      letter-spacing: normal;
+      text-transform: none;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+
+      vertical-align: middle;
+
+      font-feature-settings: "liga";
+      -webkit-font-feature-settings: "liga";
+      -webkit-font-smoothing: antialiased;
+
+      font-variation-settings:
+        "FILL" 0,
+        "wght" 400,
+        "GRAD" 0,
+        "opsz" 20;
+    }
+
+    button > .material-symbols-outlined {
+      pointer-events: none;
+    }
+
+    /* ==================================================
+       Shared Controls
+       ================================================== */
+
+    button {
+      cursor: pointer;
+
+      padding: 10px 14px;
+
+      border: 1px solid var(--outline);
+      border-radius: 8px;
+
+      background: var(--surface);
+      color: var(--on-surface);
+    }
+
+    .primary {
+      border-color: var(--primary);
+
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+
+    input,
+    textarea,
+    select {
+      min-width: 0;
+
+      padding: 12px;
+
+      border: 1px solid var(--outline);
+      border-radius: 8px;
+
+      background: var(--surface);
+      color: var(--on-surface);
+    }
+
+    input,
+    textarea {
+      width: 100%;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--on-surface);
+      opacity: 1;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible,
+    a:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 3px;
+    }
+
+    /* ==================================================
+       System Chrome
+       ================================================== */
+
+    .system {
+      position: fixed;
+
+      {% if system["layout"]["position"] == "top" %}
+      top: 0;
+      {% else %}
+      bottom: 0;
+      {% endif %}
+
+      left: 0;
+      right: 0;
+
+      z-index: 50;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 8px;
+
+      height: var(--system-height);
+      padding: 0 10px;
+
+      background: var(--surface);
+      color: var(--on-surface);
+
+      font-size: 12px;
+    }
+
+    .sys-group {
+      display: flex;
+      align-items: center;
+
+      gap: var(--system-icon-gap);
+
+      min-width: 0;
+    }
+
+    .sys-left {
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    .sys-right {
+      flex: 0 1 auto;
+      justify-content: flex-end;
+
+      overflow: hidden;
+    }
+
+    .sys-item {
+      display: inline-flex;
+      align-items: center;
+
+      flex-shrink: 0;
+      gap: 3px;
+    }
+
+    .sys-item .material-symbols-outlined {
+      font-size: var(--system-icon-size);
+
+      font-variation-settings:
+        "FILL" 1,
+        "wght" 400,
+        "GRAD" 0,
+        "opsz" 20;
+    }
+
+    .sys-time {
+      flex-shrink: 0;
+
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sys-center {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .sys-menu {
+      display: flex;
+      align-items: center;
+
+      gap: 14px;
+      white-space: nowrap;
+    }
+
+    .sys-label {
+      white-space: nowrap;
+    }
+
+    .sys-date {
+      display: block;
+
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    /* ==================================================
+       iOS Camera Cutouts
+       ================================================== */
+
+    .ios-cutout {
+      flex-shrink: 0;
+      background: #000000;
+    }
+
+    .ios-notch {
+      align-self: flex-start;
+
+      width: 65px;
+      height: 22px;
+
+      border-radius: 0 0 14px 14px;
+    }
+
+    .ios-island {
+      width: 65px;
+      height: 20px;
+
+      border-radius: 15px;
+    }
+
+    /* ==================================================
+       Platform Variations
+       ================================================== */
+
+    .system.ios .sys-left {
+      flex: 1 1 0;
+    }
+
+    .system.ios .sys-right {
+      flex: 1 1 0;
+    }
+
+    .system.windows {
+      border-top: 1px solid var(--outline);
+    }
+
+    .system.macos,
+    .system.ubuntu {
+      border-bottom: 1px solid var(--outline);
+    }
+
+    /* ==================================================
+       Responsive System Chrome
+       ================================================== */
+
+    @media (max-width: 900px) {
+      .sys-menu {
+        gap: 8px;
+      }
+
+      .sys-menu .desktop-menu-item {
+        display: none;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .system {
+        gap: 6px;
+        padding-right: 8px;
+        padding-left: 8px;
+      }
+
+      .sys-menu {
+        display: none;
+      }
+
+      .sys-label {
+        display: none;
+      }
+
+      .sys-left .sys-item:nth-of-type(n + 3) {
+        display: none;
+      }
+
+      .sys-right .sys-item:not(.critical) {
+        display: none;
+      }
+
+      .sys-item-text {
+        display: none;
+      }
+
+      .sys-center {
+        font-size: 10px;
+      }
+
+      .sys-date {
+        display: none;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .system {
+        gap: 4px;
+      }
+
+      .sys-group {
+        gap: 3px;
+      }
+
+      .sys-left .sys-item:nth-of-type(n + 2) {
+        display: none;
+      }
+
+      .sys-item .material-symbols-outlined {
+        font-size: 16px;
+      }
+
+      .ios-notch,
+      .ios-island {
+        width: 54px;
+      }
+    }
+  </style>
+
+  {% block head %}{% endblock %}
+</head>
+
+<body>
+  <!--
+    When a popup is visible, this entire background subtree
+    is excluded from annotation extraction.
+  -->
+  <div
+    class="app-background"
+    {% if webtoon["popup"] %}
+    data-annotation-skip="true"
+    {% endif %}
+  >
+    <div
+      class="system {{ system['style'] }}"
+      data-class="{{ 'navigation_bar'
+                     if system['layout']['kind'] == 'taskbar'
+                     else 'app_bar' }}"
+      data-semantic="system_{{ system['layout']['kind'] }}"
+      data-occluder="true"
+      aria-label="{{ system['style'] }} system bar"
+    >
+      <!-- ==============================================
+           Left Group
+           ============================================== -->
+
+      <div class="sys-group sys-left">
+        {% if system["is_mobile"] %}
+        <span class="sys-time">
+          {{ system["time_text"] }}
+          {% if system["time_period"] %}
+          {{ system["time_period"] }}
+          {% endif %}
+        </span>
+        {% endif %}
+
+        {% for item in system["left_icons"] %}
+        <span class="sys-item">
+          <span
+            class="material-symbols-outlined"
+            data-class="icon"
+            data-semantic="{{ item['id'] }}"
+            role="img"
+            aria-label="{{ item['label'] }}"
+          >{{ item["icon"] }}</span>
+
+          {% if item["text"] %}
+          <span class="sys-item-text">
+            {{ item["text"] }}
+          </span>
+          {% endif %}
+        </span>
+        {% endfor %}
+
+        {% if system["style"] == "macos" %}
+        <div class="sys-menu">
+          <strong>Browser</strong>
+
+          {% for menu_item in system["desktop"]["menu_items"] %}
+          <span class="desktop-menu-item">
+            {{ menu_item }}
+          </span>
+          {% endfor %}
+        </div>
+
+        {% elif system["style"] == "ubuntu" %}
+        <span class="sys-label">
+          {{ system["desktop"]["activities_text"] }}
+        </span>
+        {% endif %}
+      </div>
+
+      <!-- ==============================================
+           Center Group
+           ============================================== -->
+
+      {% if system["style"] == "ios" %}
+        {% if system["ios_device_variant"] == "notch" %}
+        <div
+          class="ios-cutout ios-notch"
+          aria-hidden="true"
+        ></div>
+
+        {% elif system["ios_device_variant"] == "dynamic_island" %}
+        <div
+          class="ios-cutout ios-island"
+          aria-hidden="true"
+        ></div>
+        {% endif %}
+
+      {% elif system["style"] == "ubuntu" %}
+      <span class="sys-center">
+        {{ system["desktop_time_text"] }}
+      </span>
+      {% endif %}
+
+      <!-- ==============================================
+           Right Group
+           ============================================== -->
+
+      <div class="sys-group sys-right">
+        {% if system["desktop"]["show_tray_expander"] %}
+        <span class="sys-item">
+          <span
+            class="material-symbols-outlined"
+            data-class="icon"
+            data-semantic="tray_expander"
+            role="img"
+            aria-label="Show hidden system icons"
+          >expand_less</span>
+        </span>
+        {% endif %}
+
+        {% for item in system["right_icons"] %}
+        <span
+          class="sys-item
+            {% if item['id'] in [
+              'battery',
+              'wifi',
+              'cellular',
+              'airplane_mode'
+            ] %}
+            critical
+            {% endif %}"
+        >
+          <span
+            class="material-symbols-outlined"
+            data-class="icon"
+            data-semantic="{{ item['id'] }}"
+            role="img"
+            aria-label="{{ item['label'] }}"
+          >{{ item["icon"] }}</span>
+
+          {% if item["text"] %}
+          <span class="sys-item-text">
+            {{ item["text"] }}
+          </span>
+          {% endif %}
+        </span>
+        {% endfor %}
+
+        {% if system["is_desktop"] and system["style"] != "ubuntu" %}
+        <span class="sys-time">
+          {{ system["time_text"] }}
+
+          {% if system["time_period"] %}
+          {{ system["time_period"] }}
+          {% endif %}
+
+          {% if system["style"] == "windows" %}
+          <span class="sys-date">
+            {{ system["short_date_text"] }}
+          </span>
+          {% endif %}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Page content belongs inside the background wrapper. -->
+    {% block content %}{% endblock %}
+  </div>
+
+  <!--
+    Popups belong outside the annotation-skipped background
+    so their components and controls remain annotated.
+  -->
+  {% block overlays %}{% endblock %}
+</body>
+</html>

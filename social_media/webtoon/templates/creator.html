@@ -1,0 +1,703 @@
+{% extends "base.html" %}
+
+{% macro icon(name) -%}
+<span
+  class="material-symbols-outlined creator-icon"
+  data-class="icon"
+  data-semantic="{{ name }}"
+>{{ name }}</span>
+{%- endmacro %}
+
+{% block title %}{{ webtoon['name'] }} | WEBTOON{% endblock %}
+
+{% block head %}
+<style>
+  .creator-page {
+    background: var(--background);
+    color: var(--on-background);
+  }
+
+  .creator-icon {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    font-size: 22px;
+    line-height: 22px;
+    pointer-events: auto !important;
+  }
+
+  .creator-page button,
+  .creator-dialog button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 14px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .creator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--outline);
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .creator-header img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+  }
+
+  .creator-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .creator-layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 680px);
+    justify-content: center;
+    align-items: start;
+    gap: 32px;
+    max-width: 1100px;
+    margin: auto;
+    padding: 36px 24px 48px;
+  }
+
+  .creator-profile {
+    padding: 28px 24px;
+    background: var(--surface);
+    color: var(--on-surface);
+    border: 1px solid var(--outline);
+    text-align: center;
+  }
+
+  .creator-avatar {
+    display: block;
+    width: 104px;
+    height: 104px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .creator-profile h1 {
+    margin: 0 0 8px;
+    font-size: 26px;
+    overflow-wrap: anywhere;
+  }
+
+  .creator-handle,
+  .creator-muted {
+    color: var(--on-surface-variant);
+    font-size: 13px;
+  }
+
+  .creator-bio {
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+
+  .creator-followers {
+    margin: 20px 0;
+  }
+
+  .creator-page .creator-follow {
+    width: 100%;
+    border-radius: 24px;
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  .creator-page .creator-follow[aria-pressed="true"] {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+  }
+
+  .creator-profile-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .creator-menu-wrapper {
+    position: relative;
+  }
+
+  .creator-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 30;
+    width: 190px;
+    border: 1px solid var(--outline);
+    background: var(--surface);
+    color: var(--on-surface);
+    box-shadow: 0 8px 24px #0002;
+    text-align: left;
+  }
+
+  .creator-menu button {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .creator-main {
+    min-width: 0;
+  }
+
+  .creator-tabs {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--outline);
+  }
+
+  .creator-tabs button {
+    padding: 14px 4px;
+    border-bottom: 3px solid transparent;
+    font-weight: bold;
+  }
+
+  .creator-tabs button[aria-selected="true"] {
+    border-bottom-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .creator-post,
+  .creator-poll {
+    margin-bottom: 22px;
+    padding: 22px;
+    border: 1px solid var(--outline);
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .creator-post-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .creator-post-avatar {
+    display: block;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .creator-post-header strong,
+  .creator-post-header small {
+    display: block;
+  }
+
+  .creator-post-header small {
+    margin-top: 4px;
+    color: var(--on-surface-variant);
+  }
+
+  .creator-post p {
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+
+  .creator-post-art {
+    display: block;
+    width: 100%;
+    max-height: 440px;
+    object-fit: contain;
+    background: var(--surface-variant);
+  }
+
+  .creator-post-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 12px;
+  }
+
+  .creator-post-actions button[aria-pressed="true"] {
+    color: var(--primary);
+  }
+
+  .creator-poll h2 {
+    margin: 0 0 18px;
+    font-size: 20px;
+  }
+
+  .creator-page button.creator-poll-option {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin: 10px 0;
+    padding: 14px;
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+    text-align: left;
+  }
+
+  .creator-poll-option[aria-checked="true"] {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+  }
+
+  .creator-option-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .creator-series-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .creator-series {
+    min-width: 0;
+  }
+
+  .creator-series img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 0.75;
+    object-fit: cover;
+  }
+
+  .creator-series h2 {
+    margin: 10px 0 6px;
+    font-size: 17px;
+    overflow-wrap: anywhere;
+  }
+
+  .creator-series p {
+    font-size: 13px;
+    color: var(--on-surface-variant);
+  }
+
+  .creator-empty {
+    padding: 60px 20px;
+    background: var(--surface);
+    color: var(--on-surface);
+    text-align: center;
+  }
+
+  .creator-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding:
+      calc(var(--system-top-space) + 16px)
+      16px
+      calc(var(--system-bottom-space) + 16px);
+    background: #0008;
+  }
+
+  .creator-dialog {
+    width: min(460px, 100%);
+    min-height: 0;
+    max-height: 100%;
+    overflow: auto;
+    padding: 24px;
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .creator-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .creator-dialog-header h2 {
+    margin: 0;
+    font-size: 22px;
+  }
+
+  .creator-dialog button.creator-report-option {
+    justify-content: flex-start;
+    width: 100%;
+    margin-top: 8px;
+    text-align: left;
+  }
+
+  .creator-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .creator-dialog .creator-submit {
+    border-radius: 6px;
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  .creator-toast {
+    position: fixed;
+    bottom: calc(var(--system-bottom-space) + 24px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100vw - 32px);
+    padding: 14px 20px;
+    border-radius: 8px;
+    background: var(--on-surface);
+    color: var(--surface);
+  }
+
+  @media (max-width: 800px) {
+    .creator-layout {
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 20px;
+      padding: 24px 16px;
+    }
+
+    .creator-profile {
+      padding: 24px 16px;
+    }
+
+    .creator-series-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 600px) {
+    .creator-header {
+      padding: 12px;
+    }
+
+    .creator-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .creator-profile {
+      border: 0;
+    }
+
+    .creator-post,
+    .creator-poll {
+      padding: 16px;
+    }
+
+    .creator-header-actions .creator-action-text {
+      display: none;
+    }
+
+    .creator-series-grid {
+      gap: 12px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div {% if webtoon['popup'] %}data-annotation-skip="true"{% endif %}>
+  <main class="creator-page">
+    <header class="creator-header" data-class="app_bar">
+      <img
+        src="{{ webtoon['branding']['webtoon_logo'] }}"
+        alt="Application logo"
+        data-class="logo"
+      >
+
+      <nav class="creator-header-actions" data-class="navigation_bar">
+        <button type="button" data-class="button">
+          {{ icon('home') }}
+          <span class="creator-action-text">Home</span>
+        </button>
+
+        <button
+          type="button"
+          data-class="button"
+          aria-label="Search"
+        >{{ icon('search') }}</button>
+      </nav>
+    </header>
+
+    <div class="creator-layout">
+      <section class="creator-profile" data-class="section">
+        <img
+          class="creator-avatar"
+          src="{{ webtoon['avatar'] }}"
+          alt="{{ webtoon['name'] }}"
+          data-class="avatar"
+        >
+
+        <h1>{{ webtoon['name'] }}</h1>
+        <div class="creator-handle">@{{ webtoon['handle'] }}</div>
+        <p class="creator-bio">{{ webtoon['bio'] }}</p>
+
+        <div class="creator-followers">
+          <strong>{{ "{:,}".format(webtoon['display_followers']) }}</strong>
+          <span>followers</span>
+        </div>
+
+        <button
+          class="creator-follow"
+          type="button"
+          data-class="button"
+          aria-pressed="{{ 'true' if webtoon['following'] else 'false' }}"
+        >
+          {{ icon('check' if webtoon['following'] else 'add') }}
+          <span>{{ 'Following' if webtoon['following'] else 'Follow' }}</span>
+        </button>
+
+        <div class="creator-profile-actions">
+          <button
+            type="button"
+            data-class="button"
+            aria-label="Share creator profile"
+          >{{ icon('share') }}</button>
+
+          <div class="creator-menu-wrapper">
+            <button
+              type="button"
+              data-class="button"
+              aria-label="Profile options"
+              aria-expanded="{{ 'true' if webtoon['menu_open'] else 'false' }}"
+            >{{ icon('more_horiz') }}</button>
+
+            {% if webtoon['menu_open'] %}
+              <nav
+                class="creator-menu"
+                data-class="navigation_bar"
+                aria-label="Profile options"
+              >
+                <button type="button" data-class="button">
+                  {{ icon('link') }}
+                  <span>Copy profile link</span>
+                </button>
+
+                <button type="button" data-class="button">
+                  {{ icon('flag') }}
+                  <span>Report profile</span>
+                </button>
+              </nav>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <section class="creator-main" data-class="section">
+        <div class="creator-tabs" role="tablist" aria-label="Profile content">
+          {% for tab in ['Posts', 'Series'] %}
+            <button
+              type="button"
+              role="tab"
+              data-class="tab"
+              aria-selected="{{ 'true' if webtoon['active_tab'] == tab else 'false' }}"
+            >{{ tab }}</button>
+          {% endfor %}
+        </div>
+
+        {% if webtoon['active_tab'] == 'Series' %}
+          <div class="creator-series-grid">
+            {% for series in webtoon['series'] %}
+              <article class="creator-series" data-class="card">
+                <img
+                  src="{{ series['cover'] }}"
+                  alt="{{ series['title'] }}"
+                  data-class="image"
+                >
+
+                <h2>{{ series['title'] }}</h2>
+                <p>{{ series['genre'] }}</p>
+                <p>
+                  {{ "{:,}".format(series['subscribers']) }}
+                  subscribers
+                </p>
+
+                <button type="button" data-class="button">
+                  {{ icon('menu_book') }}
+                  <span>Read</span>
+                </button>
+              </article>
+            {% endfor %}
+          </div>
+        {% elif not webtoon['visible_posts'] %}
+          <section class="creator-empty" data-class="section">
+            {{ icon('chat_bubble_outline') }}
+            <h2>No posts yet</h2>
+            <p>Follow this creator to keep up with future updates.</p>
+          </section>
+        {% else %}
+          <section class="creator-poll" data-class="card">
+            <h2>{{ webtoon['poll']['question'] }}</h2>
+
+            <div role="radiogroup" aria-label="Creator poll">
+              {% for option in webtoon['poll_options'] %}
+                <button
+                  class="creator-poll-option"
+                  type="button"
+                  role="radio"
+                  data-class="button"
+                  aria-checked="{{ 'true' if loop.index0 == webtoon['selected_poll_option'] else 'false' }}"
+                >
+                  <span class="creator-option-label">
+                     {{ icon('radio_button_checked' if loop.index0 == webtoon['selected_poll_option'] else 'radio_button_unchecked') }}
+                    <span>{{ option['label'] }}</span>
+                  </span>
+
+                  {% if webtoon['poll_voted'] %}
+                    <strong>{{ option['percentage'] }}%</strong>
+                  {% endif %}
+                </button>
+              {% endfor %}
+            </div>
+
+            <p class="creator-muted">
+              {{ "{:,}".format(webtoon['total_votes']) }} votes
+              {% if webtoon['poll_voted'] %} · You voted{% endif %}
+            </p>
+          </section>
+
+          {% for post in webtoon['visible_posts'] %}
+            <article class="creator-post" data-class="card">
+              <div class="creator-post-header">
+                <img
+                  class="creator-post-avatar"
+                  src="{{ webtoon['avatar'] }}"
+                  alt="{{ webtoon['name'] }}"
+                  data-class="avatar"
+                >
+
+                <div>
+                  <strong>{{ webtoon['name'] }}</strong>
+                  <small>{{ post['days_ago'] }} days ago</small>
+                </div>
+              </div>
+
+              <p>{{ post['text'] }}</p>
+
+              {% if post['image'] %}
+                <img
+                  class="creator-post-art"
+                  src="{{ post['image'] }}"
+                  alt="Creator artwork"
+                  data-class="image"
+                >
+              {% endif %}
+
+              <div class="creator-post-actions">
+                <button
+                  type="button"
+                  data-class="button"
+                  aria-label="Like post"
+                  aria-pressed="{{ 'true' if post['liked'] else 'false' }}"
+                >
+                  {{ icon('favorite') }}
+                  <span>{{ "{:,}".format(post['display_likes']) }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  data-class="button"
+                  aria-label="Post comments"
+                >
+                  {{ icon('chat_bubble_outline') }}
+                  <span>{{ post['comments'] }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  data-class="button"
+                  aria-label="Share post"
+                >{{ icon('share') }}</button>
+              </div>
+            </article>
+          {% endfor %}
+        {% endif %}
+      </section>
+    </div>
+
+    {% include "footer.html" %}
+  </main>
+</div>
+{% endblock %}
+
+{% block overlays %}
+  {% if webtoon['popup'] %}
+    <div class="creator-scrim">
+      <section
+        class="creator-dialog"
+        data-class="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="creator-report-title"
+      >
+        <div class="creator-dialog-header">
+          <h2 id="creator-report-title">Report profile</h2>
+
+          <button
+            type="button"
+            data-class="button"
+            aria-label="Close report dialog"
+          >{{ icon('close') }}</button>
+        </div>
+
+        <p>Select a reason for your report.</p>
+
+        <!-- Explicit radio icons; no browser-generated radio appearance. -->
+        <div role="radiogroup" aria-label="Report reason">
+          {% for reason in webtoon['report_reasons'] %}
+            <button
+              class="creator-report-option"
+              type="button"
+              role="radio"
+              data-class="button"
+              aria-checked="{{ 'true' if loop.index0 == webtoon['selected_report_reason'] else 'false' }}"
+            >
+              {{ icon('radio_button_checked' if loop.index0 == webtoon['selected_report_reason'] else 'radio_button_unchecked') }}
+              <span>{{ reason }}</span>
+            </button>
+          {% endfor %}
+        </div>
+
+        <div class="creator-dialog-actions">
+          <button type="button" data-class="button">Cancel</button>
+
+          <button
+            class="creator-submit"
+            type="button"
+            data-class="button"
+          >
+            {{ icon('flag') }}
+            <span>Submit</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  {% endif %}
+
+  {% if webtoon['share_copied'] %}
+    <div class="creator-toast" data-class="chip" role="status" data-occluder="true">
+      {{ icon('check_circle') }}
+      <span>Profile link copied.</span>
+    </div>
+  {% endif %}
+{% endblock %}

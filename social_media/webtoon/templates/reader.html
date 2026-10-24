@@ -1,0 +1,858 @@
+{% extends "base.html" %}
+
+{% macro icon(name) -%}
+<span
+  class="material-symbols-outlined reader-icon"
+  data-class="icon"
+  data-semantic="{{ name }}"
+>{{ name }}</span>
+{%- endmacro %}
+
+{% block title %}
+{{ webtoon['episode_title'] }} | {{ webtoon['title'] }}
+{% endblock %}
+
+{% block head %}
+<style>
+  /*
+   * Override the base rule that disables hit-testing on icons.
+   * Clicking an icon still bubbles to its parent button.
+   */
+  body [data-class="icon"] {
+    pointer-events: auto !important;
+  }
+
+  .reader-icon {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    font-size: 22px;
+    line-height: 22px;
+    vertical-align: middle;
+  }
+
+  .reader {
+    background: var(--background);
+    color: var(--on-background);
+  }
+
+  .reader button,
+  .reader-dialog button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .reader-toolbar {
+    position: sticky;
+    top: var(--system-top-space);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 64px;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--outline);
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .reader-heading,
+  .reader-navigation,
+  .reader-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .reader-heading {
+    flex: 1;
+  }
+
+  .reader-navigation,
+  .reader-close {
+    flex-shrink: 0;
+  }
+
+  .reader-brand {
+    display: block;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    object-fit: contain;
+  }
+
+  .reader-title {
+    min-width: 0;
+    max-width: 310px;
+  }
+
+  .reader-title strong,
+  .reader-title small {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .reader-title small {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--on-surface-variant);
+  }
+
+  .reader button[aria-pressed="true"] {
+    color: var(--primary);
+  }
+
+  .reader button.reader-subscribe {
+    padding: 10px 24px;
+    border-radius: 24px;
+    background: #00dc64;
+    color: #111;
+    font-weight: bold;
+  }
+
+  .episode-picker {
+    position: absolute;
+    top: 100%;
+    right: 16px;
+    width: min(380px, calc(100vw - 32px));
+    max-height: min(
+      440px,
+      calc(
+        100dvh - var(--system-top-space)
+        - var(--system-bottom-space) - 90px
+      )
+    );
+    overflow: auto;
+    border: 1px solid var(--outline);
+    background: var(--surface);
+    color: var(--on-surface);
+    box-shadow: 0 8px 24px #0003;
+  }
+
+  .episode-picker button {
+    display: flex;
+    justify-content: flex-start;
+    width: 100%;
+    padding: 16px;
+    border-radius: 0;
+    border-bottom: 1px solid var(--outline);
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  .episode-picker .current {
+    background: var(--surface-variant);
+    color: var(--on-surface-variant);
+    font-weight: bold;
+  }
+
+  .comic-column {
+    width: min(800px, 100%);
+    margin: 0 auto;
+    background: #fff;
+  }
+
+  .comic-panel {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
+  }
+
+  .reader-after {
+    width: min(1000px, 100%);
+    margin: auto;
+    padding: 34px 24px;
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .reader-support {
+    padding-bottom: 28px;
+    text-align: center;
+  }
+
+  .reader-support p {
+    color: var(--on-surface-variant);
+  }
+
+  .reader-support .reader-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .reader-episode-links {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 22px 0;
+    border-top: 1px solid var(--outline);
+    border-bottom: 1px solid var(--outline);
+  }
+
+  .reader-episode-links button {
+    min-width: 0;
+  }
+
+  .reader-creator {
+    padding: 24px 0;
+  }
+
+  .reader-creator h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+  }
+
+  .comments-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .comments-heading h2 {
+    font-size: 19px;
+  }
+
+  .comment-input {
+    display: block;
+    width: 100%;
+    min-height: 90px;
+    padding: 16px;
+    resize: none;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid var(--outline);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--on-surface);
+    font: inherit;
+  }
+
+  .comment {
+    padding: 22px 0;
+    border-bottom: 1px solid var(--outline);
+  }
+
+  .comment-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  .comment-meta time {
+    color: var(--on-surface-variant);
+  }
+
+  .comment p {
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  .comment-actions {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--on-surface-variant);
+    font-size: 13px;
+  }
+
+  .comment-replies {
+    margin-top: 16px;
+    padding-left: 24px;
+    border-left: 2px solid var(--outline);
+  }
+
+  .comment-reply {
+    padding: 12px 0;
+  }
+
+  .comments-empty {
+    padding: 44px 12px;
+    text-align: center;
+    color: var(--on-surface-variant);
+  }
+
+  .reader-recommendations {
+    padding-top: 32px;
+  }
+
+  .recommendation-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .recommendation {
+    min-width: 0;
+  }
+
+  .recommendation img,
+  .recommendation-placeholder {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    background: var(--surface-variant);
+  }
+
+  .recommendation strong {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+
+  .recommendation small {
+    display: block;
+    margin-top: 6px;
+    color: var(--on-surface-variant);
+    overflow-wrap: anywhere;
+  }
+
+  .reader-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding:
+      calc(var(--system-top-space) + 16px)
+      16px
+      calc(var(--system-bottom-space) + 16px);
+    background: #0008;
+  }
+
+  .reader-dialog {
+    width: min(420px, 100%);
+    min-height: 0;
+    max-height: 100%;
+    overflow: auto;
+    padding: 28px;
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .reader-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .reader-dialog-header h2 {
+    margin: 0;
+    font-size: 23px;
+  }
+
+  .reader-dialog-header button {
+    flex-shrink: 0;
+  }
+
+  .reader-dialog label {
+    display: block;
+    margin-top: 18px;
+  }
+
+  .reader-dialog input {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 8px;
+    padding: 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--on-surface);
+    font: inherit;
+  }
+
+  /* Suppress browser-generated password decoration where supported. */
+  .reader-dialog input::-ms-reveal,
+  .reader-dialog input::-ms-clear {
+    display: none;
+  }
+
+  .reader-dialog input::-webkit-credentials-auto-fill-button {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .reader-password-field {
+    position: relative;
+    margin-top: 8px;
+  }
+
+  .reader-password-field input {
+    margin-top: 0;
+    padding-right: 52px;
+  }
+
+  .reader-dialog .reader-password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    padding: 0;
+  }
+
+  .reader-dialog .reader-login {
+    width: 100%;
+    margin-top: 24px;
+    padding: 12px;
+    border-radius: 24px;
+    background: #00dc64;
+    color: #111;
+  }
+
+  .reader-toast {
+    position: fixed;
+    bottom: calc(var(--system-bottom-space) + 24px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    padding: 14px 20px;
+    border-radius: 8px;
+    background: var(--on-surface);
+    color: var(--surface);
+  }
+
+  @media (max-width: 760px) {
+    .reader-toolbar {
+      gap: 6px;
+      padding: 8px;
+    }
+
+    .reader-toolbar button {
+      padding: 8px;
+    }
+
+    .reader-heading {
+      gap: 6px;
+    }
+
+    .reader-title small {
+      display: none;
+    }
+
+    .reader-brand {
+      width: 34px;
+      height: 34px;
+    }
+
+    .reader-navigation {
+      gap: 0;
+    }
+
+    .reader-title strong {
+      font-size: 13px;
+    }
+
+    .episode-picker {
+      right: 8px;
+    }
+
+    .reader-after {
+      padding: 24px 16px;
+    }
+
+    .recommendation-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 360px) {
+    .reader-toolbar button {
+      padding: 6px;
+    }
+
+    .reader-dialog {
+      padding: 20px;
+    }
+
+    .reader-dialog-header h2 {
+      font-size: 20px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Explicitly exclude the reader and footer during the login popup. -->
+<div
+  {% if webtoon['popup'] %}
+    data-annotation-skip="true"
+  {% endif %}
+>
+  <main class="reader">
+    <header
+      class="reader-toolbar"
+      data-class="app_bar"
+      data-occluder="true"
+    >
+      <div class="reader-heading">
+        <img
+          class="reader-brand"
+          src="{{ webtoon['branding']['webtoon_logo'] }}"
+          alt="Application logo"
+          data-class="image"
+        >
+
+        <div class="reader-title">
+          <strong>{{ webtoon['title'] }}</strong>
+          <small>
+            Ep. {{ webtoon['episode_number'] }} —
+            {{ webtoon['episode_title'] }}
+          </small>
+        </div>
+      </div>
+
+      <nav class="reader-navigation" data-class="navigation_bar">
+        <button
+          type="button"
+          data-class="button"
+          aria-label="Previous episode"
+        >
+          {{ icon('chevron_left') }}
+        </button>
+
+        <button
+          type="button"
+          data-class="button"
+          aria-label="Episode list"
+          aria-expanded="{{ 'true' if webtoon['episode_list_open'] else 'false' }}"
+        >
+          <span>#{{ webtoon['episode_number'] }}</span>
+          {{ icon('expand_less' if webtoon['episode_list_open'] else 'expand_more') }}
+        </button>
+
+        <button
+          type="button"
+          data-class="button"
+          aria-label="Next episode"
+        >
+          {{ icon('chevron_right') }}
+        </button>
+      </nav>
+
+      <button
+        class="reader-close"
+        type="button"
+        data-class="button"
+        aria-label="Close reader"
+      >
+        {{ icon('close') }}
+      </button>
+
+      {% if webtoon['episode_list_open'] %}
+        <nav
+          class="episode-picker"
+          data-class="navigation_bar"
+          aria-label="Episodes"
+        >
+          {% for episode in webtoon['episodes'] %}
+            <button
+              type="button"
+              data-class="button"
+              class="{{ 'current' if episode['number'] == webtoon['episode_number'] else '' }}"
+              {% if episode['number'] == webtoon['episode_number'] %}
+                aria-current="true"
+              {% endif %}
+            >
+              {% if episode['number'] == webtoon['episode_number'] %}
+                {{ icon('check') }}
+              {% endif %}
+
+              <span>
+                Ep. {{ episode['number'] }} — {{ episode['title'] }}
+              </span>
+            </button>
+          {% endfor %}
+        </nav>
+      {% endif %}
+    </header>
+
+    <section
+      class="comic-column"
+      data-class="section"
+      aria-label="Comic"
+    >
+      {% for panel in webtoon['panels'] %}
+        <img
+          class="comic-panel"
+          src="{{ panel }}"
+          alt="Comic panel {{ loop.index }}"
+          data-class="image"
+        >
+      {% endfor %}
+    </section>
+
+    <div class="reader-after">
+      <section class="reader-support" data-class="section">
+        <strong>{{ webtoon['schedule'] }}</strong>
+        <p>Share this series and support the creator!</p>
+
+        <div class="reader-actions">
+          <button
+            type="button"
+            data-class="button"
+            aria-label="Like episode"
+            aria-pressed="{{ 'true' if webtoon['liked'] else 'false' }}"
+          >
+            {{ icon('favorite') }}
+            <span>{{ "{:,}".format(webtoon['display_likes']) }}</span>
+          </button>
+
+          <button
+            class="reader-subscribe"
+            type="button"
+            data-class="button"
+            aria-pressed="{{ 'true' if webtoon['subscribed'] else 'false' }}"
+          >
+            {{ icon('check' if webtoon['subscribed'] else 'add') }}
+            <span>
+              {{ 'Subscribed' if webtoon['subscribed'] else 'Subscribe' }}
+            </span>
+          </button>
+
+          <button type="button" data-class="button">
+            {{ icon('link') }}
+            <span>Copy URL</span>
+          </button>
+        </div>
+      </section>
+
+      <nav class="reader-episode-links" data-class="navigation_bar">
+        <button type="button" data-class="button">
+          {{ icon('chevron_left') }}
+          <span>Previous episode</span>
+        </button>
+
+        <button type="button" data-class="button">
+          <span>Next episode</span>
+          {{ icon('chevron_right') }}
+        </button>
+      </nav>
+
+      <section class="reader-creator" data-class="section">
+        <h3>Creator</h3>
+        <strong>{{ webtoon['creator'] }}</strong>
+      </section>
+
+      <section class="reader-comments" data-class="section">
+        <div class="comments-heading">
+          <h2>COMMENTS</h2>
+
+          <button type="button" data-class="button">
+            <span>{{ webtoon['comment_sort'] }}</span>
+            {{ icon('expand_more') }}
+          </button>
+        </div>
+
+        <textarea
+          class="comment-input"
+          data-class="input_field"
+          aria-label="Write a comment"
+          placeholder="Log in to leave a comment."
+          readonly
+        ></textarea>
+
+        {% for comment in webtoon['visible_comments'] %}
+          <article class="comment" data-class="card">
+            <div class="comment-meta">
+              <strong>{{ comment['author'] }}</strong>
+              <time>{{ comment['minutes_ago'] }} minutes ago</time>
+            </div>
+
+            <p>{{ comment['text'] }}</p>
+
+            <div class="comment-actions">
+              <button
+                type="button"
+                data-class="button"
+                aria-expanded="{{ 'true' if comment['id'] == webtoon['expanded_comment_id'] else 'false' }}"
+              >
+                {{ icon('expand_less' if comment['id'] == webtoon['expanded_comment_id'] else 'expand_more') }}
+                <span>Replies {{ comment['replies']|length }}</span>
+              </button>
+
+              <button
+                type="button"
+                data-class="button"
+                aria-label="Like comment"
+              >
+                {{ icon('thumb_up') }}
+                <span>{{ "{:,}".format(comment['likes']) }}</span>
+              </button>
+            </div>
+
+            {% if comment['id'] == webtoon['expanded_comment_id'] %}
+              <div class="comment-replies">
+                {% for reply in comment['replies'] %}
+                  <article class="comment-reply" data-class="card">
+                    <strong>{{ reply['author'] }}</strong>
+                    <p>{{ reply['text'] }}</p>
+
+                    <button
+                      type="button"
+                      data-class="button"
+                      aria-label="Like reply"
+                    >
+                      {{ icon('thumb_up') }}
+                      <span>{{ reply['likes'] }}</span>
+                    </button>
+                  </article>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </article>
+        {% else %}
+          <div class="comments-empty">
+            No comments yet. Be the first to join the conversation.
+          </div>
+        {% endfor %}
+      </section>
+
+      <section class="reader-recommendations" data-class="section">
+        <h2>Trending &amp; Popular</h2>
+
+        <div class="recommendation-grid">
+          {% for item in webtoon['recommendations'] %}
+            <article class="recommendation" data-class="card">
+              {% if item['cover'] %}
+                <img
+                  src="{{ item['cover'] }}"
+                  alt="{{ item['title'] }}"
+                  data-class="image"
+                >
+              {% else %}
+                <div class="recommendation-placeholder"></div>
+              {% endif %}
+
+              <strong>{{ item['title'] }}</strong>
+              <small>{{ item['creator'] }}</small>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    {% include "footer.html" %}
+  </main>
+</div>
+{% endblock %}
+
+{% block overlays %}
+  {% if webtoon['popup'] %}
+    <div class="reader-scrim">
+      <section
+        class="reader-dialog"
+        data-class="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reader-login-title"
+      >
+        <div class="reader-dialog-header">
+          <h2 id="reader-login-title">Log in to WEBTOON</h2>
+
+          <button
+            type="button"
+            data-class="button"
+            aria-label="Close login dialog"
+          >
+            {{ icon('close') }}
+          </button>
+        </div>
+
+        <p>Log in to like, subscribe, or leave a comment.</p>
+
+        <label for="reader-email">Email</label>
+        <input
+          id="reader-email"
+          type="email"
+          data-class="input_field"
+          autocomplete="off"
+        >
+
+        <label for="reader-password">Password</label>
+
+        <div class="reader-password-field">
+          <input
+            id="reader-password"
+            type="password"
+            data-class="input_field"
+            autocomplete="new-password"
+          >
+
+          <button
+            class="reader-password-toggle"
+            type="button"
+            data-class="button"
+            aria-label="Show password"
+            aria-controls="reader-password"
+            aria-pressed="false"
+            onclick="
+              const input = document.getElementById('reader-password');
+              const show = input.type === 'password';
+              input.type = show ? 'text' : 'password';
+              this.setAttribute('aria-pressed', String(show));
+              this.setAttribute(
+                'aria-label',
+                show ? 'Hide password' : 'Show password'
+              );
+              const symbol = this.querySelector('[data-class=icon]');
+              symbol.textContent = show ? 'visibility_off' : 'visibility';
+              symbol.dataset.semantic = symbol.textContent;
+            "
+          >
+            {{ icon('visibility') }}
+          </button>
+        </div>
+
+        <button
+          class="reader-login"
+          type="button"
+          data-class="button"
+        >
+          Log In
+        </button>
+      </section>
+    </div>
+  {% endif %}
+
+  {% if webtoon['share_copied'] %}
+    <div class="reader-toast" role="status" data-class="card">
+      {{ icon('check_circle') }}
+      <span>URL copied.</span>
+    </div>
+  {% endif %}
+{% endblock %}

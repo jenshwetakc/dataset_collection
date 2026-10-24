@@ -1,0 +1,708 @@
+{% extends "base.html" %}
+
+{% macro icon(name) -%}
+<span
+  class="material-symbols-outlined rankings-icon"
+  data-class="icon"
+  data-semantic="{{ name }}"
+>{{ name }}</span>
+{%- endmacro %}
+
+{% block title %}Rankings | WEBTOON{% endblock %}
+
+{% block head %}
+<style>
+  .rankings-page {
+    background: var(--background);
+    color: var(--on-background);
+  }
+
+  .rankings-icon {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    font-size: 22px;
+    line-height: 22px;
+    pointer-events: auto !important;
+  }
+
+  .rankings-page button,
+  .rankings-dialog button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .rankings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--outline);
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .rankings-brand {
+    display: block;
+    width: 58px;
+    height: 58px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .rankings-main-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .rankings-main-nav button {
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .rankings-main-nav [aria-current="page"] {
+    color: var(--primary);
+  }
+
+  .rankings-header-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .rankings-content {
+    width: min(1180px, 100%);
+    margin: auto;
+    padding: 36px 24px 48px;
+  }
+
+  .rankings-title {
+    margin: 0 0 24px;
+    font-size: 30px;
+  }
+
+  .rankings-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .rankings-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .rankings-tabs button {
+    border-radius: 24px;
+    background: var(--surface-variant);
+    color: var(--on-surface-variant);
+  }
+
+  .rankings-tabs button[aria-selected="true"] {
+    background: var(--on-surface);
+    color: var(--surface);
+  }
+
+  .rankings-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .rankings-genre {
+    position: relative;
+  }
+
+  .rankings-genre > button {
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .rankings-genre-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 30;
+    width: 220px;
+    max-height: 300px;
+    overflow: auto;
+    border: 1px solid var(--outline);
+    background: var(--surface);
+    color: var(--on-surface);
+    box-shadow: 0 8px 24px #0002;
+  }
+
+  .rankings-genre-menu button {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    text-align: left;
+  }
+
+  .rankings-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 260px;
+    max-width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .rankings-search input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    padding: 10px 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+
+  .rankings-search button {
+    padding: 4px;
+  }
+
+  .rankings-search:focus-within {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+  }
+
+  .rankings-platform {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--outline);
+  }
+
+  .rankings-platform button {
+    padding: 12px 0;
+    font-weight: bold;
+    border-bottom: 3px solid transparent;
+  }
+
+  .rankings-platform button[aria-selected="true"] {
+    border-bottom-color: var(--primary);
+  }
+
+  .rankings-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 40px;
+  }
+
+  .rankings-row {
+    display: grid;
+    grid-template-columns: 46px 100px minmax(0, 1fr) 40px;
+    align-items: center;
+    gap: 16px;
+    min-height: 142px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--outline);
+  }
+
+  .rankings-number {
+    font-size: 30px;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .rankings-cover {
+    display: block;
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+  }
+
+  .rankings-info {
+    min-width: 0;
+  }
+
+  .rankings-genre-label {
+    color: var(--on-surface-variant);
+    font-size: 12px;
+  }
+
+  .rankings-info h2 {
+    margin: 7px 0;
+    font-size: 17px;
+    overflow-wrap: anywhere;
+  }
+
+  .rankings-creator {
+    margin: 0 0 8px;
+    color: var(--on-surface-variant);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .rankings-metrics {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: var(--primary);
+    font-size: 12px;
+  }
+
+  .rankings-metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .rankings-metric .rankings-icon {
+    width: 17px;
+    height: 17px;
+    flex-basis: 17px;
+    font-size: 17px;
+    line-height: 17px;
+  }
+
+  .rankings-new {
+    display: inline-block;
+    padding: 3px 5px;
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    font-size: 10px;
+    font-weight: bold;
+  }
+
+  .rankings-page .rankings-row-action {
+    width: 40px;
+    padding: 8px;
+  }
+
+  .rankings-empty {
+    padding: 60px 20px;
+    text-align: center;
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .rankings-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding:
+      calc(var(--system-top-space) + 16px)
+      16px
+      calc(var(--system-bottom-space) + 16px);
+    background: #0008;
+  }
+
+  .rankings-dialog {
+    width: min(560px, 100%);
+    min-height: 0;
+    max-height: 100%;
+    overflow: auto;
+    padding: 24px;
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--on-surface);
+  }
+
+  .rankings-dialog-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .rankings-dialog-heading h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .rankings-preview {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .rankings-preview img {
+    display: block;
+    width: 140px;
+    height: 180px;
+    flex-shrink: 0;
+    object-fit: cover;
+  }
+
+  .rankings-preview h3 {
+    margin: 8px 0;
+    font-size: 24px;
+    overflow-wrap: anywhere;
+  }
+
+  .rankings-description {
+    margin: 20px 0;
+    line-height: 1.7;
+  }
+
+  .rankings-dialog .rankings-read {
+    width: 100%;
+    border-radius: 24px;
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  @media (max-width: 900px) {
+    .rankings-list {
+      grid-template-columns: 1fr;
+    }
+
+    .rankings-main-nav {
+      gap: 0;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .rankings-header {
+      padding: 12px;
+    }
+
+    .rankings-brand {
+      width: 40px;
+      height: 40px;
+    }
+
+    .rankings-main-nav {
+      order: 3;
+      width: 100%;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+
+    .rankings-main-nav button {
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+
+    .rankings-content {
+      padding: 24px 16px 36px;
+    }
+
+    .rankings-filters {
+      width: 100%;
+    }
+
+    .rankings-search {
+      flex: 1;
+      width: auto;
+      min-width: 120px;
+    }
+
+    .rankings-row {
+      grid-template-columns: 30px 76px minmax(0, 1fr) 30px;
+      gap: 10px;
+      min-height: 118px;
+    }
+
+    .rankings-cover {
+      width: 76px;
+      height: 86px;
+    }
+
+    .rankings-number {
+      font-size: 24px;
+    }
+
+    .rankings-info h2 {
+      font-size: 15px;
+    }
+
+    .rankings-page .rankings-row-action {
+      width: 30px;
+      padding: 4px;
+    }
+
+    .rankings-preview {
+      gap: 12px;
+    }
+
+    .rankings-preview img {
+      width: 90px;
+      height: 120px;
+    }
+
+    .rankings-preview h3 {
+      font-size: 20px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div {% if webtoon['popup'] %}data-annotation-skip="true"{% endif %}>
+  <main class="rankings-page">
+    <header class="rankings-header" data-class="app_bar">
+      <img
+        class="rankings-brand"
+        src="{{ webtoon['branding']['webtoon_logo'] }}"
+        alt="Application logo"
+        data-class="logo"
+      >
+
+      <nav class="rankings-main-nav" data-class="navigation_bar">
+        <button type="button" data-class="button">ORIGINALS</button>
+        <button type="button" data-class="button">CATEGORIES</button>
+        <button
+          type="button"
+          data-class="button"
+          aria-current="page"
+        >RANKINGS</button>
+        <button type="button" data-class="button">CANVAS</button>
+      </nav>
+
+      <div class="rankings-header-actions">
+        <button type="button" data-class="button">
+          {{ icon('person') }}
+          <span>Log In</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="rankings-content" data-class="section">
+      <h1 class="rankings-title">Rankings</h1>
+
+      <div class="rankings-controls">
+        <div class="rankings-tabs" role="tablist" aria-label="Ranking type">
+          {% for mode in ['Trending', 'Popular'] %}
+            <button
+              type="button"
+              role="tab"
+              data-class="tab"
+              aria-selected="{{ 'true' if webtoon['mode'] == mode else 'false' }}"
+            >{{ mode }}</button>
+          {% endfor %}
+        </div>
+
+        <div class="rankings-filters">
+          <div class="rankings-genre">
+            <button
+              type="button"
+              data-class="button"
+              aria-expanded="{{ 'true' if webtoon['genre_menu_open'] else 'false' }}"
+              aria-label="Filter by genre"
+            >
+              <span>{{ webtoon['genre'] }}</span>
+              {{ icon('expand_less' if webtoon['genre_menu_open'] else 'expand_more') }}
+            </button>
+
+            {% if webtoon['genre_menu_open'] %}
+              <nav
+                class="rankings-genre-menu"
+                data-class="navigation_bar"
+                aria-label="Genres"
+              >
+                {% for genre in ['All genres'] + webtoon['genres'] %}
+                  <button type="button" data-class="button">
+                    <span>{{ genre }}</span>
+                    {% if genre == webtoon['genre'] %}
+                      {{ icon('check') }}
+                    {% endif %}
+                  </button>
+                {% endfor %}
+              </nav>
+            {% endif %}
+          </div>
+
+          <div class="rankings-search" data-class="search_bar">
+            {{ icon('search') }}
+
+            <!-- Text input avoids a browser-generated search-clear icon. -->
+            <input
+              type="text"
+              value="{{ webtoon['query'] }}"
+              placeholder="Search rankings"
+              aria-label="Search rankings"
+            >
+
+            {% if webtoon['query'] %}
+              <button
+                type="button"
+                data-class="button"
+                aria-label="Clear search"
+              >{{ icon('close') }}</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="rankings-platform"
+        role="tablist"
+        aria-label="Series platform"
+      >
+        {% for platform in ['Originals', 'Canvas'] %}
+          <button
+            type="button"
+            role="tab"
+            data-class="tab"
+            aria-selected="{{ 'true' if webtoon['platform'] == platform else 'false' }}"
+          >{{ platform }}</button>
+        {% endfor %}
+      </div>
+
+      {% if webtoon['query'] %}
+        <p>
+          {{ webtoon['ranked_series']|length }} results for
+          “{{ webtoon['query'] }}”
+        </p>
+      {% endif %}
+
+      <div class="rankings-list">
+        {% for item in webtoon['ranked_series'] %}
+          <article class="rankings-row" data-class="card">
+            <strong class="rankings-number">{{ item['rank'] }}</strong>
+
+            <img
+              class="rankings-cover"
+              src="{{ item['cover'] }}"
+              alt="{{ item['title'] }}"
+              data-class="image"
+            >
+
+            <div class="rankings-info">
+              <div class="rankings-genre-label">{{ item['genre'] }}</div>
+              <h2>{{ item['title'] }}</h2>
+              <p class="rankings-creator">{{ item['creator'] }}</p>
+
+              <div class="rankings-metrics">
+                <span class="rankings-metric">
+                  {{ icon('favorite') }}
+                  <span>{{ item['likes_text'] }}</span>
+                </span>
+
+                <span class="rankings-metric">
+                  {% if item['movement'] > 0 %}
+                    {{ icon('arrow_upward') }}
+                    <span>{{ item['movement'] }}</span>
+                  {% elif item['movement'] < 0 %}
+                    {{ icon('arrow_downward') }}
+                    <span>{{ -item['movement'] }}</span>
+                  {% else %}
+                    {{ icon('remove') }}
+                  {% endif %}
+                </span>
+
+                {% if item['is_new'] %}
+                  <span class="rankings-new" data-class="badge">NEW</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <button
+              class="rankings-row-action"
+              type="button"
+              data-class="button"
+              aria-label="Preview {{ item['title'] }}"
+            >{{ icon('chevron_right') }}</button>
+          </article>
+        {% endfor %}
+      </div>
+
+      {% if not webtoon['ranked_series'] %}
+        <section class="rankings-empty" data-class="section">
+          {{ icon('search_off') }}
+          <h2>No matching series</h2>
+          <p>Try another title or browse all rankings.</p>
+
+          <button type="button" data-class="button">
+            {{ icon('refresh') }}
+            <span>Reset search</span>
+          </button>
+        </section>
+      {% endif %}
+    </section>
+
+    {% include "footer.html" %}
+  </main>
+</div>
+{% endblock %}
+
+{% block overlays %}
+  {% if webtoon['popup'] %}
+    {% set preview = webtoon['preview'] %}
+
+    <div class="rankings-scrim">
+      <section
+        class="rankings-dialog"
+        data-class="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rankings-preview-title"
+      >
+        <div class="rankings-dialog-heading">
+          <h2 id="rankings-preview-title">Series preview</h2>
+
+          <button
+            type="button"
+            data-class="button"
+            aria-label="Close preview"
+          >{{ icon('close') }}</button>
+        </div>
+
+        <div class="rankings-preview">
+          <img
+            src="{{ preview['cover'] }}"
+            alt="{{ preview['title'] }}"
+            data-class="image"
+          >
+
+          <div>
+            <small>{{ preview['genre'] }}</small>
+            <h3>{{ preview['title'] }}</h3>
+            <p>{{ preview['creator'] }}</p>
+
+            <span class="rankings-metric">
+              {{ icon('favorite') }}
+              <span>{{ preview['likes_text'] }}</span>
+            </span>
+          </div>
+        </div>
+
+        <p class="rankings-description">
+          {{ preview['description'] }}
+        </p>
+
+        <button
+          class="rankings-read"
+          type="button"
+          data-class="button"
+        >
+          {{ icon('menu_book') }}
+          <span>Read first episode</span>
+        </button>
+      </section>
+    </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,768 @@
+{% extends "base.html" %}
+
+{% macro icon(name, semantic, label) -%}
+<span
+    class="material-symbols-outlined genre-icon"
+    data-class="icon"
+    data-semantic="{{ semantic }}"
+    role="img"
+    aria-label="{{ label }}"
+>{{ name }}</span>
+{%- endmacro %}
+
+{% block title %}
+{{ webtoon['active_genre'] }} | WEBTOON
+{% endblock %}
+
+{% block head %}
+<style>
+.genre-page {
+    min-height: 75vh;
+}
+
+.genre-page button,
+.genre-overlay button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.genre-icon {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    font-size: 22px;
+    line-height: 22px;
+    pointer-events: auto !important;
+}
+
+.genre-page [data-class="icon"],
+.genre-overlay [data-class="icon"] {
+    pointer-events: auto !important;
+}
+
+.genre-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 5%;
+    background: var(--surface);
+    border-bottom: 1px solid var(--outline);
+}
+
+.genre-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.genre-brand img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+}
+
+.genre-header-nav {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.genre-header-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.genre-shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+}
+
+.genre-navigation {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--outline);
+}
+
+.genre-arrow {
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--outline);
+    border-radius: 50%;
+}
+
+.genre-tabs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.genre-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.genre-tab {
+    flex: 0 0 auto;
+    padding: 12px 16px;
+    border-radius: 24px;
+    white-space: nowrap;
+    background: var(--surface);
+}
+
+.genre-tab[aria-selected="true"] {
+    background: var(--primary);
+    color: var(--on-primary);
+    font-weight: bold;
+}
+
+.genre-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 30px 0 22px;
+}
+
+.genre-heading h1 {
+    margin: 0 0 6px;
+    font-size: clamp(26px, 4vw, 36px);
+}
+
+.genre-heading p {
+    margin: 0;
+    color: var(--on-surface-variant);
+}
+
+.genre-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.genre-completed,
+.genre-sort-trigger {
+    min-height: 42px;
+    padding: 10px 14px;
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+    background: var(--surface);
+}
+
+.genre-completed[aria-pressed="true"] {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    border-color: var(--primary);
+}
+
+.genre-sort {
+    position: relative;
+}
+
+.genre-sort-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 220px;
+    padding: 6px;
+    border: 1px solid var(--outline);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--on-surface);
+    box-shadow: 0 10px 28px #0003;
+    z-index: 20;
+}
+
+.genre-sort-menu button {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px;
+    justify-content: space-between;
+    text-align: left;
+}
+
+.genre-sort-menu button[aria-checked="true"] {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+}
+
+.genre-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 28px 18px;
+}
+
+.genre-card {
+    min-width: 0;
+}
+
+.genre-card-link {
+    display: block;
+}
+
+.genre-cover {
+    position: relative;
+}
+
+.genre-cover img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.genre-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.genre-card h2 {
+    margin: 12px 0 6px;
+    font-size: 16px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.genre-creator {
+    margin: 0;
+    color: var(--on-surface-variant);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.genre-card-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+.genre-likes,
+.genre-complete-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.genre-card-meta .genre-icon {
+    width: 17px;
+    height: 17px;
+    flex-basis: 17px;
+    font-size: 17px;
+    line-height: 17px;
+}
+
+.genre-complete-label {
+    color: var(--on-surface-variant);
+}
+
+.genre-empty {
+    padding: 80px 20px;
+    text-align: center;
+    background: var(--surface);
+    border-radius: 10px;
+}
+
+.genre-empty > .genre-icon {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+    font-size: 48px;
+    line-height: 48px;
+}
+
+.genre-empty p {
+    color: var(--on-surface-variant);
+}
+
+.genre-primary {
+    padding: 12px 20px;
+    border-radius: 6px;
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+.genre-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #0008;
+}
+
+.genre-dialog {
+    width: min(620px, 100%);
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+    padding: 24px;
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--on-surface);
+}
+
+.genre-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.genre-dialog-header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.genre-close {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+}
+
+.genre-preview {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 22px;
+}
+
+.genre-preview-cover {
+    width: 150px;
+    aspect-ratio: 0.75;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.genre-preview h3 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    overflow-wrap: anywhere;
+}
+
+.genre-preview p {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.genre-preview-meta {
+    color: var(--on-surface-variant);
+    font-size: 13px;
+}
+
+.genre-description {
+    margin: 20px 0;
+    line-height: 1.6;
+}
+
+.genre-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.genre-secondary {
+    padding: 12px 18px;
+    border: 1px solid var(--outline);
+    border-radius: 6px;
+}
+
+@media (max-width: 1000px) {
+    .genre-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .genre-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .genre-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 600px) {
+    .genre-header {
+        padding: 12px 16px;
+    }
+
+    .genre-header-nav {
+        gap: 14px;
+    }
+
+    .genre-header-text {
+        display: none;
+    }
+
+    .genre-shell {
+        padding: 24px 14px 44px;
+    }
+
+    .genre-tab {
+        padding: 10px 12px;
+    }
+
+    .genre-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px 12px;
+    }
+
+    .genre-controls {
+        width: 100%;
+    }
+
+    .genre-dialog {
+        padding: 18px;
+    }
+
+    .genre-preview {
+        grid-template-columns: 100px minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .genre-preview-cover {
+        width: 100px;
+    }
+
+    .genre-preview h3 {
+        font-size: 20px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="genre-page">
+
+    <header class="genre-header" data-class="app_bar">
+        <a
+            class="genre-brand"
+            href="#"
+            data-class="button"
+            aria-label="WEBTOON home"
+        >
+            <img
+                src="{{ webtoon['branding']['webtoon_logo'] }}"
+                alt="WEBTOON"
+                data-class="logo"
+                data-semantic="webtoon_logo"
+            >
+            <strong class="genre-header-text">Genres</strong>
+        </a>
+
+        <nav class="genre-header-nav" aria-label="Header navigation">
+            <a href="#" data-class="button">
+                {{ icon('home', 'home', 'Home') }}
+                <span class="genre-header-text">Home</span>
+            </a>
+
+            <a href="#" data-class="button">
+                {{ icon('search', 'search', 'Search') }}
+                <span class="genre-header-text">Search</span>
+            </a>
+
+            <button type="button" data-class="button" aria-label="Log in">
+                {{ icon('person', 'account', 'Account') }}
+                <span class="genre-header-text">Log in</span>
+            </button>
+        </nav>
+    </header>
+
+    <main class="genre-shell">
+        <nav
+            class="genre-navigation"
+            aria-label="Genre navigation"
+            data-class="navigation_bar"
+        >
+            <button
+                type="button"
+                class="genre-arrow"
+                data-class="button"
+                aria-label="Previous genres"
+            >
+                {{ icon('chevron_left', 'previous_genres', 'Previous genres') }}
+            </button>
+
+            <div class="genre-tabs" role="tablist" aria-label="Genres">
+                {% for genre in webtoon['genres'] %}
+                <button
+                    type="button"
+                    class="genre-tab"
+                    role="tab"
+                    aria-selected="{{ 'true' if genre == webtoon['active_genre'] else 'false' }}"
+                    data-class="tab"
+                >
+                    {{ genre }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <button
+                type="button"
+                class="genre-arrow"
+                data-class="button"
+                aria-label="Next genres"
+            >
+                {{ icon('chevron_right', 'next_genres', 'Next genres') }}
+            </button>
+        </nav>
+
+        <div class="genre-heading">
+            <div>
+                <h1>{{ webtoon['active_genre'] }}</h1>
+                <p>{{ webtoon['result_count'] }} series</p>
+            </div>
+
+            <div class="genre-controls">
+                <button
+                    type="button"
+                    class="genre-completed"
+                    aria-pressed="{{ 'true' if webtoon['completed_only'] else 'false' }}"
+                    data-class="button"
+                >
+                    {{ icon(
+                        'check_box' if webtoon['completed_only'] else 'check_box_outline_blank',
+                        'completed_filter',
+                        'Completed filter selected' if webtoon['completed_only'] else 'Completed filter unselected'
+                    ) }}
+                    Completed
+                </button>
+
+                <div class="genre-sort">
+                    <button
+                        type="button"
+                        class="genre-sort-trigger"
+                        aria-expanded="{{ 'true' if webtoon['sort_open'] else 'false' }}"
+                        aria-controls="genre-sort-menu"
+                        data-class="button"
+                    >
+                        {{ webtoon['sort_label'] }}
+                        {{ icon(
+                            'expand_less' if webtoon['sort_open'] else 'expand_more',
+                            'sort_toggle',
+                            'Collapse sorting' if webtoon['sort_open'] else 'Expand sorting'
+                        ) }}
+                    </button>
+
+                    {% if webtoon['sort_open'] %}
+                    <div
+                        id="genre-sort-menu"
+                        class="genre-sort-menu"
+                        role="menu"
+                        aria-label="Sort series"
+                        data-class="navigation_bar"
+                        data-occluder="true"
+                    >
+                        {% for key, label in webtoon['sort_options'].items() %}
+                        <button
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked="{{ 'true' if key == webtoon['sort_key'] else 'false' }}"
+                            data-class="button"
+                        >
+                            <span>{{ label }}</span>
+
+                            {% if key == webtoon['sort_key'] %}
+                            {{ icon('check', 'selected_sort', 'Selected sorting') }}
+                            {% endif %}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if webtoon['results'] %}
+        <section
+            class="genre-grid"
+            aria-label="{{ webtoon['active_genre'] }} series"
+            data-class="section"
+        >
+            {% for item in webtoon['results'] %}
+            <article class="genre-card" data-class="card">
+                <a
+                    class="genre-card-link"
+                    href="#"
+                    data-class="button"
+                    aria-label="View {{ item['title'] }}"
+                >
+                    <div class="genre-cover">
+                        <img
+                            src="{{ item['cover'] }}"
+                            alt="{{ item['title'] }}"
+                            data-class="image"
+                        >
+
+                        {% if item['badge'] %}
+                        <span class="genre-badge" data-class="badge">
+                            {{ item['badge'] }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <h2>{{ item['title'] }}</h2>
+                    <p class="genre-creator">{{ item['creator'] }}</p>
+                </a>
+
+                <div class="genre-card-meta">
+                    <span class="genre-likes">
+                        {{ icon('favorite', 'series_likes', 'Likes') }}
+                        {{ "{:,}".format(item['likes']) }}
+                    </span>
+
+                    {% if item['completed'] %}
+                    <span class="genre-complete-label">
+                        {{ icon('task_alt', 'completed_series', 'Completed series') }}
+                        Completed
+                    </span>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+
+        {% else %}
+        <section class="genre-empty" data-class="section">
+            {{ icon('library_books', 'empty_genre', 'No series available') }}
+            <h2>No series to display</h2>
+            <p>Try another genre or reset your filters.</p>
+
+            <button
+                type="button"
+                class="genre-primary"
+                data-class="button"
+            >
+                {{ icon('refresh', 'reset_filters', 'Reset filters') }}
+                Reset filters
+            </button>
+        </section>
+        {% endif %}
+    </main>
+
+    {% include "footer.html" %}
+</div>
+
+<script>
+(() => {
+    const tabs = document.querySelector(".genre-tabs");
+    const active = tabs?.querySelector('[aria-selected="true"]');
+
+    if (tabs && active) {
+        // Keep the selected category visible without scrolling the page.
+        tabs.scrollLeft = Math.max(
+            0,
+            active.offsetLeft
+                - tabs.offsetLeft
+                - (tabs.clientWidth - active.offsetWidth) / 2
+        );
+    }
+})();
+</script>
+{% endblock %}
+
+{% block overlays %}
+{% if webtoon['popup'] and webtoon['preview'] %}
+{% set item = webtoon['preview'] %}
+<div class="genre-overlay">
+    <section
+        class="genre-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="genre-preview-heading"
+        data-class="dialog"
+        data-occluder="true"
+    >
+        <div class="genre-dialog-header">
+            <h2 id="genre-preview-heading">Series preview</h2>
+
+            <button
+                type="button"
+                class="genre-close"
+                data-class="button"
+                aria-label="Close preview"
+            >
+                {{ icon('close', 'close_preview', 'Close preview') }}
+            </button>
+        </div>
+
+        <div class="genre-preview">
+            <img
+                class="genre-preview-cover"
+                src="{{ item['cover'] }}"
+                alt="{{ item['title'] }}"
+                data-class="image"
+            >
+
+            <div>
+                <h3>{{ item['title'] }}</h3>
+                <p>{{ item['creator'] }}</p>
+
+                <p class="genre-preview-meta">
+                    {{ item['genre'] }}
+                    · {{ item['episodes'] }} episodes
+                </p>
+
+                <span class="genre-likes">
+                    {{ icon('favorite', 'preview_likes', 'Likes') }}
+                    {{ "{:,}".format(item['likes']) }}
+                </span>
+
+                {% if item['completed'] %}
+                <p class="genre-complete-label">
+                    {{ icon('task_alt', 'preview_completed', 'Completed series') }}
+                    Completed
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <p class="genre-description">{{ item['description'] }}</p>
+
+        <div class="genre-dialog-actions">
+            <button
+                type="button"
+                class="genre-primary"
+                data-class="button"
+            >
+                {{ icon('menu_book', 'read_series', 'Read series') }}
+                Read now
+            </button>
+
+            <button
+                type="button"
+                class="genre-secondary"
+                data-class="button"
+            >
+                {{ icon('add', 'subscribe_series', 'Subscribe to series') }}
+                Subscribe
+            </button>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}
