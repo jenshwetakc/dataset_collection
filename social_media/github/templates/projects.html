@@ -1,0 +1,82 @@
+{% extends 'base.html' %}{% block page %}{% set s=gh['state'] %}
+<header class="row between page-title" data-class="section">
+    <div><h1>Interface improvements</h1>
+        <p class="muted">demo-org · Project #1</p></div>
+    {{btn('more_horiz','project_menu', annotate=false)}}
+</header>
+<div class="row wrap between" data-class="section">
+    <div class="row">{% for name,label in [('view_kanban','Board'),('table_rows','Table'),('calendar_month','Roadmap')]
+        %}
+        <button data-class="tab" data-semantic="project_view_{{loop.index}}">{{icon(name,'project_view_icon_' ~
+            loop.index)}}{{label}}
+        </button>
+        {% endfor %}
+    </div>
+    <div class="row">{{btn('filter_list','project_filter','Filter')}}{{btn('add','project_new_item','Add item')}}</div>
+</div>
+<div style="margin-top:24px">{% if s=='empty' %}
+    <div class="empty">{{icon('view_kanban','empty_project_icon')}}<h2>Start planning your project</h2>
+        <p>Add an issue or draft item to organize work.</p>{{action('project_empty_add','Add item',true)}}
+    </div>
+    {% elif s=='table' %}
+    <section class="list-panel table-wrap" data-class="section" data-semantic="project_table">
+        <table>
+            <tr>
+                <th></th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Assignee</th>
+                <th>Priority</th>
+            </tr>
+            {% for i in gh['issues'] %}
+            <tr>
+                <td>{{check('project_select_' ~ loop.index,'',false)}}</td>
+                <td>{{i['title']}}</td>
+                <td>{{select('project_status_' ~ loop.index,'Status',['Todo','In progress','Done'][loop.index0%3])}}
+                </td>
+                <td>{{avatar(i['initials'],'project_assignee_' ~ loop.index)}}</td>
+                <td>{{select('project_priority_' ~ loop.index,'Priority','Medium')}}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </section>
+    {% elif s=='roadmap' %}
+    <section class="list-panel table-wrap" data-class="section" data-semantic="project_roadmap">
+        <div class="roadmap">
+            <div>Work item</div>
+            {% for label in ['Week 1','Week 2','Week 3','Week 4'] %}
+            <div>{{label}}</div>
+            {% endfor %}{% for i in gh['issues'][:6] %}
+            <div>{{i['title']}}</div>
+            {% set row=loop.index %}{% for week in range(4) %}
+            <div>
+                <div class="{{'bar' if week==row%4 else ''}}">{{'Planned' if week==row%4 else ''}}</div>
+            </div>
+            {% endfor %}{% endfor %}
+        </div>
+    </section>
+    {% else %}
+    <section class="board" data-class="section" data-semantic="project_board">{% for label in ['Todo','In
+        progress','Done'] %}{% set column=loop.index0 %}
+        <section class="column stack" data-class="section" data-semantic="board_column_{{column}}">
+            <div class="row between"><h3>{{label}} <span class="count" data-class="badge"
+                                                         data-semantic="column_count_{{column}}">4</span></h3>
+                {{btn('more_horiz','column_options_' ~ column, annotate=false)}}
+            </div>
+            {% for i in gh['issues'] %}{% if loop.index0%3==column %}
+            <article class="project-card stack" data-class="card" data-semantic="project_card_{{loop.index}}">
+                <div class="row between"><span class="small muted">interface-lab #{{i['number']}}</span>{{btn('drag_indicator','project_drag_'
+                    ~ loop.index, annotate=false)}}
+                </div>
+                <h3>{{i['title']}}</h3>
+                <div class="row between"><span class="label {{i['label']}}" data-class="badge"
+                                               data-semantic="project_label_{{loop.index}}">{{i['label']}}</span>{{avatar(i['initials'],'project_avatar_'
+                    ~ loop.index)}}
+                </div>
+            </article>
+            {% endif %}{% endfor %}{{btn('add','column_add_' ~ column,'Add item')}}
+        </section>
+        {% endfor %}
+    </section>
+    {% endif %}
+</div>{% endblock %}

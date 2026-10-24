@@ -1,0 +1,1443 @@
+{% macro icon(name, key) -%}
+    {% set aliases = {
+        'error_outline': 'error',
+        'chat_bubble_outline': 'chat_bubble',
+        'check_circle_outline': 'check_circle',
+        'play_circle_outline': 'play_circle',
+        'notifications_none': 'notifications',
+        'star_border': 'star'
+    } %}
+    <span
+        class="material-symbols-rounded"
+        data-class="icon"
+        data-semantic="{{ key }}"
+        aria-hidden="true"
+    >{{ aliases.get(name, name)|trim }}</span>
+{%- endmacro %}
+
+{% macro btn(name, key, label='', annotate=true) -%}
+<button
+    type="button"
+    class="{{ 'icon-text-button' if label else 'icon-button' }}"
+    {% if annotate %}data-class="button"{% endif %}
+    data-semantic="{{ key }}"
+    aria-label="{{ label or name|replace('_', ' ') }}"
+>
+    {{ icon(name, key ~ '_icon') }}
+    {% if label %}<span>{{ label }}</span>{% endif %}
+</button>
+{%- endmacro %}
+
+{% macro check(key, label, selected=false) -%}
+<label class="check-label">
+    <span
+        class="check-box {{ 'selected' if selected else '' }}"
+        data-class="checkbox"
+        data-semantic="{{ key }}"
+    >
+        <input
+            type="checkbox"
+            aria-label="{{ label or key|replace('_', ' ') }}"
+            {% if selected %}checked{% endif %}
+        >
+        <span class="check-mark" aria-hidden="true">✓</span>
+    </span>
+    {% if label %}<span>{{ label }}</span>{% endif %}
+</label>
+{%- endmacro %}
+
+{% macro radio(key, label, selected=false) -%}
+<button
+    class="radio-label"
+    type="button"
+    data-class="button"
+    data-semantic="{{ key }}_button"
+    aria-pressed="{{ 'true' if selected else 'false' }}"
+>
+    <span
+        class="radio-box {{ 'selected' if selected else '' }}"
+        data-class="checkbox"
+        data-semantic="{{ key }}"
+        aria-hidden="true"
+    ></span>
+    <span>{{ label }}</span>
+</button>
+{%- endmacro %}
+
+{% macro field(key, label, value='', type='text') -%}
+<label class="field">
+    {{ label }}
+    <input
+        type="{{ type }}"
+        value="{{ value }}"
+        data-class="input_field"
+        data-semantic="{{ key }}"
+    >
+</label>
+{%- endmacro %}
+
+{% macro select(key, label, value) -%}
+<button
+    class="select-button"
+    type="button"
+    data-class="button"
+    data-semantic="{{ key }}"
+>
+    <span>{{ label }}: {{ value }}</span>
+    {{ icon('expand_more', key ~ '_arrow') }}
+</button>
+{%- endmacro %}
+
+{% macro action(key, label, primary=false) -%}
+<button
+    type="button"
+    class="{{ 'primary' if primary else 'secondary' }}"
+    data-class="button"
+    data-semantic="{{ key }}"
+>{{ label }}</button>
+{%- endmacro %}
+
+{% macro toggle(key, label, on=true) -%}
+<div class="row between">
+    <span>{{ label }}</span>
+    <button
+        type="button"
+        class="switch {{ 'on' if on else '' }}"
+        role="switch"
+        aria-label="{{ label or key|replace('_', ' ') }}"
+        aria-checked="{{ 'true' if on else 'false' }}"
+        data-class="switch"
+        data-semantic="{{ key }}"
+    ><span></span></button>
+</div>
+{%- endmacro %}
+
+{% macro avatar(initials, key, size='') -%}
+<span
+    class="avatar {{ size }}"
+    data-class="avatar"
+    data-semantic="{{ key }}"
+>{{ initials }}</span>
+{%- endmacro %}
+
+{% macro code(text, key) -%}
+<pre
+    class="code"
+    data-class="section"
+    data-semantic="{{ key }}"
+>{{ text|e }}</pre>
+{%- endmacro %}
+
+{% macro issue_row(item, key, checkbox=false) -%}
+<article
+    class="issue-row"
+    data-class="card"
+    data-semantic="{{ key }}"
+>
+    {% if checkbox %}
+        {{ check(key ~ '_select', '', false) }}
+    {% endif %}
+
+    {{ icon(
+        'check_circle' if item['status'] == 'Closed' else 'error',
+        key ~ '_state_icon'
+    ) }}
+
+    <div class="grow stack tight">
+        <div class="row wrap">
+            <button
+                type="button"
+                class="link"
+                data-class="button"
+                data-semantic="{{ key }}_open"
+            >{{ item['title'] }}</button>
+
+            <span
+                class="label {{ item['label'] }}"
+                data-class="badge"
+                data-semantic="{{ key }}_label"
+            >{{ item['label'] }}</span>
+        </div>
+
+        <p class="small muted">
+            #{{ item['number'] }} · {{ item['status']|lower }}
+            · by {{ item['author'] }} · 2 days ago
+        </p>
+    </div>
+
+    {{ btn('chat_bubble', key ~ '_comments', item['comments']|string) }}
+</article>
+{%- endmacro %}
+
+{% macro comment(key, name, body) -%}
+<article
+    class="comment"
+    data-class="card"
+    data-semantic="{{ key }}"
+>
+    <header class="row between">
+        <div class="row comment-author">
+            {{ avatar('AM', key ~ '_avatar') }}
+            <strong>{{ name }}</strong>
+            <span class="small muted">commented 2 hours ago</span>
+        </div>
+        {{ btn('more_horiz', key ~ '_menu',  annotate=false ) }}
+    </header>
+
+    <div class="comment-body stack">
+        <p>{{ body }}</p>
+        {{ btn('add_reaction', key ~ '_reaction', 'Add reaction') }}
+    </div>
+</article>
+{%- endmacro %}
+
+{% macro compose(key, text='') -%}
+<section
+    class="card stack composer"
+    data-class="section"
+    data-semantic="{{ key }}"
+>
+    <div class="row between composer-row">
+        <div class="row">
+            <button
+                type="button"
+                data-class="tab"
+                data-semantic="{{ key }}_write"
+            >Write</button>
+
+            <button
+                type="button"
+                data-class="tab"
+                data-semantic="{{ key }}_preview"
+            >Preview</button>
+        </div>
+
+        <div class="row wrap">
+            {% for name in [
+                'format_bold',
+                'format_italic',
+                'link',
+                'format_quote',
+                'code',
+                'format_list_bulleted',
+                'checklist'
+            ] %}
+                {{ btn(name, key ~ '_format_' ~ loop.index,  annotate=false) }}
+            {% endfor %}
+        </div>
+    </div>
+
+    <textarea
+        rows="6"
+        placeholder="Leave a comment"
+        aria-label="Leave a comment"
+        data-class="input_field"
+        data-semantic="{{ key }}_input"
+    >{{ text }}</textarea>
+
+    <div class="row between composer-row">
+        <span class="small muted">Markdown supported · Static demo</span>
+        {{ action(key ~ '_submit', 'Comment', true) }}
+    </div>
+</section>
+{%- endmacro %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <title>GitHub · {{ gh['page']|replace('_', ' ')|title }}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+    >
+
+    <style>
+        :root {
+            {% for role, color in theme['semantic'].items() %}
+            --{{ role|replace('_', '-') }}: {{ color }};
+            {% endfor %}
+
+            --top: {{ system['layout']['height'] if system['layout']['position'] == 'top' else 0 }}px;
+            --bottom: {{ system['layout']['height'] if system['layout']['position'] == 'bottom' else 0 }}px;
+            --green: #1f883d;
+            --link: #0969da;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding-top: var(--top);
+            padding-bottom: var(--bottom);
+            font: 14px Arial, sans-serif;
+            background: var(--background);
+            color: var(--on-background);
+        }
+
+        h1, h2, h3, p {
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 30px;
+            font-weight: 600;
+        }
+
+        h2 { font-size: 23px; }
+        h3 { font-size: 17px; }
+
+        button, input, textarea {
+            font: inherit;
+            color: inherit;
+        }
+
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+
+            /* Fit content instead of stretching across grid columns. */
+            width: fit-content;
+            max-width: 100%;
+            min-width: 0;
+            justify-self: start;
+            align-self: center;
+            flex: 0 1 auto;
+
+            border: 0;
+            background: transparent;
+            padding: 6px 8px;
+            min-height: 33px;
+
+            font: inherit;
+            color: inherit;
+            cursor: pointer;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        button > span:not(.material-symbols-rounded):not(.avatar):not(.radio-box) {
+            min-width: 0;
+            white-space: inherit;
+            overflow-wrap: anywhere;
+        }
+
+        /* Preserve buttons intentionally designed to fill a row. */
+        button.full {
+            width: 100%;
+            justify-self: stretch;
+        }
+
+        /* Preserve fixed switch dimensions. */
+        button.switch {
+            width: 42px;
+            height: 24px;
+            min-height: 24px;
+            flex: 0 0 42px;
+        }
+
+        /* Navigation tabs stay on one line and scroll when needed. */
+        .workflow button,
+        .repo-tabs button,
+        .tabstrip button {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        /* Keep empty-state actions centered. */
+        .empty > button {
+            justify-self: center;
+        }
+
+        button:focus:not(:focus-visible) {
+            outline: none;
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        input, textarea {
+            background: var(--surface);
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            min-width: 0;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--text-secondary);
+            opacity: 1;
+        }
+
+        /* FILL=0 provides outlined symbols without legacy suffixes. */
+        .material-symbols-rounded {
+            --icon-size: 21px;
+
+            font-family: 'Material Symbols Rounded';
+            font-weight: normal;
+            font-style: normal;
+            font-size: var(--icon-size);
+            font-feature-settings: 'liga';
+            font-variation-settings:
+                'FILL' 0,
+                'wght' 400,
+                'GRAD' 0,
+                'opsz' 24;
+            -webkit-font-smoothing: antialiased;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            width: var(--icon-size);
+            height: var(--icon-size);
+            min-width: var(--icon-size);
+            max-width: var(--icon-size);
+            min-height: var(--icon-size);
+            max-height: var(--icon-size);
+
+            flex: 0 0 var(--icon-size);
+            justify-self: start;
+            align-self: center;
+
+            padding: 0;
+            margin: 0;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            white-space: nowrap;
+            direction: ltr;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .between { justify-content: space-between; }
+        .wrap { flex-wrap: wrap; }
+        .grow { flex: 1; min-width: 0; }
+        .stack { display: grid; gap: 20px; }
+        .tight { gap: 8px; }
+        .muted { color: var(--text-secondary); }
+        .small { font-size: 12px; }
+        .full { width: 100%; }
+
+        .primary {
+            background: var(--green);
+            color: white;
+            border: 1px solid #187332;
+            border-radius: 6px;
+            padding: 9px 17px;
+            font-weight: 600;
+        }
+
+        .secondary {
+            background: var(--surface-variant);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 9px 15px;
+        }
+
+        .danger { color: var(--error); }
+
+        .card {
+            border: 1px solid var(--border-subtle);
+            background: var(--surface);
+            border-radius: 7px;
+            padding: 20px;
+        }
+
+        .link {
+            color: var(--link);
+            padding: 0;
+            min-height: 25px;
+            text-align: left;
+            justify-content: flex-start;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        .header {
+            background: var(--surface-variant);
+            padding: 15px 24px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .header-logo {
+            font-size: 25px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .search {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            padding: 0 10px;
+            gap: 6px;
+        }
+
+        .search input {
+            border: 0;
+            background: transparent;
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        .header .search { width: 330px; }
+
+        .avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .avatar.large {
+            width: 90px;
+            height: 90px;
+            font-size: 26px;
+        }
+
+        .main {
+            max-width: 1510px;
+            margin: auto;
+            padding: 24px 28px 70px;
+        }
+
+        .workflow {
+            display: flex;
+            overflow: auto;
+            gap: 5px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .workflow button {
+            white-space: nowrap;
+            font-size: 12px;
+        }
+
+        .workflow .active {
+            border-bottom: 2px solid #fd8c73;
+        }
+
+        .repo-heading { margin-bottom: 15px; }
+
+        .repo-name {
+            color: var(--link);
+            font-size: 22px;
+        }
+
+        .badge {
+            border: 1px solid var(--border);
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .count {
+            background: var(--surface-variant);
+            padding: 2px 7px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .repo-tabs {
+            display: flex;
+            gap: 12px;
+            overflow: auto;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 25px;
+        }
+
+        .repo-tabs button { white-space: nowrap; }
+
+        .repo-tabs .active {
+            border-bottom: 2px solid #fd8c73;
+            font-weight: bold;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 280px;
+            gap: 28px;
+        }
+
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 250px minmax(0, 1fr) 260px;
+            gap: 28px;
+        }
+
+        .sidebar {
+            display: grid;
+            align-content: start;
+            gap: 12px;
+        }
+
+        .sidebar button { justify-content: flex-start; }
+
+        .sidebar-layout {
+            display: grid;
+            grid-template-columns: 230px minmax(0, 1fr);
+            gap: 26px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .field { display: grid; gap: 8px; }
+
+        .select-button {
+            background: var(--surface-variant);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            justify-content: space-between;
+        }
+
+        .check-label {
+            display: inline-flex;
+            gap: 9px;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .check-box {
+            position: relative;
+            width: 19px;
+            height: 19px;
+            min-width: 19px;
+            max-width: 19px;
+            min-height: 19px;
+            max-height: 19px;
+            border: 2px solid var(--icon);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            flex: 0 0 19px;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .check-box.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--on-primary);
+        }
+
+        .check-box input[type="checkbox"] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 1;
+        }
+
+        .check-mark {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .check-box.selected .check-mark {
+            visibility: visible;
+        }
+
+        .check-box:focus-within {
+            outline: 2px solid var(--primary);
+            outline-offset: 3px;
+        }
+
+        .radio-label {
+            justify-content: flex-start;
+            text-align: left;
+        }
+
+        .radio-box {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--icon);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 20px;
+        }
+
+        .radio-box.selected::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        .switch {
+            width: 42px;
+            height: 24px;
+            min-height: 24px;
+            padding: 3px;
+            border-radius: 15px;
+            background: var(--border);
+            justify-content: flex-start;
+        }
+
+        .switch.on {
+            background: var(--green);
+            justify-content: flex-end;
+        }
+
+        .switch span {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+        }
+
+        .progress {
+            height: 7px;
+            background: var(--surface-variant);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress span {
+            display: block;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .list-panel {
+            border: 1px solid var(--border-subtle);
+            border-radius: 7px;
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .list-header {
+            padding: 13px 18px;
+            background: var(--surface-variant);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .issue-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 13px;
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .issue-row:last-child { border-bottom: 0; }
+
+        .label {
+            border-radius: 15px;
+            padding: 3px 9px;
+            font-size: 12px;
+        }
+
+        .label.bug { background: #ffe1e4; color: #9c1824; }
+        .label.enhancement { background: #d4f0ff; color: #055b78; }
+        .label.documentation { background: #e7e1ff; color: #512da8; }
+
+        .file-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 130px;
+            gap: 14px;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .file-row .message {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .code {
+            padding: 18px;
+            background: var(--surface);
+            font: 13px/1.8 Consolas, monospace;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            margin: 0;
+        }
+
+        .readme { padding: 25px; line-height: 1.8; }
+
+        .readme h1,
+        .readme h2 {
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .readme h2 { margin-top: 25px; }
+
+        .comment {
+            border: 1px solid var(--border-subtle);
+            border-radius: 7px;
+            background: var(--surface);
+            overflow: hidden;
+        }
+
+        .comment header {
+            background: var(--surface-variant);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .comment-body { padding: 22px; line-height: 1.7; }
+
+        .timeline {
+            border-left: 2px solid var(--border-subtle);
+            padding: 15px 20px;
+            margin: 0 20px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            border-radius: 20px;
+            padding: 7px 14px;
+            background: var(--green);
+            color: white;
+        }
+
+        .status.closed { background: #8250df; }
+
+        .diff-add {
+            background: #dafbe1;
+            color: #164a26;
+            padding: 3px 14px;
+            font: 13px/1.8 Consolas, monospace;
+        }
+
+        .diff-remove {
+            background: #ffebe9;
+            color: #86211c;
+            padding: 3px 14px;
+            font: 13px/1.8 Consolas, monospace;
+        }
+
+        .diff-neutral {
+            padding: 3px 14px;
+            font: 13px/1.8 Consolas, monospace;
+            overflow-wrap: anywhere;
+        }
+
+        .run-row {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .log {
+            background: #161b22;
+            color: #e6edf3;
+            padding: 20px;
+            font: 13px/1.9 Consolas, monospace;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+
+        .job-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(260px, 1fr));
+            gap: 20px;
+            overflow: auto;
+            align-items: start;
+        }
+
+        .column {
+            background: var(--surface-variant);
+            padding: 15px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+        }
+
+        .project-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .roadmap {
+            display: grid;
+            grid-template-columns: 190px repeat(4, minmax(100px, 1fr));
+            min-width: 650px;
+        }
+
+        .roadmap > div {
+            border: 1px solid var(--border-subtle);
+            padding: 16px;
+        }
+
+        .roadmap .bar {
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+            border-radius: 12px;
+            margin: 5px;
+        }
+
+        .table-wrap { overflow: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        th { background: var(--surface-variant); }
+
+        .contributions {
+            display: grid;
+            grid-template-columns: repeat(20, minmax(0, 1fr));
+            gap: 4px;
+        }
+
+        .contribution-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+            background: var(--primary);
+            min-height: 10px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            display: grid;
+            justify-items: center;
+            gap: 18px;
+        }
+
+        .empty > .material-symbols-rounded {
+            --icon-size: 55px;
+            justify-self: center;
+        }
+
+        .setting-section {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .danger-zone {
+            border: 1px solid var(--error);
+            border-radius: 7px;
+            padding: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .chip {
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 7px 13px;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: #0009;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .dialog {
+            width: min(650px, 100%);
+            max-height: calc(100dvh - 32px);
+            background: var(--surface);
+            color: var(--on-surface);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dialog-head,
+        .dialog-foot {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border-subtle);
+            flex-shrink: 0;
+        }
+
+        .dialog-foot {
+            border-bottom: 0;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .dialog-body {
+            padding: 24px;
+            overflow: auto;
+            min-height: 0;
+        }
+
+        .system {
+            position: fixed;
+            left: 0;
+            right: 0;
+            height: {{ system['layout']['height'] }}px;
+            background: var(--surface);
+            padding: 0 10px;
+            z-index: 60;
+            overflow: hidden;
+            font-size: 11px;
+        }
+
+        .system.top { top: 0; }
+        .system.bottom { bottom: 0; }
+
+        .system-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            min-width: 0;
+        }
+
+        .system-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        .system .material-symbols-rounded {
+            --icon-size: 16px;
+        }
+
+        .notice {
+            background: var(--primary-container);
+            color: var(--on-primary-container);
+            border: 1px solid var(--border-subtle);
+            padding: 18px;
+            border-radius: 7px;
+        }
+
+        .star-row { display: flex; gap: 10px; }
+        .page-title { margin-bottom: 25px; }
+
+        .tabstrip {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-subtle);
+            margin: 20px 0;
+            overflow: auto;
+        }
+
+        .tabstrip button { white-space: nowrap; }
+        .tabstrip .active { border-bottom: 2px solid #fd8c73; }
+
+        @media (max-width: 1100px) {
+            .dashboard-layout {
+                grid-template-columns: 210px minmax(0, 1fr);
+            }
+
+            .dashboard-right { display: none; }
+            .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .header .search { width: 240px; }
+            .header .optional { display: none; }
+        }
+
+        @media (max-width: 700px) {
+            h1 { font-size: 25px; }
+            .header { padding: 10px; gap: 6px; }
+            .header-logo { font-size: 21px; }
+
+            .header .search,
+            .header .desktop,
+            .workflow {
+                display: none;
+            }
+
+            .main { padding: 18px 12px 55px; }
+
+            .layout,
+            .dashboard-layout,
+            .sidebar-layout,
+            .grid,
+            .form-grid,
+            .job-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-left { display: none; }
+            .sidebar.sidebar-navigation { display: flex; overflow-x: auto; }
+            .sidebar.sidebar-navigation button { white-space: nowrap; flex: 0 0 auto; }
+
+            .file-row {
+                grid-template-columns: minmax(0, 1fr) 85px;
+                padding: 12px;
+            }
+
+            .file-row .message { display: none; }
+            .repo-name { font-size: 18px; }
+            .repo-heading { flex-wrap: wrap; }
+            .repo-actions { overflow: auto; }
+            .issue-row { padding: 14px 12px; gap: 9px; }
+            .issue-row .optional { display: none; }
+            .issue-row .link { font-size: 14px; }
+            .comment header .muted { display: none; }
+            .comment header { padding: 10px; }
+            .comment-body { padding: 15px; }
+            .board { grid-template-columns: repeat(3, 260px); }
+            .dialog-head h2 { font-size: 21px; }
+            .dialog-body { padding: 18px; }
+
+            .system .low,
+            .system .system-label {
+                display: none;
+            }
+
+            .contributions { gap: 3px; }
+            .readme { padding: 18px; }
+            .file-row .small { font-size: 10px; }
+            .star-row { gap: 5px; }
+        }
+
+
+        
+/* Shared sizing: no document-level clipping; wide widgets scroll locally. */
+html { width: 100%; }
+body { min-width: 0; }
+.main { width: 100%; min-width: 0; }
+.row > *, .stack > *, .layout > *, .dashboard-layout > *,
+.sidebar-layout > *, .grid > *, .form-grid > *, .job-grid > * {
+    min-width: 0;
+}
+.stack { grid-template-columns: minmax(0, 1fr); align-content: start; }
+.layout, .dashboard-layout, .sidebar-layout { align-items: start; }
+.sidebar { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.card, .comment, .list-panel, .field, .notice { min-width: 0; max-width: 100%; }
+h1, h2, h3, p, .repo-name, .comment-body, .field,
+button > span:not(.material-symbols-rounded):not(.avatar):not(.radio-box) {
+    overflow-wrap: anywhere;
+}
+.field input, .field textarea, .composer > textarea {
+    width: 100%; max-width: 100%; min-width: 0;
+}
+.search { min-width: 0; }
+.search input { flex: 1 1 0; width: 0; min-width: 0; }
+.header .desktop { overflow-wrap: anywhere; }
+.header .optional { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.header > .material-symbols-rounded, .header > button,
+.issue-row > button { flex-shrink: 0; }
+.comment-author { flex: 1 1 0; flex-wrap: wrap; }
+.comment-author strong { overflow-wrap: anywhere; }
+.comment header > button { flex-shrink: 0; }
+.composer-row { flex-wrap: wrap; align-items: center; }
+.composer-row > .row.wrap { flex: 1 1 240px; }
+.composer-row button { flex-shrink: 0; }
+.check-label { min-width: 0; max-width: 100%; align-items: flex-start; }
+.check-label > span:last-child:not(.check-box) { min-width: 0; overflow-wrap: anywhere; }
+.toggle-row > span { flex: 1 1 0; }
+.page-title > .row, .repo-heading, .dialog-foot.row { flex-wrap: wrap; }
+.page-title h1 { flex: 1 1 200px; min-width: 0; }
+.repo-heading > .row:first-child { flex: 1 1 240px; flex-wrap: wrap; }
+.repo-actions { flex-wrap: wrap; max-width: 100%; }
+.repo-actions button { flex-shrink: 0; }
+.file-row > * { min-width: 0; overflow-wrap: anywhere; }
+.file-row .row > button { min-width: 0; }
+.table-wrap, .board, .repo-tabs, .tabstrip, .workflow {
+    min-width: 0; max-width: 100%; overflow-x: auto;
+}
+.table-wrap > table { min-width: 560px; }
+.roadmap { width: 100%; }
+.system-group { overflow: hidden; }
+.system-group > strong { white-space: nowrap; flex-shrink: 0; }
+.system-item { flex-shrink: 0; }
+.dialog-head h2 { flex: 1 1 0; min-width: 0; overflow-wrap: anywhere; }
+.dialog-head button { flex-shrink: 0; }
+.dialog-body > * { min-width: 0; max-width: 100%; }
+.dashboard-layout .dashboard-repository-button {
+    width: fit-content; max-width: 100%; min-width: 0;
+    justify-self: start; justify-content: flex-start;
+    text-align: left; white-space: normal;
+}
+.dashboard-layout .dashboard-repository-button > span:not(.material-symbols-rounded) {
+    flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: anywhere;
+}
+@media (max-width: 1100px) {
+    .header .optional { display: none; }
+}
+@media (max-width: 900px) {
+    .layout, .sidebar-layout { grid-template-columns: minmax(0, 1fr); }
+    .dashboard-layout { grid-template-columns: minmax(0, 1fr); }
+    .dashboard-layout > .dashboard-left { display: grid; }
+    .dashboard-layout > .dashboard-right { display: none; }
+}
+@media (max-width: 700px) {
+    .main { padding: 18px 12px 55px; }
+    .layout, .dashboard-layout, .sidebar-layout, .grid, .form-grid, .job-grid {
+        grid-template-columns: minmax(0, 1fr); gap: 20px;
+    }
+    .sidebar, .dashboard-layout > .sidebar {
+        display: grid; grid-template-columns: minmax(0, 1fr);
+        gap: 12px; overflow: visible;
+    }
+    .dashboard-layout > .dashboard-right { display: none; }
+    .sidebar button { white-space: normal; overflow-wrap: anywhere; }
+    .sidebar.sidebar-navigation {
+        display: flex; overflow-x: auto; max-width: 100%;
+    }
+    .sidebar.sidebar-navigation button { flex: 0 0 auto; white-space: nowrap; }
+    .card { padding: 16px; }
+    .comment header .muted { display: none; }
+    .dialog-head, .dialog-foot { padding: 12px 16px; }
+    .dialog-body { padding: 16px; }
+    .composer-row > .row.wrap { flex-basis: 100%; gap: 6px; }
+    .composer-row > .small { flex: 1 1 150px; }
+    .timeline { margin: 0 8px; padding: 12px; align-items: flex-start; }
+    .timeline > span, .timeline > strong { flex: 1 1 0; overflow-wrap: anywhere; }
+    .empty { padding: 32px 12px; }
+    .header { gap: 8px; }
+    .header > .grow { flex: 1 1 0; }
+    .repo-tabs { gap: 6px; }
+    .board { grid-template-columns: repeat(3, minmax(240px, 1fr)); }
+}
+@media (max-width: 380px) {
+    .main { padding-left: 10px; padding-right: 10px; }
+    .card { padding: 12px; }
+    .row { gap: 8px; }
+    .header { padding: 10px 8px; gap: 6px; }
+    .issue-row { gap: 6px; padding: 12px 8px; }
+    .issue-row > button { padding: 4px; gap: 4px; }
+    .file-row { grid-template-columns: minmax(0, 1fr) 70px; gap: 8px; }
+}
+
+
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div
+        class="system {{ system['layout']['position'] }} row between"
+        data-class="status_bar"
+        data-semantic="system_chrome"
+        data-occluder="{{ 'false' if gh['popup_visible'] else 'true' }}"
+        data-annotation-skip="{{ 'true' if gh['popup_visible'] else 'false' }}"
+    >
+        <div class="system-group">
+            <strong>{{ system['time_text'] }}</strong>
+
+            {% for x in system['left_icons'] %}
+            <span class="system-item {{ 'low' if loop.index > 2 else '' }}">
+                {{ icon(x['icon'], 'system_left_' ~ x['id']) }}
+            </span>
+            {% endfor %}
+        </div>
+
+        <div class="system-group">
+            {% for x in system['right_icons'] %}
+            <span
+                class="system-item {{ 'low' if x['id'] in system['system_states'] else '' }}"
+            >
+                {{ icon(x['icon'], 'system_right_' ~ x['id']) }}
+
+                {% if x['text'] %}
+                <span class="system-label">{{ x['text'] }}</span>
+                {% endif %}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div
+        data-annotation-skip="{{ 'true' if gh['popup_visible'] else 'false' }}"
+        data-occluder="{{ 'false' if gh['popup_visible'] else 'true' }}"
+    >
+        <header
+            class="header row"
+            data-class="app_bar"
+            data-semantic="github_header"
+        >
+            {{ icon('menu', 'global_menu') }}
+
+            <span
+                class="header-logo"
+                data-class="logo"
+                data-semantic="github_logo"
+            >GitHub</span>
+
+            <strong class="desktop">
+                {{ gh['owner'] }} / {{ gh['repo'] }}
+            </strong>
+
+            <div class="grow"></div>
+
+            <div
+                class="search"
+                data-class="search_bar"
+                data-semantic="global_search"
+            >
+                {{ icon('search', 'global_search_icon') }}
+                <input
+                    placeholder="Type / to search"
+                    aria-label="Search GitHub"
+                    data-class="input_field"
+                    data-semantic="global_search_input"
+                >
+            </div>
+
+            {{ icon('add', 'global_create') }}
+
+            <span class="optional">
+                {{ icon('error', 'global_issues') }}
+                {{ icon('merge', 'global_pulls') }}
+            </span>
+
+            {{ icon('notifications', 'global_notifications') }}
+
+            <button
+                type="button"
+
+                data-semantic="global_profile"
+                aria-label="Open profile"
+            >
+                {{ avatar('AM', 'global_profile_avatar') }}
+            </button>
+        </header>
+
+        <!-- Individual content sections retain their own annotations. -->
+        <main class="main">
+            <nav
+                class="workflow"
+                data-class="navigation_bar"
+                data-semantic="demo_workflow_navigation"
+            >
+                {% for key, name, label in gh['navigation'] %}
+                <button
+                    type="button"
+                    class="{{ 'active' if key == gh['page'] else '' }}"
+                    data-class="button"
+                    data-semantic="workflow_{{ key }}"
+                >
+                    {{ icon(name, 'workflow_icon_' ~ key) }}
+                    {{ label }}
+                </button>
+                {% endfor %}
+            </nav>
+
+            {% if gh['page'] not in ['dashboard', 'code_search'] %}
+            <div class="repo-heading row between" data-class="section" data-semantic="repository_heading">
+                <div class="row">
+                    <span class="repo-name">
+                        {{ gh['owner'] }} / <strong>{{ gh['repo'] }}</strong>
+                    </span>
+
+                    <span
+                        class="badge"
+                        data-class="badge"
+                        data-semantic="repo_visibility"
+                    >Public</span>
+                </div>
+
+                <div class="row repo-actions">
+                    {{ btn('notifications', 'repo_watch', 'Watch') }}
+                    {{ btn('fork_right', 'repo_fork', 'Fork 24') }}
+                    {{ btn('star', 'repo_star', 'Star 128') }}
+                </div>
+            </div>
+
+            <nav
+                class="repo-tabs"
+                data-class="navigation_bar"
+                data-semantic="repository_navigation"
+            >
+                {% for name, label in [
+                    ('code', 'Code'),
+                    ('error', 'Issues'),
+                    ('merge', 'Pull requests'),
+                    ('play_circle', 'Actions'),
+                    ('view_kanban', 'Projects'),
+                    ('security', 'Security'),
+                    ('insights', 'Insights'),
+                    ('settings', 'Settings')
+                ] %}
+
+                {% set active =
+                    (label == 'Code' and gh['page'] == 'repository')
+                    or (label == 'Issues' and gh['page'] in ['issues', 'issue_detail'])
+                    or (label == 'Pull requests' and gh['page'] in ['pull_requests', 'pull_request_detail'])
+                    or (label == 'Actions' and gh['page'] == 'actions')
+                    or (label == 'Projects' and gh['page'] == 'projects')
+                    or (label == 'Settings' and gh['page'] == 'settings')
+                %}
+
+                <button
+                    type="button"
+                    class="{{ 'active' if active else '' }}"
+                    data-class="tab"
+                    data-semantic="repo_tab_{{ loop.index }}"
+                >
+                    {{ icon(name, 'repo_tab_icon_' ~ loop.index) }}
+                    {{ label }}
+                </button>
+                {% endfor %}
+            </nav>
+            {% endif %}
+
+            {% block page %}{% endblock %}
+        </main>
+    </div>
+
+    {% if gh['popup_visible'] %}
+        {% include 'popup.html' %}
+    {% endif %}
+</body>
+</html>

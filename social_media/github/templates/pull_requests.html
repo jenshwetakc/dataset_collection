@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .pull-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        min-width: 0;
+    }
+
+    .pull-search {
+        flex: 1 1 280px;
+        min-width: 0;
+    }
+
+    .pull-search input {
+        flex: 1 1 0;
+        width: 0;
+        min-width: 0;
+    }
+
+    .pull-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .pull-filters {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .pull-filters > button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        flex: 0 0 auto;
+        gap: 6px;
+        white-space: nowrap;
+        line-height: 1.2;
+    }
+
+    .pull-filters .material-symbols-rounded {
+        --icon-size: 21px;
+        flex: 0 0 21px;
+        align-self: center;
+    }
+
+    .pull-filters > button > span:not(.material-symbols-rounded) {
+        white-space: nowrap;
+    }
+
+    .pull-panel {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .pull-panel .pull-item {
+        display: grid;
+        grid-template-columns: 21px minmax(0, 1fr) auto auto;
+        align-items: start;
+        gap: 12px;
+    }
+
+    .pull-item > .grow {
+        min-width: 0;
+    }
+
+    .pull-item .link {
+        min-width: 0;
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.4;
+    }
+
+    .pull-item p {
+        overflow-wrap: anywhere;
+    }
+
+    .pull-item > .material-symbols-rounded {
+        align-self: start;
+        margin-top: 3px;
+    }
+
+    @media (max-width: 700px) {
+        .pull-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 10px;
+        }
+
+        .pull-search {
+            width: 100%;
+        }
+
+        .pull-toolbar > button {
+            justify-self: start;
+        }
+
+        .pull-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .pull-filters {
+            justify-content: flex-start;
+            gap: 8px;
+        }
+
+        .pull-filters > button {
+            padding: 6px 8px;
+        }
+
+        .pull-header > .select-button {
+            width: fit-content;
+            max-width: 100%;
+            justify-self: end;
+            white-space: nowrap;
+        }
+
+        .pull-panel .pull-item {
+            grid-template-columns: 21px minmax(0, 1fr);
+            gap: 8px;
+            padding: 14px 12px;
+        }
+
+        .pull-item > .badge {
+            grid-column: 2;
+            justify-self: start;
+        }
+
+        .pull-item > button {
+            grid-column: 2;
+            justify-self: start;
+            padding: 3px 0;
+            min-height: 26px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page %}
+{% set s = gh['state'] %}
+
+<div
+    class="pull-toolbar"
+    data-class="section"
+    data-semantic="pull_toolbar"
+>
+    <div
+        class="search pull-search"
+        data-class="search_bar"
+        data-semantic="pull_search"
+    >
+        {{ btn('filter_list', 'pull_filter', annotate=false) }}
+
+        <input
+            value="{{ 'is:pr is:closed' if s == 'closed'
+                     else 'is:pr is:open draft:true' if s == 'drafts'
+                     else 'is:pr is:open' }}"
+            aria-label="Search pull requests"
+            data-semantic="pull_query"
+        >
+    </div>
+
+    {{ action('new_pull_request', 'New pull request', true) }}
+</div>
+
+<section
+    class="list-panel pull-panel"
+    data-class="section"
+    data-semantic="pull_list"
+>
+    <header class="list-header pull-header">
+        <div class="pull-filters">
+            {{ btn('merge', 'pulls_open', 'Open') }}
+            {{ btn('check_circle', 'pulls_closed', 'Closed') }}
+        </div>
+
+        {{ select('pull_sort', 'Sort', 'Newest') }}
+    </header>
+
+    {% if s == 'empty' %}
+    <div class="empty">
+        {{ icon('merge', 'empty_pull_requests') }}
+        <h2>No pull requests found</h2>
+        {{ action('pull_clear_filters', 'Clear filters') }}
+    </div>
+
+    {% else %}
+    {% for p in gh['pulls'] %}
+    <article
+        class="issue-row pull-item"
+        data-class="card"
+        data-semantic="pull_row_{{ loop.index }}"
+    >
+        {{ icon(
+            'merge' if p['status'] == 'Merged'
+            else 'draft' if p['status'] == 'Draft'
+            else 'fork_right',
+            'pull_status_icon_' ~ loop.index
+        ) }}
+
+        <div class="grow stack tight">
+            <button
+                type="button"
+                class="link"
+                data-class="button"
+                data-semantic="pull_open_{{ loop.index }}"
+            >{{ p['title'] }}</button>
+
+            <p class="small muted">
+                #{{ p['number'] }} · {{ p['status'] }}
+                · by {{ p['author'] }}
+            </p>
+        </div>
+
+        <span
+            class="badge"
+            data-class="badge"
+            data-semantic="pull_state_{{ loop.index }}"
+        >{{ p['status'] }}</span>
+
+        {{ btn(
+            'chat_bubble',
+            'pull_comments_' ~ loop.index,
+            p['comments']|string
+        ) }}
+    </article>
+    {% endfor %}
+    {% endif %}
+</section>
+{% endblock %}

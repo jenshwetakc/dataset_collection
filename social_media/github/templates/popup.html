@@ -1,0 +1,104 @@
+{% set s=gh['state'] %}
+<div class="overlay" data-occluder="true">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog_title" data-class="dialog"
+             data-semantic="{{gh['page']}}_{{s}}_dialog">
+        <header class="dialog-head row between"><h2 id="dialog_title">{{s|replace('_',' ')|title}}</h2>
+            {{btn('close','dialog_close', annotate=false)}}
+        </header>
+        <div class="dialog-body stack">
+            {% if s=='new_repository'
+            %}{{select('new_repo_owner','Owner','alex-dev')}}{{field('new_repo_name','Repository
+            name','my-new-project')}}{{field('new_repo_description','Description','')}}{{radio('new_repo_public','Public',true)}}{{radio('new_repo_private','Private',false)}}{{check('new_repo_readme','Add
+            a README file',true)}}{{select('new_repo_gitignore','Add
+            .gitignore','Node')}}{{select('new_repo_license','License','MIT')}}
+            {% elif s=='notifications' %}{% for item in gh['issues'][:5] %}
+            <div class="row">{{icon('error_outline','notification_icon_' ~ loop.index)}}
+                <div class="grow"><strong>{{item['title']}}</strong>
+                    <p class="small muted">demo-org/interface-lab · 2 hours ago</p></div>
+               {{btn('done','notification_done_' ~ loop.index, annotate=false)}}
+            </div>
+            {% endfor %}
+            {% elif s=='branch_picker' %}{{field('branch_filter','Find or create a branch','')}}
+            <div class="row">
+                <button data-class="tab" data-semantic="branch_tab">Branches</button>
+                <button data-class="tab" data-semantic="tag_tab">Tags</button>
+            </div>
+            {% for branch in gh['branches'] %}{{radio('branch_choice_' ~ loop.index,branch,loop.first)}}{% endfor %}
+            {% elif s=='clone' %}<h3>Clone</h3>
+            <div class="row">{% for label in ['HTTPS','SSH','GitHub CLI'] %}
+                <button data-class="tab" data-semantic="clone_tab_{{loop.index}}">{{label}}</button>
+                {% endfor %}
+            </div>
+            {{field('clone_url','URL','https://example.test/demo-org/interface-lab.git')}}{{btn('content_copy','clone_copy','Copy
+            URL', annotate=false)}}{{btn('download','clone_zip','Download ZIP', annotate=false)}}{{btn('computer','clone_desktop','Open with desktop
+            app', annotate=false)}}
+            {% elif s=='labels' %}{{field('label_search','Search labels')}}{% for label in
+            ['bug','enhancement','documentation','good first issue','help wanted'] %}{{check('label_select_' ~
+            loop.index,label,loop.index==2)}}{% endfor %}
+            {% elif s=='new_issue' %}{{field('new_issue_title','Title','Describe your issue')}}<label class="field">Description<textarea
+                rows="7" data-class="input_field" data-semantic="new_issue_body"
+                placeholder="Steps to reproduce and expected behavior"></textarea></label>{{check('issue_reproduction','I
+            have included reproduction steps',false)}}{{select('issue_template','Template','Bug report')}}
+            {% elif s=='assign' %}{{field('assignee_search','Filter assignees')}}{% for user in
+            ['alex-dev','sam-code','taylor-ui'] %}{{check('assignee_' ~ loop.index,user,loop.first)}}{% endfor %}
+            {% elif s=='close_issue' %}<h3>Close this issue</h3>
+            {{radio('close_completed','Completed',true)}}{{radio('close_not_planned','Not planned',false)}}<label
+                class="field">Closing comment<textarea rows="4" data-class="input_field"
+                                                       data-semantic="closing_comment"></textarea></label>
+            {% elif s=='compare_branches'
+            %}{{select('compare_base','Base','main')}}{{select('compare_head','Compare','feature/search')}}
+            <div class="notice row">{{icon('check_circle','compare_mergeable_icon')}}<strong>Able to merge · 4 commits ·
+                2 files changed</strong></div>
+            {{field('new_pull_title','Title','Improve search navigation')}}{{check('create_draft_pull','Create as
+            draft',false)}}
+            {% elif s=='filters'
+            %}{{select('pull_filter_author','Author','Anyone')}}{{select('pull_filter_label','Label','Any')}}{{select('pull_filter_review','Review','Awaiting
+            review')}}{{check('pull_filter_draft','Include drafts',true)}}{{check('pull_filter_assigned','Assigned to
+            me',false)}}
+            {% elif s=='review' %}<label class="field">Review summary<textarea rows="5" data-class="input_field"
+                                                                               data-semantic="review_summary">The changes look good overall.</textarea></label>{{radio('review_comment','Comment',true)}}{{radio('review_approve','Approve',false)}}{{radio('review_request_changes','Request
+            changes',false)}}
+            {% elif s=='merge' %}<h3>Merge pull request #{{gh['pull']['number']}}</h3>
+            {{select('merge_method','Method','Create a merge commit')}}{{field('merge_commit_title','Commit
+            title','Merge responsive navigation changes')}}<label class="field">Commit message<textarea rows="4"
+                                                                                                        data-class="input_field"
+                                                                                                        data-semantic="merge_commit_body"></textarea></label>{{check('delete_head_after_merge','Delete
+            branch after merge',true)}}
+            {% elif s=='dispatch' %}{{select('dispatch_branch','Use workflow
+            from','main')}}{{select('dispatch_environment','Environment','Preview')}}{{check('dispatch_smoke_tests','Run
+            smoke tests',true)}}
+            {% elif s=='rerun' %}<h3>Re-run workflow jobs?</h3>{{radio('rerun_all','Re-run all
+            jobs',true)}}{{radio('rerun_failed','Re-run failed jobs',false)}}{{check('rerun_debug','Enable debug
+            logging',false)}}
+            {% elif s=='new_item' %}{{field('project_item_title','Title','Review small-screen
+            toolbar')}}{{select('project_item_type','Type','Draft
+            issue')}}{{select('project_item_status','Status','Todo')}}{{select('project_item_priority','Priority','Medium')}}
+            {% elif s=='field_options' %}{{field('project_field_name','Field
+            name','Priority')}}{{select('project_field_type','Field type','Single select')}}{% for value in
+            ['High','Medium','Low'] %}
+            <div class="row">{{field('field_option_' ~ loop.index,'Option ' ~
+                loop.index,value)}}{{btn('delete_outline','field_option_remove_' ~ loop.index, annotate=false)}}
+            </div>
+            {% endfor %}{{btn('add','add_field_option','Add option', annotate=false)}}
+            {% elif s=='advanced_filters'
+            %}{{field('search_owner','Owner','demo-org')}}{{field('search_repository','Repository','interface-lab')}}{{select('search_language','Language','TypeScript')}}{{field('search_path','Path','src/')}}{{check('search_regex','Use
+            regular expressions',false)}}{{check('search_case','Match case',false)}}
+            {% elif s=='saved_search' %}{{field('saved_search_name','Name','Navigation
+            code')}}{{field('saved_search_query','Query',gh['query'])}}
+            {% elif s=='delete_repository' %}
+            <div class="notice row">{{icon('warning','delete_repository_warning')}}<strong>This is an illustrative
+                destructive action.</strong></div>
+            <p>No real repository will be deleted.</p>{{field('delete_repository_confirmation','Type
+            demo-org/interface-lab to confirm')}}{{check('delete_repo_ack','I understand this example action',false)}}
+            {% elif s=='add_secret' %}{{field('secret_name','Name','DEMO_API_TOKEN')}}<label
+                class="field">Secret<textarea rows="5" data-class="input_field" data-semantic="secret_value"
+                                              placeholder="Use a synthetic value only"></textarea></label>
+            <p class="small muted">This static screen stores no credentials.</p>{% endif %}
+        </div>
+        <footer class="dialog-foot row between">{{action('dialog_cancel','Cancel')}}{% if s not in
+            ['notifications','branch_picker','clone'] %}{{action('dialog_confirm','Delete' if s=='delete_repository'
+            else 'Merge' if s=='merge' else 'Submit review' if s=='review' else 'Run workflow' if s=='dispatch' else
+            'Create' if s in ['new_repository','new_issue','new_item'] else 'Apply',true)}}{% endif %}
+        </footer>
+    </section>
+</div>

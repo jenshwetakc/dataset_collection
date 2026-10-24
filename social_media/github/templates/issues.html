@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .issues-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        min-width: 0;
+    }
+
+    .issues-search {
+        flex: 1 1 280px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .issues-search input {
+        flex: 1 1 0;
+        width: 0;
+        min-width: 0;
+    }
+
+    .issues-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .issues-actions button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .issues-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .issues-filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .issues-filters button,
+    .issues-header > .select-button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .issues-panel {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .issues-panel .issue-row > .grow {
+        min-width: 0;
+    }
+
+    .issues-panel .issue-row .link {
+        min-width: 0;
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 700px) {
+        /* Search gets its own full-width row. */
+        .issues-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 10px;
+        }
+
+        .issues-search {
+            width: 100%;
+        }
+
+        .issues-actions button {
+            padding: 7px 10px;
+            font-size: 12px;
+        }
+
+        /* Filters and sort occupy separate rows. */
+        .issues-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .issues-filters {
+            gap: 6px;
+        }
+
+        .issues-header > .select-button {
+            width: fit-content;
+            max-width: 100%;
+            justify-self: end;
+            font-size: 12px;
+        }
+
+        /* Leave more horizontal space for issue titles. */
+        .issues-panel .issue-row {
+            display: grid;
+            grid-template-columns: 19px 21px minmax(0, 1fr);
+            align-items: start;
+            gap: 8px;
+            padding: 14px 10px;
+        }
+
+        .issues-panel .issue-row > button {
+            grid-column: 3;
+            justify-self: start;
+            padding: 3px 0;
+            min-height: 26px;
+        }
+
+        .issues-panel .issue-row .row.wrap {
+            gap: 6px;
+        }
+
+        .issues-panel .issue-row .link {
+            line-height: 1.4;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page %}
+{% set s = gh['state'] %}
+
+<div
+    class="issues-toolbar"
+    data-class="section"
+    data-semantic="issues_toolbar"
+>
+    <div
+        class="search issues-search"
+        data-class="search_bar"
+        data-semantic="issue_search"
+    >
+        {{ btn('filter_list', 'issue_filter', annotate=false) }}
+
+        <input
+            value="{{ 'is:issue is:closed' if s == 'closed'
+                     else 'is:issue is:open label:bug' if s == 'filtered'
+                     else 'is:issue is:open' }}"
+            aria-label="Search issues"
+
+            data-semantic="issue_query"
+        >
+    </div>
+
+    <div class="issues-actions">
+        {{ action('issue_labels', 'Labels') }}
+        {{ action('issue_milestones', 'Milestones') }}
+        {{ action('issue_new', 'New issue', true) }}
+    </div>
+</div>
+
+<section
+    class="list-panel issues-panel"
+    data-class="section"
+    data-semantic="issue_list"
+>
+    <header class="list-header issues-header" data-class="section">
+        <div class="issues-filters">
+            {{ check('select_all_issues', '', false) }}
+            {{ btn('error', 'issues_open', 'Open') }}
+            {{ btn('check_circle', 'issues_closed', 'Closed') }}
+        </div>
+
+        {{ select('issue_sort', 'Sort', 'Newest') }}
+    </header>
+
+    {% if s == 'empty' %}
+    <div class="empty">
+        {{ icon('error', 'empty_issues') }}
+        <h2>No issues found</h2>
+        <p>Try a different filter or create an issue.</p>
+        {{ action('clear_issue_filters', 'Clear filters') }}
+    </div>
+    {% else %}
+        {% for item in gh['issues'] %}
+            {{ issue_row(item, 'issue_' ~ loop.index, true) }}
+        {% endfor %}
+    {% endif %}
+</section>
+{% endblock %}

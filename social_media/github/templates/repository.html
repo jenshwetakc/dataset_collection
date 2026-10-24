@@ -1,0 +1,485 @@
+{% extends 'base.html' %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .repository-layout {
+        min-width: 0;
+        align-items: start;
+    }
+
+    .repository-layout > * {
+        min-width: 0;
+    }
+
+    .repository-content {
+        min-width: 0;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .repository-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .repository-toolbar-group {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .repository-toolbar-group button {
+        flex: 0 0 auto;
+        max-width: 100%;
+    }
+
+    .repository-panel-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .repository-panel-header h3 {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .repository-file-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .repository-file-actions button {
+        flex: 0 0 auto;
+    }
+
+    .repository-file-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 15px;
+    }
+
+    .repository-commit {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        flex: 1 1 240px;
+        min-width: 0;
+    }
+
+    .repository-commit-message {
+        flex: 1 1 180px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .repository-commit-history {
+        flex: 0 0 auto;
+    }
+
+    .repository-content .file-row > * {
+        min-width: 0;
+    }
+
+    .repository-file-button {
+        max-width: 100%;
+        min-width: 0;
+        align-items: flex-start;
+    }
+
+    .repository-file-button .material-symbols-rounded {
+        align-self: start;
+        margin-top: 2px;
+    }
+
+    .repository-file-name {
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.4;
+    }
+
+    .repository-content .code {
+        min-width: 0;
+        max-width: 100%;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+    }
+
+    .repository-readme h1,
+    .repository-readme h2,
+    .repository-readme p {
+        overflow-wrap: anywhere;
+    }
+
+    .repository-about {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-content: start;
+        min-width: 0;
+    }
+
+    .repository-about p {
+        overflow-wrap: anywhere;
+    }
+
+    .repository-website {
+        width: fit-content;
+        max-width: 100%;
+        min-width: 0;
+        justify-self: start;
+        justify-content: flex-start;
+        text-align: left;
+    }
+
+    .repository-website > span:not(.material-symbols-rounded) {
+        flex: 0 1 auto;
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .repository-contributors {
+        flex-wrap: wrap;
+    }
+
+    .repository-release-heading {
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 900px) {
+        .repository-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    @media (max-width: 700px) {
+        .repository-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 10px;
+        }
+
+        .repository-toolbar-group {
+            gap: 6px;
+        }
+
+        .repository-toolbar-group button {
+            font-size: 12px;
+            padding: 7px 8px;
+        }
+
+        .repository-panel-header {
+            padding: 12px;
+            gap: 8px;
+        }
+
+        .repository-commit {
+            flex-basis: 100%;
+        }
+
+        .repository-commit-message {
+            flex-basis: 100%;
+            padding-left: 38px;
+        }
+
+        .repository-commit-history {
+            margin-left: auto;
+        }
+
+        .repository-content .file-row {
+            grid-template-columns: minmax(0, 1fr) 76px;
+            gap: 8px;
+            padding: 12px;
+            align-items: start;
+        }
+
+        .repository-content .file-row .message {
+            display: none;
+        }
+
+        .repository-content .file-row > .small {
+            text-align: right;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .repository-readme {
+            padding: 16px;
+        }
+
+        .repository-readme h1 {
+            font-size: 25px;
+        }
+
+        .repository-readme h2 {
+            font-size: 20px;
+        }
+
+        .repository-content .code {
+            padding: 12px;
+            font-size: 12px;
+        }
+
+        /* Override the base mobile sidebar layout. */
+        .repository-layout > .repository-about {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            overflow: visible;
+        }
+
+        .repository-about button {
+            white-space: normal;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page %}
+{% set s = gh['state'] %}
+
+<div class="layout repository-layout">
+    <section
+        class="stack repository-content"
+        data-class="section"
+        data-semantic="repository_content"
+    >
+        <div class="repository-toolbar">
+            <div class="repository-toolbar-group">
+                {{ select('repo_branch', 'Branch', 'main') }}
+                {{ btn('fork_right', 'repo_branches', '5 branches') }}
+                {{ btn('sell', 'repo_tags', '3 tags') }}
+            </div>
+
+            <div class="repository-toolbar-group">
+                {{ action('go_to_file', 'Go to file') }}
+                {{ btn('add', 'repo_add_file', 'Add file') }}
+
+                <button
+                    type="button"
+                    class="primary"
+                    data-class="button"
+                    data-semantic="repo_code"
+                >
+                    <span>Code</span>
+                    {{ icon('expand_more', 'repo_code_arrow') }}
+                </button>
+            </div>
+        </div>
+
+        {% if s == 'file_view' %}
+        <div
+            class="list-panel"
+            data-class="section"
+            data-semantic="repository_panel_597"
+        >
+            <header class="list-header repository-panel-header">
+                <h3>src / search.ts</h3>
+
+                <div class="repository-file-actions">
+                    {{ btn('content_copy', 'file_copy', annotate=false) }}
+                    {{ btn('download', 'file_download', annotate=false) }}
+                    {{ btn('edit', 'file_edit', annotate=false) }}
+                </div>
+            </header>
+
+            <div class="repository-file-meta">
+                <span>6 lines · 196 bytes</span>
+                {{ action('file_raw', 'Raw') }}
+                {{ action('file_blame', 'Blame') }}
+                {{ action('file_history', 'History') }}
+            </div>
+
+            {{ code(gh['code'], 'source_file') }}
+        </div>
+
+        {% elif s == 'releases' %}
+        <h1>Releases</h1>
+
+        {% for version in ['v1.2.0', 'v1.1.0', 'v1.0.0'] %}
+        <article
+            class="card stack"
+            data-class="card"
+            data-semantic="release_{{ loop.index }}"
+        >
+            <div class="row repository-release-heading">
+                <h2>{{ version }}</h2>
+
+                {% if loop.first %}
+                <span
+                    class="badge"
+                    data-class="badge"
+                    data-semantic="release_latest"
+                >Latest</span>
+                {% endif %}
+            </div>
+
+            <p>
+                Improved navigation and documentation for the demo
+                interface toolkit.
+            </p>
+
+            {{ btn(
+                'download',
+                'release_source_' ~ loop.index,
+                'Source code'
+            ) }}
+
+            {{ btn(
+                'expand_more',
+                'release_assets_' ~ loop.index,
+                'Assets'
+            ) }}
+        </article>
+        {% endfor %}
+
+        {% else %}
+            {% if s != 'readme' %}
+            <div
+                class="list-panel"
+                data-class="section"
+                data-semantic="repository_panel_1616"
+            >
+                <header class="list-header repository-panel-header">
+                    <div class="repository-commit">
+                        {{ avatar('AM', 'latest_commit_avatar') }}
+                        <strong>alex-dev</strong>
+
+                        <span class="repository-commit-message">
+                            Improve repository navigation
+                        </span>
+                    </div>
+
+                    <div class="repository-commit-history">
+                        {{ btn('history', 'commit_history', '42 commits') }}
+                    </div>
+                </header>
+
+                {% for f in gh['files'] %}
+                <div class="file-row">
+                    <button
+                        type="button"
+                        class="link repository-file-button"
+                        data-class="button"
+                        data-semantic="repo_file_{{ loop.index }}"
+                    >
+                        {{ icon(f['icon'], 'file_icon_' ~ loop.index) }}
+                        <span class="repository-file-name">
+                            {{ f['name'] }}
+                        </span>
+                    </button>
+
+                    <span class="muted message">{{ f['message'] }}</span>
+                    <span class="small muted">{{ f['age'] }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <article
+                class="list-panel readme repository-readme"
+                data-class="section"
+                data-semantic="readme_content"
+            >
+                <div class="row between">
+                    <strong>README.md</strong>
+                    {{ btn('edit', 'readme_edit', annotate=false) }}
+                </div>
+
+                <h1>Interface Lab</h1>
+                <p>
+                    A synthetic repository for exploring responsive
+                    interface patterns.
+                </p>
+
+                <h2>Getting started</h2>
+                {{ code('npm install\nnpm run dev', 'readme_install') }}
+
+                <h2>Features</h2>
+                <p>
+                    Responsive layouts, accessible controls, theme
+                    preferences and component examples.
+                </p>
+
+                <h2>Development workflow</h2>
+                <p>
+                    Open an issue, propose a change, review the
+                    implementation and run the project checks.
+                </p>
+
+                <h2>Contributing</h2>
+                <p>
+                    See the demo contribution guide before opening
+                    a pull request.
+                </p>
+            </article>
+        {% endif %}
+    </section>
+
+    <aside
+        class="sidebar repository-about"
+        data-class="section"
+        data-semantic="repository_about"
+    >
+        <h3>About</h3>
+        <p>Accessible interface examples and reusable components.</p>
+
+        <button
+            type="button"
+            class="repository-website"
+            data-class="button"
+            data-semantic="repository_website"
+        >
+            {{ icon('link', 'repository_website_icon') }}
+            <span>interface-lab.example.test</span>
+        </button>
+
+        <div class="row wrap">
+            {% for label in ['typescript', 'accessibility', 'ui'] %}
+            <button
+                type="button"
+                class="chip"
+                data-class="chip"
+                data-semantic="repository_topic_{{ loop.index }}"
+            >{{ label }}</button>
+            {% endfor %}
+        </div>
+
+        {{ btn('menu_book', 'about_readme', 'Readme') }}
+        {{ btn('balance', 'about_license', 'MIT license') }}
+        {{ btn('star', 'about_stars', '128 stars') }}
+
+        <h3>Contributors</h3>
+        <div class="row repository-contributors">
+            {% for name in ['AM', 'SK', 'TR', 'JP'] %}
+                {{ avatar(name, 'contributor_' ~ loop.index) }}
+            {% endfor %}
+        </div>
+
+        <h3>Languages</h3>
+        <div
+            class="progress"
+            data-class="progress_bar"
+            data-semantic="language_distribution"
+        >
+            <span style="width:76%"></span>
+        </div>
+
+        <p class="small">TypeScript 76% · CSS 18% · HTML 6%</p>
+    </aside>
+</div>
+{% endblock %}

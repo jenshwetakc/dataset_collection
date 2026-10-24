@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .dashboard-layout {
+        display: grid;
+        grid-template-columns: 250px minmax(0, 1fr) 260px;
+        gap: 28px;
+        align-items: start;
+    }
+
+    /* Allow every grid column to shrink within its available space. */
+    .dashboard-layout > * {
+        min-width: 0;
+    }
+
+    .dashboard-layout > .sidebar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-content: start;
+        gap: 12px;
+        min-width: 0;
+        overflow: visible;
+    }
+
+    .dashboard-layout .dashboard-feed {
+        min-width: 0;
+        align-content: start;
+    }
+
+    .dashboard-layout .dashboard-heading {
+        flex-wrap: wrap;
+    }
+
+    .dashboard-layout .dashboard-heading > h1,
+    .dashboard-layout .dashboard-heading > h3 {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+
+
+    .dashboard-layout .field {
+        min-width: 0;
+    }
+
+    .dashboard-layout .field input {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .dashboard-layout .card {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .dashboard-layout h3,
+    .dashboard-layout p {
+        overflow-wrap: anywhere;
+    }
+
+    .dashboard-layout .dashboard-card-heading {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .dashboard-layout .dashboard-card-heading > h3 {
+        flex: 1 1 160px;
+        min-width: 0;
+    }
+
+    .dashboard-layout .dashboard-event-author {
+        align-items: flex-start;
+    }
+
+    .dashboard-layout .dashboard-event-author > p {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .dashboard-layout .dashboard-person {
+        flex-wrap: wrap;
+    }
+
+    .dashboard-layout .dashboard-person > .grow {
+        flex: 1 1 140px;
+        min-width: 0;
+    }
+
+    .dashboard-layout .dashboard-discussion-button {
+        justify-self: start;
+        max-width: 100%;
+        min-width: 0;
+        text-align: left;
+    }
+
+    .dashboard-layout .dashboard-discussion-button > span:not(
+        .material-symbols-rounded
+    ) {
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 1100px) {
+        .dashboard-layout {
+            grid-template-columns: 210px minmax(0, 1fr);
+            gap: 20px;
+        }
+
+        .dashboard-layout > .dashboard-right {
+            display: none;
+        }
+    }
+
+    @media (max-width: 850px) {
+        .dashboard-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .dashboard-layout > .dashboard-left {
+            display: grid;
+        }
+    }
+
+    @media (max-width: 700px) {
+        /* Override the base template's horizontal sidebar rule. */
+        .dashboard-layout > .sidebar {
+            display: grid;
+            overflow: visible;
+        }
+
+        .dashboard-layout > .dashboard-right {
+            display: none;
+        }
+
+        .dashboard-layout .sidebar button {
+            white-space: normal;
+        }
+
+        .dashboard-layout {
+            gap: 20px;
+        }
+
+        .dashboard-layout .card {
+            padding: 16px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page %}
+{% set s = gh['state'] %}
+
+<div class="dashboard-layout">
+    <aside
+        class="sidebar dashboard-left"
+        data-class="section"
+        data-semantic="dashboard_repositories"
+    >
+        <div class="row between dashboard-heading">
+            <h3>Top repositories</h3>
+            {{ btn('add', 'dashboard_new_repo', 'New') }}
+        </div>
+
+        {{ field('filter_repositories', 'Find a repository') }}
+
+        {% for label in [
+            'demo-org/interface-lab',
+            'alex-dev/learning-notes',
+            'demo-org/design-system',
+            'alex-dev/site-examples',
+            'demo-org/api-sandbox'
+        ] %}
+        <button
+            type="button"
+            class="dashboard-repository-button"
+            data-class="button"
+            data-semantic="dashboard_repo_{{ loop.index }}"
+        >
+            {{ icon('book', 'dashboard_repo_' ~ loop.index ~ '_icon') }}
+            <span>{{ label }}</span>
+        </button>
+        {% endfor %}
+
+        <h3>Recent activity</h3>
+        <p class="muted">Updates from your demo repositories.</p>
+    </aside>
+
+    <section
+        class="stack dashboard-feed"
+        data-class="section"
+        data-semantic="dashboard_feed"
+    >
+        <div class="row between dashboard-heading">
+            <h1>
+                {{ 'Repositories' if s == 'repositories'
+                   else 'Following' if s == 'following'
+                   else 'Home' }}
+            </h1>
+
+            {{ btn('tune', 'dashboard_filter', 'Filter') }}
+        </div>
+
+        {% if s == 'empty' %}
+        <div class="empty">
+            {{ icon('rss_feed', 'empty_feed_icon') }}
+            <h2>Your feed starts here</h2>
+            <p>Follow people and repositories to see activity.</p>
+            {{ action(
+                'explore_repositories',
+                'Explore repositories',
+                true
+            ) }}
+        </div>
+
+        {% elif s == 'repositories' %}
+        {% for i in range(6) %}
+        <article
+            class="card stack"
+            data-class="card"
+            data-semantic="dashboard_repository_{{ i }}"
+        >
+            <div class="row between dashboard-card-heading">
+                <h3>
+                    demo-org /
+                    {{ ['interface-lab', 'design-system', 'api-sandbox'][i % 3] }}
+                </h3>
+
+                {{ btn('star', 'dashboard_star_' ~ i, 'Star') }}
+            </div>
+
+            <p>Examples and tools for building clear interfaces.</p>
+
+            <div class="row wrap">
+                <span
+                    class="badge"
+                    data-class="badge"
+                    data-semantic="repo_language_{{ i }}"
+                >TypeScript</span>
+
+                <span class="small muted">Updated yesterday</span>
+            </div>
+        </article>
+        {% endfor %}
+
+        {% elif s == 'following' %}
+        {% for n in [
+            'sam-code',
+            'taylor-ui',
+            'jordan-tools',
+            'avery-design'
+        ] %}
+        <article
+            class="card row dashboard-person"
+            data-class="card"
+            data-semantic="following_person_{{ loop.index }}"
+        >
+            {{ avatar(
+                n[:2]|upper,
+                'following_avatar_' ~ loop.index
+            ) }}
+
+            <div class="grow">
+                <h3>{{ n }}</h3>
+                <p class="muted">
+                    Building open-source interface examples.
+                </p>
+            </div>
+
+            {{ action('unfollow_' ~ loop.index, 'Unfollow') }}
+        </article>
+        {% endfor %}
+
+        {% else %}
+        {% for item in gh['issues'][:6] %}
+        <article
+            class="card stack"
+            data-class="card"
+            data-semantic="feed_event_{{ loop.index }}"
+        >
+            <div class="row dashboard-event-author">
+                {{ avatar(
+                    item['initials'],
+                    'feed_avatar_' ~ loop.index
+                ) }}
+
+                <p>
+                    <strong>{{ item['author'] }}</strong>
+                    opened an issue in demo-org/interface-lab
+                </p>
+            </div>
+
+            <h3>{{ item['title'] }}</h3>
+
+            <p class="muted">
+                A new improvement proposal with discussion and next steps.
+            </p>
+
+            <button
+                type="button"
+                class="dashboard-discussion-button"
+                data-class="button"
+                data-semantic="feed_discussion_{{ loop.index }}"
+            >
+                {{ icon(
+                    'chat_bubble',
+                    'feed_discussion_' ~ loop.index ~ '_icon'
+                ) }}
+                <span>View discussion</span>
+            </button>
+        </article>
+        {% endfor %}
+        {% endif %}
+    </section>
+
+    <aside
+        class="sidebar dashboard-right"
+        data-class="section"
+        data-semantic="dashboard_discover"
+    >
+        <h3>Explore repositories</h3>
+
+        {% for n in [
+            'accessible-ui',
+            'tiny-tools',
+            'component-notes'
+        ] %}
+        <div
+            class="card stack"
+            data-class="card"
+            data-semantic="discover_repo_{{ loop.index }}"
+        >
+            <h3>demo-community/{{ n }}</h3>
+            <p class="small muted">
+                Helpful examples for your next project.
+            </p>
+
+            {{ btn('star', 'discover_star_' ~ loop.index, 'Star') }}
+        </div>
+        {% endfor %}
+    </aside>
+</div>
+{% endblock %}

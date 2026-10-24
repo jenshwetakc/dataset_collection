@@ -1,0 +1,76 @@
+{% extends 'base.html' %}{% block page %}{% set s=gh['state'] %}
+<header class="page-title stack" data-class="section"><h1>{{gh['pull']['title']}} <span class="muted">#{{gh['pull']['number']}}</span></h1>
+    <div class="row wrap"><span class="status" data-class="badge" data-semantic="pull_detail_state">{{icon('merge','pull_detail_state_icon')}}Open</span>
+        <p class="muted">alex-dev wants to merge 4 commits into main from feature/search</p></div>
+</header>
+<nav class="tabstrip" data-class="navigation_bar" data-semantic="pull_detail_tabs">{% for label,count in
+    [('Conversation',3),('Commits',4),('Checks',3),('Files changed',2)] %}
+    <button data-class="tab" data-semantic="pull_detail_tab_{{loop.index}}">{{label}}<span class="count"
+                                                                                           data-class="badge"
+                                                                                           data-semantic="pull_detail_count_{{loop.index}}">{{count}}</span>
+    </button>
+    {% endfor %}
+</nav>{% if s=='commits' %}
+<section class="list-panel" data-class="section" data-semantic="pull_commits">{% for c in gh['commits'] %}
+    <article class="run-row row" data-class="card" data-semantic="commit_{{loop.index}}">{{avatar('AM','commit_avatar_'
+        ~ loop.index)}}
+        <div class="grow"><strong>{{c['message']}}</strong>
+            <p class="small muted">{{c['author']}} committed yesterday</p></div>
+        {{action('commit_sha_' ~ loop.index,c['sha'])}}{{btn('content_copy','copy_commit_' ~ loop.index, annotate=false)}}
+    </article>
+    {% endfor %}
+</section>{% elif s=='files_changed' %}
+<div class="row between" style="margin-bottom:20px">{{btn('filter_list','diff_filter','Filter
+    files')}}{{action('review_changes','Review changes',true)}}
+</div>{% for path in ['src/search.ts','tests/search.test.ts'] %}
+<section class="list-panel" data-class="section" data-semantic="diff_file_{{loop.index}}">
+    <header class="list-header row between">
+        <div class="row">{{btn('expand_more','diff_expand_' ~ loop.index, annotate=false)}}<strong>{{path}}</strong></div>
+        {{check('diff_viewed_' ~ loop.index,'Viewed',false)}}
+    </header>
+    <div class="diff-neutral">@@ -12,3 +12,4 @@</div>
+    <div class="diff-remove">− return items;</div>
+    <div class="diff-add">+ const normalized = query.trim().toLowerCase();</div>
+    <div class="diff-add">+ return items.filter(item =&gt; item.name.includes(normalized));</div>
+    <div class="row" style="padding:15px">{{btn('add_comment','diff_comment_' ~ loop.index,'Add comment')}}</div>
+</section>{% endfor %}{% elif s=='checks' %}
+<div class="layout">
+    <aside class="sidebar card" data-class="navigation_bar" data-semantic="check_jobs">
+        {{btn('check_circle','check_tests','Tests')}}{{btn('check_circle','check_lint','Lint')}}{{btn('check_circle','check_build','Build')}}
+    </aside>
+    <section class="card stack" data-class="section" data-semantic="checks_summary"><h2>All checks passed</h2>
+        <p>3 successful checks · 2m 14s</p>
+        <pre class="log" data-class="section" data-semantic="checks_log">Run npm test
+PASS tests/search.test.ts
+PASS tests/navigation.test.ts
+12 tests passed
+Process completed successfully</pre>
+        {{btn('open_in_new','checks_details','View workflow run')}}
+    </section>
+</div>{% else %}
+<div class="layout">
+    <section class="stack" data-class="section" data-semantic="pull_conversation">
+        {{comment('pull_description','alex-dev','This change improves small-screen navigation and keeps search filters
+        when switching tabs.')}}
+        <div class="timeline row">
+            {{icon('check_circle','pull_review_event')}}<span>sam-code approved these changes</span></div>
+        {{comment('pull_review_comment','sam-code','The layout looks good. The added keyboard focus checks cover the
+        main interaction.')}}
+        <section class="card stack" data-class="card" data-semantic="merge_status">
+            <div class="row">{{icon('check_circle','checks_passed_icon')}}<strong>All checks have passed</strong></div>
+            <div class="row">{{icon('merge','no_conflicts_icon')}}<strong>No conflicts with the base branch</strong>
+            </div>
+            {{action('merge_pull_request','Merge pull request',true)}}
+        </section>
+        {{compose('pull_comment')}}
+    </section>
+    <aside class="sidebar" data-class="section" data-semantic="pull_metadata"><h3>Reviewers</h3>
+        <div class="row">{{avatar('SK','reviewer_avatar')}}<span>sam-code</span>{{btn('check','reviewer_approved', annotate=false)}}
+        </div>
+        <h3>Assignees</h3>{{btn('settings','pull_assignee','alex-dev')}}<h3>Labels</h3><span class="label enhancement"
+                                                                                             data-class="badge"
+                                                                                             data-semantic="pull_label" style="width: 100px;">enhancement</span>
+        <h3>Projects</h3>
+        <p class="muted">Interface improvements</p>{{btn('notifications_none','pull_subscribe','Subscribe')}}
+    </aside>
+</div>{% endif %}{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}{% block page %}{% set s=gh['state'] %}
+<div class="sidebar-layout">
+    <aside class="sidebar" data-class="navigation_bar" data-semantic="workflow_sidebar"><h3>Actions</h3>
+        {{action('all_workflows','All workflows')}}{% for label in ['CI','Deploy preview','Code quality']
+        %}{{btn('play_circle_outline','workflow_select_' ~ loop.index,label)}}{% endfor
+        %}{{btn('add','new_workflow','New workflow')}}
+    </aside>
+    <section class="stack" data-class="section" data-semantic="actions_content">
+        <div class="row between"><h1>{{'CI / Improve repository navigation' if s in ['running','failed','run_detail']
+            else 'All workflows'}}</h1>{{btn('play_arrow','run_workflow','Run workflow')}}
+        </div>
+        {% if s in ['running','failed','run_detail'] %}
+        <div class="row wrap"><span class="badge" data-class="badge" data-semantic="run_status">{{'In progress' if s=='running' else 'Failure' if s=='failed' else 'Success'}}</span><span>main · demo001a · #231</span>{{btn('restart_alt','run_rerun','Re-run
+            jobs')}}
+        </div>
+        <div class="job-grid">{% for label in ['Lint','Test','Build'] %}
+            <div class="card stack" data-class="card" data-semantic="job_{{loop.index}}">{{icon('sync' if s=='running'
+                and loop.index==2 else 'error_outline' if s=='failed' and loop.index==2 else 'check_circle','job_state_'
+                ~ loop.index)}}<h3>{{label}}</h3><span class="small muted">{{'Running' if s=='running' and loop.index==2 else 'Failed' if s=='failed' and loop.index==2 else 'Completed'}}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% if s=='running' %}
+        <div class="progress" data-class="progress_bar" data-semantic="workflow_progress"><span
+                style="width:55%"></span></div>
+        {% endif %}
+        <section class="list-panel" data-class="section" data-semantic="job_log">
+            <header class="list-header row between"><h3>Test</h3>{{icon('download','download_run_logs')}}</header>
+            <pre class="log" data-class="section" data-semantic="action_log">Set up job
+Checkout repository
+Install dependencies
+Run npm test
+{{'FAIL tests/search.test.ts
+Expected empty-state message to be visible
+Process exited with code 1' if s=='failed' else 'PASS tests/navigation.test.ts
+' ~ ('Running tests/search.test.ts…' if s=='running' else 'PASS tests/search.test.ts
+12 tests passed')}}</pre>
+        </section>
+        {% else %}
+        <div class="search" data-class="search_bar" data-semantic="run_search"><input placeholder="Filter workflow runs"
+                                                                                      data-semantic="run_query">{{icon('search','run_search_submit')}}
+        </div>
+        <section class="list-panel" data-class="section" data-semantic="run_list">{% for r in gh['runs'] %}
+            <article class="run-row row" data-class="card" data-semantic="workflow_run_{{loop.index}}">
+                {{icon('check_circle' if r['status']=='Success' else 'error_outline' if r['status']=='Failure' else
+                'sync' if r['status']=='In progress' else 'schedule','run_icon_' ~ loop.index)}}
+                <div class="grow stack tight">
+                    <button class="link" data-class="button" data-semantic="run_open_{{loop.index}}">{{r['title']}}
+                    </button>
+                    <span class="small muted">{{r['name']}} #{{r['id']}} · {{r['branch']}} · {{r['status']}}</span>
+                </div>
+                <span class="small">{{r['duration']}}</span>{{icon('more_horiz','run_options_' ~ loop.index)}}
+            </article>
+            {% endfor %}
+        </section>
+        {% endif %}
+    </section>
+</div>{% endblock %}
