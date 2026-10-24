@@ -1,0 +1,15 @@
+from __future__ import annotations
+import copy
+STATES={'editor': ['editing', 'selection', 'multiple_cursors', 'autocomplete', 'unsaved', 'save_as'], 'project': ['tree', 'collapsed', 'open_files', 'empty', 'rename', 'new_file'], 'goto_anything': ['files', 'symbols', 'line', 'no_results', 'preview', 'open_recent'], 'command_palette': ['commands', 'filtered', 'no_results', 'build_choices', 'syntax_choices', 'theme_choices'], 'find_replace': ['find', 'replace', 'regex', 'no_matches', 'find_all', 'replace_confirm'], 'find_in_files': ['results', 'searching', 'no_results', 'folder_scope', 'replace_preview', 'replace_all_confirm'], 'build_output': ['success', 'running', 'error', 'test_results', 'configuration', 'cancel_build'], 'split_workspace': ['two_columns', 'two_rows', 'four_groups', 'focus_group', 'move_file', 'close_group'], 'preferences': ['settings', 'key_bindings', 'color_scheme', 'theme', 'invalid_json', 'reset_settings'], 'package_control': ['installed', 'discover', 'details', 'disabled', 'install_confirm', 'remove_confirm']}
+POPUPS={'remove_confirm', 'replace_all_confirm', 'rename', 'replace_confirm', 'install_confirm', 'save_as', 'new_file', 'cancel_build', 'reset_settings', 'close_group'}
+CODE='from pathlib import Path\nimport json\n\nclass NoteStore:\n    def __init__(self, directory):\n        self.directory = Path(directory)\n        self.directory.mkdir(exist_ok=True)\n\n    def load(self, name):\n        path = self.directory / f"{name}.json"\n        return json.loads(path.read_text())\n\n    def save(self, name, data):\n        path = self.directory / f"{name}.json"\n        path.write_text(json.dumps(data, indent=2))\n\nstore = NoteStore("notes")\nstore.save("weekend", {"title": "River walk"})\nprint(store.load("weekend"))\n'
+def generate_data(page,sample_index=0,assets_dir=None):
+ if page not in STATES:raise ValueError(page)
+ return {'page':page,'state':STATES[page][0],'popup_visible':False,'code':CODE,'sample_index':sample_index,'files':[{'name':n,'icon':i,'depth':d} for n,i,d in [('trail-notes','folder',0),('src','folder',1),('store.py','code',2),('app.py','code',2),('tests','folder',1),('test_store.py','code',2),('notes','folder',1),('README.md','description',1),('pyproject.toml','data_object',1)]],'commands':['File: Save All','View: Toggle Side Bar','Goto: Goto Anything','Build: Build','Preferences: Settings','Preferences: Select Color Scheme','Package Control: Install Package'],'packages':[{'name':n,'description':d,'installed':i<2} for i,(n,d) in enumerate([('Demo Python Helpers','Python editing utilities'),('Demo Theme Pack','A collection of color schemes'),('Demo Markdown Tools','Markdown editing shortcuts'),('Demo Format Helpers','Formatting commands')])]}
+def apply_state(base,state):
+ if state not in STATES[base['page']]:raise ValueError(state)
+ d=copy.deepcopy(base);d['state']=state;d['popup_visible']=state in POPUPS
+ if state=='empty':d['files']=[]
+ if state=='collapsed':d['files']=[f for f in d['files'] if f['depth']<2]
+ if state=='installed':d['packages']=[p for p in d['packages'] if p['installed']]
+ return d
