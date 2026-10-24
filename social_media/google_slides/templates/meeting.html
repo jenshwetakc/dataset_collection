@@ -1,0 +1,1511 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% set popup_visible =
+    page_data["state"] == "settings_open"
+    or page_data["state"] == "leave_dialog"
+%}
+
+{% set side_panel_visible =
+    page_data["state"] == "chat_open"
+    or page_data["state"] == "people_open"
+%}
+
+{% set meeting_active =
+    page_data["state"] != "pre_join"
+%}
+
+<section class="meet-app">
+    <div
+        class="meet-background"
+        {% if popup_visible %}
+            data-annotation-skip="true"
+        {% endif %}
+    >
+        {% if page_data["state"] == "pre_join" %}
+            <header
+                class="prejoin-header"
+                data-class="app_bar"
+            >
+                <div class="meet-brand">
+                    <span
+                        class="
+                            material-symbols-rounded
+                            meet-logo
+                        "
+                        data-class="icon"
+                    >
+                        videocam
+                    </span>
+
+                    <span>Google Meet</span>
+                </div>
+
+                <div class="prejoin-account">
+                    <span
+                        class="account-avatar"
+                        data-class="avatar"
+                    >
+                        {{ page_data["current_user"]["initials"] }}
+                    </span>
+                </div>
+            </header>
+
+            <main
+                class="prejoin-content"
+                data-class="section"
+            >
+                <section
+                    class="prejoin-preview"
+                    data-class="card"
+                >
+                    {% if page_data["pre_join"]["camera_enabled"] %}
+                        <span
+                            class="
+                                material-symbols-rounded
+                                preview-avatar
+                            "
+                            data-class="icon"
+                        >
+                            person
+                        </span>
+                    {% else %}
+                        <span
+                            class="large-avatar"
+                            data-class="avatar"
+                        >
+                            {{ page_data["current_user"]["initials"] }}
+                        </span>
+                    {% endif %}
+
+                    <span class="preview-name">
+                        {{ page_data["current_user"]["name"] }}
+                    </span>
+
+                    <div class="preview-controls">
+                        <button
+                            class="
+                                circle-control
+                                {% if not page_data['pre_join']['microphone_enabled'] %}
+                                    inactive
+                                {% endif %}
+                            "
+                            type="button"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                {% if page_data["pre_join"]["microphone_enabled"] %}
+                                    mic
+                                {% else %}
+                                    mic_off
+                                {% endif %}
+                            </span>
+                        </button>
+
+                        <button
+                            class="
+                                circle-control
+                                {% if not page_data['pre_join']['camera_enabled'] %}
+                                    inactive
+                                {% endif %}
+                            "
+                            type="button"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                {% if page_data["pre_join"]["camera_enabled"] %}
+                                    videocam
+                                {% else %}
+                                    videocam_off
+                                {% endif %}
+                            </span>
+                        </button>
+
+                        <button
+                            class="circle-control"
+                            type="button"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                more_vert
+                            </span>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="prejoin-details">
+                    <h1>
+                        Ready to join?
+                    </h1>
+
+                    <p>
+                        {{ page_data["meeting"]["title"] }}
+                    </p>
+
+                    <div
+                        class="device-row"
+                        data-class="card"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            background_replace
+                        </span>
+
+                        <span>
+                            Background:
+                            {{ page_data["pre_join"]["background_effect"] }}
+                        </span>
+                    </div>
+
+                    <button
+                        class="join-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        Join now
+                    </button>
+
+                    <button
+                        class="present-link"
+                        type="button"
+                        data-class="button"
+                    >
+                        Present instead
+                    </button>
+                </section>
+            </main>
+
+        {% else %}
+            <header
+                class="meeting-header"
+                data-class="app_bar"
+            >
+                <div class="meeting-title">
+                    <strong>
+                        {{ page_data["meeting"]["title"] }}
+                    </strong>
+
+                    <span>
+                        {{ page_data["meeting"]["duration"] }}
+                    </span>
+
+                    {% if page_data["recording"] %}
+                        <span
+                            class="recording-badge"
+                            data-class="badge"
+                        >
+                            REC
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div class="meeting-header-actions">
+                    <button
+                        class="header-control"
+                        type="button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            info
+                        </span>
+                    </button>
+
+                    <button
+                        class="header-control"
+                        type="button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            more_vert
+                        </span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="meeting-layout">
+                <section
+                    class="
+                        meeting-stage
+                        {% if side_panel_visible %}
+                            with-panel
+                        {% endif %}
+                    "
+                    data-class="section"
+                >
+                    {% if page_data["state"] in [
+                        "screen_sharing",
+                        "presentation_fullscreen"
+                    ] %}
+                        <section
+                            class="shared-screen"
+                            style="
+                                --presentation-accent:
+                                {{ page_data['presentation']['accent'] }};
+                            "
+                            data-class="video"
+                        >
+                            <div class="shared-slide">
+                                <span class="slide-kicker">
+                                    Product strategy
+                                </span>
+
+                                <h1>
+                                    {{ page_data["presentation"]["title"] }}
+                                </h1>
+
+                                <p>
+                                    {{ page_data["presentation"]["subtitle"] }}
+                                </p>
+
+                                <span class="slide-accent"></span>
+                            </div>
+
+                            <span class="sharing-label">
+                                {{ page_data["people"][0]["name"] }}
+                                is presenting
+                            </span>
+                        </section>
+
+                        {% if page_data["state"] != "presentation_fullscreen" %}
+                            <div class="filmstrip">
+                                {% for person in page_data["people"][:4] %}
+                                    <article
+                                        class="
+                                            mini-tile
+                                            {% if person['speaking'] %}
+                                                speaking
+                                            {% endif %}
+                                        "
+                                        data-class="card"
+                                    >
+                                        {% if person["camera_off"] %}
+                                            <span
+                                                class="tile-avatar"
+                                                style="
+                                                    background:
+                                                    {{ person['color'] }};
+                                                "
+                                                data-class="avatar"
+                                            >
+                                                {{ person["initials"] }}
+                                            </span>
+                                        {% else %}
+                                            <span
+                                                class="
+                                                    material-symbols-rounded
+                                                    camera-person
+                                                "
+                                                data-class="icon"
+                                            >
+                                                person
+                                            </span>
+                                        {% endif %}
+
+                                        <span class="tile-name">
+                                            {{ person["name"] }}
+                                        </span>
+                                    </article>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="participant-grid">
+                            {% for person in page_data["people"] %}
+                                <article
+                                    class="
+                                        participant-tile
+                                        {% if person['speaking'] %}
+                                            speaking
+                                        {% endif %}
+                                    "
+                                    data-class="card"
+                                >
+                                    {% if person["camera_off"] %}
+                                        <span
+                                            class="tile-avatar"
+                                            style="
+                                                background:
+                                                {{ person['color'] }};
+                                            "
+                                            data-class="avatar"
+                                        >
+                                            {{ person["initials"] }}
+                                        </span>
+                                    {% else %}
+                                        <span
+                                            class="
+                                                material-symbols-rounded
+                                                camera-person
+                                            "
+                                            data-class="icon"
+                                        >
+                                            person
+                                        </span>
+                                    {% endif %}
+
+                                    <div class="tile-footer">
+                                        <span>{{ person["name"] }}</span>
+
+                                        <span class="tile-status">
+                                            {% if person["raised_hand"] %}
+                                                <span
+                                                    class="
+                                                        material-symbols-rounded
+                                                        raised-hand
+                                                    "
+                                                    data-class="icon"
+                                                >
+                                                    front_hand
+                                                </span>
+                                            {% endif %}
+
+                                            <span
+                                                class="material-symbols-rounded"
+                                                data-class="icon"
+                                            >
+                                                {% if person["muted"] %}
+                                                    mic_off
+                                                {% else %}
+                                                    mic
+                                                {% endif %}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </article>
+                            {% endfor %}
+
+                            <article
+                                class="participant-tile self-tile"
+                                data-class="card"
+                            >
+                                <span
+                                    class="tile-avatar"
+                                    style="
+                                        background:
+                                        {{ page_data['current_user']['color'] }};
+                                    "
+                                    data-class="avatar"
+                                >
+                                    {{ page_data["current_user"]["initials"] }}
+                                </span>
+
+                                <div class="tile-footer">
+                                    <span>You</span>
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                    >
+                                        {% if page_data["current_user"]["muted"] %}
+                                            mic_off
+                                        {% else %}
+                                            mic
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </article>
+                        </div>
+                    {% endif %}
+
+                    {% if page_data["captions_enabled"] %}
+                        <div
+                            class="caption-box"
+                            data-class="card"
+                        >
+                            <span>
+                                Live captions are on
+                            </span>
+                        </div>
+                    {% endif %}
+                </section>
+
+                {% if page_data["state"] == "chat_open" %}
+                    <aside
+                        class="side-panel"
+                        data-class="section"
+                    >
+                        <header class="panel-header">
+                            <strong>In-call messages</strong>
+
+                            <button
+                                type="button"
+                                data-class="button"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    close
+                                </span>
+                            </button>
+                        </header>
+
+                        <div class="chat-list">
+                            {% for message in page_data["chat_messages"] %}
+                                <article class="chat-message">
+                                    <span
+                                        class="chat-avatar"
+                                        style="
+                                            background:
+                                            {{ message['color'] }};
+                                        "
+                                        data-class="avatar"
+                                    >
+                                        {{ message["initials"] }}
+                                    </span>
+
+                                    <div>
+                                        <strong>
+                                            {{ message["sender"] }}
+                                        </strong>
+
+                                        <small>{{ message["time"] }}</small>
+
+                                        <p>{{ message["text"] }}</p>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+
+                        <div
+                            class="chat-input"
+                            data-class="input_field"
+                        >
+                            {{ page_data["chat_draft"] }}
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                send
+                            </span>
+                        </div>
+                    </aside>
+                {% endif %}
+
+                {% if page_data["state"] == "people_open" %}
+                    <aside
+                        class="side-panel"
+                        data-class="section"
+                    >
+                        <header class="panel-header">
+                            <strong>
+                                People
+                                ({{ page_data["people"] | length + 1 }})
+                            </strong>
+
+                            <button
+                                type="button"
+                                data-class="button"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    close
+                                </span>
+                            </button>
+                        </header>
+
+                        <button
+                            class="add-people-button"
+                            type="button"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                person_add
+                            </span>
+
+                            Add people
+                        </button>
+
+                        {% for person in page_data["people"] %}
+                            <div class="people-row">
+                                <span
+                                    class="chat-avatar"
+                                    style="
+                                        background:
+                                        {{ person['color'] }};
+                                    "
+                                    data-class="avatar"
+                                >
+                                    {{ person["initials"] }}
+                                </span>
+
+                                <span class="person-name">
+                                    {{ person["name"] }}
+
+                                    {% if person["host"] %}
+                                        <small>Host</small>
+                                    {% endif %}
+                                </span>
+
+                                {% if person["raised_hand"] %}
+                                    <span
+                                        class="
+                                            material-symbols-rounded
+                                            raised-hand
+                                        "
+                                        data-class="icon"
+                                    >
+                                        front_hand
+                                    </span>
+                                {% endif %}
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    {% if person["muted"] %}
+                                        mic_off
+                                    {% else %}
+                                        mic
+                                    {% endif %}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </aside>
+                {% endif %}
+            </main>
+
+            <footer
+                class="meeting-controls"
+                data-class="navigation_bar"
+            >
+                <button
+                    class="
+                        circle-control
+                        {% if page_data['current_user']['muted'] %}
+                            inactive
+                        {% endif %}
+                    "
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {% if page_data["current_user"]["muted"] %}
+                            mic_off
+                        {% else %}
+                            mic
+                        {% endif %}
+                    </span>
+                </button>
+
+                <button
+                    class="
+                        circle-control
+                        {% if page_data['current_user']['camera_off'] %}
+                            inactive
+                        {% endif %}
+                    "
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {% if page_data["current_user"]["camera_off"] %}
+                            videocam_off
+                        {% else %}
+                            videocam
+                        {% endif %}
+                    </span>
+                </button>
+
+                <button
+                    class="circle-control"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        closed_caption
+                    </span>
+                </button>
+
+                <button
+                    class="circle-control"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        present_to_all
+                    </span>
+                </button>
+
+                <button
+                    class="circle-control"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        chat
+                    </span>
+                </button>
+
+                <button
+                    class="circle-control"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        group
+                    </span>
+                </button>
+
+                <button
+                    class="leave-button"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        call_end
+                    </span>
+                </button>
+            </footer>
+        {% endif %}
+    </div>
+
+    {% if page_data["state"] == "settings_open" %}
+        <div class="modal-backdrop">
+            <section
+                class="settings-dialog"
+                data-class="dialog"
+            >
+                <header class="dialog-header">
+                    <h2>Settings</h2>
+
+                    <button
+                        type="button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            close
+                        </span>
+                    </button>
+                </header>
+
+                <button
+                    class="settings-tab active"
+                    type="button"
+                    data-class="tab"
+                >
+                    Audio
+                </button>
+
+                <button
+                    class="settings-tab"
+                    type="button"
+                    data-class="tab"
+                >
+                    Video
+                </button>
+
+                <label class="settings-field">
+                    <span>Microphone</span>
+
+                    <button
+                        type="button"
+                        data-class="input_field"
+                    >
+                        {{ page_data["settings"]["microphone"] }}
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            arrow_drop_down
+                        </span>
+                    </button>
+                </label>
+
+                <label class="settings-field">
+                    <span>Speaker</span>
+
+                    <button
+                        type="button"
+                        data-class="input_field"
+                    >
+                        {{ page_data["settings"]["speaker"] }}
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            arrow_drop_down
+                        </span>
+                    </button>
+                </label>
+
+                <div class="switch-row">
+                    <span>Noise cancellation</span>
+
+                    <span
+                        class="
+                            meeting-switch
+                            {% if page_data['settings']['noise_cancellation'] %}
+                                enabled
+                            {% endif %}
+                        "
+                        data-class="switch"
+                    >
+                        <span></span>
+                    </span>
+                </div>
+
+                <div class="volume-control">
+                    <span>Speaker volume</span>
+
+                    <span
+                        class="volume-slider"
+                        data-class="slider"
+                    >
+                        <span></span>
+                    </span>
+                </div>
+            </section>
+        </div>
+    {% endif %}
+
+    {% if page_data["state"] == "leave_dialog" %}
+        <div class="modal-backdrop">
+            <section
+                class="leave-dialog"
+                data-class="dialog"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        leave-dialog-icon
+                    "
+                    data-class="icon"
+                >
+                    call_end
+                </span>
+
+                <h2>Leave this meeting?</h2>
+
+                <p>
+                    You can rejoin using the meeting link if the call
+                    is still active.
+                </p>
+
+                <div class="dialog-actions">
+                    <button
+                        class="cancel-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        class="confirm-leave-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        Leave meeting
+                    </button>
+                </div>
+            </section>
+        </div>
+    {% endif %}
+</section>
+
+<style>
+    .meet-app {
+        min-height: 100vh;
+        color: var(--theme-text-primary);
+        background: var(--theme-background);
+    }
+
+    .prejoin-header,
+    .meeting-header,
+    .meeting-header-actions,
+    .preview-controls,
+    .meeting-controls,
+    .panel-header,
+    .dialog-header,
+    .dialog-actions,
+    .people-row,
+    .share-row {
+        display: flex;
+        align-items: center;
+    }
+
+    .prejoin-header,
+    .meeting-header {
+        min-height: 64px;
+        justify-content: space-between;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+    }
+
+    .meet-brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--theme-text-primary);
+        font-size: 21px;
+    }
+
+    .meet-logo {
+        width: 38px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 7px;
+        color: #ffffff;
+        background: #1a73e8;
+    }
+
+    .account-avatar,
+    .large-avatar,
+    .tile-avatar,
+    .chat-avatar {
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        color: #ffffff;
+        font-weight: 700;
+    }
+
+    .account-avatar {
+        width: 34px;
+        height: 34px;
+        background: #9334e6;
+        font-size: 12px;
+    }
+
+    .prejoin-content {
+        max-width: 1040px;
+        display: grid;
+        grid-template-columns: minmax(300px, 1.25fr) 1fr;
+        gap: 55px;
+        align-items: center;
+        margin: 0 auto;
+        padding: 72px 28px;
+    }
+
+    .prejoin-preview {
+        min-height: 350px;
+        display: grid;
+        place-items: center;
+        align-content: center;
+        gap: 18px;
+        border-radius: 16px;
+        color: #ffffff;
+        background: #303134;
+    }
+
+    .preview-avatar,
+    .camera-person {
+        color: #ffffff;
+        font-size: 95px;
+    }
+
+    .large-avatar {
+        width: 112px;
+        height: 112px;
+        background: #9334e6;
+        font-size: 35px;
+    }
+
+    .preview-controls {
+        gap: 12px;
+        margin-top: 28px;
+    }
+
+    .circle-control,
+    .header-control {
+        width: 45px;
+        height: 45px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 50%;
+        color: var(--theme-text-primary);
+        background: var(--theme-surface-variant);
+    }
+
+    .circle-control.inactive {
+        color: #ffffff;
+        background: #c5221f;
+    }
+
+    .circle-control.inactive .material-symbols-rounded {
+        color: inherit;
+    }
+
+    .prejoin-details h1 {
+        margin: 0;
+        font-size: 32px;
+    }
+
+    .prejoin-details > p {
+        color: var(--theme-text-secondary);
+    }
+
+    .device-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 24px 0;
+        padding: 15px;
+        border: 1px solid var(--theme-border);
+        border-radius: 8px;
+    }
+
+    .join-button,
+    .confirm-leave-button {
+        padding: 11px 20px;
+        border: 0;
+        border-radius: 24px;
+        color: var(--theme-on-primary);
+        background: var(--theme-primary);
+        font-weight: 700;
+    }
+
+    .present-link,
+    .cancel-button {
+        margin-left: 8px;
+        padding: 11px 16px;
+        border: 0;
+        color: var(--theme-primary);
+        background: transparent;
+        font-weight: 700;
+    }
+
+    .meeting-title {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+    }
+
+    .meeting-title > span {
+        color: var(--theme-text-secondary);
+        font-size: 13px;
+    }
+
+    .recording-badge {
+        padding: 4px 7px;
+        border-radius: 4px;
+        color: #ffffff !important;
+        background: #c5221f;
+        font-weight: 700;
+    }
+
+    .meeting-header-actions {
+        gap: 8px;
+    }
+
+    .header-control {
+        width: 35px;
+        height: 35px;
+        background: transparent;
+    }
+
+    .meeting-layout {
+        min-height: calc(100vh - 132px);
+        display: flex;
+        background: #202124;
+    }
+
+    .meeting-stage {
+        position: relative;
+        min-width: 0;
+        flex: 1;
+        padding: 22px;
+    }
+
+    .participant-grid {
+        height: 100%;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
+    }
+
+    .participant-tile,
+    .mini-tile {
+        position: relative;
+        min-height: 180px;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        color: #ffffff;
+        background: #3c4043;
+    }
+
+    .participant-tile.speaking,
+    .mini-tile.speaking {
+        border-color: #34a853;
+    }
+
+    .tile-avatar {
+        width: 82px;
+        height: 82px;
+        font-size: 26px;
+    }
+
+    .tile-footer {
+        position: absolute;
+        right: 12px;
+        bottom: 10px;
+        left: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+    }
+
+    .tile-status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .tile-footer .material-symbols-rounded,
+    .tile-status .material-symbols-rounded {
+        color: #ffffff;
+        font-size: 18px;
+    }
+
+    .raised-hand {
+        color: #fbbc04 !important;
+    }
+
+    .shared-screen {
+        position: relative;
+        height: calc(100vh - 178px);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        border-radius: 10px;
+        background: #111111;
+    }
+
+    .shared-slide {
+        width: min(90%, 900px);
+        aspect-ratio: 16 / 9;
+        padding: 11%;
+        color: #202124;
+        background: #ffffff;
+    }
+
+    .shared-slide h1 {
+        max-width: 75%;
+        margin: 10px 0;
+        font-size: clamp(28px, 5vw, 68px);
+    }
+
+    .slide-kicker {
+        color: var(--presentation-accent);
+        font-size: 16px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .slide-accent {
+        width: 95px;
+        height: 8px;
+        display: block;
+        margin-top: 45px;
+        background: var(--presentation-accent);
+    }
+
+    .sharing-label,
+    .caption-box {
+        position: absolute;
+        bottom: 14px;
+        left: 50%;
+        padding: 9px 13px;
+        border-radius: 5px;
+        color: #ffffff;
+        background: rgb(0 0 0 / 70%);
+        font-size: 12px;
+        transform: translateX(-50%);
+    }
+
+    .caption-box {
+        bottom: 22px;
+    }
+
+    .filmstrip {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+        overflow-x: auto;
+    }
+
+    .mini-tile {
+        min-width: 150px;
+        min-height: 100px;
+    }
+
+    .mini-tile .tile-avatar {
+        width: 45px;
+        height: 45px;
+        font-size: 15px;
+    }
+
+    .side-panel {
+        width: 350px;
+        flex: 0 0 350px;
+        padding: 16px;
+        overflow-y: auto;
+        background: var(--theme-surface);
+    }
+
+    .panel-header,
+    .dialog-header {
+        justify-content: space-between;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--theme-border);
+    }
+
+    .panel-header button,
+    .dialog-header button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        background: transparent;
+    }
+
+    .chat-list {
+        display: grid;
+        gap: 18px;
+        margin: 20px 0;
+    }
+
+    .chat-message {
+        display: flex;
+        gap: 10px;
+    }
+
+    .chat-avatar {
+        width: 30px;
+        height: 30px;
+        flex: 0 0 30px;
+        font-size: 10px;
+    }
+
+    .chat-message strong {
+        font-size: 13px;
+    }
+
+    .chat-message small {
+        margin-left: 6px;
+        color: var(--theme-text-secondary);
+        font-size: 11px;
+    }
+
+    .chat-message p {
+        margin: 4px 0;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .chat-input {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        border: 1px solid var(--theme-border);
+        border-radius: 20px;
+        color: var(--theme-text-secondary);
+        font-size: 13px;
+    }
+
+    .add-people-button {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin: 16px 0;
+        padding: 10px;
+        border: 0;
+        border-radius: 20px;
+        color: var(--theme-primary);
+        background: var(--theme-primary-container);
+        font-weight: 700;
+    }
+
+    .people-row {
+        gap: 10px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--theme-border-subtle);
+    }
+
+    .person-name {
+        flex: 1;
+        font-size: 13px;
+    }
+
+    .person-name small {
+        display: block;
+        color: var(--theme-text-secondary);
+    }
+
+    .meeting-controls {
+        position: fixed;
+        z-index: 10;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        justify-content: center;
+        gap: 13px;
+        min-height: 68px;
+        background: #202124;
+    }
+
+    .meeting-controls .circle-control {
+        color: #ffffff;
+        background: #3c4043;
+    }
+
+    .meeting-controls .circle-control .material-symbols-rounded {
+        color: inherit;
+    }
+
+    .leave-button {
+        width: 52px;
+        height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 20px;
+        color: #ffffff;
+        background: #c5221f;
+    }
+
+    .leave-button .material-symbols-rounded {
+        color: inherit;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        z-index: 50;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgb(0 0 0 / 48%);
+    }
+
+    .settings-dialog,
+    .leave-dialog {
+        width: min(94vw, 470px);
+        padding: 24px;
+        border-radius: 12px;
+        background: var(--theme-surface);
+    }
+
+    .settings-tab {
+        margin: 18px 15px 12px 0;
+        padding: 8px 2px;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        color: var(--theme-text-secondary);
+        background: transparent;
+    }
+
+    .settings-tab.active {
+        border-color: var(--theme-primary);
+        color: var(--theme-primary);
+        font-weight: 700;
+    }
+
+    .settings-field {
+        display: grid;
+        gap: 7px;
+        margin: 16px 0;
+        font-size: 13px;
+    }
+
+    .settings-field button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px;
+        border: 1px solid var(--theme-border);
+        border-radius: 5px;
+        color: var(--theme-text-primary);
+        background: var(--theme-surface);
+        text-align: left;
+    }
+
+    .switch-row,
+    .volume-control {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 22px;
+        font-size: 14px;
+    }
+
+    .meeting-switch {
+        width: 42px;
+        height: 24px;
+        padding: 3px;
+        border-radius: 14px;
+        background: var(--theme-border);
+    }
+
+    .meeting-switch span {
+        width: 18px;
+        height: 18px;
+        display: block;
+        border-radius: 50%;
+        background: #ffffff;
+    }
+
+    .meeting-switch.enabled {
+        background: var(--theme-primary);
+    }
+
+    .meeting-switch.enabled span {
+        margin-left: 18px;
+    }
+
+    .volume-slider {
+        width: 150px;
+        height: 5px;
+        overflow: hidden;
+        border-radius: 5px;
+        background: var(--theme-border);
+    }
+
+    .volume-slider span {
+        width: 65%;
+        height: 100%;
+        display: block;
+        background: var(--theme-primary);
+    }
+
+    .leave-dialog {
+        max-width: 390px;
+        text-align: center;
+    }
+
+    .leave-dialog-icon {
+        color: var(--theme-error);
+        font-size: 45px;
+    }
+
+    .leave-dialog p {
+        color: var(--theme-text-secondary);
+        line-height: 1.5;
+    }
+
+    .dialog-actions {
+        justify-content: center;
+        gap: 8px;
+        margin-top: 25px;
+    }
+
+    @media (max-width: 700px) {
+        .prejoin-content {
+            grid-template-columns: 1fr;
+            gap: 28px;
+            padding: 30px 18px;
+        }
+
+        .prejoin-preview {
+            min-height: 270px;
+        }
+
+        .meeting-title strong {
+            max-width: 170px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .participant-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .participant-tile {
+            min-height: 150px;
+        }
+
+        .side-panel {
+            position: fixed;
+            z-index: 20;
+            top: 64px;
+            right: 0;
+            bottom: 68px;
+            width: min(92vw, 350px);
+            box-shadow: -4px 0 18px rgb(0 0 0 / 25%);
+        }
+
+        .meeting-controls {
+            gap: 7px;
+        }
+
+        .meeting-controls .circle-control {
+            width: 39px;
+            height: 39px;
+        }
+
+        .shared-screen {
+            height: calc(100vh - 150px);
+        }
+
+        .slide-stage {
+            padding: 10px;
+        }
+    }
+</style>
+
+{% endblock %}

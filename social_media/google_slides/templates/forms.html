@@ -1,0 +1,914 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% set popup_visible =
+    page_data["state"] == "question_type_menu"
+    or page_data["state"] == "theme_customizer"
+    or page_data["state"] == "share_dialog"
+    or page_data["state"] == "delete_question_dialog"
+%}
+
+{% set preview =
+    page_data["state"] == "preview_mode"
+%}
+
+{% set responses =
+    page_data["state"] in [
+        "responses_summary",
+        "responses_individual"
+    ]
+%}
+
+<section
+    class="forms-app"
+    style="
+        --form-accent:
+        {{ page_data['form']['accent'] }};
+    "
+>
+    <div
+        class="forms-background"
+        {% if popup_visible %}
+            data-annotation-skip="true"
+        {% endif %}
+    >
+        <header
+            class="forms-header"
+            data-class="app_bar"
+            data-occluder="true"
+        >
+            <span
+                class="
+                    material-symbols-rounded
+                    forms-logo
+                "
+                data-class="icon"
+            >
+                description
+            </span>
+
+            <span class="form-name">
+                {{ page_data["form"]["title"] }}
+            </span>
+
+            <div class="header-actions">
+                {% for icon_name in [
+                    "palette",
+                    "preview",
+                    "undo",
+                    "redo",
+                    "more_vert"
+                ] %}
+                    <button
+                        class="icon-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            {{ icon_name }}
+                        </span>
+                    </button>
+                {% endfor %}
+
+                <button
+                    class="send-button"
+                    type="button"
+                    data-class="button"
+                >
+                    Send
+                </button>
+            </div>
+        </header>
+
+        {% if not preview %}
+            <nav
+                class="forms-tabs"
+                data-class="navigation_bar"
+            >
+                {% for tab in [
+                    "Questions",
+                    "Responses",
+                    "Settings"
+                ] %}
+                    <button
+                        class="
+                            form-tab
+                            {% if (
+                                tab == "Responses"
+                                and responses
+                            )
+                            or (
+                                tab == "Questions"
+                                and not responses
+                            )
+                            %}
+                                active
+                            {% endif %}
+                        "
+                        type="button"
+                        data-class="tab"
+                    >
+                        {{ tab }}
+
+                        {% if tab == "Responses" %}
+                            <span
+                                class="response-badge"
+                                data-class="badge"
+                            >
+                                {{ page_data["form"]["responses_count"] }}
+                            </span>
+                        {% endif %}
+                    </button>
+                {% endfor %}
+            </nav>
+        {% endif %}
+
+        <main
+            class="
+                forms-content
+                {% if preview %}
+                    preview-page
+                {% endif %}
+            "
+            data-class="section"
+        >
+            {% if responses %}
+                <section
+                    class="form-card"
+                    data-class="card"
+                >
+                    <h1>Responses</h1>
+                    <p>
+                        {{ page_data["form"]["responses_count"] }}
+                        responses
+                    </p>
+
+                    {% if page_data["state"] == "responses_summary" %}
+                        {% for question in page_data["questions"] %}
+                            <article
+                                class="response-card"
+                                data-class="card"
+                            >
+                                <h2>{{ question["title"] }}</h2>
+
+                                {% for response in question["responses"] %}
+                                    <div class="chart-row">
+                                        <span>{{ response["label"] }}</span>
+
+                                        <span
+                                            class="chart-track"
+                                            data-class="slider"
+                                        >
+                                            <span
+                                                style="
+                                                    width:
+                                                    {{ response['value'] }}%;
+                                                "
+                                            ></span>
+                                        </span>
+
+                                        <small>
+                                            {{ response["value"] }}
+                                        </small>
+                                    </div>
+                                {% endfor %}
+                            </article>
+                        {% endfor %}
+
+                    {% else %}
+                        <div class="respondent-card">
+                            <span
+                                class="respondent-avatar"
+                                data-class="avatar"
+                            >
+                                {{ page_data["respondent"]["name"][0] }}
+                            </span>
+
+                            <div>
+                                <strong>
+                                    {{ page_data["respondent"]["name"] }}
+                                </strong>
+
+                                <span>
+                                    {{ page_data["respondent"]["email"] }}
+                                </span>
+                            </div>
+                        </div>
+
+                        {% for question in page_data["questions"] %}
+                            <article class="individual-answer">
+                                <strong>{{ question["title"] }}</strong>
+                                <p>
+                                    {{ question["options"][0] }}
+                                </p>
+                            </article>
+                        {% endfor %}
+                    {% endif %}
+                </section>
+
+            {% else %}
+                <section
+                    class="form-card form-header-card"
+                    data-class="card"
+                >
+                    <h1>{{ page_data["form"]["title"] }}</h1>
+                    <p>{{ page_data["form"]["description"] }}</p>
+                </section>
+
+                {% for question in page_data["questions"] %}
+                    <article
+                        class="
+                            question-card
+                            {% if (
+                                page_data["state"] == "question_selected"
+                                and question["id"]
+                                == page_data["selected_question"]["id"]
+                            )
+                            %}
+                                selected
+                            {% endif %}
+                        "
+                        data-class="card"
+                    >
+                        <div class="question-top">
+                            <span>
+                                {{ loop.index }}.
+                                {{ question["title"] }}
+                            </span>
+
+                            {% if not preview %}
+                                <button
+                                    class="type-button"
+                                    type="button"
+                                    data-class="button"
+                                >
+                                    {{ question["type"] }}
+
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                    >
+                                        arrow_drop_down
+                                    </span>
+                                </button>
+                            {% endif %}
+                        </div>
+
+                        {% if question["type"] in [
+                            "Short answer",
+                            "Paragraph"
+                        ] %}
+                            <div
+                                class="answer-input"
+                                data-class="input_field"
+                            >
+                                Your answer
+                            </div>
+                        {% else %}
+                            {% for option in question["options"] %}
+                                <div class="option-row">
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="checkbox"
+                                    >
+                                        {% if question["type"] == "Checkboxes" %}
+                                            check_box_outline_blank
+                                        {% else %}
+                                            radio_button_unchecked
+                                        {% endif %}
+                                    </span>
+
+                                    <span>{{ option }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        {% if not preview %}
+                            <footer class="question-footer">
+                                <span>
+                                    Required
+                                </span>
+
+                                <span
+                                    class="
+                                        form-switch
+                                        {% if question['required'] %}
+                                            enabled
+                                        {% endif %}
+                                    "
+                                    data-class="switch"
+                                >
+                                    <span></span>
+                                </span>
+
+                                {% for icon_name in [
+                                    "content_copy",
+                                    "delete",
+                                    "more_vert"
+                                ] %}
+                                    <button
+                                        class="icon-button"
+                                        type="button"
+                                        data-class="button"
+                                    >
+                                        <span
+                                            class="material-symbols-rounded"
+                                            data-class="icon"
+                                        >
+                                            {{ icon_name }}
+                                        </span>
+                                    </button>
+                                {% endfor %}
+                            </footer>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+
+                {% if not preview %}
+                    <aside
+                        class="add-question-toolbar"
+                        data-class="navigation_bar"
+                    >
+                        {% for icon_name in [
+                            "add_circle",
+                            "content_copy",
+                            "title",
+                            "image",
+                            "video_library"
+                        ] %}
+                            <button
+                                class="icon-button"
+                                type="button"
+                                data-class="button"
+                            >
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    {{ icon_name }}
+                                </span>
+                            </button>
+                        {% endfor %}
+                    </aside>
+                {% endif %}
+            {% endif %}
+        </main>
+    </div>
+
+    {% if page_data["state"] == "question_type_menu" %}
+        <section
+            class="type-menu"
+            data-class="dialog"
+        >
+            {% for type_name in [
+                "Short answer",
+                "Paragraph",
+                "Multiple choice",
+                "Checkboxes",
+                "Linear scale"
+            ] %}
+                <button
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="checkbox"
+                    >
+                        radio_button_checked
+                    </span>
+                    {{ type_name }}
+                </button>
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    {% if page_data["state"] == "theme_customizer" %}
+        <aside
+            class="theme-panel"
+            data-class="dialog"
+        >
+            <h2>Theme options</h2>
+            <p>Theme color</p>
+
+            <div class="swatch-grid">
+                {% for color in [
+                    "#673AB7",
+                    "#1A73E8",
+                    "#188038",
+                    "#E8710A",
+                    "#C5221F",
+                    "#00897B"
+                ] %}
+                    <button
+                        class="theme-swatch"
+                        style="background: {{ color }};"
+                        type="button"
+                        data-class="button"
+                    ></button>
+                {% endfor %}
+            </div>
+
+            <p>Background</p>
+
+            <button
+                class="background-choice"
+                type="button"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="checkbox"
+                >
+                    radio_button_checked
+                </span>
+                Default
+            </button>
+        </aside>
+    {% endif %}
+
+    {% if page_data["state"] == "share_dialog" %}
+        <div class="modal-backdrop">
+            <section
+                class="share-dialog"
+                data-class="dialog"
+            >
+                <h2>Send form</h2>
+
+                <div
+                    class="share-input"
+                    data-class="input_field"
+                >
+                    {{ page_data["share"]["email"] }}
+                </div>
+
+                <div class="share-option">
+                    <span>Collect email addresses</span>
+
+                    <span
+                        class="
+                            form-switch
+                            {% if page_data['share']['collect_emails'] %}
+                                enabled
+                            {% endif %}
+                        "
+                        data-class="switch"
+                    >
+                        <span></span>
+                    </span>
+                </div>
+
+                <button
+                    class="link-row"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        link
+                    </span>
+                    Copy responder link
+                </button>
+
+                <div class="dialog-actions">
+                    <button
+                        class="cancel-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        class="send-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        Send
+                    </button>
+                </div>
+            </section>
+        </div>
+    {% endif %}
+
+    {% if page_data["state"] == "delete_question_dialog" %}
+        <div class="modal-backdrop">
+            <section
+                class="delete-dialog"
+                data-class="dialog"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        delete-icon
+                    "
+                    data-class="icon"
+                >
+                    delete
+                </span>
+
+                <h2>Delete question?</h2>
+                <p>This question and its options will be removed.</p>
+
+                <div class="dialog-actions">
+                    <button
+                        class="cancel-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        class="delete-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </section>
+        </div>
+    {% endif %}
+</section>
+
+<style>
+    .forms-app {
+        min-height: 100vh;
+        background: #f0ebf8;
+    }
+
+    .forms-header,
+    .header-actions,
+    .forms-tabs,
+    .question-top,
+    .question-footer,
+    .chart-row,
+    .respondent-card,
+    .share-option,
+    .dialog-actions {
+        display: flex;
+        align-items: center;
+    }
+
+    .forms-header {
+        min-height: 64px;
+        gap: 10px;
+        padding: 10px 24px;
+        border-bottom: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+    }
+
+    .forms-logo {
+        color: var(--form-accent);
+        font-size: 31px;
+    }
+
+    .form-name {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .header-actions {
+        gap: 7px;
+        margin-left: auto;
+    }
+
+    .icon-button {
+        width: 37px;
+        height: 37px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+    }
+
+    .send-button,
+    .delete-button {
+        padding: 10px 18px;
+        border: 0;
+        border-radius: 4px;
+        color: #ffffff;
+        background: var(--form-accent);
+        font-weight: 700;
+    }
+
+    .forms-tabs {
+        justify-content: center;
+        gap: 30px;
+        min-height: 48px;
+        border-bottom: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+    }
+
+    .form-tab {
+        height: 48px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        background: transparent;
+    }
+
+    .form-tab.active {
+        border-color: var(--form-accent);
+        color: var(--form-accent);
+        font-weight: 700;
+    }
+
+    .response-badge {
+        padding: 2px 6px;
+        border-radius: 10px;
+        color: #ffffff;
+        background: var(--form-accent);
+        font-size: 10px;
+    }
+
+    .forms-content {
+        max-width: 760px;
+        margin: auto;
+        padding: 28px 16px 70px;
+    }
+
+    .form-card,
+    .question-card,
+    .response-card {
+        margin-bottom: 15px;
+        padding: 25px;
+        border-radius: 9px;
+        background: var(--theme-surface);
+        box-shadow: 0 1px 3px rgb(0 0 0 / 16%);
+    }
+
+    .form-header-card {
+        border-top: 10px solid var(--form-accent);
+    }
+
+    .question-card.selected {
+        border-left: 6px solid var(--form-accent);
+    }
+
+    .question-top {
+        justify-content: space-between;
+        gap: 15px;
+        font-size: 17px;
+    }
+
+    .type-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 8px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+    }
+
+    .option-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .answer-input,
+    .share-input {
+        margin-top: 20px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--theme-text-secondary);
+        color: var(--theme-text-secondary);
+    }
+
+    .question-footer {
+        justify-content: flex-end;
+        gap: 9px;
+        margin-top: 20px;
+        padding-top: 13px;
+        border-top: 1px solid var(--theme-border-subtle);
+        font-size: 13px;
+    }
+
+    .form-switch {
+        width: 38px;
+        height: 22px;
+        padding: 3px;
+        border-radius: 12px;
+        background: var(--theme-border);
+    }
+
+    .form-switch > span {
+        width: 16px;
+        height: 16px;
+        display: block;
+        border-radius: 50%;
+        background: #ffffff;
+    }
+
+    .form-switch.enabled {
+        background: var(--form-accent);
+    }
+
+    .form-switch.enabled > span {
+        margin-left: 16px;
+    }
+
+    .add-question-toolbar {
+        position: fixed;
+        top: 185px;
+        left: calc(50% + 395px);
+        display: grid;
+        gap: 6px;
+        padding: 7px;
+        border-radius: 6px;
+        background: var(--theme-surface);
+        box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+    }
+
+    .chart-row {
+        gap: 10px;
+        margin: 12px 0;
+    }
+
+    .chart-row > span:first-child {
+        width: 110px;
+    }
+
+    .chart-track {
+        height: 18px;
+        flex: 1;
+        background: var(--theme-surface-variant);
+    }
+
+    .chart-track > span {
+        height: 100%;
+        display: block;
+        background: var(--form-accent);
+    }
+
+    .respondent-card {
+        gap: 12px;
+        padding: 14px;
+        background: var(--theme-surface-variant);
+    }
+
+    .respondent-avatar {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        color: #ffffff;
+        background: var(--form-accent);
+    }
+
+    .respondent-card span {
+        display: block;
+        color: var(--theme-text-secondary);
+        font-size: 12px;
+    }
+
+    .individual-answer {
+        padding: 16px 0;
+        border-bottom: 1px solid var(--theme-border);
+    }
+
+    .type-menu,
+    .theme-panel {
+        position: fixed;
+        z-index: 30;
+        top: 115px;
+        right: 12%;
+        width: 250px;
+        padding: 12px;
+        border-radius: 8px;
+        background: var(--theme-surface);
+        box-shadow: 0 5px 18px rgb(0 0 0 / 25%);
+    }
+
+    .type-menu button,
+    .background-choice,
+    .link-row {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 7px;
+        border: 0;
+        color: var(--theme-text-primary);
+        background: transparent;
+        text-align: left;
+    }
+
+    .swatch-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .theme-swatch {
+        height: 38px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        z-index: 30;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgb(0 0 0 / 46%);
+    }
+
+    .share-dialog,
+    .delete-dialog {
+        width: min(94vw, 460px);
+        padding: 24px;
+        border-radius: 12px;
+        background: var(--theme-surface);
+    }
+
+    .share-option {
+        justify-content: space-between;
+        margin-top: 22px;
+    }
+
+    .link-row {
+        margin-top: 20px;
+        color: var(--form-accent);
+    }
+
+    .dialog-actions {
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 26px;
+    }
+
+    .cancel-button {
+        padding: 10px 16px;
+        border: 0;
+        color: var(--form-accent);
+        background: transparent;
+        font-weight: 700;
+    }
+
+    .delete-dialog {
+        max-width: 380px;
+        text-align: center;
+    }
+
+    .delete-icon {
+        color: var(--theme-error);
+        font-size: 46px;
+    }
+
+    .delete-button {
+        background: var(--theme-error);
+    }
+
+    @media (max-width: 800px) {
+        .add-question-toolbar {
+            position: static;
+            display: flex;
+            width: max-content;
+            margin: 10px auto;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .forms-header {
+            padding: 9px;
+        }
+
+        .form-name,
+        .header-actions > .icon-button {
+            display: none;
+        }
+
+        .forms-tabs {
+            gap: 12px;
+        }
+
+        .forms-content {
+            padding: 16px 8px 40px;
+        }
+
+        .form-card,
+        .question-card {
+            padding: 17px;
+        }
+    }
+</style>
+
+{% endblock %}

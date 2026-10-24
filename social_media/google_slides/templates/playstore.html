@@ -1,0 +1,967 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% set playstore = page_data %}
+{% set dialog_visible = playstore["state"] == "install_dialog" %}
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        min-width: 320px;
+    }
+
+    .playstore-app {
+        min-height: 100vh;
+        background: var(--theme-background);
+    }
+
+    .app-bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-height: 64px;
+        padding: 10px 20px;
+        background: var(--theme-surface);
+        border-bottom: 1px solid var(--theme-surface-variant);
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: max-content;
+        font-size: 20px;
+        font-weight: 500;
+    }
+
+    .brand-mark {
+        width: 26px;
+        height: 26px;
+        background: linear-gradient(
+            135deg,
+            #34A853 0 35%,
+            #4285F4 35% 60%,
+            #FBBC04 60% 78%,
+            #EA4335 78% 100%
+        );
+        clip-path: polygon(0 0, 100% 50%, 0 100%);
+    }
+
+    .search-box {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        gap: 10px;
+        min-height: 46px;
+        max-width: 680px;
+        padding: 0 14px;
+        margin: 0 auto;
+        background: var(--theme-background);
+        border-radius: 24px;
+    }
+
+    .search-box input {
+        width: 100%;
+        color: var(--theme-on-surface);
+        background: transparent;
+        border: 0;
+        outline: 0;
+    }
+
+    .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        color: var(--theme-on-surface);
+        background: transparent;
+        border: 0;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        color: #FFFFFF;
+        font-size: 13px;
+        font-weight: 700;
+        background: #7B1FA2;
+        border-radius: 50%;
+    }
+
+    .layout {
+        display: grid;
+        grid-template-columns: 236px minmax(0, 1fr);
+        min-height: calc(100vh - 64px);
+    }
+
+    .side-nav {
+        padding: 16px 12px;
+        background: var(--theme-surface);
+        border-right: 1px solid var(--theme-surface-variant);
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        width: 100%;
+        min-height: 46px;
+        padding: 0 16px;
+        color: var(--theme-on-surface);
+        font-weight: 500;
+        text-align: left;
+        background: transparent;
+        border: 0;
+        border-radius: 0 23px 23px 0;
+        cursor: pointer;
+    }
+
+    .nav-item.active {
+        color: var(--theme-primary);
+        font-weight: 700;
+        background: var(--theme-primary-container);
+    }
+
+    .content {
+        width: min(1180px, 100%);
+        padding: 28px;
+        margin: 0 auto;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 26px;
+        margin-bottom: 26px;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--theme-surface-variant);
+    }
+
+    .tab {
+        flex: 0 0 auto;
+        padding: 12px 4px;
+        color: var(--theme-text-secondary);
+        font-weight: 700;
+        background: transparent;
+        border: 0;
+        border-bottom: 3px solid transparent;
+    }
+
+    .tab.active {
+        color: var(--theme-primary);
+        border-bottom-color: var(--theme-primary);
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 32px 0 16px;
+    }
+
+    .section-heading h1,
+    .section-heading h2 {
+        margin: 0;
+        font-size: 23px;
+        font-weight: 500;
+    }
+
+    .text-button {
+        min-height: 38px;
+        padding: 0 14px;
+        color: var(--theme-primary);
+        font-weight: 700;
+        background: transparent;
+        border: 0;
+        border-radius: 19px;
+        cursor: pointer;
+    }
+
+    .primary-button,
+    .secondary-button {
+        min-height: 40px;
+        padding: 0 17px;
+        font-weight: 700;
+        border-radius: 20px;
+        cursor: pointer;
+    }
+
+    .primary-button {
+        color: var(--theme-on-primary);
+        background: var(--theme-primary);
+        border: 1px solid var(--theme-primary);
+    }
+
+    .secondary-button {
+        color: var(--theme-primary);
+        background: transparent;
+        border: 1px solid var(--theme-primary);
+    }
+
+    .hero-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 220px;
+        gap: 22px;
+        min-height: 210px;
+        padding: 30px;
+        color: #FFFFFF;
+        background: linear-gradient(130deg, #174EA6, #4285F4);
+        border-radius: 16px;
+    }
+
+    .hero-card h1 {
+        max-width: 600px;
+        margin: 22px 0 9px;
+        font-size: clamp(26px, 4vw, 42px);
+        font-weight: 500;
+    }
+
+    .hero-card p {
+        max-width: 540px;
+        margin: 0;
+        line-height: 1.5;
+        opacity: 0.92;
+    }
+
+    .hero-art {
+        display: grid;
+        place-items: center;
+        font-size: 132px;
+    }
+
+    .app-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(145px, 1fr));
+        gap: 18px;
+    }
+
+    .app-tile {
+        min-width: 0;
+        padding: 10px;
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-surface-variant);
+        border-radius: 12px;
+    }
+
+    .app-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 70px;
+        height: 70px;
+        margin-bottom: 10px;
+        overflow: hidden;
+        color: #FFFFFF;
+        font-size: 21px;
+        font-weight: 800;
+        border-radius: 16px;
+    }
+
+    .app-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .app-tile h3 {
+        overflow: hidden;
+        margin: 0 0 4px;
+        font-size: 15px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .app-tile p,
+    .app-info p {
+        overflow: hidden;
+        margin: 0;
+        color: var(--theme-text-secondary);
+        font-size: 13px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .rating-row {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        margin-top: 8px;
+        color: var(--theme-text-secondary);
+        font-size: 12px;
+    }
+
+    .app-list {
+        display: grid;
+        gap: 10px;
+    }
+
+    .app-row,
+    .update-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px;
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-surface-variant);
+        border-radius: 11px;
+    }
+
+    .app-row .app-icon,
+    .update-row .app-icon {
+        flex: 0 0 auto;
+        width: 58px;
+        height: 58px;
+        margin: 0;
+        border-radius: 13px;
+    }
+
+    .app-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .app-info h3 {
+        margin: 0 0 4px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .detail-card {
+        padding: 28px;
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-surface-variant);
+        border-radius: 14px;
+    }
+
+    .app-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .app-header .app-icon {
+        flex: 0 0 auto;
+        width: 108px;
+        height: 108px;
+        margin: 0;
+        font-size: 30px;
+        border-radius: 24px;
+    }
+
+    .app-header-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .app-header h1 {
+        margin: 0 0 7px;
+        font-size: 30px;
+        font-weight: 500;
+    }
+
+    .developer {
+        margin: 0;
+        color: var(--theme-primary);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .category {
+        margin: 6px 0 18px;
+        color: var(--theme-text-secondary);
+        font-size: 13px;
+    }
+
+    .app-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        margin: 30px 0;
+        border-top: 1px solid var(--theme-surface-variant);
+        border-bottom: 1px solid var(--theme-surface-variant);
+    }
+
+    .stat {
+        padding: 17px 10px;
+        text-align: center;
+        border-right: 1px solid var(--theme-surface-variant);
+    }
+
+    .stat:last-child {
+        border-right: 0;
+    }
+
+    .stat strong {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 15px;
+    }
+
+    .stat span {
+        color: var(--theme-text-secondary);
+        font-size: 12px;
+    }
+
+    .screenshots {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+    }
+
+    .screenshot {
+        display: flex;
+        align-items: flex-end;
+        flex: 0 0 170px;
+        height: 290px;
+        overflow: hidden;
+        padding: 17px;
+        color: #FFFFFF;
+        background: var(--shot-color);
+        border-radius: 12px;
+    }
+
+    .screenshot img {
+        width: calc(100% + 34px);
+        height: calc(100% + 34px);
+        margin: -17px;
+        object-fit: cover;
+    }
+
+    .screenshot p {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .update-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        background: rgba(0, 0, 0, 0.44);
+    }
+
+    .dialog {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        z-index: 31;
+        width: min(450px, calc(100vw - 32px));
+        padding: 26px;
+        background: var(--theme-surface);
+        border-radius: 14px;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+        transform: translate(-50%, -50%);
+    }
+
+    .dialog h2 {
+        margin: 0 0 10px;
+        font-size: 23px;
+        font-weight: 500;
+    }
+
+    .dialog p {
+        margin: 0 0 22px;
+        color: var(--theme-text-secondary);
+        line-height: 1.5;
+    }
+
+    .dialog-app {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 13px;
+        margin-bottom: 22px;
+        background: var(--theme-background);
+        border-radius: 9px;
+    }
+
+    .dialog-app .app-icon {
+        width: 48px;
+        height: 48px;
+        margin: 0;
+        font-size: 15px;
+        border-radius: 11px;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    @media (max-width: 900px) {
+        .app-grid {
+            grid-template-columns: repeat(3, minmax(130px, 1fr));
+        }
+    }
+
+    @media (max-width: 720px) {
+        .layout {
+            grid-template-columns: 1fr;
+        }
+
+        .side-nav {
+            display: none;
+        }
+
+        .content {
+            padding: 18px 16px 90px;
+        }
+
+        .brand span:last-child {
+            display: none;
+        }
+
+        .app-bar {
+            padding: 9px 14px;
+        }
+
+        .hero-card {
+            grid-template-columns: 1fr;
+            min-height: 185px;
+        }
+
+        .hero-art {
+            display: none;
+        }
+
+        .app-grid {
+            grid-template-columns: repeat(2, minmax(130px, 1fr));
+        }
+
+        .app-header .app-icon {
+            width: 78px;
+            height: 78px;
+            font-size: 23px;
+            border-radius: 18px;
+        }
+
+        .app-header h1 {
+            font-size: 23px;
+        }
+
+        .app-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .stat:nth-child(2) {
+            border-right: 0;
+        }
+
+        .stat:nth-child(-n+2) {
+            border-bottom: 1px solid var(--theme-surface-variant);
+        }
+    }
+</style>
+
+{% if dialog_visible %}
+<div data-annotation-skip="true">
+{% endif %}
+
+<div class="playstore-app">
+    <header class="app-bar" data-class="app_bar">
+        <button class="icon-button" data-class="button">
+            <span class="material-symbols-rounded" data-class="icon">menu</span>
+        </button>
+
+        <div class="brand">
+            <span class="brand-mark"></span>
+            <span>Google Play</span>
+        </div>
+
+        <div class="search-box" data-class="search_bar">
+            <span class="material-symbols-rounded" data-class="icon">search</span>
+            <input
+                placeholder="Search apps and games"
+                data-class="input_field"
+            >
+        </div>
+
+        <div class="avatar" data-class="avatar">GK</div>
+    </header>
+
+    <div class="layout">
+        <aside class="side-nav">
+            <button class="nav-item active" data-class="button">
+                <span class="material-symbols-rounded" data-class="icon">storefront</span>
+                Apps
+            </button>
+
+            <button class="nav-item" data-class="button">
+                <span class="material-symbols-rounded" data-class="icon">stadia_controller</span>
+                Games
+            </button>
+
+            <button class="nav-item" data-class="button">
+                <span class="material-symbols-rounded" data-class="icon">apps</span>
+                Categories
+            </button>
+
+            <button class="nav-item" data-class="button">
+                <span class="material-symbols-rounded" data-class="icon">system_update</span>
+                Manage apps
+            </button>
+        </aside>
+
+        <main class="content">
+            {% if playstore["state"] == "search_results" %}
+                <div class="search-box" data-class="search_bar">
+                    <span class="material-symbols-rounded" data-class="icon">search</span>
+
+                    <input
+                        value="{{ playstore['search_query'] }}"
+                        data-class="input_field"
+                    >
+
+                    <button class="icon-button" data-class="button">
+                        <span class="material-symbols-rounded" data-class="icon">close</span>
+                    </button>
+                </div>
+
+                <div class="section-heading">
+                    <h1>Search results</h1>
+                </div>
+
+                <section class="app-list" data-class="section">
+                    {% for app in playstore["search_results"] %}
+                        <article class="app-row" data-class="card">
+                            <div
+                                class="app-icon"
+                                style="background: {{ app['icon_color'] }};"
+                                data-class="image"
+                            >
+                                {% if app["icon_image"] %}
+                                    <img src="{{ app['icon_image'] }}" alt="">
+                                {% else %}
+                                    {{ app["icon_text"] }}
+                                {% endif %}
+                            </div>
+
+                            <div class="app-info">
+                                <h3>{{ app["name"] }}</h3>
+                                <p>{{ app["developer"] }}</p>
+
+                                <div class="rating-row">
+                                    {{ app["rating"] }}
+                                    <span class="material-symbols-rounded" style="font-size: 15px;" data-class="icon">star</span>
+                                    · {{ app["downloads"] }}
+                                </div>
+                            </div>
+
+                            <button class="secondary-button" data-class="button">
+                                {% if app["installed"] %}
+                                    Open
+                                {% else %}
+                                    Install
+                                {% endif %}
+                            </button>
+                        </article>
+                    {% endfor %}
+                </section>
+
+            {% elif playstore["state"] == "app_detail" %}
+                {% set selected_app = playstore["selected_app"] %}
+
+                <section class="detail-card" data-class="card">
+                    <div class="app-header">
+                        <div
+                            class="app-icon"
+                            style="background: {{ selected_app['icon_color'] }};"
+                            data-class="image"
+                        >
+                            {% if selected_app["icon_image"] %}
+                                <img src="{{ selected_app['icon_image'] }}" alt="">
+                            {% else %}
+                                {{ selected_app["icon_text"] }}
+                            {% endif %}
+                        </div>
+
+                        <div class="app-header-content">
+                            <h1>{{ selected_app["name"] }}</h1>
+                            <p class="developer">{{ selected_app["developer"] }}</p>
+                            <p class="category">
+                                {{ selected_app["category"] }}
+                                ·
+                                {{ selected_app["age_rating"] }}
+                            </p>
+
+                            <button class="primary-button" data-class="button">
+                                {% if selected_app["installed"] %}
+                                    Open
+                                {% else %}
+                                    Install
+                                {% endif %}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="app-stats">
+                        <div class="stat">
+                            <strong>{{ selected_app["rating"] }}</strong>
+                            <span>Rating</span>
+                        </div>
+
+                        <div class="stat">
+                            <strong>{{ selected_app["downloads"] }}</strong>
+                            <span>Downloads</span>
+                        </div>
+
+                        <div class="stat">
+                            <strong>{{ selected_app["age_rating"] }}</strong>
+                            <span>Content rating</span>
+                        </div>
+
+                        <div class="stat">
+                            <strong>{{ selected_app["size"] }}</strong>
+                            <span>App size</span>
+                        </div>
+                    </div>
+
+                    <div class="section-heading">
+                        <h2>About this app</h2>
+                    </div>
+
+                    <p style="line-height: 1.6;">
+                        {{ selected_app["description"] }}
+                    </p>
+
+                    <div class="section-heading">
+                        <h2>Preview</h2>
+                    </div>
+
+                    <div class="screenshots">
+                        {% for screenshot in selected_app["screenshots"] %}
+                            <div
+                                class="screenshot"
+                                style="--shot-color: {{ screenshot['color'] }};"
+                                data-class="image"
+                            >
+                                {% if screenshot["image"] %}
+                                    <img src="{{ screenshot['image'] }}" alt="">
+                                {% else %}
+                                    <p>{{ screenshot["title"] }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+            {% elif playstore["state"] == "updates" %}
+                <div class="section-heading">
+                    <h1>Manage apps & device</h1>
+                    <button class="primary-button" data-class="button">
+                        Update all
+                    </button>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab active" data-class="tab">Updates</button>
+                    <button class="tab" data-class="tab">Installed</button>
+                    <button class="tab" data-class="tab">Library</button>
+                </div>
+
+                <section class="app-list" data-class="section">
+                    {% for app in playstore["update_apps"] %}
+                        <article class="update-row" data-class="card">
+                            <div
+                                class="app-icon"
+                                style="background: {{ app['icon_color'] }};"
+                                data-class="image"
+                            >
+                                {% if app["icon_image"] %}
+                                    <img src="{{ app['icon_image'] }}" alt="">
+                                {% else %}
+                                    {{ app["icon_text"] }}
+                                {% endif %}
+                            </div>
+
+                            <div class="app-info">
+                                <h3>{{ app["name"] }}</h3>
+                                <p>
+                                    Version {{ app["version"] }}
+                                    ·
+                                    {{ app["size"] }}
+                                </p>
+                            </div>
+
+                            <div class="update-actions">
+                                <button class="secondary-button" data-class="button">
+                                    Update
+                                </button>
+
+                                <button class="icon-button" data-class="button">
+                                    <span class="material-symbols-rounded" data-class="icon">more_vert</span>
+                                </button>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </section>
+
+            {% else %}
+                <div class="tabs">
+                    <button class="tab active" data-class="tab">For you</button>
+                    <button class="tab" data-class="tab">Top charts</button>
+                    <button class="tab" data-class="tab">Categories</button>
+                </div>
+
+                <section class="hero-card" data-class="card">
+                    <div>
+                        <h1>Discover your next favorite app</h1>
+                        <p>
+                            Curated collections and useful tools,
+                            selected for your everyday tasks.
+                        </p>
+                    </div>
+
+                    <div class="hero-art">
+                        <span class="material-symbols-rounded" data-class="icon">apps</span>
+                    </div>
+                </section>
+
+                <section data-class="section">
+                    <div class="section-heading">
+                        <h2>Recommended for you</h2>
+                        <button class="text-button" data-class="button">
+                            See more
+                        </button>
+                    </div>
+
+                    <div class="app-grid">
+                        {% for app in playstore["recommended_apps"] %}
+                            <article class="app-tile" data-class="card">
+                                <div
+                                    class="app-icon"
+                                    style="background: {{ app['icon_color'] }};"
+                                    data-class="image"
+                                >
+                                    {% if app["icon_image"] %}
+                                        <img src="{{ app['icon_image'] }}" alt="">
+                                    {% else %}
+                                        {{ app["icon_text"] }}
+                                    {% endif %}
+                                </div>
+
+                                <h3>{{ app["name"] }}</h3>
+                                <p>{{ app["category"] }}</p>
+
+                                <div class="rating-row">
+                                    {{ app["rating"] }}
+                                    <span class="material-symbols-rounded" style="font-size: 14px;" data-class="icon">star</span>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section data-class="section">
+                    <div class="section-heading">
+                        <h2>Featured apps</h2>
+                        <button class="text-button" data-class="button">
+                            See more
+                        </button>
+                    </div>
+
+                    <div class="app-grid">
+                        {% for app in playstore["featured_apps"] %}
+                            <article class="app-tile" data-class="card">
+                                <div
+                                    class="app-icon"
+                                    style="background: {{ app['icon_color'] }};"
+                                    data-class="image"
+                                >
+                                    {% if app["icon_image"] %}
+                                        <img src="{{ app['icon_image'] }}" alt="">
+                                    {% else %}
+                                        {{ app["icon_text"] }}
+                                    {% endif %}
+                                </div>
+
+                                <h3>{{ app["name"] }}</h3>
+                                <p>{{ app["developer"] }}</p>
+
+                                <div class="rating-row">
+                                    {{ app["rating"] }}
+                                    <span class="material-symbols-rounded" style="font-size: 14px;" data-class="icon">star</span>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+        </main>
+    </div>
+</div>
+
+{% if dialog_visible %}
+</div>
+
+<div class="scrim"></div>
+
+{% set selected_app = playstore["selected_app"] %}
+
+<section
+    class="dialog"
+    data-class="dialog"
+    data-occluder="true"
+>
+    <h2>Install app?</h2>
+
+    <p>
+        This app will be installed on your device.
+        You can manage it later from the Play Store.
+    </p>
+
+    <div class="dialog-app" data-class="card">
+        <div
+            class="app-icon"
+            style="background: {{ selected_app['icon_color'] }};"
+            data-class="image"
+        >
+            {% if selected_app["icon_image"] %}
+                <img src="{{ selected_app['icon_image'] }}" alt="">
+            {% else %}
+                {{ selected_app["icon_text"] }}
+            {% endif %}
+        </div>
+
+        <div>
+            <strong>{{ selected_app["name"] }}</strong>
+            <div style="margin-top: 4px; color: var(--theme-text-secondary); font-size: 13px;">
+                {{ selected_app["size"] }}
+            </div>
+        </div>
+    </div>
+
+    <div class="dialog-actions">
+        <button class="text-button" data-class="button">
+            Cancel
+        </button>
+
+        <button class="primary-button" data-class="button">
+            Install
+        </button>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

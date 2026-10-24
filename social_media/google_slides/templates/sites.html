@@ -1,0 +1,775 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% set sites = page_data %}
+{% set dialog_visible = sites["state"] == "publish_dialog" %}
+{% set panel_visible = sites["state"] == "pages_panel" or sites["state"] == "themes_panel" %}
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        min-width: 320px;
+    }
+
+    .sites-app {
+        min-height: 100vh;
+        background: #F8F9FA;
+    }
+
+    .editor-bar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        min-height: 64px;
+        padding: 0 18px;
+        color: #202124;
+        background: #FFFFFF;
+        border-bottom: 1px solid #DADCE0;
+    }
+
+    .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        color: #3C4043;
+        background: transparent;
+        border: 0;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .site-name {
+        min-width: 160px;
+        overflow: hidden;
+        font-size: 16px;
+        font-weight: 500;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .editor-tabs {
+        display: flex;
+        align-self: stretch;
+        align-items: center;
+        gap: 20px;
+        margin-left: auto;
+    }
+
+    .editor-tab {
+        align-self: stretch;
+        padding: 0 2px;
+        color: #5F6368;
+        font-size: 14px;
+        font-weight: 700;
+        background: transparent;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+    }
+
+    .editor-tab.active {
+        color: #1A73E8;
+        border-bottom-color: #1A73E8;
+    }
+
+    .publish-button {
+        min-height: 38px;
+        padding: 0 18px;
+        color: #FFFFFF;
+        font-size: 14px;
+        font-weight: 700;
+        background: #1A73E8;
+        border: 1px solid #1A73E8;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .editor-layout {
+        display: grid;
+        grid-template-columns: 1fr 290px;
+        min-height: calc(100vh - 64px);
+    }
+
+    .canvas-area {
+        min-width: 0;
+        padding: 34px;
+    }
+
+    .site-canvas {
+        width: min(1040px, 100%);
+        min-height: 760px;
+        margin: 0 auto;
+        overflow: hidden;
+        background: #FFFFFF;
+        box-shadow: 0 1px 4px rgba(60, 64, 67, 0.22);
+    }
+
+    .site-navigation {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        min-height: 68px;
+        padding: 0 42px;
+        color: #202124;
+        background: #FFFFFF;
+    }
+
+    .site-title {
+        flex: 1;
+        overflow: hidden;
+        font-size: 20px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .site-navigation a {
+        color: #3C4043;
+        font-size: 14px;
+        text-decoration: none;
+    }
+
+    .hero {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 330px;
+        padding: 45px;
+        overflow: hidden;
+        color: #FFFFFF;
+        text-align: center;
+        background: var(--hero-color);
+    }
+
+    .hero::before {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        content: "";
+    }
+
+    .hero.has-image {
+        background-position: center;
+        background-size: cover;
+    }
+
+    .hero-content {
+        position: relative;
+        max-width: 720px;
+    }
+
+    .hero h1 {
+        margin: 0 0 12px;
+        font-size: clamp(32px, 5vw, 54px);
+        font-weight: 500;
+    }
+
+    .hero p {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.5;
+    }
+
+    .canvas-sections {
+        padding: 42px;
+    }
+
+    .content-section {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(180px, 0.85fr);
+        gap: 32px;
+        align-items: center;
+        padding: 34px 0;
+        border-bottom: 1px solid #E8EAED;
+    }
+
+    .content-section:last-child {
+        border-bottom: 0;
+    }
+
+    .content-section h2 {
+        margin: 0 0 12px;
+        color: #202124;
+        font-size: 26px;
+        font-weight: 500;
+    }
+
+    .content-section p {
+        margin: 0;
+        color: #5F6368;
+        line-height: 1.6;
+    }
+
+    .section-image {
+        display: grid;
+        place-items: center;
+        min-height: 180px;
+        overflow: hidden;
+        color: #FFFFFF;
+        background: #E8EAED;
+        border-radius: 4px;
+    }
+
+    .section-image img {
+        width: 100%;
+        height: 100%;
+        min-height: 180px;
+        object-fit: cover;
+    }
+
+    .edit-outline {
+        position: relative;
+        outline: 2px solid transparent;
+    }
+
+    .edit-outline:hover {
+        outline-color: #1A73E8;
+    }
+
+    .edit-marker {
+        position: absolute;
+        top: -17px;
+        left: 0;
+        padding: 3px 7px;
+        color: #FFFFFF;
+        font-size: 10px;
+        font-weight: 700;
+        background: #1A73E8;
+        border-radius: 3px 3px 0 0;
+    }
+
+    .side-panel {
+        padding: 18px 14px;
+        background: #FFFFFF;
+        border-left: 1px solid #DADCE0;
+    }
+
+    .panel-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 4px 6px 18px;
+    }
+
+    .panel-heading h2 {
+        margin: 0;
+        color: #202124;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .insert-list {
+        display: grid;
+        gap: 7px;
+    }
+
+    .insert-button {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        width: 100%;
+        min-height: 45px;
+        padding: 0 12px;
+        color: #3C4043;
+        font-size: 14px;
+        text-align: left;
+        background: transparent;
+        border: 0;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .insert-button:hover {
+        background: #F1F3F4;
+    }
+
+    .page-row,
+    .theme-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 50px;
+        padding: 8px;
+        color: #3C4043;
+        border-radius: 5px;
+    }
+
+    .page-row.active {
+        color: #1A73E8;
+        font-weight: 700;
+        background: #E8F0FE;
+    }
+
+    .page-row span:last-child {
+        margin-left: auto;
+    }
+
+    .theme-preview {
+        width: 54px;
+        height: 36px;
+        overflow: hidden;
+        background: var(--theme-preview);
+        border-radius: 4px;
+    }
+
+    .theme-row.active {
+        outline: 2px solid #1A73E8;
+    }
+
+    .floating-add {
+        position: fixed;
+        right: 322px;
+        bottom: 28px;
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 46px;
+        padding: 0 18px;
+        color: #FFFFFF;
+        font-size: 14px;
+        font-weight: 700;
+        background: #1A73E8;
+        border: 0;
+        border-radius: 23px;
+        box-shadow: 0 2px 5px rgba(60, 64, 67, 0.35);
+        cursor: pointer;
+    }
+
+    .scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        background: rgba(0, 0, 0, 0.42);
+    }
+
+    .dialog {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        z-index: 31;
+        width: min(510px, calc(100vw - 32px));
+        padding: 26px;
+        color: #202124;
+        background: #FFFFFF;
+        border-radius: 10px;
+        box-shadow: 0 16px 50px rgba(0, 0, 0, 0.3);
+        transform: translate(-50%, -50%);
+    }
+
+    .dialog h2 {
+        margin: 0 0 10px;
+        font-size: 23px;
+        font-weight: 500;
+    }
+
+    .dialog p {
+        margin: 0 0 22px;
+        color: #5F6368;
+        line-height: 1.5;
+    }
+
+    .field-label {
+        display: block;
+        margin: 16px 0 7px;
+        color: #5F6368;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .dialog-input {
+        width: 100%;
+        padding: 11px 12px;
+        color: #202124;
+        background: #FFFFFF;
+        border: 1px solid #1A73E8;
+        border-radius: 5px;
+        outline: 0;
+    }
+
+    .url-preview {
+        display: flex;
+        align-items: center;
+        min-height: 42px;
+        padding: 0 12px;
+        margin-top: 8px;
+        color: #3C4043;
+        font-size: 14px;
+        background: #F1F3F4;
+        border-radius: 5px;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 25px;
+    }
+
+    .text-button {
+        min-height: 40px;
+        padding: 0 16px;
+        color: #1A73E8;
+        font-size: 14px;
+        font-weight: 700;
+        background: transparent;
+        border: 0;
+        border-radius: 20px;
+        cursor: pointer;
+    }
+
+    @media (max-width: 900px) {
+        .editor-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .side-panel {
+            display: none;
+        }
+
+        .floating-add {
+            right: 24px;
+        }
+    }
+
+    @media (max-width: 650px) {
+        .editor-bar {
+            padding: 0 10px;
+        }
+
+        .site-name,
+        .editor-tabs {
+            display: none;
+        }
+
+        .editor-bar .publish-button {
+            margin-left: auto;
+        }
+
+        .canvas-area {
+            padding: 16px 0;
+        }
+
+        .site-navigation {
+            min-height: 58px;
+            padding: 0 18px;
+        }
+
+        .site-navigation a {
+            display: none;
+        }
+
+        .hero {
+            min-height: 265px;
+            padding: 28px;
+        }
+
+        .canvas-sections {
+            padding: 24px;
+        }
+
+        .content-section {
+            grid-template-columns: 1fr;
+            gap: 20px;
+            padding: 26px 0;
+        }
+
+        .content-section h2 {
+            font-size: 22px;
+        }
+    }
+</style>
+
+{% if dialog_visible %}
+<div data-annotation-skip="true">
+{% endif %}
+
+<div class="sites-app">
+    <header class="editor-bar" data-class="app_bar" data-occluder="true">
+        <button class="icon-button" data-class="button">
+            <span class="material-symbols-rounded" data-class="icon">menu</span>
+        </button>
+
+        <span class="material-symbols-rounded" style="color: #1A73E8;" data-class="icon">
+            web
+        </span>
+
+        <div class="site-name">
+            {{ sites["site"]["title"] }}
+        </div>
+
+        <div class="editor-tabs">
+            <button
+                class="editor-tab {% if not panel_visible %}active{% endif %}"
+                data-class="tab"
+            >
+                Insert
+            </button>
+
+            <button
+                class="editor-tab {% if sites['state'] == 'pages_panel' %}active{% endif %}"
+                data-class="tab"
+            >
+                Pages
+            </button>
+
+            <button
+                class="editor-tab {% if sites['state'] == 'themes_panel' %}active{% endif %}"
+                data-class="tab"
+            >
+                Themes
+            </button>
+        </div>
+
+        <button class="icon-button" data-class="button">
+            <span class="material-symbols-rounded" data-class="icon">undo</span>
+        </button>
+
+        <button class="icon-button" data-class="button">
+            <span class="material-symbols-rounded" data-class="icon">preview</span>
+        </button>
+
+        <button class="publish-button" data-class="button">
+            Publish
+        </button>
+    </header>
+
+    <div class="editor-layout">
+        <main class="canvas-area">
+            <section class="site-canvas" data-class="section">
+                <nav class="site-navigation">
+                    <div class="site-title">
+                        {{ sites["site"]["title"] }}
+                    </div>
+
+                    {% for page in sites["pages"] %}
+                        <a href="#">{{ page["title"] }}</a>
+                    {% endfor %}
+                </nav>
+
+                <section
+                    class="hero {% if sites['site']['hero_image'] %}has-image{% endif %} edit-outline"
+                    style="
+                        --hero-color: {{ sites['site']['hero_color'] }};
+                        {% if sites['site']['hero_image'] %}
+                            background-image:
+                                linear-gradient(
+                                    rgba(0, 0, 0, 0.35),
+                                    rgba(0, 0, 0, 0.35)
+                                ),
+                                url('{{ sites['site']['hero_image'] }}');
+                        {% endif %}
+                    "
+                    data-class="image"
+                >
+                    {% if sites["state"] != "preview" %}
+                        <span class="edit-marker">
+                            Header
+                        </span>
+                    {% endif %}
+
+                    <div class="hero-content">
+                        <h1>{{ sites["site"]["title"] }}</h1>
+                        <p>{{ sites["site"]["subtitle"] }}</p>
+                    </div>
+                </section>
+
+                <div class="canvas-sections">
+                    {% for section in sites["sections"] %}
+                        <section
+                            class="content-section edit-outline"
+                            data-class="section"
+                        >
+                            {% if sites["state"] != "preview" %}
+                                <span class="edit-marker">
+                                    Content block
+                                </span>
+                            {% endif %}
+
+                            <div>
+                                <h2>{{ section["title"] }}</h2>
+                                <p>{{ section["body"] }}</p>
+                            </div>
+
+                            <div
+                                class="section-image"
+                                data-class="image"
+                            >
+                                {% if section["image"] %}
+                                    <img
+                                        src="{{ section['image'] }}"
+                                        alt=""
+                                    >
+                                {% else %}
+                                    <span
+                                        class="material-symbols-rounded"
+                                        style="font-size: 46px; color: #5F6368;"
+                                        data-class="icon"
+                                    >image</span>
+                                {% endif %}
+                            </div>
+                        </section>
+                    {% endfor %}
+                </div>
+            </section>
+        </main>
+
+        <aside class="side-panel">
+            {% if sites["state"] == "pages_panel" %}
+                <div class="panel-heading">
+                    <h2>Pages</h2>
+
+                    <button class="icon-button" data-class="button">
+                        <span class="material-symbols-rounded" data-class="icon">add</span>
+                    </button>
+                </div>
+
+                {% for page in sites["pages"] %}
+                    <div
+                        class="page-row {% if page['id'] == sites['selected_page']['id'] %}active{% endif %}"
+                        data-class="card"
+                    >
+                        <span class="material-symbols-rounded" data-class="icon">
+                            {% if page["is_home"] %}
+                                home
+                            {% else %}
+                                article
+                            {% endif %}
+                        </span>
+
+                        <span>{{ page["title"] }}</span>
+
+                        <span class="material-symbols-rounded" data-class="icon">
+                            more_vert
+                        </span>
+                    </div>
+                {% endfor %}
+
+            {% elif sites["state"] == "themes_panel" %}
+                <div class="panel-heading">
+                    <h2>Themes</h2>
+                </div>
+
+                {% for theme_option in sites["themes"] %}
+                    <div
+                        class="theme-row {% if theme_option['name'] == sites['selected_theme']['name'] %}active{% endif %}"
+                        data-class="card"
+                    >
+                        <div
+                            class="theme-preview"
+                            style="--theme-preview: {{ theme_option['primary'] }};"
+                            data-class="image"
+                        ></div>
+
+                        <div>
+                            <strong>{{ theme_option["name"] }}</strong>
+                            <div
+                                style="margin-top: 3px; color: #5F6368; font-size: 12px;"
+                            >
+                                {{ theme_option["primary"] }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+
+            {% else %}
+                <div class="panel-heading">
+                    <h2>Insert</h2>
+                </div>
+
+                <div class="insert-list">
+                    <button class="insert-button" data-class="button">
+                        <span class="material-symbols-rounded" data-class="icon">text_fields</span>
+                        Text box
+                    </button>
+
+                    <button class="insert-button" data-class="button">
+                        <span class="material-symbols-rounded" data-class="icon">image</span>
+                        Images
+                    </button>
+
+                    <button class="insert-button" data-class="button">
+                        <span class="material-symbols-rounded" data-class="icon">smart_button</span>
+                        Button
+                    </button>
+
+                    <button class="insert-button" data-class="button">
+                        <span class="material-symbols-rounded" data-class="icon">horizontal_rule</span>
+                        Divider
+                    </button>
+
+                    <button class="insert-button" data-class="button">
+                        <span class="material-symbols-rounded" data-class="icon">calendar_month</span>
+                        Calendar
+                    </button>
+                </div>
+            {% endif %}
+        </aside>
+    </div>
+
+    {% if sites["state"] != "preview" %}
+        <button class="floating-add" data-class="button">
+            <span class="material-symbols-rounded" data-class="icon">add</span>
+            Add section
+        </button>
+    {% endif %}
+</div>
+
+{% if dialog_visible %}
+</div>
+
+<div class="scrim"></div>
+
+<section
+    class="dialog"
+    data-class="dialog"
+    data-occluder="true"
+>
+    <h2>Publish to the web</h2>
+
+    <p>
+        Choose a web address for your site. You can change
+        the publishing settings later.
+    </p>
+
+    <label class="field-label" for="site-address">
+        Web address
+    </label>
+
+    <input
+        id="site-address"
+        class="dialog-input"
+        value="{{ sites['site']['domain'] }}"
+        data-class="input_field"
+    >
+
+    <div class="url-preview">
+        sites.google.com/view/{{ sites["site"]["domain"] }}
+    </div>
+
+    <div class="dialog-actions">
+        <button class="text-button" data-class="button">
+            Cancel
+        </button>
+
+        <button
+            class="publish-button"
+            style="min-height: 40px;"
+            data-class="button"
+        >
+            Publish
+        </button>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

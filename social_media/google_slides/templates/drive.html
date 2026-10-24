@@ -1,0 +1,1243 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% set popup_visible =
+    page_data["context_menu"]["visible"]
+    or page_data["share_dialog"]["visible"]
+    or page_data["storage"]["warning_visible"]
+%}
+
+{% set navigation_icons = {
+    "My Drive": "home",
+    "Computers": "computer",
+    "Shared with me": "group",
+    "Recent": "schedule",
+    "Starred": "star",
+    "Spam": "report",
+    "Trash": "delete"
+} %}
+
+{% set context_icons = {
+    "Open with": "open_in_new",
+    "Download": "download",
+    "Rename": "edit",
+    "Make a copy": "content_copy",
+    "Organize": "drive_file_move",
+    "Share": "person_add",
+    "Get link": "link",
+    "Remove": "delete"
+} %}
+
+<section class="drive-app">
+    <div
+        class="drive-background"
+        {% if popup_visible %}
+            data-annotation-skip="true"
+        {% endif %}
+    >
+        <header
+            class="drive-header"
+            data-class="app_bar"
+            data-semantic="drive_app_bar"
+        >
+            <div class="brand">
+                <span
+                    class="
+                        material-symbols-rounded
+                        drive-logo
+                    "
+                    data-class="icon"
+                >
+                    change_history
+                </span>
+
+                <span>Drive</span>
+            </div>
+
+            <div
+                class="drive-search"
+                data-class="search_bar"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    search
+                </span>
+
+                <span class="search-label">
+                    {% if page_data["search"]["visible"] %}
+                        {{ page_data["search"]["query"] }}
+                    {% else %}
+                        Search in Drive
+                    {% endif %}
+                </span>
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    tune
+                </span>
+            </div>
+
+            <div class="header-actions">
+                <button
+                    type="button"
+                    aria-label="Help"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        help
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    aria-label="Settings"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        settings
+                    </span>
+                </button>
+
+                <div
+                    class="account-avatar"
+                    data-class="avatar"
+                >
+                    SK
+                </div>
+            </div>
+        </header>
+
+        <main class="drive-body">
+            <aside
+                class="drive-sidebar"
+                data-class="navigation_bar"
+                data-semantic="drive_navigation"
+            >
+                <button
+                    class="new-button"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        add
+                    </span>
+
+                    <span class="new-label">New</span>
+                </button>
+
+                {% for nav_name in [
+                    "My Drive",
+                    "Computers",
+                    "Shared with me",
+                    "Recent",
+                    "Starred",
+                    "Spam",
+                    "Trash"
+                ] %}
+                    <button
+                        class="
+                            navigation-row
+                            {% if nav_name == page_data['active_navigation'] %}
+                                active
+                            {% endif %}
+                        "
+                        type="button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            {{ navigation_icons[nav_name] }}
+                        </span>
+
+                        <span class="navigation-label">
+                            {{ nav_name }}
+                        </span>
+                    </button>
+                {% endfor %}
+
+                <div class="storage-info">
+                    <div
+                        class="storage-bar"
+                        data-class="slider"
+                    >
+                        <span
+                            style="
+                                width:
+                                {{ (
+                                    page_data['storage']['used']
+                                    / page_data['storage']['total']
+                                    * 100
+                                ) | round }}%;
+                            "
+                        ></span>
+                    </div>
+
+                    <p>
+                        {{ page_data["storage"]["used"] }} GB of
+                        {{ page_data["storage"]["total"] }} GB used
+                    </p>
+
+                    <button
+                        class="storage-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        Get more storage
+                    </button>
+                </div>
+            </aside>
+
+            <section
+                class="drive-content"
+                data-class="section"
+                data-semantic="drive_content"
+            >
+                <div class="content-top">
+                    <div>
+                        <div class="breadcrumb">
+                            {% for crumb in page_data["breadcrumb"] %}
+                                <span>{{ crumb }}</span>
+
+                                {% if not loop.last %}
+                                    <span
+                                        class="
+                                            material-symbols-rounded
+                                            breadcrumb-arrow
+                                        "
+                                        data-class="icon"
+                                    >
+                                        chevron_right
+                                    </span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <h1>
+                            {% if page_data["search"]["visible"] %}
+                                Search results
+                            {% elif page_data["state"] == "folder_open" %}
+                                {{ page_data["breadcrumb"][-1] }}
+                            {% else %}
+                                My Drive
+                            {% endif %}
+                        </h1>
+                    </div>
+
+                    <div class="content-actions">
+                        <button
+                            type="button"
+                            aria-label="View details"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                info
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            aria-label="Change layout"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                {% if page_data["view_mode"] == "grid" %}
+                                    view_list
+                                {% else %}
+                                    grid_view
+                                {% endif %}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                {% if not page_data["search"]["visible"] %}
+                    <h2>Folders</h2>
+
+                    <div class="folder-grid">
+                        {% for folder in page_data["folders"] %}
+                            <button
+                                class="folder-card"
+                                type="button"
+                                data-class="card"
+                                data-semantic="drive_folder"
+                            >
+                                <span
+                                    class="
+                                        material-symbols-rounded
+                                        folder-icon
+                                    "
+                                    style="
+                                        color: {{ folder['color'] }};
+                                    "
+                                    data-class="icon"
+                                >
+                                    folder
+                                </span>
+
+                                <span class="folder-name">
+                                    {{ folder["name"] }}
+                                </span>
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    more_vert
+                                </span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="files-heading">
+                    <h2>
+                        {% if page_data["search"]["visible"] %}
+                            Files matching
+                            “{{ page_data["search"]["query"] }}”
+                        {% else %}
+                            Files
+                        {% endif %}
+                    </h2>
+
+                    <span>Last modified</span>
+                </div>
+
+                {% if page_data["view_mode"] == "grid" %}
+                    <div class="file-grid">
+                        {% for file in page_data["files"] %}
+                            <button
+                                class="
+                                    file-card
+                                    {% if file['id'] == page_data['selected_file']['id'] %}
+                                        selected
+                                    {% endif %}
+                                "
+                                type="button"
+                                data-class="card"
+                                data-semantic="drive_file"
+                            >
+                                <span class="file-preview">
+                                    {% if file["kind"] == "image" %}
+                                        {% if file["image_src"] %}
+                                            <img
+                                                src="{{ file['image_src'] }}"
+                                                alt="{{ file['name'] }}"
+                                                data-class="image"
+                                            >
+                                        {% else %}
+                                            <span
+                                                class="
+                                                    material-symbols-rounded
+                                                    preview-icon
+                                                "
+                                                data-class="icon"
+                                            >
+                                                image
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span
+                                            class="
+                                                material-symbols-rounded
+                                                file-type-icon
+                                            "
+                                            style="
+                                                color: {{ file['color'] }};
+                                            "
+                                            data-class="icon"
+                                        >
+                                            {% if file["kind"] == "pdf" %}
+                                                picture_as_pdf
+                                            {% elif file["kind"] == "document" %}
+                                                description
+                                            {% elif file["kind"] == "spreadsheet" %}
+                                                table_chart
+                                            {% elif file["kind"] == "presentation" %}
+                                                slideshow
+                                            {% elif file["kind"] == "video" %}
+                                                movie
+                                            {% elif file["kind"] == "archive" %}
+                                                folder_zip
+                                            {% else %}
+                                                draft
+                                            {% endif %}
+                                        </span>
+                                    {% endif %}
+                                </span>
+
+                                <span class="file-name">
+                                    {{ file["name"] }}
+                                </span>
+
+                                <span class="file-meta">
+                                    {{ file["modified"] }}
+                                </span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div
+                        class="file-list"
+                        data-class="section"
+                    >
+                        {% for file in page_data["files"] %}
+                            <button
+                                class="
+                                    file-row
+                                    {% if file['id'] == page_data['selected_file']['id'] %}
+                                        selected
+                                    {% endif %}
+                                "
+                                type="button"
+                                data-class="card"
+                            >
+                                <span
+                                    class="
+                                        material-symbols-rounded
+                                        file-type-icon
+                                        small
+                                    "
+                                    style="
+                                        color: {{ file['color'] }};
+                                    "
+                                    data-class="icon"
+                                >
+                                    {% if file["kind"] == "image" %}
+                                        image
+                                    {% elif file["kind"] == "pdf" %}
+                                        picture_as_pdf
+                                    {% elif file["kind"] == "document" %}
+                                        description
+                                    {% elif file["kind"] == "spreadsheet" %}
+                                        table_chart
+                                    {% elif file["kind"] == "presentation" %}
+                                        slideshow
+                                    {% elif file["kind"] == "video" %}
+                                        movie
+                                    {% else %}
+                                        draft
+                                    {% endif %}
+                                </span>
+
+                                <span class="row-file-name">
+                                    {{ file["name"] }}
+                                </span>
+
+                                <span>{{ file["owner"] }}</span>
+                                <span>{{ file["modified"] }}</span>
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    more_vert
+                                </span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </section>
+        </main>
+
+        {% if page_data["upload"]["visible"] %}
+            <section
+                class="upload-toast"
+                data-class="card"
+                data-semantic="upload_progress"
+                data-occluder="true"
+            >
+                <div>
+                    <strong>Uploading 1 file</strong>
+
+                    <span>
+                        {{ page_data["upload"]["file_name"] }}
+                    </span>
+                </div>
+
+                <div
+                    class="upload-progress"
+                    data-class="slider"
+                >
+                    <span
+                        style="
+                            width:
+                            {{ page_data['upload']['progress'] }}%;
+                        "
+                    ></span>
+                </div>
+            </section>
+        {% endif %}
+    </div>
+
+    {% if page_data["context_menu"]["visible"] %}
+        <section
+            class="context-menu"
+            data-class="dialog"
+            data-semantic="file_context_menu"
+        >
+            {% for menu_entry in page_data["context_menu"]["menu_entries"] %}
+                <button
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {{ context_icons.get(menu_entry, "more_horiz") }}
+                    </span>
+
+                    {{ menu_entry }}
+                </button>
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    {% if page_data["share_dialog"]["visible"] %}
+        <div class="modal-overlay">
+            <section
+                class="share-dialog"
+                data-class="dialog"
+                data-semantic="share_file_dialog"
+            >
+                <div class="dialog-header">
+                    <h2>
+                        Share “{{ page_data["selected_file"]["name"] }}”
+                    </h2>
+
+                    <button
+                        type="button"
+                        aria-label="Close dialog"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            close
+                        </span>
+                    </button>
+                </div>
+
+                <button
+                    class="add-people"
+                    type="button"
+                    data-class="input_field"
+                >
+                    Add people, groups, and calendar events
+                </button>
+
+                {% for person in page_data["people"] %}
+                    <div class="person-row">
+                        <span
+                            class="person-avatar"
+                            style="
+                                background: {{ person['color'] }};
+                            "
+                            data-class="avatar"
+                        >
+                            {{ person["initials"] }}
+                        </span>
+
+                        <span class="person-name">
+                            {{ person["name"] }}
+                        </span>
+
+                        <button
+                            type="button"
+                            data-class="button"
+                        >
+                            Editor
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    inline-icon
+                                "
+                                data-class="icon"
+                            >
+                                arrow_drop_down
+                            </span>
+                        </button>
+                    </div>
+                {% endfor %}
+
+                <div class="link-access">
+                    <div>
+                        <strong>General access</strong>
+
+                        <span>
+                            {{ page_data["share_dialog"]["link_access"] }}
+                        </span>
+                    </div>
+
+                    <button
+                        type="button"
+                        data-class="button"
+                    >
+                        Viewer
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                inline-icon
+                            "
+                            data-class="icon"
+                        >
+                            arrow_drop_down
+                        </span>
+                    </button>
+                </div>
+
+                <div class="dialog-footer">
+                    <button
+                        type="button"
+                        data-class="button"
+                    >
+                        <span
+                            class="
+                                material-symbols-rounded
+                                inline-icon
+                            "
+                            data-class="icon"
+                        >
+                            link
+                        </span>
+
+                        Copy link
+                    </button>
+
+                    <button
+                        class="send-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        Send
+                    </button>
+                </div>
+            </section>
+        </div>
+    {% endif %}
+
+    {% if page_data["storage"]["warning_visible"] %}
+        <div class="modal-overlay">
+            <section
+                class="storage-dialog"
+                data-class="dialog"
+                data-semantic="storage_warning_dialog"
+            >
+                <span
+                    class="
+                        material-symbols-rounded
+                        warning-icon
+                    "
+                    data-class="icon"
+                >
+                    warning
+                </span>
+
+                <h2>Your storage is almost full</h2>
+
+                <p>
+                    Free up space or get more storage to keep
+                    your files safe and available.
+                </p>
+
+                <button
+                    class="send-button"
+                    type="button"
+                    data-class="button"
+                >
+                    Get more storage
+                </button>
+            </section>
+        </div>
+    {% endif %}
+</section>
+
+<style>
+    .drive-app {
+        min-height: 100vh;
+        color: var(--theme-text-primary);
+        background: var(--theme-background);
+    }
+
+    .drive-header {
+        height: 70px;
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        padding: 10px 22px;
+        border-bottom: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+    }
+
+    .brand,
+    .header-actions,
+    .content-top,
+    .content-actions,
+    .files-heading,
+    .dialog-header,
+    .dialog-footer {
+        display: flex;
+        align-items: center;
+    }
+
+    .brand {
+        gap: 10px;
+        color: var(--theme-text-secondary);
+        font-size: 22px;
+    }
+
+    .drive-logo {
+        width: auto;
+        height: auto;
+        color: var(--theme-primary);
+        font-size: 37px;
+    }
+
+    .drive-search {
+        min-width: 240px;
+        max-width: 720px;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 13px 17px;
+        border-radius: 8px;
+        color: var(--theme-text-secondary);
+        background: var(--theme-surface-variant);
+    }
+
+    .search-label {
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .header-actions {
+        gap: 10px;
+    }
+
+    .header-actions button,
+    .content-actions button,
+    .dialog-header button {
+        width: 35px;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: transparent;
+    }
+
+    .account-avatar,
+    .person-avatar {
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        color: #ffffff;
+        font-weight: 700;
+    }
+
+    .account-avatar {
+        width: 35px;
+        height: 35px;
+        background: #9334e6;
+        font-size: 12px;
+    }
+
+    .drive-body {
+        min-height: calc(100vh - 70px);
+        display: flex;
+    }
+
+    .drive-sidebar {
+        width: 240px;
+        flex: 0 0 240px;
+        padding: 18px 12px;
+        background: var(--theme-surface);
+    }
+
+    .new-button {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 10px 22px;
+        padding: 14px 22px;
+        border-radius: 25px;
+        color: var(--theme-text-primary);
+        background: var(--theme-surface);
+        box-shadow: 0 1px 3px rgb(60 64 67 / 30%);
+    }
+
+    .navigation-row {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 17px;
+        border-radius: 0 20px 20px 0;
+        color: var(--theme-text-secondary);
+        background: transparent;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    .navigation-row.active {
+        color: var(--theme-primary);
+        background: var(--theme-primary-container);
+        font-weight: 700;
+    }
+
+    .storage-info {
+        margin: 30px 14px 0;
+        padding-top: 20px;
+        border-top: 1px solid var(--theme-border);
+    }
+
+    .storage-bar,
+    .upload-progress {
+        height: 5px;
+        overflow: hidden;
+        border-radius: 5px;
+        background: var(--theme-border);
+    }
+
+    .storage-bar span,
+    .upload-progress span {
+        display: block;
+        height: 100%;
+        background: var(--theme-primary);
+    }
+
+    .storage-info p {
+        color: var(--theme-text-secondary);
+        font-size: 12px;
+    }
+
+    .storage-button {
+        padding: 8px 0;
+        color: var(--theme-primary);
+        background: transparent;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .drive-content {
+        min-width: 0;
+        flex: 1;
+        padding: 28px 36px;
+    }
+
+    .content-top,
+    .files-heading {
+        justify-content: space-between;
+    }
+
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--theme-text-secondary);
+        font-size: 14px;
+    }
+
+    .breadcrumb-arrow {
+        color: var(--theme-icon-secondary);
+        font-size: 17px;
+    }
+
+    h1 {
+        margin: 9px 0 28px;
+        font-size: 24px;
+    }
+
+    h2 {
+        margin: 25px 0 15px;
+        font-size: 16px;
+    }
+
+    .folder-grid,
+    .file-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+        gap: 15px;
+    }
+
+    .folder-card,
+    .file-card {
+        min-width: 0;
+        padding: 13px;
+        border: 1px solid var(--theme-border);
+        border-radius: 8px;
+        color: var(--theme-text-primary);
+        background: var(--theme-surface);
+        text-align: left;
+    }
+
+    .folder-card {
+        display: grid;
+        grid-template-columns: 23px 1fr 18px;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .folder-name,
+    .file-name,
+    .row-file-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .folder-icon {
+        font-size: 24px;
+    }
+
+    .files-heading {
+        margin-top: 28px;
+        color: var(--theme-text-secondary);
+        font-size: 13px;
+    }
+
+    .files-heading h2 {
+        color: var(--theme-text-primary);
+    }
+
+    .file-card.selected,
+    .file-row.selected {
+        border-color: var(--theme-primary);
+        background: var(--theme-primary-container);
+    }
+
+    .file-preview {
+        height: 116px;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        border-radius: 5px;
+        background: var(--theme-surface-variant);
+    }
+
+    .file-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .preview-icon,
+    .file-type-icon {
+        font-size: 50px;
+    }
+
+    .file-type-icon.small {
+        font-size: 28px;
+    }
+
+    .file-name,
+    .file-meta {
+        display: block;
+    }
+
+    .file-name {
+        margin-top: 12px;
+        font-size: 13px;
+    }
+
+    .file-meta {
+        margin-top: 6px;
+        color: var(--theme-text-secondary);
+        font-size: 11px;
+    }
+
+    .file-list {
+        overflow: hidden;
+        border: 1px solid var(--theme-border);
+        border-radius: 8px;
+    }
+
+    .file-row {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 40px minmax(160px, 2fr) 1fr 1fr 25px;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--theme-border-subtle);
+        color: var(--theme-text-secondary);
+        background: var(--theme-surface);
+        text-align: left;
+        font-size: 13px;
+    }
+
+    .upload-toast {
+        position: fixed;
+        right: 24px;
+        bottom: 0;
+        width: 340px;
+        padding: 17px;
+        border-radius: 8px 8px 0 0;
+        color: #ffffff;
+        background: #202124;
+        box-shadow: 0 3px 12px rgb(0 0 0 / 30%);
+    }
+
+    .upload-toast strong,
+    .upload-toast span {
+        display: block;
+    }
+
+    .upload-toast span {
+        margin-top: 5px;
+        font-size: 12px;
+    }
+
+    .upload-progress {
+        margin-top: 15px;
+        background: #5f6368;
+    }
+
+    .context-menu {
+        position: fixed;
+        z-index: 10;
+        top: 290px;
+        right: 12%;
+        width: 220px;
+        padding: 7px;
+        border-radius: 8px;
+        color: var(--theme-text-primary);
+        background: var(--theme-surface);
+        box-shadow: 0 5px 18px rgb(60 64 67 / 30%);
+    }
+
+    .context-menu button {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 10px;
+        border-radius: 4px;
+        color: var(--theme-text-primary);
+        background: transparent;
+        text-align: left;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        z-index: 20;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgb(32 33 36 / 48%);
+    }
+
+    .share-dialog,
+    .storage-dialog {
+        width: min(95vw, 590px);
+        padding: 25px;
+        border-radius: 12px;
+        color: var(--theme-text-primary);
+        background: var(--theme-surface);
+    }
+
+    .dialog-header {
+        justify-content: space-between;
+    }
+
+    .dialog-header h2,
+    .storage-dialog h2 {
+        margin: 0;
+        font-size: 19px;
+    }
+
+    .add-people {
+        width: 100%;
+        margin: 23px 0 16px;
+        padding: 13px;
+        border: 1px solid var(--theme-primary);
+        border-radius: 5px;
+        color: var(--theme-text-secondary);
+        background: var(--theme-surface);
+        text-align: left;
+    }
+
+    .person-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 13px 0;
+    }
+
+    .person-avatar {
+        width: 35px;
+        height: 35px;
+        font-size: 11px;
+    }
+
+    .person-name {
+        flex: 1;
+        font-size: 14px;
+    }
+
+    .person-row button,
+    .link-access button {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 7px;
+        border-radius: 4px;
+        background: var(--theme-surface-variant);
+        font-size: 12px;
+    }
+
+    .inline-icon {
+        font-size: 16px;
+    }
+
+    .link-access {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 20px;
+        padding: 15px 0;
+        border-top: 1px solid var(--theme-border-subtle);
+        border-bottom: 1px solid var(--theme-border-subtle);
+    }
+
+    .link-access strong,
+    .link-access span {
+        display: block;
+    }
+
+    .link-access span {
+        margin-top: 4px;
+        color: var(--theme-text-secondary);
+        font-size: 12px;
+    }
+
+    .dialog-footer {
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+
+    .dialog-footer > button:first-child {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px;
+        color: var(--theme-primary);
+        background: var(--theme-primary-container);
+    }
+
+    .send-button {
+        padding: 10px 17px;
+        border-radius: 4px;
+        color: var(--theme-on-primary);
+        background: var(--theme-primary);
+        font-weight: 700;
+    }
+
+    .storage-dialog {
+        max-width: 420px;
+        text-align: center;
+    }
+
+    .warning-icon {
+        width: auto;
+        height: auto;
+        margin-bottom: 16px;
+        color: #f4b400;
+        font-size: 52px;
+    }
+
+    .storage-dialog p {
+        color: var(--theme-text-secondary);
+        line-height: 1.5;
+    }
+
+    @media (max-width: 700px) {
+        .drive-header {
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .brand > span:last-child,
+        .header-actions button {
+            display: none;
+        }
+
+        .drive-sidebar {
+            width: 68px;
+            flex-basis: 68px;
+            padding: 14px 4px;
+        }
+
+        .new-button {
+            justify-content: center;
+            margin: 0 0 20px;
+            padding: 13px;
+        }
+
+        .new-label,
+        .navigation-label,
+        .storage-info {
+            display: none;
+        }
+
+        .navigation-row {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .drive-content {
+            padding: 20px 14px;
+        }
+
+        .file-list .file-row {
+            grid-template-columns: 38px 1fr 22px;
+        }
+
+        .file-row > span:nth-child(3),
+        .file-row > span:nth-child(4) {
+            display: none;
+        }
+
+        .upload-toast {
+            right: 8px;
+            width: calc(100% - 16px);
+        }
+
+        .context-menu {
+            top: 130px;
+            right: 10px;
+        }
+    }
+</style>
+
+{% endblock %}

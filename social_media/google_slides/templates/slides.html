@@ -1,0 +1,1510 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% set popup_visible =
+    page_data["theme_panel"]["visible"]
+    or page_data["insert_menu"]["visible"]
+    or page_data["share_dialog"]["visible"]
+%}
+
+{% set toolbar_icon_map = {
+    "↶": "undo",
+    "↷": "redo",
+    "⎙": "print",
+    "⌕": "zoom_in",
+    "▣": "image",
+    "✎": "edit",
+    "☁": "cloud_done"
+} %}
+
+{% set insert_icon_map = {
+    "Image": "image",
+    "Text box": "text_fields",
+    "Shape": "category",
+    "Table": "table_chart",
+    "Chart": "bar_chart",
+    "Video": "video_library",
+    "Audio": "volume_up",
+    "Link": "link",
+    "Comment": "comment"
+} %}
+
+{% if page_data["present_mode"]["visible"] %}
+
+<section
+    class="present-screen"
+    data-class="section"
+    data-semantic="presentation_mode"
+>
+    {% set slide = page_data["selected_slide"] %}
+
+    <div
+        class="present-slide"
+        style="
+            --accent: {{ page_data['presentation']['accent_color'] }};
+            background: {{ slide['background'] }};
+        "
+        data-class="card"
+        data-semantic="presented_slide"
+    >
+        <div class="slide-content">
+            {% if slide["layout"] == "title" %}
+                <div class="slide-accent-dot"></div>
+                <h1>{{ slide["title"] }}</h1>
+                <p>{{ slide["subtitle"] }}</p>
+
+            {% elif slide["layout"] == "agenda" %}
+                <p class="slide-eyebrow">Presentation outline</p>
+                <h1>{{ slide["title"] }}</h1>
+
+                <ol class="agenda-list">
+                    {% for agenda_item in slide["agenda_items"] %}
+                        <li>{{ agenda_item }}</li>
+                    {% endfor %}
+                </ol>
+
+            {% elif slide["layout"] == "content" %}
+                <p class="slide-eyebrow">Key insight</p>
+                <h1>{{ slide["title"] }}</h1>
+
+                <ul class="slide-bullets">
+                    {% for bullet in slide["bullets"] %}
+                        <li>{{ bullet }}</li>
+                    {% endfor %}
+                </ul>
+
+            {% elif slide["layout"] == "image" %}
+                <div class="image-layout">
+                    <div>
+                        <p class="slide-eyebrow">Visual direction</p>
+                        <h1>{{ slide["title"] }}</h1>
+                        <p>{{ slide["caption"] }}</p>
+                    </div>
+
+                    <div
+                        class="slide-image"
+                        data-class="image"
+                    >
+                        {% if slide["image_src"] %}
+                            <img
+                                src="{{ slide['image_src'] }}"
+                                alt="Presentation visual"
+                            >
+                        {% else %}
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    placeholder-icon
+                                "
+                                data-class="icon"
+                            >
+                                image
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+            {% elif slide["layout"] == "chart" %}
+                <p class="slide-eyebrow">Performance overview</p>
+                <h1>{{ slide["title"] }}</h1>
+
+                <div class="chart-wrap">
+                    {% for chart_item in slide["chart_data"] %}
+                        <div class="chart-column">
+                            <span
+                                class="chart-bar"
+                                style="
+                                    height: {{ chart_item['value'] }}%;
+                                    background: {{ chart_item['color'] }};
+                                "
+                            ></span>
+                            <span>{{ chart_item["label"] }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <p>{{ slide["insight"] }}</p>
+
+            {% elif slide["layout"] == "quote" %}
+                <span class="quote-mark">“</span>
+                <blockquote>{{ slide["quote"] }}</blockquote>
+                <p>
+                    {{ slide["speaker"] }}
+                    ·
+                    {{ slide["speaker_role"] }}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div
+        class="present-controls"
+        data-class="navigation_bar"
+    >
+        <button
+            class="round-control"
+            type="button"
+            data-class="button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                navigate_before
+            </span>
+        </button>
+
+        <span>
+            {{ page_data["selected_slide_number"] }}
+            /
+            {{ page_data["slides"] | length }}
+        </span>
+
+        <button
+            class="round-control"
+            type="button"
+            data-class="button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                navigate_next
+            </span>
+        </button>
+
+        <button
+            class="round-control"
+            type="button"
+            data-class="button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                fullscreen
+            </span>
+        </button>
+    </div>
+</section>
+
+{% else %}
+
+<section
+    class="slides-app"
+    style="
+        --accent: {{ page_data['presentation']['accent_color'] }};
+    "
+>
+    <div
+        class="slides-background"
+        {% if popup_visible %}
+            data-annotation-skip="true"
+        {% endif %}
+    >
+        <header
+            class="slides-header"
+            data-class="app_bar"
+        >
+            <div class="header-brand">
+                <span
+                    class="
+                        material-symbols-rounded
+                        slides-logo
+                    "
+                    data-class="icon"
+                >
+                    slideshow
+                </span>
+
+                <div class="document-meta">
+                    <div class="document-title-row">
+                        <span class="document-title">
+                            {{ page_data["presentation"]["title"] }}
+                        </span>
+
+                        <button
+                            class="title-icon-button"
+                            type="button"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                star
+                            </span>
+                        </button>
+
+                        <button
+                            class="title-icon-button"
+                            type="button"
+                            data-class="button"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                cloud_done
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="document-location">
+                        {{ page_data["presentation"]["folder_name"] }}
+                        ·
+                        {{ page_data["presentation"]["saved_text"] }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="collaborator-stack">
+                    {% for collaborator in page_data["collaborators"] %}
+                        <span
+                            class="collaborator-avatar"
+                            style="
+                                background: {{ collaborator['color'] }};
+                            "
+                            data-class="avatar"
+                        >
+                            {{ collaborator["initials"] }}
+                        </span>
+                    {% endfor %}
+                </div>
+
+                <button
+                    class="present-button"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        present_to_all
+                    </span>
+                    Present
+                </button>
+
+                <button
+                    class="share-button"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        share
+                    </span>
+                    Share
+                </button>
+
+                <button
+                    class="header-icon-button"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        more_vert
+                    </span>
+                </button>
+            </div>
+        </header>
+
+        <nav
+            class="menu-bar"
+            data-class="navigation_bar"
+        >
+            {% for menu_name in page_data["toolbar_menus"] %}
+                <button
+                    class="menu-button"
+                    type="button"
+                    data-class="button"
+                >
+                    {{ menu_name }}
+                </button>
+            {% endfor %}
+        </nav>
+
+        <section
+            class="editor-toolbar"
+            data-class="app_bar"
+        >
+            {% for toolbar_icon in page_data["toolbar_icons"] %}
+                <button
+                    class="toolbar-icon-button"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {{ toolbar_icon_map.get(toolbar_icon, toolbar_icon) }}
+                    </span>
+                </button>
+            {% endfor %}
+
+            <span class="toolbar-divider"></span>
+
+            <button
+                class="toolbar-select"
+                type="button"
+                data-class="button"
+            >
+                {{ page_data["zoom_text"] }}
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    arrow_drop_down
+                </span>
+            </button>
+
+            <span class="toolbar-divider"></span>
+
+            <button
+                class="toolbar-select font-select"
+                type="button"
+                data-class="button"
+            >
+                Arial
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    arrow_drop_down
+                </span>
+            </button>
+
+            <button
+                class="toolbar-select"
+                type="button"
+                data-class="button"
+            >
+                24
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    arrow_drop_down
+                </span>
+            </button>
+
+            <button
+                class="toolbar-icon-button"
+                type="button"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    format_bold
+                </span>
+            </button>
+
+            <button
+                class="toolbar-icon-button"
+                type="button"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    format_italic
+                </span>
+            </button>
+
+            <button
+                class="toolbar-icon-button"
+                type="button"
+                data-class="button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    format_color_text
+                </span>
+            </button>
+        </section>
+
+        <main class="slides-workspace">
+            <aside
+                class="slide-navigator"
+                data-class="navigation_bar"
+            >
+                <button
+                    class="new-slide-button"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        add
+                    </span>
+
+                    <span class="new-slide-label">New slide</span>
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        arrow_drop_down
+                    </span>
+                </button>
+
+                <div class="thumbnail-list">
+                    {% for thumbnail_slide in page_data["slides"] %}
+                        <button
+                            class="
+                                thumbnail-item
+                                {% if thumbnail_slide['number'] == page_data['selected_slide_number'] %}
+                                    selected
+                                {% endif %}
+                            "
+                            type="button"
+                            data-class="card"
+                        >
+                            <span class="thumbnail-number">
+                                {{ thumbnail_slide["number"] }}
+                            </span>
+
+                            <span
+                                class="
+                                    thumbnail-preview
+                                    layout-{{ thumbnail_slide['layout'] }}
+                                "
+                                style="
+                                    --thumb-accent:
+                                    {{ thumbnail_slide['accent_color'] }};
+                                    background:
+                                    {{ thumbnail_slide['background'] }};
+                                "
+                            >
+                                <span class="thumbnail-title-line wide"></span>
+                                <span class="thumbnail-title-line short"></span>
+                                <span class="thumbnail-content-lines"></span>
+                            </span>
+                        </button>
+                    {% endfor %}
+                </div>
+            </aside>
+
+            <section
+                class="slide-stage"
+                data-class="section"
+            >
+                {% set slide = page_data["selected_slide"] %}
+
+                <article
+                    class="editable-slide"
+                    style="
+                        background: {{ slide['background'] }};
+                    "
+                    data-class="card"
+                    data-semantic="editable_slide_canvas"
+                >
+                    <div class="slide-content">
+                        {% if slide["layout"] == "title" %}
+                            <span
+                                class="title-shape"
+                                style="
+                                    background:
+                                    {{ slide['accent_color'] }};
+                                "
+                            ></span>
+                            <h1>{{ slide["title"] }}</h1>
+                            <p>{{ slide["subtitle"] }}</p>
+
+                        {% elif slide["layout"] == "agenda" %}
+                            <p class="slide-eyebrow">
+                                Presentation outline
+                            </p>
+                            <h1>{{ slide["title"] }}</h1>
+
+                            <ol class="agenda-list">
+                                {% for agenda_item in slide["agenda_items"] %}
+                                    <li>{{ agenda_item }}</li>
+                                {% endfor %}
+                            </ol>
+
+                        {% elif slide["layout"] == "content" %}
+                            <p class="slide-eyebrow">Key insight</p>
+                            <h1>{{ slide["title"] }}</h1>
+
+                            <ul class="slide-bullets">
+                                {% for bullet in slide["bullets"] %}
+                                    <li>{{ bullet }}</li>
+                                {% endfor %}
+                            </ul>
+
+                        {% elif slide["layout"] == "image" %}
+                            <div class="image-layout">
+                                <div>
+                                    <p class="slide-eyebrow">
+                                        Visual direction
+                                    </p>
+                                    <h1>{{ slide["title"] }}</h1>
+                                    <p>{{ slide["caption"] }}</p>
+                                </div>
+
+                                <div
+                                    class="slide-image"
+                                    data-class="image"
+                                >
+                                    {% if slide["image_src"] %}
+                                        <img
+                                            src="{{ slide['image_src'] }}"
+                                            alt="Presentation visual"
+                                        >
+                                    {% else %}
+                                        <span
+                                            class="
+                                                material-symbols-rounded
+                                                placeholder-icon
+                                            "
+                                            data-class="icon"
+                                        >
+                                            image
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                        {% elif slide["layout"] == "chart" %}
+                            <p class="slide-eyebrow">
+                                Performance overview
+                            </p>
+                            <h1>{{ slide["title"] }}</h1>
+
+                            <div class="chart-wrap">
+                                {% for chart_item in slide["chart_data"] %}
+                                    <div class="chart-column">
+                                        <span
+                                            class="chart-bar"
+                                            style="
+                                                height:
+                                                {{ chart_item['value'] }}%;
+                                                background:
+                                                {{ chart_item['color'] }};
+                                            "
+                                        ></span>
+                                        <span>
+                                            {{ chart_item["label"] }}
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <p>{{ slide["insight"] }}</p>
+
+                        {% else %}
+                            <span class="quote-mark">“</span>
+                            <blockquote>{{ slide["quote"] }}</blockquote>
+                            <p>
+                                {{ slide["speaker"] }}
+                                ·
+                                {{ slide["speaker_role"] }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    {% if page_data["selection"]["visible"] %}
+                        <span
+                            class="edit-selection"
+                            data-class="selection_indicator"
+                        ></span>
+                    {% endif %}
+                </article>
+            </section>
+        </main>
+
+        {% if page_data["speaker_notes"]["visible"] %}
+            <section
+                class="speaker-notes-panel"
+                data-class="section"
+            >
+                <div class="notes-header">
+                    <span>Speaker notes</span>
+
+                    <button
+                        class="notes-close"
+                        type="button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            close
+                        </span>
+                    </button>
+                </div>
+
+                <div class="notes-content">
+                    {{ page_data["speaker_notes"]["text"] }}
+                </div>
+            </section>
+        {% endif %}
+    </div>
+
+    {% if page_data["theme_panel"]["visible"] %}
+        <aside
+            class="theme-panel"
+            data-class="dialog"
+        >
+            <div class="popup-heading">
+                <div>
+                    <p>Theme</p>
+                    <h2>Choose a theme</h2>
+                </div>
+
+                <button
+                    class="popup-close"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        close
+                    </span>
+                </button>
+            </div>
+
+            <div class="theme-list">
+                {% for theme_option in page_data["theme_panel"]["themes"] %}
+                    <button
+                        class="
+                            theme-option
+                            {% if theme_option['selected'] %}
+                                selected
+                            {% endif %}
+                        "
+                        type="button"
+                        data-class="card"
+                    >
+                        <span
+                            class="theme-preview"
+                            style="
+                                background:
+                                {{ theme_option['background'] }};
+                            "
+                        >
+                            <span
+                                class="theme-preview-accent"
+                                style="
+                                    background:
+                                    {{ theme_option['accent'] }};
+                                "
+                            ></span>
+                        </span>
+
+                        <span>{{ theme_option["name"] }}</span>
+                    </button>
+                {% endfor %}
+            </div>
+        </aside>
+    {% endif %}
+
+    {% if page_data["insert_menu"]["visible"] %}
+        <section
+            class="insert-menu-popup"
+            data-class="dialog"
+        >
+            <div class="popup-heading">
+                <h2>Insert</h2>
+
+                <button
+                    class="popup-close"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        close
+                    </span>
+                </button>
+            </div>
+
+            {% for menu_entry in page_data["insert_menu"]["menu_entries"] %}
+                <button
+                    class="insert-menu-row"
+                    type="button"
+                    data-class="button"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        {{ insert_icon_map.get(menu_entry["label"], "add") }}
+                    </span>
+
+                    <span>{{ menu_entry["label"] }}</span>
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        chevron_right
+                    </span>
+                </button>
+            {% endfor %}
+        </section>
+    {% endif %}
+
+    {% if page_data["share_dialog"]["visible"] %}
+        <div class="modal-backdrop">
+            <section
+                class="share-dialog"
+                data-class="dialog"
+            >
+                <div class="popup-heading">
+                    <h2>
+                        Share “{{ page_data["presentation"]["title"] }}”
+                    </h2>
+
+                    <button
+                        class="popup-close"
+                        type="button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            close
+                        </span>
+                    </button>
+                </div>
+
+                <button
+                    class="people-input"
+                    type="button"
+                    data-class="input_field"
+                >
+                    Add people, groups, and calendar events
+                </button>
+
+                {% for collaborator in page_data["collaborators"] %}
+                    <div class="share-person-row">
+                        <span
+                            class="collaborator-avatar"
+                            style="
+                                background: {{ collaborator['color'] }};
+                            "
+                            data-class="avatar"
+                        >
+                            {{ collaborator["initials"] }}
+                        </span>
+
+                        <span class="share-person-name">
+                            {{ collaborator["name"] }}
+                        </span>
+
+                        <button
+                            class="permission-button"
+                            type="button"
+                            data-class="button"
+                        >
+                            Editor
+
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                arrow_drop_down
+                            </span>
+                        </button>
+                    </div>
+                {% endfor %}
+
+                <div class="general-access">
+                    <span>
+                        <strong>General access</strong>
+                        {{ page_data["share_dialog"]["link_access"] }}
+                    </span>
+
+                    <button
+                        class="permission-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        {{ page_data["share_dialog"]["permission"] }}
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            arrow_drop_down
+                        </span>
+                    </button>
+                </div>
+
+                <div class="share-dialog-footer">
+                    <button
+                        class="copy-link-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            link
+                        </span>
+                        Copy link
+                    </button>
+
+                    <button
+                        class="send-button"
+                        type="button"
+                        data-class="button"
+                    >
+                        Send
+                    </button>
+                </div>
+            </section>
+        </div>
+    {% endif %}
+</section>
+
+{% endif %}
+
+<style>
+    .slides-app,
+    .present-screen {
+        min-height: 100vh;
+        color: var(--theme-text-primary);
+        background: var(--theme-background);
+    }
+
+    .slides-header,
+    .header-brand,
+    .header-actions,
+    .document-title-row,
+    .editor-toolbar,
+    .menu-bar,
+    .slides-workspace,
+    .present-controls,
+    .popup-heading,
+    .share-person-row,
+    .general-access,
+    .share-dialog-footer {
+        display: flex;
+        align-items: center;
+    }
+
+    .slides-header {
+        min-height: 66px;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 9px 18px;
+        border-bottom: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+    }
+
+    .header-brand {
+        min-width: 0;
+        gap: 12px;
+    }
+
+    .slides-logo {
+        width: 40px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 4px 12px 4px 4px;
+        color: #ffffff;
+        background: #fbbc04;
+        font-size: 26px;
+    }
+
+    .document-title {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .document-location,
+    .slide-eyebrow {
+        color: var(--theme-text-secondary);
+        font-size: 12px;
+    }
+
+    .header-actions {
+        gap: 8px;
+    }
+
+    .collaborator-stack {
+        display: flex;
+        padding-right: 5px;
+    }
+
+    .collaborator-avatar {
+        width: 29px;
+        height: 29px;
+        display: grid;
+        place-items: center;
+        margin-left: -6px;
+        border: 2px solid var(--theme-surface);
+        border-radius: 50%;
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .title-icon-button,
+    .header-icon-button,
+    .toolbar-icon-button,
+    .round-control,
+    .popup-close,
+    .notes-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        color: var(--theme-icon);
+        background: transparent;
+    }
+
+    .title-icon-button,
+    .header-icon-button,
+    .toolbar-icon-button {
+        width: 31px;
+        height: 31px;
+        border-radius: 4px;
+    }
+
+    .present-button,
+    .share-button,
+    .new-slide-button,
+    .send-button,
+    .copy-link-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: 0;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
+    .present-button,
+    .copy-link-button {
+        padding: 9px 13px;
+        color: var(--theme-primary);
+        background: var(--theme-primary-container);
+    }
+
+    .share-button,
+    .send-button {
+        padding: 9px 15px;
+        color: var(--theme-on-primary);
+        background: var(--theme-primary);
+    }
+
+    .menu-bar {
+        height: 32px;
+        gap: 1px;
+        padding: 0 14px;
+        background: var(--theme-surface);
+    }
+
+    .menu-button {
+        padding: 4px 8px;
+        border: 0;
+        border-radius: 3px;
+        color: var(--theme-text-primary);
+        background: transparent;
+        font-size: 13px;
+    }
+
+    .editor-toolbar {
+        min-height: 48px;
+        gap: 3px;
+        padding: 6px 14px;
+        overflow-x: auto;
+        border-block: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+    }
+
+    .toolbar-select {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 29px;
+        padding: 4px 8px;
+        border: 1px solid var(--theme-border);
+        border-radius: 3px;
+        color: var(--theme-text-primary);
+        background: var(--theme-surface);
+        font-size: 12px;
+    }
+
+    .toolbar-divider {
+        width: 1px;
+        height: 23px;
+        margin: 0 5px;
+        background: var(--theme-border);
+    }
+
+    .slides-workspace {
+        min-height: calc(100vh - 146px);
+        align-items: stretch;
+        background: var(--theme-surface-variant);
+    }
+
+    .slide-navigator {
+        width: 190px;
+        flex: 0 0 190px;
+        padding: 12px 9px;
+        overflow-y: auto;
+        border-right: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+    }
+
+    .new-slide-button {
+        width: 100%;
+        justify-content: space-between;
+        padding: 10px;
+        color: var(--theme-primary);
+        background: var(--theme-primary-container);
+        font-size: 12px;
+    }
+
+    .thumbnail-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 15px;
+    }
+
+    .thumbnail-item {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 22px 1fr;
+        gap: 5px;
+        padding: 4px;
+        border: 1px solid transparent;
+        border-radius: 3px;
+        background: transparent;
+    }
+
+    .thumbnail-item.selected {
+        border-color: var(--accent);
+        background: var(--theme-primary-container);
+    }
+
+    .thumbnail-number {
+        padding-top: 25px;
+        color: var(--theme-text-secondary);
+        font-size: 11px;
+    }
+
+    .thumbnail-preview {
+        position: relative;
+        height: 84px;
+        overflow: hidden;
+        border: 1px solid var(--theme-border);
+    }
+
+    .thumbnail-title-line,
+    .thumbnail-content-lines,
+    .theme-preview-accent {
+        position: absolute;
+        display: block;
+        background: var(--thumb-accent, var(--accent));
+    }
+
+    .thumbnail-title-line {
+        top: 18px;
+        left: 14px;
+        height: 5px;
+    }
+
+    .thumbnail-title-line.wide { width: 68%; }
+    .thumbnail-title-line.short { top: 31px; width: 42%; }
+    .thumbnail-content-lines {
+        top: 48px;
+        left: 14px;
+        width: 65%;
+        height: 20px;
+        opacity: 0.35;
+    }
+
+    .slide-stage {
+        min-width: 0;
+        flex: 1;
+        display: grid;
+        place-items: center;
+        padding: 34px;
+    }
+
+    .editable-slide {
+        position: relative;
+        width: min(100%, 960px);
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgb(0 0 0 / 18%);
+    }
+
+    .slide-content {
+        height: 100%;
+        padding: clamp(28px, 6vw, 92px);
+    }
+
+    .slide-content h1 {
+        max-width: 80%;
+        font-size: clamp(24px, 4vw, 55px);
+    }
+
+    .slide-content p,
+    .slide-content li {
+        font-size: clamp(14px, 1.7vw, 24px);
+        line-height: 1.45;
+    }
+
+    .title-shape,
+    .slide-accent-dot {
+        display: block;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        margin-bottom: 28px;
+    }
+
+    .slide-bullets,
+    .agenda-list {
+        max-width: 80%;
+        line-height: 1.7;
+    }
+
+    .image-layout {
+        height: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        align-items: center;
+    }
+
+    .slide-image {
+        height: 70%;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: var(--theme-surface-variant);
+    }
+
+    .slide-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .placeholder-icon {
+        font-size: 64px;
+    }
+
+    .chart-wrap {
+        height: 45%;
+        display: flex;
+        align-items: end;
+        gap: 25px;
+        margin-top: 35px;
+    }
+
+    .chart-column {
+        height: 100%;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: end;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chart-bar {
+        width: 65%;
+    }
+
+    .quote-mark {
+        color: var(--accent);
+        font-size: 80px;
+    }
+
+    blockquote {
+        max-width: 80%;
+        margin: 0;
+        font-size: clamp(22px, 3.5vw, 46px);
+        line-height: 1.3;
+    }
+
+    .edit-selection {
+        position: absolute;
+        inset: 18% 14%;
+        border: 2px solid var(--accent);
+    }
+
+    .speaker-notes-panel {
+        padding: 12px 18px;
+        border-top: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+    }
+
+    .notes-header {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .notes-content {
+        padding: 8px 0;
+        color: var(--theme-text-secondary);
+        font-size: 13px;
+    }
+
+    .theme-panel,
+    .insert-menu-popup {
+        position: fixed;
+        z-index: 30;
+        top: 110px;
+        right: 24px;
+        width: min(92vw, 340px);
+        padding: 18px;
+        border-radius: 10px;
+        background: var(--theme-surface);
+        box-shadow: 0 6px 24px rgb(0 0 0 / 25%);
+    }
+
+    .insert-menu-popup {
+        right: auto;
+        left: 180px;
+        width: 260px;
+    }
+
+    .popup-heading {
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .popup-heading h2,
+    .popup-heading p {
+        margin: 0;
+    }
+
+    .theme-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .theme-option {
+        display: grid;
+        grid-template-columns: 86px 1fr;
+        gap: 10px;
+        align-items: center;
+        padding: 6px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+        text-align: left;
+    }
+
+    .theme-option.selected {
+        border-color: var(--theme-primary);
+    }
+
+    .theme-preview {
+        position: relative;
+        height: 46px;
+        overflow: hidden;
+    }
+
+    .theme-preview-accent {
+        inset: 0 auto 0 0;
+        width: 11px;
+    }
+
+    .insert-menu-row {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 26px 1fr 20px;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 4px;
+        border: 0;
+        color: var(--theme-text-primary);
+        background: transparent;
+        text-align: left;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        z-index: 30;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgb(0 0 0 / 45%);
+    }
+
+    .share-dialog {
+        width: min(94vw, 590px);
+        padding: 24px;
+        border-radius: 12px;
+        background: var(--theme-surface);
+    }
+
+    .people-input {
+        width: 100%;
+        margin: 20px 0;
+        padding: 13px;
+        border: 1px solid var(--theme-primary);
+        border-radius: 5px;
+        color: var(--theme-text-secondary);
+        background: var(--theme-surface);
+        text-align: left;
+    }
+
+    .share-person-row {
+        gap: 12px;
+        margin: 12px 0;
+    }
+
+    .share-person-name {
+        flex: 1;
+    }
+
+    .permission-button {
+        display: inline-flex;
+        align-items: center;
+        border: 0;
+        color: var(--theme-text-primary);
+        background: var(--theme-surface-variant);
+    }
+
+    .general-access {
+        justify-content: space-between;
+        gap: 16px;
+        padding: 15px 0;
+        border-block: 1px solid var(--theme-border);
+    }
+
+    .general-access strong {
+        display: block;
+    }
+
+    .share-dialog-footer {
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+
+    .present-screen {
+        display: grid;
+        place-items: center;
+        padding: 28px;
+        background: #202124;
+    }
+
+    .present-slide {
+        width: min(95vw, 1200px);
+        aspect-ratio: 16 / 9;
+    }
+
+    .present-controls {
+        position: fixed;
+        bottom: 25px;
+        gap: 12px;
+        padding: 9px 14px;
+        border-radius: 24px;
+        color: #ffffff;
+        background: rgb(0 0 0 / 60%);
+    }
+
+    .round-control {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        color: #ffffff;
+    }
+
+    .round-control .material-symbols-rounded {
+        color: inherit;
+    }
+
+    @media (max-width: 700px) {
+        .slides-header {
+            padding: 8px;
+        }
+
+        .document-location,
+        .collaborator-stack,
+        .present-button,
+        .header-icon-button,
+        .menu-bar {
+            display: none;
+        }
+
+        .document-title {
+            max-width: 120px;
+        }
+
+        .share-button {
+            padding: 9px;
+            font-size: 0;
+        }
+
+        .slide-navigator {
+            width: 64px;
+            flex-basis: 64px;
+            padding: 8px 4px;
+        }
+
+        .new-slide-label,
+        .thumbnail-number {
+            display: none;
+        }
+
+        .thumbnail-item {
+            grid-template-columns: 1fr;
+        }
+
+        .thumbnail-preview {
+            height: 40px;
+        }
+
+        .slide-stage {
+            padding: 12px;
+        }
+
+        .image-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .slide-image {
+            height: 35%;
+        }
+
+        .insert-menu-popup {
+            top: 85px;
+            left: 8px;
+        }
+    }
+</style>
+
+{% endblock %}
