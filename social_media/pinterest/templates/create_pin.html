@@ -1,0 +1,800 @@
+{% extends "base.html" %}
+{% block title %}Create Pin • Pinterest{% endblock %}
+
+{% block head %}
+<style>
+  .cp-page,
+  .cp-page *,
+  .cp-overlay,
+  .cp-overlay * {
+    box-sizing: border-box;
+  }
+
+  .cp-page {
+    min-height: 100vh;
+    padding-top: calc(var(--sys-top) + 76px);
+    padding-bottom: calc(var(--sys-bottom) + 32px);
+    background: var(--background);
+    color: var(--text-primary);
+  }
+
+  .cp-header {
+    position: fixed;
+    inset: var(--sys-top) 0 auto;
+    height: 76px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 28px;
+    background: var(--background);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cp-header h1 {
+    margin: 0;
+    font-size: 22px;
+  }
+
+  .cp-header .cp-status {
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  .cp-button,
+  .cp-icon-button {
+    border: 0;
+    font: inherit;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: var(--surface-variant);
+    cursor: pointer;
+  }
+
+  .cp-button {
+    min-height: 46px;
+    padding: 12px 20px;
+    border-radius: 999px;
+  }
+
+  .cp-button.primary {
+    background: #e60023;
+    color: white;
+  }
+
+  .cp-button:disabled {
+    opacity: .45;
+    cursor: default;
+  }
+
+  .cp-icon-button {
+    width: 44px;
+    height: 44px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .cp-layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .cp-drafts {
+    padding: 28px 20px;
+    border-right: 1px solid var(--border);
+  }
+
+  .cp-drafts h2 {
+    margin: 0 0 20px;
+    font-size: 20px;
+  }
+
+  .cp-draft {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    background: var(--surface-variant);
+  }
+
+  .cp-draft img {
+    width: 44px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .cp-draft p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .cp-editor {
+    display: grid;
+    grid-template-columns: minmax(240px, 360px) minmax(0, 500px);
+    justify-content: center;
+    align-items: start;
+    gap: 40px;
+    padding: 40px 32px;
+  }
+
+  .cp-upload {
+    position: relative;
+    min-width: 0;
+    border-radius: 24px;
+    overflow: hidden;
+    background: var(--surface-variant);
+  }
+
+  .cp-upload-empty {
+    min-height: 490px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 36px;
+    border: 2px dashed var(--border);
+    border-radius: 24px;
+  }
+
+  .cp-upload-empty > .icon {
+    font-size: 40px;
+  }
+
+  .cp-upload-empty p {
+    line-height: 1.5;
+  }
+
+  .cp-upload-empty small {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-top: 24px;
+  }
+
+  .cp-preview {
+    display: block;
+    width: 100%;
+    max-height: 620px;
+    object-fit: contain;
+  }
+
+  .cp-preview-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .cp-preview-actions .cp-icon-button {
+    background: var(--surface);
+  }
+
+  .cp-fields {
+    min-width: 0;
+  }
+
+  .cp-field {
+    margin-bottom: 24px;
+  }
+
+  .cp-field label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .cp-field input,
+  .cp-field textarea,
+  .cp-field select,
+  .cp-select-button {
+    width: 100%;
+    min-height: 50px;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 13px 16px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+  }
+
+  .cp-field textarea {
+    min-height: 132px;
+    resize: none;
+    line-height: 1.5;
+  }
+
+  .cp-field input:focus,
+  .cp-field textarea:focus,
+  .cp-field select:focus {
+    outline: 3px solid #7fc1ff;
+    outline-offset: 2px;
+  }
+
+  .cp-select-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .cp-helper {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin: 8px 0 0;
+    line-height: 1.5;
+  }
+
+  .cp-field input.cp-invalid {
+    border-color: #c62828;
+  }
+
+  .cp-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: #c62828;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+
+  .cp-error .icon {
+    font-size: 20px;
+  }
+
+  .cp-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .cp-topic {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: var(--surface-variant);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 13px;
+  }
+
+  .cp-topic .icon {
+    font-size: 18px;
+  }
+
+  .cp-expand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 16px 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .cp-schedule-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .cp-input-icon {
+    position: relative;
+  }
+
+  .cp-input-icon input {
+    padding-right: 48px;
+  }
+
+  .cp-input-icon > .icon {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    z-index: 1;
+    pointer-events: auto;
+  }
+
+  .cp-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 20px 0;
+  }
+
+  .cp-switch {
+    width: 48px;
+    height: 28px;
+    padding: 3px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .cp-switch[aria-checked="true"] {
+    background: var(--text-primary);
+  }
+
+  .cp-switch span {
+    display: block;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--background);
+  }
+
+  .cp-switch[aria-checked="true"] span {
+    transform: translateX(20px);
+  }
+
+  .cp-overlay {
+    position: fixed;
+    inset: var(--sys-top) 0 var(--sys-bottom);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: #0008;
+  }
+
+  .cp-dialog {
+    position: relative;
+    width: 460px;
+    max-width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 28px;
+    border-radius: 26px;
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .cp-dialog h2 {
+    margin: 8px 48px 24px 0;
+    font-size: 26px;
+  }
+
+  .cp-dialog-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+  }
+
+  .cp-board-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 12px 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .cp-board-cover {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 12px;
+    background: var(--surface-variant);
+    flex-shrink: 0;
+  }
+
+  .cp-board-row .cp-board-check {
+    margin-left: auto;
+  }
+
+  .cp-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  @media (max-width: 1100px) {
+    .cp-layout {
+      grid-template-columns: 170px minmax(0, 1fr);
+    }
+
+    .cp-editor {
+      gap: 24px;
+      padding: 28px 24px;
+      grid-template-columns: minmax(200px, 300px) minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 760px) {
+    .cp-layout {
+      display: block;
+    }
+
+    .cp-drafts {
+      display: none;
+    }
+
+    .cp-editor {
+      grid-template-columns: minmax(0, 1fr);
+      max-width: 560px;
+      margin: auto;
+      padding: 24px 18px;
+    }
+
+    .cp-header {
+      padding: 0 16px;
+      gap: 10px;
+    }
+
+    .cp-header h1 {
+      font-size: 18px;
+    }
+
+    .cp-header .cp-status {
+      display: none;
+    }
+
+    .cp-header > .cp-button {
+      margin-left: auto;
+    }
+
+    .cp-upload-empty {
+      min-height: 300px;
+    }
+
+    .cp-preview {
+      max-height: 420px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .cp-schedule-grid {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% macro icon(name) %}
+<span
+  class="material-symbols-rounded icon"
+  data-class="icon"
+  aria-hidden="true"
+>{{ name }}</span>
+{% endmacro %}
+
+<div
+  class="cp-page"
+  {% if pinterest["popup_visible"] %}
+  data-annotation-skip="true"
+  {% endif %}
+>
+  <header class="cp-header" data-class="app_bar" data-occluder="true">
+    <button class="cp-icon-button" aria-label="Back" data-class="button">
+      {{ icon("arrow_back") }}
+    </button>
+
+    <h1>Create Pin</h1>
+    <span class="cp-status">Changes saved to draft</span>
+
+    <button
+      class="cp-button primary"
+      data-class="button"
+      {% if not pinterest["has_image"] %}disabled{% endif %}
+    >
+      {{ "Schedule" if pinterest["state"] == "schedule" else "Publish" }}
+    </button>
+  </header>
+
+  <div class="cp-layout">
+    <aside class="cp-drafts" data-class="navigation_bar">
+      <h2>Pin drafts</h2>
+
+      <div class="cp-draft" data-class="card">
+        {% if pinterest["has_image"] %}
+        <img src="{{ pinterest['image'] }}" alt="Draft" data-class="image">
+        {% else %}
+        {{ icon("add_photo_alternate") }}
+        {% endif %}
+        <div>
+          <strong>New Pin</strong>
+          <p>Not published</p>
+        </div>
+      </div>
+    </aside>
+
+    <main class="cp-editor" data-class="section">
+      <section class="cp-upload" data-class="card">
+        {% if pinterest["has_image"] %}
+        <img
+          class="cp-preview"
+          src="{{ pinterest['image'] }}"
+          alt="Uploaded Pin preview"
+          data-class="image"
+        >
+
+        <div class="cp-preview-actions">
+          <button
+            class="cp-icon-button"
+            aria-label="Edit image"
+            data-class="button"
+          >{{ icon("edit") }}</button>
+
+          <button
+            class="cp-icon-button"
+            aria-label="Remove image"
+            data-class="button"
+          >{{ icon("delete") }}</button>
+        </div>
+        {% else %}
+        <div class="cp-upload-empty">
+          {{ icon("upload") }}
+          <p>Choose a file or drag and drop it here</p>
+          <button class="cp-button" data-class="button">Choose file</button>
+          <small>Upload an image or video to start creating your Pin.</small>
+        </div>
+        {% endif %}
+      </section>
+
+      <div class="cp-fields">
+        <div class="cp-field">
+          <label for="pin-title">Title</label>
+          <input
+            id="pin-title"
+            value="{{ pinterest['title'] }}"
+            placeholder="Add a title"
+            maxlength="100"
+            data-class="input_field"
+          >
+        </div>
+
+        <div class="cp-field">
+          <label for="pin-description">Description</label>
+          <textarea
+            id="pin-description"
+            placeholder="Add a detailed description"
+            data-class="input_field"
+          >{{ pinterest["description"] }}</textarea>
+        </div>
+
+        <div class="cp-field">
+          <label for="pin-link">Link</label>
+          <input
+            id="pin-link"
+            type="text"
+            value="{{ pinterest['link'] }}"
+            placeholder="Add a link"
+            data-class="input_field"
+            {% if pinterest["link_error"] %}
+            class="cp-invalid"
+            aria-invalid="true"
+            aria-describedby="pin-link-error"
+            {% endif %}
+          >
+
+          {% if pinterest["link_error"] %}
+          <div id="pin-link-error" class="cp-error" role="alert">
+            {{ icon("error") }}
+            <span>{{ pinterest["link_error"] }}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="cp-field">
+          <label id="board-label">Board</label>
+          <button
+            class="cp-select-button"
+            aria-labelledby="board-label board-value"
+            aria-haspopup="dialog"
+            data-class="button"
+          >
+            <span id="board-value">
+              {{ pinterest["selected_board"] or "Choose a board" }}
+            </span>
+            {{ icon("expand_more") }}
+          </button>
+        </div>
+
+        <div class="cp-field">
+          <label for="pin-topics">Tagged topics</label>
+          <input
+            id="pin-topics"
+            placeholder="Search for a topic"
+            data-class="input_field"
+          >
+
+          <div class="cp-topics">
+            {% for topic in pinterest["topics"] %}
+            <button
+              class="cp-topic"
+              aria-label="Remove topic {{ topic }}"
+              data-class="button"
+            >
+              {{ topic }}
+              {{ icon("close") }}
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+
+        <button
+          class="cp-expand"
+          aria-expanded="{{ 'true' if pinterest['state'] == 'schedule' else 'false' }}"
+          data-class="button"
+        >
+          Publish at a later date
+          {{ icon("expand_less" if pinterest["state"] == "schedule" else "expand_more") }}
+        </button>
+
+        {% if pinterest["state"] == "schedule" %}
+        <section data-class="section">
+          <div class="cp-schedule-grid">
+            <div class="cp-field">
+              <label for="schedule-date">Date</label>
+              <div class="cp-input-icon">
+                <input
+                  id="schedule-date"
+                  type="text"
+                  value="{{ pinterest['schedule_date'] }}"
+                  data-class="input_field"
+                >
+                {{ icon("calendar_today") }}
+              </div>
+            </div>
+
+            <div class="cp-field">
+              <label for="schedule-time">Time</label>
+              <div class="cp-input-icon">
+                <input
+                  id="schedule-time"
+                  type="text"
+                  value="{{ pinterest['schedule_time'] }}"
+                  data-class="input_field"
+                >
+                {{ icon("schedule") }}
+              </div>
+            </div>
+          </div>
+
+          <p class="cp-helper">Time zone: {{ pinterest["timezone"] }}</p>
+        </section>
+        {% endif %}
+
+        <button
+          class="cp-expand"
+          aria-expanded="{{ 'true' if pinterest['state'] == 'advanced_settings' else 'false' }}"
+          data-class="button"
+        >
+          More options
+          {{ icon("expand_less" if pinterest["state"] == "advanced_settings" else "expand_more") }}
+        </button>
+
+        {% if pinterest["state"] == "advanced_settings" %}
+        <section data-class="section">
+          <div class="cp-switch-row">
+            <span id="comments-label">Allow comments</span>
+            <button
+              class="cp-switch"
+              role="switch"
+              aria-labelledby="comments-label"
+              aria-checked="{{ 'true' if pinterest['allow_comments'] else 'false' }}"
+              data-class="switch"
+            ><span></span></button>
+          </div>
+
+          <div class="cp-switch-row">
+            <span id="products-label">Show similar products</span>
+            <button
+              class="cp-switch"
+              role="switch"
+              aria-labelledby="products-label"
+              aria-checked="{{ 'true' if pinterest['show_similar_products'] else 'false' }}"
+              data-class="switch"
+            ><span></span></button>
+          </div>
+        </section>
+        {% endif %}
+      </div>
+    </main>
+  </div>
+</div>
+
+{% if pinterest["popup_visible"] %}
+<div class="cp-overlay">
+  <section
+    class="cp-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cp-dialog-title"
+    data-class="dialog"
+    data-occluder="true"
+  >
+    <button
+      class="cp-icon-button cp-dialog-close"
+      aria-label="Close"
+      data-class="button"
+    >{{ icon("close") }}</button>
+
+    {% if pinterest["state"] == "board_picker" %}
+    <h2 id="cp-dialog-title">Choose a board</h2>
+
+    <div class="cp-field">
+      <label for="board-search">Search your boards</label>
+      <div class="cp-input-icon">
+        <input
+          id="board-search"
+          placeholder="Search"
+          data-class="search_bar"
+        >
+        {{ icon("search") }}
+      </div>
+    </div>
+
+    {% for board in pinterest["boards"] %}
+    <button class="cp-board-row" data-class="button">
+      {% if board["cover"] %}
+      <img
+        class="cp-board-cover"
+        src="{{ board['cover'] }}"
+        alt=""
+        data-class="image"
+      >
+      {% else %}
+      <span class="cp-board-cover"></span>
+      {% endif %}
+
+      <span>{{ board["name"] }}</span>
+
+      {% if board["secret"] %}
+      {{ icon("lock") }}
+      {% endif %}
+
+      {% if board["name"] == pinterest["selected_board"] %}
+      <span
+        class="material-symbols-rounded icon cp-board-check"
+        data-class="checkbox"
+      >check</span>
+      {% endif %}
+    </button>
+    {% endfor %}
+
+    <button class="cp-board-row" data-class="button">
+      {{ icon("add") }}
+      Create board
+    </button>
+
+    {% else %}
+    <h2 id="cp-dialog-title">Discard this draft?</h2>
+    <p>Your image and changes will be removed from this draft.</p>
+
+    <div class="cp-dialog-actions">
+      <button class="cp-button" data-class="button">Keep editing</button>
+      <button class="cp-button primary" data-class="button">Discard</button>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,740 @@
+{% extends "base.html" %}
+
+{% block title %}Edit profile • Pinterest{% endblock %}
+
+{% block head %}
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  .settings-page {
+    min-height: 100vh;
+    padding-top: calc(var(--sys-top) + 76px);
+    padding-bottom: calc(var(--sys-bottom) + 100px);
+    color: var(--text-primary);
+    background: var(--background);
+  }
+
+  .settings-header {
+    position: fixed;
+    top: var(--sys-top);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    height: 76px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 0 28px;
+    background: var(--background);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand-mark {
+    color: #e60023;
+    font-size: 34px;
+    font-weight: 800;
+    font-family: Georgia, serif;
+  }
+
+  .settings-header .search-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    height: 48px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: var(--surface-variant);
+    color: var(--text-secondary);
+  }
+
+  .search-box input {
+    min-width: 0;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    outline: none;
+    color: var(--text-primary);
+    font: inherit;
+  }
+
+  .settings-layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    max-width: 1250px;
+    margin: 0 auto;
+    padding: 36px 28px;
+    gap: 60px;
+  }
+
+  .settings-navigation {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .settings-navigation a {
+    padding: 15px 18px;
+    border-radius: 14px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .settings-navigation a[aria-current="page"] {
+    background: var(--surface-variant);
+  }
+
+  .settings-form {
+    width: 100%;
+    max-width: 540px;
+    min-width: 0;
+  }
+
+  .settings-form h1 {
+    margin: 0 0 10px;
+    font-size: 32px;
+    line-height: 1.2;
+  }
+
+  .intro {
+    margin: 0 0 28px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  .field {
+    margin-bottom: 22px;
+  }
+
+  .field label,
+  .field-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .field input,
+  .field textarea,
+  .field select {
+    display: block;
+    width: 100%;
+    min-height: 50px;
+    padding: 13px 16px;
+    border: 2px solid var(--border);
+    border-radius: 15px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+  }
+
+  .field textarea {
+    min-height: 116px;
+    resize: none;
+    line-height: 1.5;
+  }
+
+  .field input:focus,
+  .field textarea:focus,
+  .field select:focus {
+    outline: 3px solid #7fc1ff;
+    outline-offset: 2px;
+  }
+
+  .name-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .photo-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .profile-photo {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--surface-variant);
+  }
+
+  .profile-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .profile-photo .icon {
+    font-size: 42px;
+  }
+
+  .helper {
+    margin: 8px 0 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .field .invalid {
+    border-color: #c62828;
+  }
+
+  .field-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+    color: #c62828;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .field-error .icon {
+    font-size: 18px;
+  }
+
+  .settings-actions {
+    position: fixed;
+    bottom: var(--sys-bottom);
+    left: 0;
+    right: 0;
+    z-index: 25;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 18px 24px;
+    background: var(--background);
+    border-top: 1px solid var(--border);
+  }
+
+  button.pill {
+    min-height: 46px;
+    padding: 12px 22px;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    border-radius: 999px;
+    background: var(--surface-variant);
+    color: var(--text-primary);
+  }
+
+  button.pill.primary {
+    background: #e60023;
+    color: white;
+  }
+
+  button.pill:disabled {
+    opacity: .45;
+    cursor: default;
+  }
+
+  .save-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--sys-bottom) + 100px);
+    transform: translateX(-50%);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100vw - 32px);
+    padding: 16px 22px;
+    border-radius: 16px;
+    background: #202020;
+    color: #fff;
+    box-shadow: 0 6px 24px #0003;
+  }
+
+  .settings-overlay {
+    position: fixed;
+    inset: var(--sys-top) 0 var(--sys-bottom);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: #0008;
+  }
+
+  .settings-dialog {
+    position: relative;
+    width: 440px;
+    max-width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 36px 28px 28px;
+    border-radius: 28px;
+    background: var(--surface);
+    color: var(--text-primary);
+    text-align: center;
+    box-shadow: 0 16px 64px #0003;
+  }
+
+  .settings-dialog h2 {
+    margin: 8px 0 16px;
+    font-size: 26px;
+  }
+
+  .settings-dialog p {
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  .dialog-close {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+  }
+
+  .settings-dialog .profile-photo {
+    width: 104px;
+    height: 104px;
+    margin: 24px auto;
+  }
+
+  .dialog-buttons {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  @media (max-width: 900px) {
+    .settings-layout {
+      grid-template-columns: 210px minmax(0, 1fr);
+      gap: 28px;
+      padding: 28px 20px;
+    }
+
+    .settings-header {
+      gap: 14px;
+      padding: 0 20px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .settings-header {
+      height: 64px;
+      padding: 0 16px;
+    }
+
+    .settings-header .search-box,
+    .desktop-header-action {
+      display: none;
+    }
+
+    .settings-header {
+      justify-content: space-between;
+    }
+
+    .settings-page {
+      padding-top: calc(var(--sys-top) + 64px);
+    }
+
+    .settings-layout {
+      display: block;
+      padding: 20px 18px;
+    }
+
+    .settings-navigation {
+      flex-direction: row;
+      overflow-x: auto;
+      gap: 8px;
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+    }
+
+    .settings-navigation a {
+      flex-shrink: 0;
+      padding: 12px 16px;
+      white-space: nowrap;
+    }
+
+    .settings-form {
+      max-width: none;
+    }
+
+    .settings-form h1 {
+      font-size: 28px;
+    }
+
+        .name-fields {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+  } /* Close the mobile media query here. */
+
+  /* Dropdown styles apply to ALL viewport sizes. */
+  .select-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .field .select-wrapper > select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: none !important;
+    padding-right: 48px;
+  }
+
+  .select-wrapper > select::-ms-expand {
+    display: none;
+  }
+
+  .select-wrapper > .select-arrow {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    z-index: 1;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--text-primary);
+    pointer-events: auto;
+  }
+
+  .select-wrapper::before,
+  .select-wrapper::after {
+    content: none !important;
+    display: none !important;
+  }
+
+      .name-fields {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+  } /* Close the mobile media query here. */
+
+  /* Dropdown styles apply to ALL viewport sizes. */
+  .select-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .field .select-wrapper > select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: none !important;
+    padding-right: 48px;
+  }
+
+  .select-wrapper > select::-ms-expand {
+    display: none;
+  }
+
+  .select-wrapper > .select-arrow {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    z-index: 1;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--text-primary);
+    pointer-events: auto;
+  }
+
+  .select-wrapper::before,
+  .select-wrapper::after {
+    content: none !important;
+    display: none !important;
+  }
+
+
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+{% macro photo(size_class="") %}
+<div class="profile-photo {{ size_class }}" data-class="avatar">
+  {% if pinterest["avatar"] %}
+  <img src="{{ pinterest['avatar'] }}" alt="Profile photo">
+  {% else %}
+  <span class="material-symbols-rounded icon" aria-hidden="true">person</span>
+  {% endif %}
+</div>
+{% endmacro %}
+
+<div
+  class="settings-page"
+  {% if pinterest["popup_visible"] %}
+  data-annotation-skip="true"
+  {% endif %}
+>
+  <header
+    class="settings-header"
+    data-class="app_bar"
+    data-occluder="true"
+  >
+    <span class="brand-mark" aria-label="Pinterest">P</span>
+
+    <div class="search-box">
+      <span class="material-symbols-rounded icon" data-class="icon">
+        search
+      </span>
+      <input
+        type="search"
+        placeholder="Search"
+        aria-label="Search"
+        data-class="input"
+      >
+    </div>
+
+    <button
+      type="button"
+      class="icon-button desktop-header-action"
+      aria-label="Notifications"
+      data-class="button"
+    >
+      <span class="material-symbols-rounded icon" data-class="icon">
+        notifications
+      </span>
+    </button>
+
+    <button
+      type="button"
+      class="icon-button desktop-header-action"
+      aria-label="Messages"
+      data-class="button"
+    >
+      <span class="material-symbols-rounded icon" data-class="icon">
+        chat
+      </span>
+    </button>
+
+    <span data-class="text">Settings</span>
+  </header>
+
+  <div class="settings-layout">
+    <nav
+      class="settings-navigation"
+      aria-label="Settings"
+      data-class="navigation_bar"
+    >
+      {% for item in pinterest["navigation"] %}
+      <a
+        href="#edit-profile"
+        data-class="button"
+        {% if item == "Edit profile" %}
+        aria-current="page"
+        {% endif %}
+      >{{ item }}</a>
+      {% endfor %}
+    </nav>
+
+    <main id="edit-profile" class="settings-form" data-class="section">
+      <h1 data-class="text">Edit profile</h1>
+
+      <p class="intro" data-class="text">
+        Keep your personal details private. Information you add here
+        is visible to anyone who can view your profile.
+      </p>
+
+      <div class="field">
+        <span class="field-label" data-class="text">Photo</span>
+
+        <div class="photo-row">
+          {{ photo() }}
+          <button type="button" class="pill" data-class="button">
+            Change
+          </button>
+        </div>
+      </div>
+
+      <div class="name-fields">
+        <div class="field">
+          <label for="first-name" data-class="text">First name</label>
+          <input
+            id="first-name"
+            value="{{ pinterest['profile']['first_name'] }}"
+            data-class="input_field"
+          >
+        </div>
+
+        <div class="field">
+          <label for="last-name" data-class="text">Last name</label>
+          <input
+            id="last-name"
+            value="{{ pinterest['profile']['last_name'] }}"
+            data-class="input_field"
+          >
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="about" data-class="text">About</label>
+        <textarea
+          id="about"
+          maxlength="500"
+          data-class="input_field"
+        >{{ pinterest["profile"]["about"] }}</textarea>
+        <p class="helper" data-class="text">
+          {{ pinterest["profile"]["about"] | length }}/500
+        </p>
+      </div>
+
+      <div class="field">
+        <label for="pronouns" data-class="text">Pronouns</label>
+        <div class="select-wrapper">
+        <select id="pronouns" data-class="input_field">
+          <option value="">Add your pronouns</option>
+          <option>she/her</option>
+          <option>he/him</option>
+          <option>they/them</option>
+        </select>
+
+        <span
+          class="material-symbols-rounded icon select-arrow"
+          data-class="icon"
+          aria-hidden="true"
+        >expand_more</span>
+      </div>
+        <p class="helper" data-class="text">
+          Choose how people refer to you.
+        </p>
+      </div>
+
+      <div class="field">
+        <label for="website" data-class="text">Website</label>
+        <input
+          id="website"
+          type="url"
+          value="{{ pinterest['profile']['website'] }}"
+          data-class="input_field"
+          {% if pinterest["website_error"] %}
+          class="invalid"
+          aria-invalid="true"
+          aria-describedby="website-error"
+          {% endif %}
+        >
+
+        {% if pinterest["website_error"] %}
+        <div id="website-error" class="field-error" role="alert">
+          <span class="material-symbols-rounded icon" data-class="icon">
+            error
+          </span>
+          <span data-class="text">{{ pinterest["website_error"] }}</span>
+        </div>
+        {% else %}
+        <p class="helper" data-class="text">
+          Add a link to your website.
+        </p>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label for="username" data-class="text">Username</label>
+        <input
+          id="username"
+          value="{{ pinterest['profile']['username'] }}"
+          data-class="input_field"
+        >
+        <p class="helper" data-class="text">
+          www.pinterest.com/{{ pinterest["profile"]["username"] }}
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <footer
+    class="settings-actions"
+    data-class="app_bar"
+    data-occluder="true"
+  >
+    <button type="button" class="pill" data-class="button">
+      Reset
+    </button>
+    <button
+      type="button"
+      class="pill primary"
+      data-class="button"
+      {% if not pinterest["dirty"] %}disabled{% endif %}
+    >
+      Save
+    </button>
+  </footer>
+
+  {% if pinterest["state"] == "saved" %}
+  <div
+    class="save-toast"
+    role="status"
+    data-class="badge"
+    data-occluder="true"
+  >
+    <span class="material-symbols-rounded icon" aria-hidden="true" data-class="checkbox">
+      check_circle
+    </span>
+    Profile saved
+  </div>
+  {% endif %}
+</div>
+
+{% if pinterest["popup_visible"] %}
+<div class="settings-overlay">
+  <section
+    class="settings-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="dialog-title"
+    data-class="dialog"
+    data-occluder="true"
+  >
+    <button
+      type="button"
+      class="icon-button dialog-close"
+      aria-label="Close"
+      data-class="button"
+    >
+      <span class="material-symbols-rounded icon" data-class="icon">
+        close
+      </span>
+    </button>
+
+    {% if pinterest["state"] == "change_photo_dialog" %}
+    <h2 id="dialog-title" data-class="text">Change your photo</h2>
+    {{ photo() }}
+    <p data-class="text">Choose a photo to use on your profile.</p>
+
+    <div class="dialog-buttons">
+      <button type="button" class="pill primary" data-class="button">
+        Choose photo
+      </button>
+    </div>
+    {% else %}
+    <h2 id="dialog-title" data-class="text">Discard changes?</h2>
+    <p data-class="text">
+      You have unsaved changes to your profile.
+      Leaving now will discard them.
+    </p>
+
+    <div class="dialog-buttons">
+      <button type="button" class="pill" data-class="button">
+        Keep editing
+      </button>
+      <button type="button" class="pill primary" data-class="button">
+        Discard
+      </button>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+{% block title %}Organize Pins • Pinterest{% endblock %}
+
+{% block head %}
+<style>
+  .po-page,
+  .po-page *,
+  .po-overlay,
+  .po-overlay * {
+    box-sizing: border-box;
+  }
+
+  .po-page {
+    min-height: 100vh;
+    padding: calc(var(--sys-top) + 76px) 28px
+      calc(var(--sys-bottom) + 32px);
+    background: var(--background);
+    color: var(--text-primary);
+  }
+
+  .po-header {
+    position: fixed;
+    inset: var(--sys-top) 0 auto;
+    height: 76px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--background);
+  }
+
+  .po-header h1 {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 22px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .po-button,
+  .po-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    background: var(--surface-variant);
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .po-button {
+    min-height: 44px;
+    padding: 12px 20px;
+    border-radius: 999px;
+  }
+
+  .po-button.primary {
+    background: #e60023;
+    color: white;
+  }
+
+  .po-icon-button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .po-button:disabled {
+    opacity: .4;
+    cursor: default;
+  }
+
+  .po-content {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .po-intro {
+    margin: 28px 0 22px;
+  }
+
+  .po-intro h2 {
+    margin: 0 0 8px;
+    font-size: 28px;
+  }
+
+  .po-muted {
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .po-toolbar {
+    position: sticky;
+    top: calc(var(--sys-top) + 76px);
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 0;
+    margin-bottom: 20px;
+    background: var(--background);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .po-count {
+    margin-right: auto;
+    font-weight: 700;
+  }
+
+  .po-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 22px 16px;
+    align-items: start;
+  }
+
+  .po-tile {
+    position: relative;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+    border: 3px solid transparent;
+    border-radius: 18px;
+    background: var(--surface-variant);
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+
+  .po-tile.selected {
+    border-color: var(--text-primary);
+  }
+
+  .po-tile img {
+    display: block;
+    width: 100%;
+    object-fit: cover;
+  }
+
+  .po-selection {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text-primary);
+    box-shadow: 0 2px 8px #0003;
+    pointer-events: auto;
+    font-size: 24px;
+  }
+
+  .po-tile.selected .po-selection {
+    background: var(--text-primary);
+    color: var(--background);
+  }
+
+  .po-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 70px 20px;
+    gap: 16px;
+  }
+
+  .po-empty > .icon {
+    font-size: 56px;
+  }
+
+  .po-empty h2,
+  .po-empty p {
+    margin: 0;
+  }
+
+  .po-overlay {
+    position: fixed;
+    inset: var(--sys-top) 0 var(--sys-bottom);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: #0008;
+  }
+
+  .po-dialog {
+    width: 460px;
+    max-width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 26px;
+    border-radius: 26px;
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .po-dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .po-dialog-header h2 {
+    flex: 1;
+    margin: 0;
+    font-size: 25px;
+  }
+
+  .po-search {
+    position: relative;
+    margin-bottom: 16px;
+  }
+
+  .po-search input {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px 12px 46px;
+    border: 2px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+  }
+
+  .po-search > .icon {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    z-index: 1;
+    pointer-events: auto;
+  }
+
+  .po-destination {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .po-cover {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 12px;
+    background: var(--surface-variant);
+    flex-shrink: 0;
+  }
+
+  .po-destination-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .po-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  @media (max-width: 650px) {
+    .po-page {
+      padding-left: 16px;
+      padding-right: 16px;
+      padding-bottom: calc(var(--sys-bottom) + 160px);
+    }
+
+    .po-header {
+      padding: 0 16px;
+      gap: 10px;
+    }
+
+    .po-header h1 {
+      font-size: 18px;
+    }
+
+    .po-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 10px;
+    }
+
+    .po-toolbar {
+      position: fixed;
+      top: auto;
+      bottom: var(--sys-bottom);
+      left: 0;
+      right: 0;
+      padding: 14px 16px;
+      margin: 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 0;
+      gap: 10px;
+    }
+
+    .po-count {
+      flex-basis: 100%;
+      text-align: center;
+      margin: 0;
+    }
+
+    .po-toolbar .po-button {
+      flex: 1;
+      padding: 10px 8px;
+      font-size: 13px;
+    }
+
+    .po-intro h2 {
+      font-size: 24px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% macro icon(name) %}
+<span
+  class="material-symbols-rounded icon"
+  data-class="icon"
+  aria-hidden="true"
+>{{ name }}</span>
+{% endmacro %}
+
+<div
+  class="po-page"
+  {% if pinterest["popup_visible"] %}
+  data-annotation-skip="true"
+  {% endif %}
+>
+  <header class="po-header" data-class="app_bar" data-occluder="true">
+    <button class="po-icon-button" aria-label="Back" data-class="button">
+      {{ icon("arrow_back") }}
+    </button>
+    <h1>{{ pinterest["board_name"] }}</h1>
+    <button class="po-button" data-class="button">Done</button>
+  </header>
+
+  <main class="po-content" data-class="section">
+    <div class="po-intro">
+      <h2>Organize your Pins</h2>
+      <p class="po-muted">Select Pins to move or remove from this board.</p>
+    </div>
+
+    {% if pinterest["pins"] %}
+    <div class="po-toolbar" data-class="app_bar" data-occluder="true">
+      <span class="po-count">{{ pinterest["selected_count"] }} selected</span>
+
+      <button class="po-button" data-class="button">
+        {{ icon("deselect" if pinterest["state"] == "all_selected" else "select_all") }}
+        {{ "Deselect all" if pinterest["state"] == "all_selected" else "Select all" }}
+      </button>
+
+      <button
+        class="po-button"
+        data-class="button"
+        {% if not pinterest["selected_count"] %}disabled{% endif %}
+      >
+        {{ icon("drive_file_move") }} Move
+      </button>
+
+      <button
+        class="po-button"
+        data-class="button"
+        {% if not pinterest["selected_count"] %}disabled{% endif %}
+      >
+        {{ icon("delete") }} Delete
+      </button>
+    </div>
+
+    <div class="po-grid">
+      {% for pin in pinterest["pins"] %}
+      <button
+        class="po-tile {{ 'selected' if pin['selected'] else '' }}"
+        aria-label="Select {{ pin['title'] }}"
+        aria-pressed="{{ 'true' if pin['selected'] else 'false' }}"
+        data-class="button"
+      >
+        <img
+          src="{{ pin['image'] }}"
+          alt="{{ pin['title'] }}"
+          style="aspect-ratio: {{ pin['ratio'] }};"
+          data-class="image"
+        >
+
+        <span
+          class="material-symbols-rounded icon po-selection"
+          data-class="checkbox"
+          aria-hidden="true"
+        >{{ "check" if pin["selected"] else "radio_button_unchecked" }}</span>
+      </button>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="po-empty">
+      {{ icon("dashboard_customize") }}
+      <h2>No Pins to organize</h2>
+      <p class="po-muted">Save some ideas to this board to get started.</p>
+      <button class="po-button primary" data-class="button">Find ideas</button>
+    </div>
+    {% endif %}
+  </main>
+</div>
+
+{% if pinterest["popup_visible"] %}
+<div class="po-overlay">
+  <section
+    class="po-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="po-dialog-title"
+    data-class="dialog"
+    data-occluder="true"
+  >
+    <header class="po-dialog-header">
+      <h2 id="po-dialog-title">
+        {{ "Move Pins" if pinterest["state"] == "move_dialog" else "Delete Pins?" }}
+      </h2>
+      <button class="po-icon-button" aria-label="Close" data-class="button">
+        {{ icon("close") }}
+      </button>
+    </header>
+
+    {% if pinterest["state"] == "move_dialog" %}
+    <p class="po-muted">
+      Choose where to move {{ pinterest["selected_count"] }} Pins.
+    </p>
+
+    <div class="po-search">
+      {{ icon("search") }}
+      <input
+        type="text"
+        placeholder="Search your boards"
+        aria-label="Search your boards"
+        data-class="search_bar"
+      >
+    </div>
+
+    {% for destination in pinterest["destinations"] %}
+    <div class="po-destination" data-class="card">
+      {% if destination["cover"] %}
+      <img
+        class="po-cover"
+        src="{{ destination['cover'] }}"
+        alt=""
+        data-class="image"
+      >
+      {% else %}
+      <span class="po-cover"></span>
+      {% endif %}
+
+      <span class="po-destination-name">{{ destination["name"] }}</span>
+
+      {% if destination["secret"] %}
+      {{ icon("lock") }}
+      {% endif %}
+
+      <button
+        class="po-button primary"
+        aria-label="Move Pins to {{ destination['name'] }}"
+        data-class="button"
+      >Save</button>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>
+      Delete {{ pinterest["selected_count"] }} selected Pins
+      from this board?
+    </p>
+    <p class="po-muted">This action cannot be undone.</p>
+
+    <div class="po-dialog-actions">
+      <button class="po-button" data-class="button">Cancel</button>
+      <button class="po-button primary" data-class="button">
+        {{ icon("delete") }} Delete
+      </button>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,549 @@
+{% extends "base.html" %}
+{% block title %}Updates • Pinterest{% endblock %}
+
+{% block head %}
+<style>
+  .pu-page,
+  .pu-page *,
+  .pu-overlay,
+  .pu-overlay * {
+    box-sizing: border-box;
+  }
+
+  .pu-page {
+    min-height: 100vh;
+    padding: calc(var(--sys-top) + 76px) 24px
+      calc(var(--sys-bottom) + 32px);
+    background: var(--background);
+    color: var(--text-primary);
+  }
+
+  .pu-header {
+    position: fixed;
+    inset: var(--sys-top) 0 auto;
+    height: 76px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--background);
+  }
+
+  .pu-header h1 {
+    flex: 1;
+    margin: 0;
+    font-size: 24px;
+  }
+
+  .pu-button,
+  .pu-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    background: var(--surface-variant);
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .pu-button {
+    padding: 12px 18px;
+    min-height: 44px;
+    border-radius: 999px;
+  }
+
+  .pu-button.primary {
+    background: #e60023;
+    color: white;
+  }
+
+  .pu-icon-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .pu-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 720px) minmax(240px, 320px);
+    justify-content: center;
+    align-items: start;
+    gap: 40px;
+    max-width: 1200px;
+    margin: 32px auto;
+  }
+
+  .pu-feed {
+    min-width: 0;
+  }
+
+  .pu-feed-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .pu-feed-heading h2,
+  .pu-recommendations h2 {
+    margin: 0;
+    font-size: 24px;
+  }
+
+  .pu-group h3 {
+    margin: 24px 0 12px;
+    font-size: 16px;
+  }
+
+  .pu-entry {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 12px;
+    border-radius: 16px;
+    margin-bottom: 8px;
+  }
+
+  .pu-entry.unread {
+    background: var(--surface-variant);
+  }
+
+  .pu-avatar {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--surface-variant);
+  }
+
+  .pu-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .pu-entry-copy {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .pu-entry-copy p {
+    margin: 0;
+  }
+
+  .pu-entry-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .pu-entry-meta .icon {
+    font-size: 18px;
+  }
+
+  .pu-unread {
+    width: 8px;
+    height: 8px;
+    display: inline-block;
+    border-radius: 50%;
+    background: #e60023;
+    flex-shrink: 0;
+  }
+
+  .pu-preview {
+    width: 52px;
+    height: 68px;
+    object-fit: cover;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .pu-recommendations {
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--surface);
+  }
+
+  .pu-muted {
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .pu-recommendation-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .pu-recommendation {
+    overflow: hidden;
+    border-radius: 14px;
+    background: var(--surface-variant);
+  }
+
+  .pu-recommendation img {
+    display: block;
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+  }
+
+  .pu-recommendation a {
+    display: block;
+    padding: 10px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .pu-empty {
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .pu-empty > .icon {
+    font-size: 52px;
+  }
+
+  .pu-overlay {
+    position: fixed;
+    inset: var(--sys-top) 0 var(--sys-bottom);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: #0008;
+  }
+
+  .pu-dialog {
+    width: 460px;
+    max-width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 26px;
+    border-radius: 26px;
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .pu-dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .pu-dialog-header h2 {
+    flex: 1;
+    margin: 0;
+    font-size: 24px;
+  }
+
+  .pu-menu-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .pu-preference {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pu-preference p {
+    margin: 6px 0 0;
+    font-size: 13px;
+  }
+
+  .pu-switch {
+    width: 48px;
+    height: 28px;
+    border: 0;
+    border-radius: 999px;
+    padding: 3px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .pu-switch[aria-checked="true"] {
+    background: var(--text-primary);
+  }
+
+  .pu-switch span {
+    display: block;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--background);
+  }
+
+  .pu-switch[aria-checked="true"] span {
+    transform: translateX(20px);
+  }
+
+  .pu-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  @media (max-width: 900px) {
+    .pu-layout {
+      grid-template-columns: minmax(0, 720px);
+      gap: 28px;
+    }
+  }
+
+  @media (max-width: 500px) {
+    .pu-page {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+
+    .pu-header {
+      padding: 0 16px;
+    }
+
+    .pu-layout {
+      margin-top: 24px;
+    }
+
+    .pu-entry {
+      gap: 10px;
+      padding: 16px 8px;
+      align-items: flex-start;
+    }
+
+    .pu-avatar {
+      width: 40px;
+      height: 40px;
+    }
+
+    .pu-preview {
+      width: 40px;
+      height: 54px;
+    }
+
+    .pu-entry > .pu-icon-button {
+      width: 30px;
+      height: 30px;
+    }
+
+    .pu-recommendations {
+      padding: 18px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% macro icon(name) %}
+<span
+  class="material-symbols-rounded icon"
+  data-class="icon"
+  aria-hidden="true"
+>{{ name }}</span>
+{% endmacro %}
+
+<div
+  class="pu-page"
+  {% if pinterest["popup_visible"] %}
+  data-annotation-skip="true"
+  {% endif %}
+>
+  <header class="pu-header" data-class="app_bar" data-occluder="true">
+    <button class="pu-icon-button" aria-label="Back" data-class="button">
+      {{ icon("arrow_back") }}
+    </button>
+    <h1>Updates</h1>
+    <button
+      class="pu-icon-button"
+      aria-label="Notification preferences"
+      data-class="button"
+    >{{ icon("settings") }}</button>
+  </header>
+
+  <div class="pu-layout">
+    <main class="pu-feed" data-class="section">
+      <div class="pu-feed-heading">
+        <h2>Your activity</h2>
+        {% if pinterest["groups"] %}
+        <button class="pu-button" data-class="button">
+          {{ icon("done_all") }} Mark all as read
+        </button>
+        {% endif %}
+      </div>
+
+      {% for group in pinterest["groups"] %}
+      <section class="pu-group" data-class="section">
+        <h3>{{ group["label"] }}</h3>
+
+        {% for entry in group["entries"] %}
+        <article
+          class="pu-entry {{ 'unread' if entry['unread'] else '' }}"
+          data-class="card"
+        >
+          <span class="pu-avatar" data-class="avatar">
+            {% if entry["avatar"] %}
+            <img src="{{ entry['avatar'] }}" alt="">
+            {% else %}
+            {{ icon("person") }}
+            {% endif %}
+          </span>
+
+          <div class="pu-entry-copy">
+            <p><strong>{{ entry["name"] }}</strong> {{ entry["action"] }}</p>
+            <div class="pu-entry-meta">
+              {{ icon(entry["symbol"]) }}
+              <span>{{ entry["time"] }}</span>
+              {% if entry["unread"] %}
+              <span
+                class="pu-unread"
+                aria-label="Unread update"
+                data-class="badge"
+              ></span>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if entry["kind"] != "follow" and entry["preview"] %}
+          <img
+            class="pu-preview"
+            src="{{ entry['preview'] }}"
+            alt="Related Pin"
+            data-class="image"
+          >
+          {% endif %}
+
+          <button
+            class="pu-icon-button"
+            aria-label="Options for update from {{ entry['name'] }}"
+            data-class="button"
+          >{{ icon("more_horiz") }}</button>
+        </article>
+        {% endfor %}
+      </section>
+      {% else %}
+      <div class="pu-empty">
+        {{ icon("notifications_none") }}
+        <h2>You’re all caught up</h2>
+        <p class="pu-muted">New activity and ideas will appear here.</p>
+        <button class="pu-button primary" data-class="button">
+          Explore ideas {{ icon("arrow_forward") }}
+        </button>
+      </div>
+      {% endfor %}
+    </main>
+
+    <aside class="pu-recommendations" data-class="section">
+      <h2>Ideas for you</h2>
+      <p class="pu-muted">A little inspiration for your next project.</p>
+
+      <div class="pu-recommendation-grid">
+        {% for recommendation in pinterest["recommendations"] %}
+        <article class="pu-recommendation" data-class="card">
+          {% if recommendation["image"] %}
+          <img
+            src="{{ recommendation['image'] }}"
+            alt="Recommended idea"
+            data-class="image"
+          >
+          {% endif %}
+          <a href="#idea" data-class="button">{{ recommendation["title"] }}</a>
+        </article>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+</div>
+
+{% if pinterest["popup_visible"] %}
+<div class="pu-overlay">
+  <section
+    class="pu-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="pu-dialog-title"
+    data-class="dialog"
+    data-occluder="true"
+  >
+    <header class="pu-dialog-header">
+      <h2 id="pu-dialog-title">
+        {{ "Update options" if pinterest["state"] == "item_menu" else "Notification preferences" }}
+      </h2>
+      <button class="pu-icon-button" aria-label="Close" data-class="button">
+        {{ icon("close") }}
+      </button>
+    </header>
+
+    {% if pinterest["state"] == "item_menu" %}
+    {% for symbol, label in [
+      ("visibility_off", "Hide this update"),
+      ("done", "Mark as read"),
+      ("settings", "Notification preferences")
+    ] %}
+    <button class="pu-menu-option" data-class="button">
+      {{ icon(symbol) }} {{ label }}
+    </button>
+    {% endfor %}
+    {% else %}
+    <p class="pu-muted">Choose how you receive updates.</p>
+
+    {% for preference in pinterest["preferences"] %}
+    <div class="pu-preference">
+      <div>
+        <strong id="pref-{{ preference['id'] }}">{{ preference["label"] }}</strong>
+        <p class="pu-muted">{{ preference["description"] }}</p>
+      </div>
+      <button
+        class="pu-switch"
+        role="switch"
+        aria-labelledby="pref-{{ preference['id'] }}"
+        aria-checked="{{ 'true' if preference['enabled'] else 'false' }}"
+        data-class="switch"
+      ><span></span></button>
+    </div>
+    {% endfor %}
+
+    <div class="pu-dialog-actions">
+      <button class="pu-button" data-class="button">Cancel</button>
+      <button class="pu-button primary" data-class="button">Save</button>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}

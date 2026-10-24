@@ -1,0 +1,1150 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ pinterest["profile"]["name"] }} · Pinterest
+{% endblock %}
+
+{% block head %}
+<style>
+    .profile-shell {
+        --profile-rail-width: 72px;
+        padding-left: var(--profile-rail-width);
+        min-height: 100dvh;
+    }
+
+    .profile-rail {
+        position: fixed;
+        top: var(--sys-top);
+        bottom: var(--sys-bottom);
+        left: 0;
+        z-index: 45;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 22px;
+
+        width: var(--profile-rail-width);
+        padding: 18px 0;
+
+        background: var(--background);
+        border-right: 1px solid var(--border);
+    }
+
+    .profile-brand {
+        color: #E60023;
+        font: bold italic 34px Georgia, serif;
+    }
+
+    .rail-spacer {
+        flex: 1;
+    }
+
+    .profile-topbar {
+        position: sticky;
+        top: var(--sys-top);
+        z-index: 40;
+
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        min-height: 76px;
+        padding: 12px 20px;
+
+        background: var(--background);
+    }
+
+    .profile-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        flex: 1;
+        min-width: 0;
+        min-height: 48px;
+
+        padding: 0 16px;
+        border-radius: 16px;
+
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .profile-search input {
+        width: 100%;
+        height: 44px;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: inherit;
+    }
+
+    .profile-search input::placeholder {
+        color: inherit;
+        opacity: 1;
+    }
+
+    .profile-avatar {
+        display: block;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 16px;
+
+        object-fit: cover;
+        border-radius: 50%;
+        background: var(--surface-variant);
+    }
+
+    .avatar-placeholder {
+        display: grid;
+        place-items: center;
+        color: var(--on-surface-variant);
+    }
+
+    .profile-avatar .icon {
+        width: 60px;
+        height: 60px;
+        font-size: 60px;
+    }
+
+    .small-avatar {
+        width: 34px;
+        height: 34px;
+        margin: 0;
+        flex: none;
+    }
+
+    .small-avatar .icon {
+        width: 24px;
+        height: 24px;
+        font-size: 24px;
+    }
+
+    .profile-heading {
+        max-width: 720px;
+        margin: auto;
+        padding: 32px 20px 24px;
+        text-align: center;
+    }
+
+    .profile-name {
+        margin-bottom: 8px;
+        font-size: 36px;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+    }
+
+    .profile-username {
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .profile-bio {
+        max-width: 520px;
+        margin: 0 auto 10px;
+        line-height: 1.5;
+    }
+
+    .profile-website {
+        margin-bottom: 12px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .profile-counts {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 18px;
+    }
+
+    .profile-actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .profile-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        padding: 8px 16px 20px;
+    }
+
+    .profile-tab {
+        min-height: 44px;
+        padding: 8px 4px;
+        border-bottom: 3px solid transparent;
+        font-weight: 700;
+    }
+
+    .profile-tab.active {
+        border-bottom-color: var(--text-primary);
+    }
+
+    .profile-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px 18px;
+    }
+
+    .boards-grid {
+        display: grid;
+        grid-template-columns:
+            repeat(auto-fill, minmax(240px, 1fr));
+        gap: 28px 18px;
+
+        padding: 0 24px 40px;
+    }
+
+    .profile-board {
+        min-width: 0;
+    }
+
+    .board-collage {
+        position: relative;
+
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 3px;
+
+        aspect-ratio: 1.65;
+        overflow: hidden;
+        border-radius: 16px;
+
+        background: var(--surface-variant);
+    }
+
+    .collage-cell {
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        background: var(--surface-variant);
+    }
+
+    .collage-cell:first-child {
+        grid-row: 1 / 3;
+    }
+
+    .collage-cell img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .media-placeholder {
+        display: grid;
+        place-items: center;
+        width: 100%;
+        height: 100%;
+        color: var(--on-surface-variant);
+        background: var(--surface-variant);
+    }
+
+    .private-badge {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        z-index: 2;
+
+        display: grid;
+        place-items: center;
+
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+
+        background: var(--surface);
+        color: var(--on-surface);
+        pointer-events: auto;
+    }
+
+    .private-badge .icon {
+        width: 18px;
+        height: 18px;
+        font-size: 18px;
+    }
+
+    .board-name {
+        padding: 10px 6px 5px;
+        font-size: 20px;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .board-summary {
+        padding: 0 6px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .created-grid {
+        column-width: 220px;
+        column-gap: 16px;
+        padding: 0 24px 40px;
+    }
+
+    .created-card {
+        break-inside: avoid;
+        margin-bottom: 20px;
+    }
+
+    .created-media {
+        overflow: hidden;
+        border-radius: 16px;
+    }
+
+    .created-image {
+        width: 100%;
+        object-fit: cover;
+    }
+
+    .created-title {
+        margin-top: 8px;
+        padding: 0 5px;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .empty-profile {
+        padding: 65px 20px 100px;
+        text-align: center;
+    }
+
+    .empty-profile h2 {
+        margin-bottom: 12px;
+        font-size: 26px;
+    }
+
+    .empty-profile p {
+        margin-bottom: 20px;
+        color: var(--text-secondary);
+    }
+
+    .profile-overlay {
+        position: fixed;
+        inset: var(--sys-top) 0 var(--sys-bottom);
+        z-index: 100;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        padding: 16px;
+        background: #0007;
+    }
+
+    .profile-dialog {
+        width: 460px;
+        max-width: 100%;
+
+        max-height: calc(
+            100dvh
+            - var(--sys-top)
+            - var(--sys-bottom)
+            - 32px
+        );
+
+        overflow-y: auto;
+        padding: 22px;
+        border-radius: 24px;
+
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .dialog-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .dialog-title-row h2 {
+        font-size: 24px;
+    }
+
+    .sort-dialog {
+        width: 310px;
+    }
+
+    .sort-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        width: 100%;
+        min-height: 48px;
+        padding: 10px 8px;
+
+        text-align: left;
+        font-weight: 700;
+    }
+
+    .sort-option.selected {
+        border-radius: 12px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .profile-field-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 700;
+    }
+
+    .profile-field {
+        width: 100%;
+        min-width: 0;
+        min-height: 50px;
+
+        margin-bottom: 20px;
+        padding: 12px 14px;
+
+        border: 1px solid var(--border);
+        border-radius: 14px;
+
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .profile-field::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .private-control {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        line-height: 1.4;
+    }
+
+    .private-control input {
+        width: 20px;
+        height: 20px;
+        flex: none;
+        accent-color: var(--primary);
+    }
+
+    .private-description {
+        margin-top: 5px;
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 24px;
+    }
+
+    .share-profile-preview {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .share-profile-preview .profile-avatar {
+        width: 76px;
+        height: 76px;
+        margin-bottom: 10px;
+    }
+
+    .share-options {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .share-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+    }
+
+    .share-icon {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .share-link-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .share-link-row .profile-field {
+        flex: 1;
+        margin: 0;
+    }
+
+    @media (max-width: 1023px) {
+        .profile-shell {
+            --profile-rail-width: 60px;
+        }
+
+        .profile-topbar {
+            padding: 10px 14px;
+            min-height: 68px;
+        }
+
+        .boards-grid {
+            grid-template-columns:
+                repeat(auto-fill, minmax(200px, 1fr));
+            padding: 0 16px 32px;
+        }
+
+        .profile-toolbar {
+            padding: 0 16px 16px;
+        }
+    }
+
+    @media (max-width: 599px) {
+        .profile-shell {
+            --profile-rail-width: 0px;
+        }
+
+        .profile-rail,
+        .header-extra {
+            display: none;
+        }
+
+        .profile-topbar {
+            min-height: 62px;
+            padding: 8px 10px;
+        }
+
+        .profile-search {
+            min-height: 42px;
+            padding: 0 12px;
+        }
+
+        .profile-search input {
+            height: 38px;
+        }
+
+        .profile-heading {
+            padding: 24px 16px 18px;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+        }
+
+        .small-avatar {
+            width: 32px;
+            height: 32px;
+        }
+
+        .profile-name {
+            font-size: 28px;
+        }
+
+        .profile-bio {
+            font-size: 14px;
+        }
+
+        .boards-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px 10px;
+            padding: 0 10px 30px;
+        }
+
+        .board-name {
+            font-size: 15px;
+            padding: 8px 3px 4px;
+        }
+
+        .board-summary {
+            padding: 0 3px;
+            font-size: 11px;
+        }
+
+        .board-collage {
+            border-radius: 12px;
+        }
+
+        .private-badge {
+            width: 24px;
+            height: 24px;
+            right: 6px;
+            bottom: 6px;
+        }
+
+        .private-badge .icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+        }
+
+        .created-grid {
+            column-width: auto;
+            column-count: 2;
+            column-gap: 10px;
+            padding: 0 10px 30px;
+        }
+
+        .created-title {
+            font-size: 12px;
+        }
+
+        .profile-overlay {
+            padding: 10px;
+        }
+
+        .profile-dialog {
+            padding: 18px;
+            border-radius: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div
+    class="profile-shell"
+    {% if pinterest["popup_visible"] %}
+    data-annotation-skip="true"
+    {% endif %}
+>
+    <nav
+        class="profile-rail"
+        data-class="navigation_bar"
+        data-occluder="true"
+        aria-label="Main navigation"
+    >
+        <span
+            class="profile-brand"
+            data-class="icon"
+            role="img"
+            aria-label="Pinterest"
+        >P</span>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            aria-label="Home"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >home</span>
+        </button>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            aria-label="Explore"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >explore</span>
+        </button>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            aria-label="Create"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >add</span>
+        </button>
+
+        <div class="rail-spacer"></div>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            aria-label="Settings"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >settings</span>
+        </button>
+    </nav>
+
+    <header
+        class="profile-topbar"
+        data-class="app_bar"
+        data-occluder="true"
+    >
+        <div
+            class="profile-search"
+            data-class="search_bar"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >search</span>
+
+            <input
+                aria-label="Search Pinterest"
+                placeholder="Search"
+            >
+        </div>
+
+        <button
+            class="icon-button header-extra"
+            data-class="button"
+            aria-label="Notifications"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >notifications</span>
+        </button>
+
+        <button
+            class="icon-button header-extra"
+            data-class="button"
+            aria-label="Messages"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >chat</span>
+        </button>
+
+        {% if pinterest["profile"]["avatar"] %}
+        <img
+            class="profile-avatar small-avatar"
+            data-class="avatar"
+            src="{{ pinterest['profile']['avatar'] }}"
+            alt="{{ pinterest['profile']['name'] }}"
+        >
+        {% else %}
+        <div
+            class="profile-avatar small-avatar avatar-placeholder"
+            data-class="avatar"
+            role="img"
+            aria-label="Profile avatar"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                aria-hidden="true"
+            >person</span>
+        </div>
+        {% endif %}
+    </header>
+
+    <main>
+        <section
+            class="profile-heading"
+            data-class="section"
+        >
+            {% if pinterest["profile"]["avatar"] %}
+            <img
+                class="profile-avatar"
+                data-class="avatar"
+                src="{{ pinterest['profile']['avatar'] }}"
+                alt="{{ pinterest['profile']['name'] }}"
+            >
+            {% else %}
+            <div
+                class="profile-avatar avatar-placeholder"
+                data-class="avatar"
+                role="img"
+                aria-label="Profile avatar"
+            >
+                <span
+                    class="material-symbols-rounded icon"
+                    aria-hidden="true"
+                >person</span>
+            </div>
+            {% endif %}
+
+            <h1 class="profile-name">
+                {{ pinterest["profile"]["name"] }}
+            </h1>
+
+            <p class="profile-username">
+                @{{ pinterest["profile"]["username"] }}
+            </p>
+
+            <p class="profile-bio">
+                {{ pinterest["profile"]["bio"] }}
+            </p>
+
+            <p class="profile-website">
+                {{ pinterest["profile"]["website"] }}
+            </p>
+
+            <div class="profile-counts">
+                <span>
+                    <b>{{ pinterest["profile"]["followers"] }}</b>
+                    followers
+                </span>
+
+                <span>·</span>
+
+                <span>
+                    <b>{{ pinterest["profile"]["following"] }}</b>
+                    following
+                </span>
+            </div>
+
+            <div class="profile-actions">
+                <button
+                    class="pill"
+                    data-class="button"
+                >Share</button>
+
+                <button
+                    class="pill"
+                    data-class="button"
+                >Edit profile</button>
+            </div>
+        </section>
+
+        <nav
+            class="profile-tabs"
+            data-class="navigation_bar"
+            aria-label="Profile content"
+        >
+            {% for tab in ["Created", "Saved"] %}
+            <button
+                class="profile-tab {% if tab == pinterest['active_tab'] %}active{% endif %}"
+                data-class="tab"
+                aria-current="{{ 'page' if tab == pinterest['active_tab'] else 'false' }}"
+            >
+                {{ tab }}
+            </button>
+            {% endfor %}
+        </nav>
+
+        {% if pinterest["active_tab"] == "Saved" %}
+        <div class="profile-toolbar">
+            <button
+                class="icon-button"
+                data-class="button"
+                aria-label="Sort boards"
+            >
+                <span
+                    class="material-symbols-rounded icon"
+                    data-class="icon"
+                    aria-hidden="true"
+                >tune</span>
+            </button>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                aria-label="Create board"
+            >
+                <span
+                    class="material-symbols-rounded icon"
+                    data-class="icon"
+                    aria-hidden="true"
+                >add</span>
+            </button>
+        </div>
+
+        {% if pinterest["boards"] %}
+        <section
+            class="boards-grid"
+            data-class="section"
+            aria-label="Saved boards"
+        >
+            {% for board in pinterest["boards"] %}
+            <article
+                class="profile-board"
+                data-class="card"
+            >
+                <div class="board-collage">
+                    {% for cover in board["covers"] %}
+                    <div class="collage-cell">
+                        {% if cover %}
+                        <img
+                            data-class="image"
+                            src="{{ cover }}"
+                            alt="{{ board['name'] }} board preview {{ loop.index }}"
+                        >
+                        {% else %}
+                        <div class="media-placeholder">
+                            <span
+                                class="material-symbols-rounded icon"
+                                data-class="icon"
+                                role="img"
+                                aria-label="Image unavailable"
+                            >image</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    {% if board["private"] %}
+                    <span
+                        class="private-badge"
+                        data-class="badge"
+                        role="img"
+                        aria-label="Private board"
+                    >
+                        <span
+                            class="material-symbols-rounded icon"
+                            aria-hidden="true"
+                        >lock</span>
+                    </span>
+                    {% endif %}
+                </div>
+
+                <h2 class="board-name">
+                    {{ board["name"] }}
+                </h2>
+
+                <p class="board-summary">
+                    {{ board["pin_count"] }} Pins
+                    · {{ board["updated"] }}
+                </p>
+            </article>
+            {% endfor %}
+        </section>
+        {% else %}
+        <section class="empty-profile">
+            <h2>Save your first ideas</h2>
+
+            <p>
+                Create a board to collect inspiration
+                for something you love.
+            </p>
+
+            <button
+                class="pill primary"
+                data-class="button"
+            >Create board</button>
+        </section>
+        {% endif %}
+
+        {% else %}
+        <section
+            class="created-grid"
+            data-class="section"
+            aria-label="Created Pins"
+        >
+            {% for pin in pinterest["created_pins"] %}
+            <article
+                class="created-card"
+                data-class="card"
+            >
+                <div class="created-media">
+                    {% if pin["image"] %}
+                    <img
+                        class="created-image"
+                        data-class="image"
+                        src="{{ pin['image'] }}"
+                        alt="{{ pin['title'] }}"
+                        style="aspect-ratio: {{ pin['aspect_ratio'] }};"
+                    >
+                    {% else %}
+                    <div
+                        class="media-placeholder"
+                        style="aspect-ratio: {{ pin['aspect_ratio'] }};"
+                    >
+                        <span
+                            class="material-symbols-rounded icon"
+                            data-class="icon"
+                            role="img"
+                            aria-label="Image unavailable"
+                        >image</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <p class="created-title">
+                    {{ pin["title"] }}
+                </p>
+            </article>
+            {% endfor %}
+        </section>
+        {% endif %}
+    </main>
+</div>
+
+{% if pinterest["popup_visible"] %}
+<div class="profile-overlay">
+    <section
+        class="profile-dialog {% if pinterest['state'] == 'sort_menu' %}sort-dialog{% endif %}"
+        data-class="dialog"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="profile-dialog-title"
+    >
+        <div class="dialog-title-row">
+            <h2 id="profile-dialog-title">
+                {% if pinterest["state"] == "sort_menu" %}
+                    Sort boards
+                {% elif pinterest["state"] == "create_board_dialog" %}
+                    Create board
+                {% else %}
+                    Share profile
+                {% endif %}
+            </h2>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                aria-label="Close dialog"
+            >
+                <span
+                    class="material-symbols-rounded icon"
+                    data-class="icon"
+                    aria-hidden="true"
+                >close</span>
+            </button>
+        </div>
+
+        {% if pinterest["state"] == "sort_menu" %}
+        {% for option in pinterest["sort_options"] %}
+        <button
+            class="sort-option {% if option == pinterest['selected_sort'] %}selected{% endif %}"
+            data-class="button"
+        >
+            <span>{{ option }}</span>
+
+            {% if option == pinterest["selected_sort"] %}
+            <span
+                class="material-symbols-rounded icon"
+                data-class="checkbox"
+                aria-label="Selected"
+                role="img"
+            >check</span>
+            {% endif %}
+        </button>
+        {% endfor %}
+
+        {% elif pinterest["state"] == "create_board_dialog" %}
+        <label
+            class="profile-field-label"
+            for="new-board-name"
+        >Name</label>
+
+        <input
+            id="new-board-name"
+            class="profile-field"
+            data-class="input_field"
+            placeholder="Like ‘Places to go’"
+            value="Weekend inspiration"
+        >
+
+        <label class="private-control">
+            <input
+                type="checkbox"
+                data-class="checkbox"
+                checked
+            >
+
+            <span>
+                <b>Make this board private</b>
+
+                <span class="private-description" style="display:block;">
+                    Only you and people you invite can see it.
+                </span>
+            </span>
+        </label>
+
+        <div class="dialog-footer">
+            <button
+                class="pill"
+                data-class="button"
+            >Cancel</button>
+
+            <button
+                class="pill primary"
+                data-class="button"
+            >Create</button>
+        </div>
+
+        {% elif pinterest["state"] == "share_dialog" %}
+        <div class="share-profile-preview">
+            {% if pinterest["profile"]["avatar"] %}
+            <img
+                class="profile-avatar"
+                data-class="avatar"
+                src="{{ pinterest['profile']['avatar'] }}"
+                alt="{{ pinterest['profile']['name'] }}"
+            >
+            {% else %}
+            <div
+                class="profile-avatar avatar-placeholder"
+                data-class="avatar"
+                role="img"
+                aria-label="Profile avatar"
+            >
+                <span
+                    class="material-symbols-rounded icon"
+                    aria-hidden="true"
+                >person</span>
+            </div>
+            {% endif %}
+
+            <b>{{ pinterest["profile"]["name"] }}</b>
+        </div>
+
+        <div class="share-options">
+            {% for option in pinterest["share_options"] %}
+            <button
+                class="share-option"
+                data-class="button"
+            >
+                <span class="share-icon">
+                    <span
+                        class="material-symbols-rounded icon"
+                        data-class="icon"
+                        aria-hidden="true"
+                    >{{ option["icon"] }}</span>
+                </span>
+            </button>
+
+                <span>{{ option["name"] }}</span>
+
+            {% endfor %}
+        </div>
+
+        <div class="share-link-row">
+            <input
+                class="profile-field"
+                data-class="input_field"
+                aria-label="Profile link"
+                value="{{ pinterest['share_url'] }}"
+                readonly
+            >
+
+            <button
+                class="pill primary"
+                data-class="button"
+            >Copy</button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+
+{% endblock %}

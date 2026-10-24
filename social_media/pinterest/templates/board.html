@@ -1,0 +1,1055 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ pinterest["board"]["title"] }} · Pinterest
+{% endblock %}
+
+{% block head %}
+<style>
+    .board-shell {
+        --rail-width: 72px;
+        --board-header-height: 80px;
+
+        min-height: calc(
+            100dvh - var(--sys-top) - var(--sys-bottom)
+        );
+
+        padding-left: var(--rail-width);
+    }
+
+    .board-rail {
+        position: fixed;
+        top: var(--sys-top);
+        bottom: var(--sys-bottom);
+        left: 0;
+
+        z-index: 45;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 22px;
+
+        width: var(--rail-width);
+        padding: 18px 0;
+
+        border-right: 1px solid var(--border);
+        background: var(--background);
+    }
+
+    .board-logo {
+        display: grid;
+        place-items: center;
+
+        width: 34px;
+        height: 34px;
+        flex: none;
+
+        color: #E60023;
+        font: bold italic 34px Georgia, serif;
+    }
+
+    .rail-spacer {
+        flex: 1;
+    }
+
+    .board-topbar {
+        position: sticky;
+        top: var(--sys-top);
+
+        z-index: 40;
+
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        min-height: var(--board-header-height);
+        padding: 14px 16px;
+
+        border-bottom: 1px solid var(--border);
+        background: var(--background);
+    }
+
+    .board-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        flex: 1;
+        min-width: 0;
+        min-height: 48px;
+
+        padding: 0 16px;
+        border-radius: 16px;
+
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .board-search input {
+        width: 100%;
+        height: 44px;
+
+        padding: 0;
+        border: 0;
+        outline: none;
+
+        background: transparent;
+        color: inherit;
+    }
+
+    .board-search input::placeholder {
+        color: inherit;
+        opacity: 1;
+    }
+
+    .board-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        min-height: 48px;
+        padding: 0 18px;
+
+        border-radius: 16px;
+
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .board-action.primary-action {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .board-intro {
+        position: relative;
+
+        padding: 44px 20px 36px;
+    }
+
+    .board-eyebrow {
+        margin-bottom: 12px;
+
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .board-title {
+        max-width: calc(100% - 60px);
+
+        margin-bottom: 14px;
+
+        font-size: 38px;
+        line-height: 1.12;
+        letter-spacing: -1px;
+        overflow-wrap: anywhere;
+    }
+
+    .board-metadata {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+
+        margin-bottom: 12px;
+
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .board-metadata .icon {
+        width: 18px;
+        height: 18px;
+        font-size: 18px;
+    }
+
+    .board-description {
+        max-width: 760px;
+
+        margin-bottom: 18px;
+        line-height: 1.5;
+    }
+
+    .board-creator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .creator-logo {
+        display: grid;
+        place-items: center;
+
+        width: 34px;
+        height: 34px;
+
+        border-radius: 50%;
+        background: #E60023;
+        color: #FFFFFF;
+
+        font: bold italic 27px Georgia, serif;
+    }
+
+    .verified-icon {
+        color: var(--icon);
+    }
+
+    .board-share {
+        position: absolute;
+        top: 44px;
+        right: 20px;
+    }
+
+    .board-grid {
+        padding: 0 20px 40px;
+
+        column-width: 220px;
+        column-gap: 16px;
+    }
+
+    .board-pin {
+        position: relative;
+
+        break-inside: avoid;
+        margin-bottom: 16px;
+
+        overflow: hidden;
+        border-radius: 16px;
+
+        background: var(--surface-variant);
+    }
+
+    .board-pin-image {
+        width: 100%;
+        height: auto;
+
+        object-fit: cover;
+    }
+
+    .pin-placeholder {
+        display: grid;
+        place-items: center;
+
+        width: 100%;
+
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .pin-placeholder .icon {
+        width: 40px;
+        height: 40px;
+        font-size: 40px;
+    }
+
+    .video-duration {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+
+        padding: 5px 8px;
+        border-radius: 999px;
+
+        background: #FFFFFF;
+        color: #111111;
+
+        font-size: 12px;
+        font-weight: 700;
+        pointer-events: auto;
+    }
+
+    .pin-controls {
+        position: absolute;
+        inset: 0;
+
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: space-between;
+
+        padding: 12px;
+
+        background: #0002;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .board-pin:hover .pin-controls,
+    .board-pin:focus-within .pin-controls {
+        opacity: 1;
+    }
+
+    .pin-save {
+        min-height: 44px;
+        padding: 0 16px;
+
+        border-radius: 999px;
+
+        background: var(--primary);
+        color: var(--on-primary);
+
+        font-weight: 700;
+    }
+
+    .pin-controls .icon-button {
+        width: 36px;
+        height: 36px;
+
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    /* Shared login panel, also used inside the upsell. */
+
+    .login-panel {
+        width: 450px;
+        max-width: 100%;
+
+        padding: 24px;
+
+        border-radius: 22px;
+
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .login-logo {
+        display: grid;
+        place-items: center;
+
+        width: 62px;
+        height: 62px;
+
+        margin-bottom: 18px;
+        border-radius: 18px;
+
+        background: var(--surface-variant);
+        color: #E60023;
+
+        font: bold italic 45px Georgia, serif;
+    }
+
+    .login-title {
+        margin-bottom: 6px;
+
+        font-size: 28px;
+        line-height: 1.15;
+        letter-spacing: -0.5px;
+    }
+
+    .login-subtitle {
+        margin-bottom: 24px;
+        line-height: 1.4;
+    }
+
+    .login-field {
+        display: flex;
+        align-items: center;
+
+        min-height: 64px;
+        margin-bottom: 6px;
+
+        border: 1px solid var(--border);
+        border-radius: 16px;
+
+        background: var(--surface);
+        color: var(--on-surface);
+    }
+
+    .login-field.focused {
+        border: 2px solid var(--primary);
+    }
+
+    .login-field input {
+        width: 100%;
+        min-width: 0;
+        height: 60px;
+
+        padding: 0 16px;
+        border: 0;
+        outline: none;
+
+        background: transparent;
+        color: inherit;
+    }
+
+    .login-field input::placeholder {
+        color: var(--text-secondary);
+        opacity: 1;
+    }
+
+    .login-field .icon-button {
+        margin-right: 6px;
+    }
+
+    .forgot-password {
+        display: inline-block;
+
+        margin: 0 0 18px;
+        padding: 0;
+
+        color: var(--primary);
+
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .login-submit {
+        width: 100%;
+        min-height: 48px;
+
+        border-radius: 16px;
+
+        background: var(--primary);
+        color: var(--on-primary);
+
+        font-weight: 700;
+    }
+
+    .login-or {
+        margin: 10px 0;
+
+        text-align: center;
+        font-size: 12px;
+    }
+
+    .login-provider {
+        position: relative;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        width: 100%;
+        min-height: 48px;
+        margin-bottom: 8px;
+
+        padding: 10px 40px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+
+        background: var(--surface);
+        color: var(--on-surface);
+
+        font-weight: 700;
+    }
+
+    .provider-mark {
+        position: absolute;
+        left: 14px;
+
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .login-new {
+        margin-top: 26px;
+
+        text-align: center;
+        font-size: 14px;
+    }
+
+    .login-new button {
+        padding: 0;
+
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    .login-legal {
+        margin-top: 20px;
+
+        font-size: 11px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: var(--sys-top) 0 var(--sys-bottom);
+
+        z-index: 100;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 16px;
+
+        background: #0009;
+    }
+
+    .modal-backdrop .login-panel {
+        max-height: calc(
+            100dvh
+            - var(--sys-top)
+            - var(--sys-bottom)
+            - 32px
+        );
+
+        overflow-y: auto;
+    }
+
+    .signed-out-banner {
+        position: fixed;
+        right: 20px;
+        bottom: calc(var(--sys-bottom) + 20px);
+
+        z-index: 60;
+
+        width: 360px;
+        max-width: calc(100vw - 40px);
+
+        padding: 22px;
+        border: 1px solid var(--border);
+        border-radius: 22px;
+
+        background: var(--surface);
+        color: var(--on-surface);
+
+        box-shadow: 0 6px 24px #0002;
+    }
+
+    .banner-close {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+    }
+
+    .banner-title {
+        margin: 12px 28px 8px 0;
+        font-size: 24px;
+    }
+
+    .banner-description {
+        margin-bottom: 18px;
+    }
+
+    .signed-out-banner .login-legal {
+        margin-top: 12px;
+    }
+
+    @media (min-width: 1920px) {
+        .board-grid {
+            column-width: 240px;
+        }
+    }
+
+    @media (max-width: 1023px) {
+        .board-shell {
+            --rail-width: 60px;
+            --board-header-height: 72px;
+        }
+
+        .board-topbar {
+            padding: 10px 12px;
+        }
+
+        .board-intro {
+            padding-top: 32px;
+        }
+
+        .board-share {
+            top: 32px;
+        }
+
+        .board-title {
+            font-size: 32px;
+        }
+
+        .board-grid {
+            column-width: 180px;
+        }
+    }
+
+    /*
+      Compact adaptation of the inspected desktop board.
+      This does not claim to reproduce the native mobile app.
+    */
+
+    @media (max-width: 599px) {
+        .board-shell {
+            --rail-width: 0px;
+            --board-header-height: 64px;
+        }
+
+        .board-rail {
+            display: none;
+        }
+
+        .board-topbar {
+            gap: 6px;
+            padding: 8px;
+        }
+
+        .board-search {
+            min-height: 44px;
+            padding: 0 10px;
+        }
+
+        .board-search input {
+            height: 40px;
+            font-size: 12px;
+        }
+
+        .board-action {
+            min-height: 44px;
+            padding: 0 10px;
+
+            font-size: 12px;
+        }
+
+        .board-intro {
+            padding: 28px 12px 24px;
+        }
+
+        .board-title {
+            font-size: 28px;
+        }
+
+        .board-description {
+            font-size: 14px;
+        }
+
+        .board-share {
+            top: 26px;
+            right: 10px;
+        }
+
+        .board-grid {
+            padding: 0 10px 24px;
+
+            column-width: auto;
+            column-count: 2;
+            column-gap: 10px;
+        }
+
+        .board-pin {
+            margin-bottom: 10px;
+            border-radius: 12px;
+        }
+
+        .modal-backdrop {
+            padding: 10px;
+        }
+
+        .login-panel {
+            padding: 20px;
+        }
+
+        .login-title {
+            font-size: 25px;
+        }
+
+        .signed-out-banner {
+            right: 10px;
+            bottom: calc(var(--sys-bottom) + 10px);
+
+            max-width: calc(100vw - 20px);
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div
+    class="board-shell"
+    {% if pinterest["popup_visible"]
+        or pinterest["state"] == "signed_out_banner" %}
+    data-annotation-skip="true"
+    {% endif %}
+>
+    <nav
+        class="board-rail"
+        data-class="navigation_bar"
+        data-occluder="true"
+        aria-label="Main navigation"
+    >
+        <span
+            class="board-logo"
+            data-class="icon"
+            role="img"
+            aria-label="Pinterest"
+        >P</span>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            aria-label="Explore"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >explore</span>
+        </button>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            aria-label="Shop"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >shopping_bag</span>
+        </button>
+
+        <div class="rail-spacer"></div>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            aria-label="More options"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >settings</span>
+        </button>
+    </nav>
+
+    <header
+        class="board-topbar"
+        data-class="app_bar"
+        data-occluder="true"
+    >
+        <div
+            class="board-search"
+            data-class="search_bar"
+        >
+            <span
+                class="material-symbols-rounded icon"
+                data-class="icon"
+                aria-hidden="true"
+            >search</span>
+
+            <input
+                aria-label="Search Pinterest"
+                placeholder="Search for {{ pinterest['board']['search_hint'] }}"
+            >
+        </div>
+
+        <button
+            class="board-action"
+            data-class="button"
+        >Log in</button>
+
+        <button
+            class="board-action primary-action"
+            data-class="button"
+        >Sign up</button>
+    </header>
+
+    <main>
+        <section
+            class="board-intro"
+            data-class="section"
+        >
+            <p class="board-eyebrow">
+                {{ pinterest["board"]["eyebrow"] }}
+            </p>
+
+            <h1 class="board-title">
+                {{ pinterest["board"]["title"] }}
+            </h1>
+
+            <div class="board-metadata">
+                <span
+                    class="material-symbols-rounded icon"
+                    data-class="icon"
+                    aria-hidden="true"
+                >sell</span>
+
+                <span>Featured board</span>
+                <span>·</span>
+
+                <span>
+                    {{ pinterest["board"]["pin_count"] }}
+                    Pins
+                </span>
+
+                <span>·</span>
+
+                <span>
+                    {{ pinterest["board"]["updated"] }}
+                </span>
+            </div>
+
+            <p class="board-description">
+                {{ pinterest["board"]["description"] }}
+            </p>
+
+            <div class="board-creator">
+                <span
+                    class="creator-logo"
+                    data-class="avatar"
+                    role="img"
+                    aria-label="Creator avatar"
+                >P</span>
+
+                <span>
+                    By
+                    <b>{{ pinterest["board"]["creator"] }}</b>
+                </span>
+
+                <span
+                    class="material-symbols-rounded icon verified-icon"
+                    data-class="icon"
+                    role="img"
+                    aria-label="Verified"
+                >verified</span>
+            </div>
+
+            <button
+                class="icon-button board-share"
+                data-class="button"
+                aria-label="Share board"
+            >
+                <span
+                    class="material-symbols-rounded icon"
+                    data-class="icon"
+                    aria-hidden="true"
+                >ios_share</span>
+            </button>
+        </section>
+
+        <section
+            class="board-grid"
+            data-class="section"
+            aria-label="Board Pins"
+        >
+            {% for pin in pinterest["pins"] %}
+            <article
+                class="board-pin"
+                data-class="card"
+            >
+                {% if pin["image"] %}
+                <img
+                    class="board-pin-image"
+                    data-class="image"
+                    src="{{ pin['image'] }}"
+                    alt="{{ pin['alt'] }}"
+                    style="aspect-ratio: {{ pin['aspect_ratio'] }};"
+                >
+                {% else %}
+                <div
+                    class="pin-placeholder"
+                    style="aspect-ratio: {{ pin['aspect_ratio'] }};"
+                >
+                    <span
+                        class="material-symbols-rounded icon"
+                        data-class="icon"
+                        role="img"
+                        aria-label="Image unavailable"
+                    >image</span>
+                </div>
+                {% endif %}
+
+                {% if pin["is_video"] %}
+                <span
+                    class="video-duration"
+                    data-class="badge"
+                >
+                    {{ pin["duration"] }}
+                </span>
+                {% endif %}
+
+                <div class="pin-controls">
+                    <button
+                        class="pin-save"
+                        data-class="button"
+                    >Save</button>
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        aria-label="Pin options"
+                    >
+                        <span
+                            class="material-symbols-rounded icon"
+                            data-class="icon"
+                            aria-hidden="true"
+                        >more_horiz</span>
+                    </button>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+    </main>
+</div>
+
+{% if pinterest["state"] == "signed_out_banner" %}
+<aside
+    class="signed-out-banner"
+    data-class="dialog"
+    data-occluder="true"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="signed-out-title"
+>
+    <button
+        class="icon-button banner-close"
+        data-class="button"
+        aria-label="Close signed-out message"
+    >
+        <span
+            class="material-symbols-rounded icon"
+            data-class="icon"
+            aria-hidden="true"
+        >close</span>
+    </button>
+
+    <h2
+        class="banner-title"
+        id="signed-out-title"
+    >You are signed out</h2>
+
+    <p class="banner-description">
+        Sign in to get the best experience
+    </p>
+
+    <button
+        class="login-submit"
+        data-class="button"
+    >Continue with email</button>
+
+    <p class="login-or">OR</p>
+
+    <button
+        class="login-provider"
+        data-class="button"
+    >
+        <span class="provider-mark" aria-hidden="true">G</span>
+        Continue with Google
+    </button>
+
+    <p class="login-legal">
+        By continuing, you agree to Pinterest’s Terms of
+        Service and acknowledge its Privacy Policy.
+    </p>
+</aside>
+{% endif %}
+
+{% if pinterest["state"] in [
+    "login_dialog",
+    "login_password_visible"
+] %}
+<div class="modal-backdrop">
+    <section
+        class="login-panel"
+        data-class="dialog"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-title"
+    >
+        <div
+            class="login-logo"
+            data-class="icon"
+            role="img"
+            aria-label="Pinterest"
+        >P</div>
+
+        <h2
+            class="login-title"
+            id="login-title"
+        >Welcome to Pinterest</h2>
+
+        <p class="login-subtitle">
+            Log in to discover more ideas just for you
+        </p>
+
+        <div
+            class="login-field focused"
+            data-class="input_field"
+        >
+            <input
+                type="email"
+                aria-label="Email"
+                placeholder="Email"
+                value="{{ pinterest['login']['email'] if pinterest['state'] == 'login_password_visible' else '' }}"
+            >
+        </div>
+
+        <div class="login-field">
+            <input
+                data-class="input_field"
+                type="{{ 'text' if pinterest['state'] == 'login_password_visible' else 'password' }}"
+                aria-label="Password"
+                placeholder="Password"
+                value="{{ pinterest['login']['password'] if pinterest['state'] == 'login_password_visible' else '' }}"
+            >
+
+            <button
+                class="icon-button"
+                data-class="input_field"
+                aria-label="{{ 'Hide password' if pinterest['state'] == 'login_password_visible' else 'Show password' }}"
+            >
+                <span
+                    class="material-symbols-rounded icon"
+                    data-class="icon"
+                    aria-hidden="true"
+                >
+                    {{ "visibility_off"
+                       if pinterest["state"] == "login_password_visible"
+                       else "visibility" }}
+                </span>
+            </button>
+        </div>
+
+        <button
+            class="forgot-password"
+            data-class="button"
+        >Forgot password?</button>
+
+        <button
+            class="login-submit"
+            data-class="button"
+        >Log in</button>
+
+        <p class="login-or">OR</p>
+
+        <button
+            class="login-provider"
+            data-class="button"
+        >
+            <span class="provider-mark" aria-hidden="true">G</span>
+            Continue with Google
+        </button>
+
+        <button
+            class="login-provider"
+            data-class="button"
+        >
+            <span
+                class="material-symbols-rounded icon provider-mark"
+                data-class="icon"
+                aria-hidden="true"
+            >qr_code</span>
+
+            Continue with QR code
+        </button>
+
+        <p class="login-new">
+            New to Pinterest?
+            <button data-class="button">Join for free</button>
+        </p>
+
+        <p class="login-legal">
+            Terms of Service · Privacy Policy ·
+            Notice at Collection
+        </p>
+    </section>
+</div>
+{% endif %}
+
+{% endblock %}

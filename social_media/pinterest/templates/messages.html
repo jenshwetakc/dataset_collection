@@ -1,0 +1,692 @@
+{% extends "base.html" %}
+{% block title %}Messages • Pinterest{% endblock %}
+
+{% block head %}
+<style>
+  .pm-page,
+  .pm-page *,
+  .pm-overlay,
+  .pm-overlay * {
+    box-sizing: border-box;
+  }
+
+  .pm-page {
+    height: calc(100dvh - var(--sys-top) - var(--sys-bottom));
+    margin-top: var(--sys-top);
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    background: var(--background);
+    color: var(--text-primary);
+  }
+
+  .pm-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 24px 10px;
+    border-right: 1px solid var(--border);
+  }
+
+  .pm-icon-button,
+  .pm-button {
+    border: 0;
+    background: var(--surface-variant);
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .pm-icon-button {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 50%;
+  }
+
+  .pm-button {
+    min-height: 44px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+
+  .pm-button.primary {
+    background: #e60023;
+    color: white;
+  }
+
+  .pm-icon-button:disabled {
+    opacity: .4;
+  }
+
+  .pm-shell {
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+  }
+
+  .pm-inbox {
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+
+  .pm-inbox-header,
+  .pm-thread-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+  }
+
+  .pm-inbox-header h1 {
+    margin: 0;
+    font-size: 26px;
+    flex: 1;
+  }
+
+  .pm-search {
+    position: relative;
+    margin: 0 20px 16px;
+  }
+
+  .pm-search input {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 44px;
+    border: 2px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+  }
+
+  .pm-search > .icon {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    z-index: 1;
+    pointer-events: auto;
+  }
+
+  .pm-contact {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .pm-contact.active {
+    background: var(--surface-variant);
+  }
+
+  .pm-avatar {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--surface-variant);
+  }
+
+  .pm-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .pm-contact-copy {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pm-contact-copy strong,
+  .pm-contact-copy small {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .pm-contact-copy small {
+    margin-top: 5px;
+    color: var(--text-secondary);
+  }
+
+  .pm-contact-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .pm-unread {
+    display: block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #e60023;
+  }
+
+  .pm-thread {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .pm-thread-header {
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .pm-thread-header strong {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .pm-back {
+    display: none;
+  }
+
+  .pm-history {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 28px;
+  }
+
+  .pm-date {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .pm-bubble {
+    align-self: flex-start;
+    max-width: min(80%, 420px);
+    padding: 14px 18px;
+    border-radius: 20px;
+    background: var(--surface-variant);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .pm-bubble.outgoing {
+    align-self: flex-end;
+    background: var(--text-primary);
+    color: var(--background);
+  }
+
+  .pm-shared-pin {
+    align-self: flex-start;
+    width: 210px;
+    max-width: 80%;
+    overflow: hidden;
+    border-radius: 18px;
+    background: var(--surface-variant);
+  }
+
+  .pm-shared-pin img {
+    display: block;
+    width: 100%;
+    height: 230px;
+    object-fit: cover;
+  }
+
+  .pm-shared-pin p {
+    padding: 12px;
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .pm-composer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .pm-composer textarea {
+    flex: 1;
+    min-width: 0;
+    height: 48px;
+    resize: none;
+    padding: 13px 16px;
+    border: 2px solid var(--border);
+    border-radius: 24px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+  }
+
+  .pm-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    padding: 32px;
+  }
+
+  .pm-empty > .icon {
+    font-size: 54px;
+  }
+
+  .pm-empty h2,
+  .pm-empty p {
+    margin: 0;
+  }
+
+  .pm-empty p {
+    max-width: 300px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .pm-overlay {
+    position: fixed;
+    inset: var(--sys-top) 0 var(--sys-bottom);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: #0008;
+  }
+
+  .pm-dialog {
+    width: 480px;
+    max-width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 24px;
+    border-radius: 26px;
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .pm-dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .pm-dialog-header h2 {
+    flex: 1;
+    margin: 0;
+    font-size: 25px;
+  }
+
+  .pm-dialog .pm-search {
+    margin: 0 0 16px;
+  }
+
+  .pm-dialog .pm-contact {
+    padding: 12px 0;
+  }
+
+  .pm-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  .pm-pin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .pm-pin-choice {
+    position: relative;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 16px;
+    background: var(--surface-variant);
+    color: var(--text-primary);
+    text-align: left;
+    font: inherit;
+  }
+
+  .pm-pin-choice img {
+    display: block;
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+  }
+
+  .pm-pin-choice p {
+    padding: 10px;
+    margin: 0;
+    font-size: 13px;
+  }
+
+  .pm-selected {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text-primary);
+    z-index: 1;
+  }
+
+  @media (max-width: 1000px) {
+    .pm-shell {
+      grid-template-columns: 280px minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 700px) {
+    .pm-page {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pm-rail {
+      display: none;
+    }
+
+    .pm-shell {
+      display: block;
+      height: 100%;
+    }
+
+    .pm-inbox,
+    .pm-thread {
+      height: 100%;
+    }
+
+    .pm-shell.has-thread .pm-inbox,
+    .pm-shell:not(.has-thread) .pm-thread {
+      display: none;
+    }
+
+    .pm-back {
+      display: inline-grid;
+    }
+
+    .pm-history {
+      padding: 20px 16px;
+    }
+
+    .pm-composer {
+      padding: 12px;
+      gap: 6px;
+    }
+
+    .pm-composer .pm-icon-button {
+      width: 36px;
+      height: 36px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% macro icon(name) %}
+<span
+  class="material-symbols-rounded icon"
+  data-class="icon"
+  aria-hidden="true"
+>{{ name }}</span>
+{% endmacro %}
+
+{% macro avatar(contact) %}
+<span class="pm-avatar" data-class="avatar">
+  {% if contact["avatar"] %}
+  <img src="{{ contact['avatar'] }}" alt="">
+  {% else %}
+  {{ icon("person") }}
+  {% endif %}
+</span>
+{% endmacro %}
+
+<div
+  class="pm-page"
+  {% if pinterest["popup_visible"] %}
+  data-annotation-skip="true"
+  {% endif %}
+>
+  <nav class="pm-rail" aria-label="Main navigation" data-class="navigation_bar">
+    {% for name, label in [
+      ("home", "Home"),
+      ("explore", "Explore"),
+      ("add", "Create"),
+      ("chat", "Messages")
+    ] %}
+    <button class="pm-icon-button" aria-label="{{ label }}" data-class="button">
+      {{ icon(name) }}
+    </button>
+    {% endfor %}
+  </nav>
+
+  <div class="pm-shell {{ 'has-thread' if pinterest['show_thread'] else '' }}">
+    <aside class="pm-inbox" data-class="section">
+      <header class="pm-inbox-header" data-class="app_bar">
+        <h1>Messages</h1>
+        <button class="pm-icon-button" aria-label="New message" data-class="button">
+          {{ icon("edit_square") }}
+        </button>
+      </header>
+
+      <div class="pm-search">
+        {{ icon("search") }}
+        <input
+          type="text"
+          placeholder="Search messages"
+          aria-label="Search messages"
+          data-class="search_bar"
+        >
+      </div>
+
+      {% for contact in pinterest["contacts"] %}
+      <button
+        class="pm-contact {{ 'active' if pinterest['show_thread'] and contact['id'] == pinterest['active_contact']['id'] else '' }}"
+        data-class="button"
+      >
+        {{ avatar(contact) }}
+
+        <span class="pm-contact-copy">
+          <strong>{{ contact["name"] }}</strong>
+          <small>{{ contact["preview"] }}</small>
+        </span>
+
+        <span class="pm-contact-meta">
+          <span>{{ contact["time"] }}</span>
+          {% if contact["unread"] %}
+          <span class="pm-unread" aria-label="Unread message" data-class="badge"></span>
+          {% endif %}
+        </span>
+      </button>
+      {% else %}
+      <div class="pm-empty">
+        {{ icon("chat_bubble_outline") }}
+        <h2>No messages yet</h2>
+        <p>Start a conversation and share your favorite ideas.</p>
+        <button class="pm-button primary" data-class="button">New message</button>
+      </div>
+      {% endfor %}
+    </aside>
+
+    <main class="pm-thread" data-class="section">
+      {% if pinterest["show_thread"] %}
+      <header class="pm-thread-header" data-class="app_bar">
+        <button class="pm-icon-button pm-back" aria-label="Back" data-class="button">
+          {{ icon("arrow_back") }}
+        </button>
+
+        {{ avatar(pinterest["active_contact"]) }}
+        <strong>{{ pinterest["active_contact"]["name"] }}</strong>
+
+        <button class="pm-icon-button" aria-label="Conversation options" data-class="button">
+          {{ icon("more_horiz") }}
+        </button>
+      </header>
+
+      <div class="pm-history">
+        <div class="pm-date">Today</div>
+
+        {% for message in pinterest["messages"] %}
+        {% if message["kind"] == "pin" %}
+        <article class="pm-shared-pin" data-class="card">
+          {% if message["pin"]["image"] %}
+          <img
+            src="{{ message['pin']['image'] }}"
+            alt="Shared Pin"
+            data-class="image"
+          >
+          {% endif %}
+          <p>{{ message["pin"]["title"] }}</p>
+        </article>
+        {% else %}
+        <div
+          class="pm-bubble {{ 'outgoing' if message['outgoing'] else '' }}"
+
+        >{{ message["text"] }}</div>
+        {% endif %}
+        {% endfor %}
+      </div>
+
+      <footer class="pm-composer" data-class="app_bar">
+        <button class="pm-icon-button" aria-label="Find a Pin to send" data-class="button">
+          {{ icon("add") }}
+        </button>
+
+        <textarea
+          placeholder="Send a message"
+          aria-label="Send a message"
+          data-class="input_field"
+        >{{ pinterest["draft"] }}</textarea>
+
+        <button class="pm-icon-button" aria-label="Send a heart" data-class="button">
+          {{ icon("favorite_border") }}
+        </button>
+
+        <button
+          class="pm-icon-button"
+          aria-label="Send message"
+          data-class="button"
+          {% if not pinterest["draft"] %}disabled{% endif %}
+        >{{ icon("send") }}</button>
+      </footer>
+      {% else %}
+      <div class="pm-empty">
+        {{ icon("forum") }}
+        <h2>Share a little inspiration</h2>
+        <p>Choose a conversation or start a new message.</p>
+        <button class="pm-button primary" data-class="button">New message</button>
+      </div>
+      {% endif %}
+    </main>
+  </div>
+</div>
+
+{% if pinterest["popup_visible"] %}
+<div class="pm-overlay">
+  <section
+    class="pm-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="pm-dialog-title"
+    data-class="dialog"
+    data-occluder="true"
+  >
+    <header class="pm-dialog-header">
+      <h2 id="pm-dialog-title">
+        {{ "New message" if pinterest["state"] == "new_message_dialog" else "Send a Pin" }}
+      </h2>
+      <button class="pm-icon-button" aria-label="Close" data-class="button">
+        {{ icon("close") }}
+      </button>
+    </header>
+
+    <div class="pm-search">
+      {{ icon("search") }}
+      <input
+        type="text"
+        placeholder="{{ 'Search name or email' if pinterest['state'] == 'new_message_dialog' else 'Search ideas' }}"
+        aria-label="Search"
+        data-class="search_bar"
+      >
+    </div>
+
+    {% if pinterest["state"] == "new_message_dialog" %}
+    {% for contact in pinterest["contacts"] %}
+    <button
+      class="pm-contact"
+      aria-pressed="{{ 'true' if contact['id'] == pinterest['selected_contact_id'] else 'false' }}"
+
+    >
+      {{ avatar(contact) }}
+      <span class="pm-contact-copy"><strong>{{ contact["name"] }}</strong></span>
+
+      <span class="material-symbols-rounded icon" data-class="checkbox">
+        {{ "check_circle" if contact["id"] == pinterest["selected_contact_id"] else "radio_button_unchecked" }}
+      </span>
+    </button>
+    {% endfor %}
+    {% else %}
+    <div class="pm-pin-grid">
+      {% for pin in pinterest["pins"] %}
+      <button
+        class="pm-pin-choice"
+        aria-pressed="{{ 'true' if loop.first else 'false' }}"
+        data-class="button"
+      >
+        {% if pin["image"] %}
+        <img src="{{ pin['image'] }}" alt="Pin preview" data-class="image">
+        {% endif %}
+        <p>{{ pin["title"] }}</p>
+
+        {% if loop.first %}
+        <span
+          class="material-symbols-rounded icon pm-selected"
+          data-class="checkbox"
+        >check</span>
+        {% endif %}
+      </button>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="pm-dialog-actions">
+      <button class="pm-button primary" data-class="button">
+        {{ "Next" if pinterest["state"] == "new_message_dialog" else "Send" }}
+      </button>
+    </div>
+  </section>
+</div>
+{% endif %}
+{% endblock %}
