@@ -1,0 +1,1558 @@
+{% extends "base.html" %}
+
+{% block title %}
+Tasks and Reminders
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .tasks-shell {
+        display: grid;
+        grid-template-columns: 250px minmax(0, 1fr);
+        grid-template-rows: 68px minmax(
+            calc(100vh - 68px),
+            auto
+        );
+        min-height: 100vh;
+        background: var(--background);
+    }
+
+    .tasks-app-bar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 68px;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .tasks-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 215px;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .tasks-logo {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--icon);
+    }
+
+    .primary-button,
+    .outline-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 42px;
+        padding: 0 17px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text-primary);
+        font-weight: 700;
+    }
+
+    .primary-button {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .tasks-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: min(360px, 30vw);
+        height: 42px;
+        margin-left: auto;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: var(--surface-variant);
+    }
+
+    .tasks-search input {
+        width: 100%;
+        min-width: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--text-primary);
+    }
+
+    .tasks-sidebar {
+        padding: 18px 14px;
+        border-right: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .sidebar-create {
+        width: 148px;
+        margin: 0 4px 20px;
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 44px;
+        padding: 0 12px;
+        border-radius: 10px;
+        color: var(--text-primary);
+        text-align: left;
+    }
+
+    .nav-item.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .nav-count {
+        min-width: 22px;
+        margin-left: auto;
+        padding: 3px 6px;
+        border-radius: 999px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 10px;
+        text-align: center;
+    }
+
+    .sidebar-title {
+        margin: 22px 12px 8px;
+        color: var(--text-secondary);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .list-dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--primary);
+    }
+
+    .blue .list-dot,
+    .list-dot.blue {
+        background: #2563EB;
+    }
+
+    .green .list-dot,
+    .list-dot.green {
+        background: #16854B;
+    }
+
+    .purple .list-dot,
+    .list-dot.purple {
+        background: #7651C9;
+    }
+
+    .orange .list-dot,
+    .list-dot.orange {
+        background: #B65D08;
+    }
+
+    .tasks-main {
+        min-width: 0;
+        padding: 24px;
+    }
+
+    .tasks-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+
+    .tasks-header h1 {
+        margin-right: auto;
+        color: var(--text-primary);
+        font-size: 27px;
+    }
+
+    .task-section {
+        margin-bottom: 26px;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .section-header h2 {
+        color: var(--text-primary);
+        font-size: 15px;
+    }
+
+    .section-count {
+        padding: 3px 7px;
+        border-radius: 999px;
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+        font-size: 10px;
+    }
+
+    .task-card {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: start;
+        min-height: 72px;
+        margin-bottom: 8px;
+        padding: 14px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        background: var(--surface);
+    }
+
+    .task-card.completed {
+        opacity: 0.65;
+    }
+
+    .task-card.completed .task-title {
+        text-decoration: line-through;
+    }
+
+    .task-checkbox {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--primary);
+        border-radius: 6px;
+        color: var(--on-primary);
+    }
+
+    .task-checkbox.checked {
+        background: var(--primary);
+    }
+
+    .task-content {
+        min-width: 0;
+    }
+
+    .task-title {
+        overflow: hidden;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 700;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .task-metadata {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 9px;
+        margin-top: 7px;
+        color: var(--text-secondary);
+        font-size: 11px;
+    }
+
+    .metadata-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+    .metadata-item .material-symbols-rounded {
+        font-size: 15px;
+    }
+
+    .overdue-text {
+        color: var(--error);
+        font-weight: 700;
+    }
+
+    .priority-icon {
+        color: var(--error);
+    }
+
+    .task-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 8px;
+    }
+
+    .task-tag {
+        padding: 4px 7px;
+        border-radius: 999px;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 9px;
+        font-weight: 700;
+    }
+
+    .task-progress {
+        width: min(220px, 100%);
+        height: 6px;
+        margin-top: 9px;
+        border-radius: 999px;
+        background: var(--surface-variant);
+        overflow: hidden;
+    }
+
+    .task-progress-value {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--primary);
+    }
+
+    .task-avatar {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(250px, 1fr));
+        gap: 14px;
+        overflow-x: auto;
+    }
+
+    .board-column {
+        min-width: 250px;
+        padding: 12px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        background: var(--surface-variant);
+    }
+
+    .board-column-title {
+        margin: 4px 4px 12px;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .board .task-card {
+        display: block;
+        min-height: 130px;
+        background: var(--surface);
+    }
+
+    .board .task-checkbox {
+        margin-bottom: 10px;
+    }
+
+    .empty-state {
+        display: grid;
+        place-items: center;
+        min-height: 450px;
+        text-align: center;
+    }
+
+    .empty-state .material-symbols-rounded {
+        color: var(--primary);
+        font-size: 62px;
+    }
+
+    .mobile-navigation {
+        display: none;
+    }
+
+    .popup-scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(0, 0, 0, 0.48);
+    }
+
+    .task-dialog {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        z-index: 90;
+        width: min(520px, calc(100vw - 28px));
+        max-height: calc(100vh - 32px);
+        padding: 22px;
+        border-radius: 18px;
+        background: var(--surface);
+        box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+        overflow-y: auto;
+        transform: translate(-50%, -50%);
+    }
+
+    .dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .dialog-field {
+        margin-bottom: 14px;
+    }
+
+    .dialog-field label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .field-value {
+        min-height: 44px;
+        padding: 11px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--background);
+    }
+
+    .subtask-row,
+    .filter-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 46px;
+        padding: 7px;
+        border-radius: 9px;
+    }
+
+    .filter-option.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    @media (max-width: 1023px) {
+
+        .tasks-shell {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: 60px auto;
+        }
+
+        .tasks-app-bar {
+            height: 60px;
+            padding: 0 12px;
+        }
+
+        .tasks-sidebar {
+            display: none;
+        }
+
+        .tasks-brand {
+            min-width: auto;
+        }
+
+        .tasks-brand-name {
+            display: none;
+        }
+
+        .tasks-main {
+            padding: 16px;
+        }
+    }
+
+    @media (max-width: 599px) {
+
+        .tasks-main {
+            padding: 12px 10px 78px;
+        }
+
+        .tasks-search {
+            display: none;
+        }
+
+        .tasks-header h1 {
+            font-size: 22px;
+        }
+
+        .view-label {
+            display: none;
+        }
+
+        .task-card {
+            grid-template-columns: 28px minmax(0, 1fr);
+        }
+
+        .task-avatar {
+            display: none;
+        }
+
+        .board {
+            grid-template-columns: repeat(4, 82vw);
+        }
+
+        .mobile-navigation {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 50;
+            display: flex;
+            height: 64px;
+            border-top: 1px solid var(--border-subtle);
+            background: var(--surface);
+        }
+
+        .mobile-nav-button {
+            width: 25%;
+            color: var(--text-secondary);
+            font-size: 10px;
+        }
+
+        .mobile-nav-button .material-symbols-rounded {
+            display: block;
+            margin: 0 auto 3px;
+        }
+
+        .task-dialog.mobile-sheet {
+            top: auto;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            max-height: 82vh;
+            border-radius: 20px 20px 0 0;
+            transform: none;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="tasks-shell">
+
+
+    <!-- =====================================================
+         Background Interface
+         ===================================================== -->
+
+    <header
+        class="tasks-app-bar"
+        data-class="app_bar"
+        data-semantic="tasks_app_bar"
+        data-occluder="true"
+        {% if tasks.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+        <div class="tasks-brand">
+
+            <span
+                class="
+                    tasks-logo
+                    material-symbols-rounded
+                "
+                data-class="logo"
+                data-semantic="tasks_logo"
+            >
+                task_alt
+            </span>
+
+            <span class="tasks-brand-name">
+                Tasks
+            </span>
+
+        </div>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="menu_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                menu
+            </span>
+        </button>
+
+
+        <div
+            class="tasks-search"
+            data-class="search_bar"
+            data-semantic="task_search"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                search
+            </span>
+
+            <input
+                value="{{ tasks.search_query }}"
+                placeholder="Search tasks"
+            >
+
+        </div>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="notifications_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                notifications
+            </span>
+        </button>
+
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="account_button"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="avatar"
+            >
+                person
+            </span>
+        </button>
+
+    </header>
+
+
+    <aside
+        class="tasks-sidebar"
+        data-class="navigation_bar"
+        data-semantic="tasks_sidebar"
+        {% if tasks.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+        <button
+            class="
+                primary-button
+                sidebar-create
+            "
+            data-class="button"
+            data-semantic="create_task"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                add
+            </span>
+
+            New task
+
+        </button>
+
+
+        <button
+            class="
+                nav-item
+                {% if tasks.state == 'all_tasks' %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="all_tasks"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                list_alt
+            </span>
+
+            All tasks
+
+            <span
+                class="nav-count"
+                data-class="badge"
+            >
+                {{ tasks.counts["all"] }}
+            </span>
+        </button>
+
+
+        <button
+            class="
+                nav-item
+                {% if tasks.state == 'today' %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="today_tasks"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                today
+            </span>
+
+            Today
+
+            <span
+                class="nav-count"
+                data-class="badge"
+            >
+                {{ tasks.counts["today"] }}
+            </span>
+        </button>
+
+
+        <button
+            class="
+                nav-item
+                {% if tasks.state == 'important' %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="important_tasks"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                star
+            </span>
+
+            Important
+
+            <span
+                class="nav-count"
+                data-class="badge"
+            >
+                {{ tasks.counts["important"] }}
+            </span>
+        </button>
+
+
+        <button
+            class="
+                nav-item
+                {% if tasks.state == 'completed' %}
+                active
+                {% endif %}
+            "
+            data-class="button"
+            data-semantic="completed_tasks"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                check_circle
+            </span>
+
+            Completed
+
+            <span
+                class="nav-count"
+                data-class="badge"
+            >
+                {{ tasks.counts["completed"] }}
+            </span>
+        </button>
+
+
+        <div class="sidebar-title">
+            Lists
+        </div>
+
+
+        {% for task_list in tasks.lists %}
+
+        <button
+            class="
+                nav-item
+                {{ task_list.color }}
+            "
+            data-class="button"
+            data-semantic="list_{{ task_list.id }}"
+        >
+
+            <span
+                class="
+                    list-dot
+                    {{ task_list.color }}
+                "
+                data-class="selection_indicator"
+            ></span>
+
+            {{ task_list.name }}
+
+        </button>
+
+        {% endfor %}
+
+    </aside>
+
+
+    <main
+        class="tasks-main"
+        {% if tasks.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+        <div class="tasks-header">
+
+            <h1>
+                {{ tasks.page_title }}
+            </h1>
+
+
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="filter_tasks"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    filter_list
+                </span>
+
+                <span class="view-label">
+                    Filter
+                </span>
+
+            </button>
+
+
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="change_view"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    {% if tasks.board_view %}
+                        view_list
+                    {% else %}
+                        view_kanban
+                    {% endif %}
+                </span>
+
+                <span class="view-label">
+                    View
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <!-- =================================================
+             Board View
+             ================================================= -->
+
+        {% if tasks.board_view %}
+
+        <section
+            class="board"
+            data-class="section"
+            data-semantic="task_board"
+        >
+
+            {% for column in tasks.board_columns %}
+
+            <div
+                class="board-column"
+                data-class="section"
+                data-semantic="board_column_{{ column.id }}"
+            >
+
+                <div class="board-column-title">
+
+                    {{ column.title }}
+
+                    <span
+                        class="section-count"
+                        data-class="badge"
+                    >
+                        {{ column.tasks | length }}
+                    </span>
+
+                </div>
+
+
+                {% for task in column.tasks %}
+
+                <article
+                    class="
+                        task-card
+
+                        {% if task.completed %}
+                        completed
+                        {% endif %}
+                    "
+                    data-class="card"
+                    data-semantic="board_task_{{ task.id }}"
+                >
+
+                    <span
+                        class="
+                            task-checkbox
+
+                            {% if task.completed %}
+                            checked
+                            {% endif %}
+                        "
+                        data-class="checkbox"
+                        data-semantic="task_checkbox_{{ task.id }}"
+                    >
+                        {% if task.completed %}
+                            ✓
+                        {% endif %}
+                    </span>
+
+
+                    <div class="task-title">
+                        {{ task.title }}
+                    </div>
+
+
+                    <div class="task-metadata">
+
+                        <span class="metadata-item">
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                event
+                            </span>
+
+                            {{ task.due_date_text }}
+                        </span>
+
+
+                        {% if task.important %}
+
+                        <span
+                            class="
+                                material-symbols-rounded
+                                priority-icon
+                            "
+                            data-class="icon"
+                        >
+                            star
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="task-tags">
+
+                        {% for tag in task.tags %}
+
+                        <span
+                            class="task-tag"
+                            data-class="chip"
+                        >
+                            {{ tag }}
+                        </span>
+
+                        {% endfor %}
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </div>
+
+            {% endfor %}
+
+        </section>
+
+
+        <!-- =================================================
+             Task List
+             ================================================= -->
+
+        {% else %}
+
+            {% for section in tasks.sections %}
+
+            <section
+                class="task-section"
+                data-class="section"
+                data-semantic="task_section_{{ section.id }}"
+            >
+
+                <div class="section-header">
+
+                    <h2>
+                        {{ section.title }}
+                    </h2>
+
+                    <span
+                        class="section-count"
+                        data-class="badge"
+                    >
+                        {{ section.count }}
+                    </span>
+
+                </div>
+
+
+                {% for task in section.tasks %}
+
+                <article
+                    class="
+                        task-card
+
+                        {% if task.completed %}
+                        completed
+                        {% endif %}
+                    "
+                    data-class="card"
+                    data-semantic="task_{{ task.id }}"
+                >
+
+                    <span
+                        class="
+                            task-checkbox
+
+                            {% if task.completed %}
+                            checked
+                            {% endif %}
+                        "
+                        data-class="checkbox"
+                        data-semantic="task_checkbox_{{ task.id }}"
+                    >
+                        {% if task.completed %}
+                            ✓
+                        {% endif %}
+                    </span>
+
+
+                    <div class="task-content">
+
+                        <div class="task-title">
+                            {{ task.title }}
+                        </div>
+
+
+                        <div class="task-metadata">
+
+                            <span
+                                class="
+                                    metadata-item
+
+                                    {% if task.status == 'overdue' %}
+                                    overdue-text
+                                    {% endif %}
+                                "
+                            >
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    event
+                                </span>
+
+                                {{ task.due_date_text }}
+
+                                {% if task.due_time %}
+                                    · {{ task.due_time }}
+                                {% endif %}
+
+                            </span>
+
+
+                            <span class="metadata-item">
+
+                                <span
+                                    class="list-dot {{ task.list_color }}"
+                                    data-class="selection_indicator"
+                                ></span>
+
+                                {{ task.list_name }}
+
+                            </span>
+
+
+                            {% if task.has_attachment %}
+
+                            <span class="metadata-item">
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    attach_file
+                                </span>
+
+                                1
+
+                            </span>
+
+                            {% endif %}
+
+
+                            {% if task.comment_count > 0 %}
+
+                            <span class="metadata-item">
+
+                                <span
+                                    class="material-symbols-rounded"
+                                    data-class="icon"
+                                >
+                                    chat_bubble
+                                </span>
+
+                                {{ task.comment_count }}
+
+                            </span>
+
+                            {% endif %}
+
+
+                            {% if task.important %}
+
+                            <span
+                                class="
+                                    material-symbols-rounded
+                                    priority-icon
+                                "
+                                data-class="icon"
+                                data-semantic="important_task"
+                            >
+                                star
+                            </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        {% if task.subtask_count > 0 %}
+
+                        <div
+                            class="task-progress"
+                            data-class="progress_bar"
+                            data-semantic="task_progress_{{ task.id }}"
+                        >
+
+                            <div
+                                class="task-progress-value"
+                                style="
+                                    width:
+                                    {{ task.progress }}%;
+                                "
+                            ></div>
+
+                        </div>
+
+                        {% endif %}
+
+
+                        <div class="task-tags">
+
+                            {% for tag in task.tags %}
+
+                            <span
+                                class="task-tag"
+                                data-class="chip"
+                                data-semantic="task_tag_{{ loop.index }}"
+                            >
+                                {{ tag }}
+                            </span>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+
+                    <span
+                        class="task-avatar"
+                        data-class="avatar"
+                        data-semantic="task_assignee"
+                    >
+                        {{ task.assignee_initials }}
+                    </span>
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+            {% else %}
+
+            <section
+                class="empty-state"
+                data-class="section"
+                data-semantic="empty_tasks"
+            >
+
+                <div>
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                    >
+                        task_alt
+                    </span>
+
+                    <h2>
+                        No tasks found
+                    </h2>
+
+                    <p>
+                        Create a task or change the current filter.
+                    </p>
+
+                </div>
+
+            </section>
+
+            {% endfor %}
+
+        {% endif %}
+
+    </main>
+
+
+    <nav
+        class="mobile-navigation"
+        data-class="navigation_bar"
+        data-semantic="task_bottom_navigation"
+        {% if tasks.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+        {% for navigation in [
+            {"icon": "list_alt", "label": "Tasks"},
+            {"icon": "today", "label": "Today"},
+            {"icon": "star", "label": "Important"},
+            {"icon": "add", "label": "Create"}
+        ] %}
+
+        <button
+            class="mobile-nav-button"
+            data-class="button"
+            data-semantic="mobile_{{ navigation.label | lower }}"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                {{ navigation.icon }}
+            </span>
+
+            {{ navigation.label }}
+
+        </button>
+
+        {% endfor %}
+
+    </nav>
+
+
+    <!-- =====================================================
+         Popup
+         ===================================================== -->
+
+    {% if tasks.popup_open %}
+
+    <div
+        class="popup-scrim"
+        aria-hidden="true"
+    ></div>
+
+
+    <section
+        class="
+            task-dialog
+
+            {% if tasks.is_mobile_sheet %}
+            mobile-sheet
+            {% endif %}
+        "
+        data-class="{% if tasks.is_mobile_sheet %}bottom_sheet{% else %}dialog{% endif %}"
+        data-semantic="{{ tasks.state }}"
+        data-occluder="true"
+    >
+
+        <div class="dialog-header">
+
+            <h2>
+
+                {% if tasks.state == "create_task_dialog" %}
+                    Create task
+
+                {% elif tasks.state == "filter_menu" %}
+                    Filter tasks
+
+                {% else %}
+                    Task details
+                {% endif %}
+
+            </h2>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_popup"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+
+        {% if tasks.state == "filter_menu" %}
+
+            {% for option in tasks.filter_options %}
+
+            <button
+                class="
+                    filter-option
+
+                    {% if option.selected %}
+                    selected
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="filter_{{ option.id }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    filter_alt
+                </span>
+
+                {{ option.label }}
+
+
+                {% if option.selected %}
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="selection_indicator"
+                >
+                    check
+                </span>
+
+                {% endif %}
+
+            </button>
+
+            {% endfor %}
+
+
+        {% else %}
+
+            {% set selected_task = tasks.selected_task %}
+
+
+            <div class="dialog-field">
+
+                <label>
+                    Task title
+                </label>
+
+                <div
+                    class="field-value"
+                    data-class="input_field"
+                    data-semantic="popup_task_title"
+                >
+                    {% if selected_task %}
+                        {{ selected_task.title }}
+                    {% else %}
+                        Add task title
+                    {% endif %}
+                </div>
+
+            </div>
+
+
+            <div class="dialog-field">
+
+                <label>
+                    Description
+                </label>
+
+                <div
+                    class="field-value"
+                    data-class="input_field"
+                    data-semantic="popup_task_description"
+                >
+                    {% if selected_task %}
+                        {{ selected_task.description }}
+                    {% else %}
+                        Add task description
+                    {% endif %}
+                </div>
+
+            </div>
+
+
+            <div class="dialog-field">
+
+                <label>
+                    Due date
+                </label>
+
+                <div
+                    class="field-value"
+                    data-class="input_field"
+                    data-semantic="popup_due_date"
+                >
+                    {% if selected_task %}
+                        {{ selected_task.due_date }}
+                    {% else %}
+                        Select due date
+                    {% endif %}
+                </div>
+
+            </div>
+
+
+            {% if selected_task %}
+
+            <div class="dialog-field">
+
+                <label>
+                    Subtasks
+                </label>
+
+
+                {% for subtask in selected_task.subtasks %}
+
+                <div class="subtask-row">
+
+                    <span
+                        class="
+                            task-checkbox
+
+                            {% if subtask.completed %}
+                            checked
+                            {% endif %}
+                        "
+                        data-class="checkbox"
+                        data-semantic="subtask_{{ subtask.id }}"
+                    >
+                        {% if subtask.completed %}
+                            ✓
+                        {% endif %}
+                    </span>
+
+                    {{ subtask.title }}
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
+        {% endif %}
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="cancel_popup"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="save_task"
+            >
+                Save
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

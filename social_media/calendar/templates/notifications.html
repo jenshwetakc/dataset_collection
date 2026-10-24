@@ -1,0 +1,1327 @@
+{% extends "base.html" %}
+
+{% block title %}
+Calendar · Notifications
+{% endblock %}
+
+{% block head %}
+<style>
+* {
+    box-sizing: border-box;
+}
+
+button,
+input,
+select {
+    font: inherit;
+    color: inherit;
+}
+
+.notifications-app {
+    min-height: calc(100vh - var(--status-h));
+    background: var(--background);
+}
+
+.top-bar {
+    height: 68px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.icon-button {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+}
+
+.brand {
+    min-width: 220px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.brand-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    color: var(--on-primary);
+    background: var(--primary);
+    border-radius: 10px;
+}
+
+.search {
+    width: min(560px, 45vw);
+    height: 44px;
+    margin-left: auto;
+    padding: 0 15px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--text-secondary);
+    background: var(--surface-variant);
+    border-radius: 24px;
+}
+
+.search input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+}
+
+.avatar {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    color: var(--on-primary);
+    background: var(--primary);
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.page-layout {
+    min-height: calc(100vh - 96px);
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+}
+
+.sidebar {
+    padding: 20px 12px;
+    background: var(--surface);
+    border-right: 1px solid var(--border-subtle);
+}
+
+.sidebar-title {
+    padding: 0 14px 12px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.filter-button {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    text-align: left;
+}
+
+.filter-button.active {
+    color: var(--on-primary-container);
+    background: var(--primary-container);
+    font-weight: 700;
+}
+
+.filter-count {
+    min-width: 25px;
+    margin-left: auto;
+    padding: 3px 7px;
+    text-align: center;
+    background: var(--surface-variant);
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+.content {
+    min-width: 0;
+    padding: 28px 32px 90px;
+}
+
+.heading {
+    margin-bottom: 22px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.heading h1 {
+    margin: 0 0 6px;
+    font-size: clamp(25px, 3vw, 34px);
+}
+
+.subtle {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.primary-button,
+.outline-button,
+.danger-button {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+.primary-button {
+    color: var(--on-primary);
+    background: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.outline-button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.danger-button {
+    color: white;
+    background: #c62828;
+    border: 1px solid #c62828;
+}
+
+.summary {
+    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 13px;
+}
+
+.summary-card {
+    padding: 17px;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+}
+
+.summary-card strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 27px;
+}
+
+.notification-list {
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 18px;
+}
+
+.notification-row {
+    min-height: 104px;
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.notification-row:last-child {
+    border-bottom: 0;
+}
+
+.notification-row.unread {
+    background:
+        color-mix(
+            in srgb,
+            var(--primary-container) 30%,
+            var(--surface)
+        );
+}
+
+.notification-icon {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    color: var(--on-primary-container);
+    background: var(--primary-container);
+    border-radius: 50%;
+}
+
+.notification-content {
+    min-width: 0;
+}
+
+.notification-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+}
+
+.notification-message {
+    margin-top: 5px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.unread-dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 auto;
+    background: var(--primary);
+    border-radius: 50%;
+}
+
+.notification-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.type-badge {
+    padding: 6px 10px;
+    color: var(--on-primary-container);
+    background: var(--primary-container);
+    border-radius: 14px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.state-panel {
+    min-height: 500px;
+    padding: 30px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 18px;
+}
+
+.state-icon {
+    font-size: 66px;
+    color: var(--primary);
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    margin: auto;
+    border: 5px solid var(--primary-container);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+}
+
+.mobile-navigation {
+    display: none;
+}
+
+.scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: #080c1494;
+}
+
+.dialog {
+    width: min(570px, calc(100vw - 30px));
+    max-height: calc(100vh - 42px);
+    overflow: auto;
+    position: fixed;
+    z-index: 90;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--surface);
+    border-radius: 22px;
+    box-shadow: 0 24px 70px #0007;
+}
+
+.dialog-heading {
+    padding: 20px 22px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dialog-heading h2 {
+    margin: 0;
+    font-size: 21px;
+}
+
+.dialog-body {
+    padding: 10px 22px 22px;
+}
+
+.dialog-actions {
+    padding: 15px 22px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.notification-hero {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--primary-container);
+    border-radius: 14px;
+}
+
+.detail-row {
+    min-height: 55px;
+    padding: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.snooze-option,
+.setting-row,
+.sheet-option {
+    width: 100%;
+    min-height: 62px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    background: transparent;
+    text-align: left;
+}
+
+.snooze-option:last-child,
+.setting-row:last-child,
+.sheet-option:last-child {
+    border-bottom: 0;
+}
+
+.option-content {
+    flex: 1;
+}
+
+.option-content strong {
+    display: block;
+}
+
+.toggle {
+    width: 42px;
+    height: 24px;
+    padding: 3px;
+    border: 0;
+    background: var(--border);
+    border-radius: 14px;
+}
+
+.toggle::after {
+    content: "";
+    display: block;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+}
+
+.toggle.on {
+    background: var(--primary);
+}
+
+.toggle.on::after {
+    margin-left: 18px;
+}
+
+.warning {
+    padding: 14px;
+    display: flex;
+    gap: 12px;
+    color: #8b1a1a;
+    background: #ffebee;
+    border-radius: 12px;
+}
+
+.sheet {
+    width: 100%;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    border-radius: 24px 24px 0 0;
+}
+
+.sheet-handle {
+    width: 44px;
+    height: 4px;
+    margin: 10px auto 0;
+    background: var(--border);
+    border-radius: 4px;
+}
+
+@media (max-width: 900px) {
+    .brand {
+        min-width: auto;
+    }
+
+    .brand-label,
+    .filter-label,
+    .filter-count,
+    .sidebar-title {
+        display: none;
+    }
+
+    .page-layout {
+        grid-template-columns: 78px minmax(0, 1fr);
+    }
+
+    .sidebar {
+        padding: 14px 8px;
+    }
+
+    .filter-button {
+        justify-content: center;
+        padding: 0;
+    }
+
+    .content {
+        padding: 24px 18px 82px;
+    }
+}
+
+@media (max-width: 620px) {
+    .top-bar {
+        height: 60px;
+        padding: 8px 10px;
+    }
+
+    .search,
+    .sidebar {
+        display: none;
+    }
+
+    .profile-avatar {
+        margin-left: auto;
+    }
+
+    .page-layout {
+        display: block;
+    }
+
+    .content {
+        padding: 17px 11px 80px;
+    }
+
+    .summary {
+        gap: 7px;
+    }
+
+    .summary-card {
+        padding: 12px 9px;
+    }
+
+    .summary-card strong {
+        font-size: 22px;
+    }
+
+    .notification-row {
+        padding: 13px 11px;
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .notification-actions {
+        grid-column: 2;
+        justify-content: flex-start;
+    }
+
+    .mobile-navigation {
+        height: 64px;
+        position: fixed;
+        z-index: 50;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: space-around;
+        background: var(--surface);
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .mobile-navigation button {
+        width: 25%;
+        border: 0;
+        background: transparent;
+        font-size: 10px;
+    }
+
+    .mobile-navigation span {
+        display: block;
+        margin: auto;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notifications-app">
+
+    <header
+        class="top-bar"
+        data-class="app_bar"
+        data-semantic="notifications_app_bar"
+        data-occluder="true"
+        {% if calendar.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="open_menu"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="menu_icon"
+            >menu</span>
+        </button>
+
+        <div class="brand">
+            <span
+                class="brand-icon material-symbols-rounded"
+                data-class="icon"
+                data-semantic="calendar_logo"
+            >calendar_month</span>
+
+            <span class="brand-label">
+                Calendar
+            </span>
+        </div>
+
+        <label
+            class="search"
+            data-class="search_bar"
+            data-semantic="notification_search"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="search_icon"
+            >search</span>
+
+            <input
+                value="{{ calendar.search_query }}"
+                placeholder="Search notifications"
+            >
+        </label>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="notification_settings"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="notification_settings_icon"
+            >settings</span>
+        </button>
+
+        <div
+            class="avatar profile-avatar"
+            data-class="avatar"
+            data-semantic="profile_avatar"
+        >
+            {{ calendar.profile.initials }}
+        </div>
+    </header>
+
+    <div
+        class="page-layout"
+        {% if calendar.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+        <aside
+            class="sidebar"
+            data-class="navigation_bar"
+            data-semantic="notification_navigation"
+        >
+            <div class="sidebar-title">
+                Notifications
+            </div>
+
+            {% set filters = [
+                ("all_notifications", "notifications", "All", calendar.notification_count),
+                ("unread", "mark_email_unread", "Unread", calendar.unread_count),
+                ("event_reminders", "alarm", "Reminders", calendar.reminder_count),
+                ("schedule_changes", "update", "Changes", calendar.schedule_change_count),
+                ("responses", "how_to_reg", "Responses", calendar.response_count),
+                ("snoozed", "snooze", "Snoozed", calendar.snoozed_count)
+            ] %}
+
+            {% for filter_item in filters %}
+            <button
+                class="filter-button
+                {% if calendar.state == filter_item[0] %}
+                active
+                {% endif %}"
+                data-class="button"
+                data-semantic="filter_{{ filter_item[0] }}"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="filter_{{ filter_item[0] }}_icon"
+                >
+                    {{ filter_item[1] }}
+                </span>
+
+                <span class="filter-label">
+                    {{ filter_item[2] }}
+                </span>
+
+                <span
+                    class="filter-count"
+                    data-class="badge"
+                    data-semantic="filter_{{ filter_item[0] }}_count"
+                >
+                    {{ filter_item[3] }}
+                </span>
+            </button>
+            {% endfor %}
+        </aside>
+
+        <main class="content">
+            <div class="heading">
+                <div>
+                    <h1>{{ calendar.page_title }}</h1>
+
+                    <div class="subtle">
+                        Review calendar activity and reminders.
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button
+                        class="outline-button"
+                        data-class="button"
+                        data-semantic="mark_all_read"
+                    >
+                        Mark all read
+                    </button>
+
+                    <button
+                        class="outline-button"
+                        data-class="button"
+                        data-semantic="clear_notifications"
+                    >
+                        Clear all
+                    </button>
+                </div>
+            </div>
+
+            {% if calendar.state == "loading" %}
+
+            <section
+                class="state-panel"
+                data-class="section"
+                data-semantic="notifications_loading"
+            >
+                <div>
+                    <div
+                        class="spinner"
+                        data-class="slider"
+                        data-semantic="loading_indicator"
+                    ></div>
+
+                    <h2>Loading notifications</h2>
+                </div>
+            </section>
+
+            {% elif calendar.state == "error" %}
+
+            <section
+                class="state-panel"
+                data-class="section"
+                data-semantic="notifications_error"
+            >
+                <div>
+                    <span
+                        class="material-symbols-rounded state-icon"
+                        data-class="icon"
+                        data-semantic="error_icon"
+                    >cloud_off</span>
+
+                    <h2>Notifications unavailable</h2>
+
+                    <p class="subtle">
+                        {{ calendar.error_message }}
+                    </p>
+
+                    <button
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="retry_notifications"
+                    >
+                        Try again
+                    </button>
+                </div>
+            </section>
+
+            {% elif calendar.state == "empty_notifications" %}
+
+            <section
+                class="state-panel"
+                data-class="section"
+                data-semantic="empty_notifications"
+            >
+                <div>
+                    <span
+                        class="material-symbols-rounded state-icon"
+                        data-class="icon"
+                        data-semantic="empty_notifications_icon"
+                    >notifications_off</span>
+
+                    <h2>You are all caught up</h2>
+
+                    <p class="subtle">
+                        There are no calendar notifications.
+                    </p>
+                </div>
+            </section>
+
+            {% else %}
+
+            <section
+                class="summary"
+                data-class="section"
+                data-semantic="notification_summary"
+            >
+                <article
+                    class="summary-card"
+                    data-class="card"
+                    data-semantic="total_notifications_card"
+                >
+                    <span class="subtle">Total</span>
+                    <strong>{{ calendar.notification_count }}</strong>
+                </article>
+
+                <article
+                    class="summary-card"
+                    data-class="card"
+                    data-semantic="unread_notifications_card"
+                >
+                    <span class="subtle">Unread</span>
+                    <strong>{{ calendar.unread_count }}</strong>
+                </article>
+
+                <article
+                    class="summary-card"
+                    data-class="card"
+                    data-semantic="snoozed_notifications_card"
+                >
+                    <span class="subtle">Snoozed</span>
+                    <strong>{{ calendar.snoozed_count }}</strong>
+                </article>
+            </section>
+
+            <section
+                class="notification-list"
+                data-class="section"
+                data-semantic="notification_list"
+            >
+                {% for notification in calendar.notifications %}
+                <article
+                    class="notification-row
+                    {% if notification.unread %}unread{% endif %}"
+                    data-class="card"
+                    data-semantic="notification_{{ notification.id }}"
+                >
+                    <div
+                        class="notification-icon"
+                        data-class="button"
+                        data-semantic="notification_type_{{ notification.id }}"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="notification_{{ notification.id }}_icon"
+                        >
+                            {{ notification.icon }}
+                        </span>
+                    </div>
+
+                    <div class="notification-content">
+                        <div class="notification-title">
+                            {{ notification.title }}
+
+                            {% if notification.unread %}
+                            <span
+                                class="unread-dot"
+                                data-class="badge"
+                                data-semantic="unread_{{ notification.id }}"
+                            ></span>
+                            {% endif %}
+                        </div>
+
+                        <div class="notification-message">
+                            {{ notification.message }}
+                        </div>
+
+                        <div class="notification-message">
+                            {{ notification.received_time }}
+                            ·
+                            {{ notification.event_date }}
+                            ·
+                            {{ notification.event_time }}
+                        </div>
+                    </div>
+
+                    <div class="notification-actions">
+                        <span
+                            class="type-badge"
+                            data-class="badge"
+                            data-semantic="notification_badge_{{ notification.id }}"
+                        >
+                            {{ notification.type_label }}
+                        </span>
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="snooze_{{ notification.id }}"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="snooze_{{ notification.id }}_icon"
+                            >snooze</span>
+                        </button>
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="more_{{ notification.id }}"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="more_{{ notification.id }}_icon"
+                            >more_vert</span>
+                        </button>
+                    </div>
+                </article>
+                {% endfor %}
+            </section>
+
+            {% endif %}
+        </main>
+
+        <nav
+            class="mobile-navigation"
+            data-class="navigation_bar"
+            data-semantic="mobile_notification_navigation"
+            data-occluder="true"
+        >
+            {% set mobile_items = [
+                ("notifications", "All"),
+                ("mark_email_unread", "Unread"),
+                ("alarm", "Reminders"),
+                ("filter_list", "Filter")
+            ] %}
+
+            {% for mobile_item in mobile_items %}
+            <button
+                data-semantic="mobile_{{ mobile_item[1] | lower }}"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="mobile_{{ mobile_item[1] | lower }}_icon"
+                >
+                    {{ mobile_item[0] }}
+                </span>
+
+                {{ mobile_item[1] }}
+            </button>
+            {% endfor %}
+        </nav>
+    </div>
+
+    {% if calendar.popup_open %}
+    <div class="scrim"></div>
+    {% endif %}
+
+    {% set selected = calendar.selected_notification %}
+
+    {% if calendar.state == "notification_details_dialog" %}
+
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="notification_details_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-heading">
+            <h2>Notification details</h2>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_notification_details"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_notification_details_icon"
+                >close</span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <div class="notification-hero">
+                <div
+                    class="avatar"
+                    data-class="avatar"
+                    data-semantic="notification_organizer_avatar"
+                >
+                    {{ selected.organizer_initials }}
+                </div>
+
+                <div>
+                    <strong>{{ selected.title }}</strong>
+
+                    <div class="subtle">
+                        {{ selected.organizer }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="details_time_icon"
+                >schedule</span>
+
+                <div>
+                    {{ selected.event_date }}
+                    ·
+                    {{ selected.event_time }}
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="details_location_icon"
+                >location_on</span>
+
+                <div>{{ selected.location }}</div>
+            </div>
+
+            <div class="detail-row">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="details_message_icon"
+                >info</span>
+
+                <div>{{ selected.message }}</div>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="dismiss_notification"
+            >
+                Dismiss
+            </button>
+
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="open_event"
+            >
+                Open event
+            </button>
+        </div>
+    </section>
+
+    {% elif calendar.state == "snooze_dialog" %}
+
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="snooze_notification_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-heading">
+            <h2>Snooze notification</h2>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_snooze_dialog"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_snooze_dialog_icon"
+                >close</span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            {% for snooze_option in calendar.snooze_options %}
+            <button
+                class="snooze-option"
+                data-class="button"
+                data-semantic="snooze_{{ snooze_option.id }}"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="snooze_{{ snooze_option.id }}_icon"
+                >
+                    {{ snooze_option.icon }}
+                </span>
+
+                <span class="option-content">
+                    <strong>
+                        {{ snooze_option.label }}
+                    </strong>
+
+                    <span class="subtle">
+                        {{ snooze_option.description }}
+                    </span>
+                </span>
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% elif calendar.state == "clear_all_dialog" %}
+
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="clear_all_notifications_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-heading">
+            <h2>Clear all notifications?</h2>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_clear_all"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_clear_all_icon"
+                >close</span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <div class="warning">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="clear_warning_icon"
+                >delete_sweep</span>
+
+                <div>
+                    <strong>
+                        Clear {{ calendar.notification_count }}
+                        notifications
+                    </strong>
+
+                    <div>
+                        This action cannot be undone.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="cancel_clear_all"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="danger-button"
+                data-class="button"
+                data-semantic="confirm_clear_all"
+            >
+                Clear all
+            </button>
+        </div>
+    </section>
+
+    {% elif calendar.state == "notification_settings_dialog" %}
+
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="notification_settings_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-heading">
+            <h2>Notification settings</h2>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_notification_settings"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_notification_settings_icon"
+                >close</span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            {% set setting_rows = [
+                ("event_reminders", "alarm", "Event reminders"),
+                ("schedule_changes", "update", "Schedule changes"),
+                ("guest_responses", "how_to_reg", "Guest responses"),
+                ("new_invitations", "mail", "New invitations"),
+                ("email_notifications", "alternate_email", "Email notifications"),
+                ("desktop_notifications", "desktop_windows", "Desktop notifications")
+            ] %}
+
+            {% for setting_row in setting_rows %}
+            <div class="setting-row">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="{{ setting_row[0] }}_icon"
+                >
+                    {{ setting_row[1] }}
+                </span>
+
+                <span class="option-content">
+                    <strong>{{ setting_row[2] }}</strong>
+                </span>
+
+                <button
+                    class="toggle
+                    {% if calendar.settings[setting_row[0]] %}
+                    on
+                    {% endif %}"
+                    data-class="switch"
+                    data-semantic="{{ setting_row[0] }}_switch"
+                ></button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="save_notification_settings"
+            >
+                Done
+            </button>
+        </div>
+    </section>
+
+    {% elif calendar.state == "mobile_filter_sheet" %}
+
+    <section
+        class="dialog sheet"
+        data-class="bottom_sheet"
+        data-semantic="notification_filter_sheet"
+        data-occluder="true"
+    >
+        <div class="sheet-handle"></div>
+
+        <div class="dialog-heading">
+            <h2>Filter notifications</h2>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_filter_sheet"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_filter_sheet_icon"
+                >close</span>
+            </button>
+        </div>
+
+        <div class="dialog-body" data-occluder="true">
+            {% set sheet_filters = [
+                ("all", "notifications", "All notifications"),
+                ("unread", "mark_email_unread", "Unread"),
+                ("reminders", "alarm", "Event reminders"),
+                ("changes", "update", "Schedule changes"),
+                ("responses", "how_to_reg", "Guest responses"),
+                ("snoozed", "snooze", "Snoozed")
+            ] %}
+
+            {% for sheet_filter in sheet_filters %}
+            <button
+                class="sheet-option"
+                data-class="button"
+                data-semantic="sheet_filter_{{ sheet_filter[0] }}"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="sheet_filter_{{ sheet_filter[0] }}_icon"
+                >
+                    {{ sheet_filter[1] }}
+                </span>
+
+                <span class="option-content">
+                    {{ sheet_filter[2] }}
+                </span>
+
+                {% if loop.first %}
+                <span
+                    class="material-symbols-rounded"
+                    data-class="selection_indicator"
+                    data-semantic="selected_notification_filter"
+                >check</span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% endif %}
+</div>
+{% endblock %}

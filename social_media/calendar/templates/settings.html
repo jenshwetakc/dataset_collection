@@ -1,0 +1,2044 @@
+{% extends "base.html" %}
+
+{% block title %}
+Calendar · {{ calendar.page_title }}
+{% endblock %}
+
+{% block head %}
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    button,
+    input,
+    select {
+        font: inherit;
+    }
+
+    button {
+        cursor: pointer;
+    }
+
+    .settings-app {
+        min-height: calc(100vh - var(--status-h));
+        color: var(--text-primary);
+        background: var(--background);
+    }
+
+    /* ======================================================
+       Header
+       ====================================================== */
+
+    .settings-header {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 68px;
+        padding: 10px 20px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 210px;
+    }
+
+    .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        color: var(--on-primary);
+        background: var(--primary);
+        border-radius: 10px;
+    }
+
+    .brand-name {
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .icon-button,
+    .close-button {
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 auto;
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        color: var(--text-primary);
+        background: transparent;
+        border: 0;
+        border-radius: 50%;
+    }
+
+    .icon-button:hover,
+    .close-button:hover {
+        background: var(--surface-variant);
+    }
+
+    .settings-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: min(580px, 48vw);
+        min-height: 44px;
+        margin-left: auto;
+        padding: 0 16px;
+        color: var(--text-secondary);
+        background: var(--surface-variant);
+        border-radius: 24px;
+    }
+
+    .settings-search input {
+        width: 100%;
+        color: var(--text-primary);
+        background: transparent;
+        border: 0;
+        outline: 0;
+    }
+
+    .profile-avatar {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        color: var(--on-primary);
+        background: var(--primary);
+        border-radius: 50%;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    /* ======================================================
+       Main layout
+       ====================================================== */
+
+    .settings-layout {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        min-height: calc(100vh - 96px);
+    }
+
+    .settings-sidebar {
+        padding: 20px 14px;
+        background: var(--surface);
+        border-right: 1px solid var(--border-subtle);
+    }
+
+    .sidebar-title {
+        padding: 0 14px 12px;
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .settings-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .nav-item,
+    .sidebar-action {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        min-height: 46px;
+        padding: 0 14px;
+        color: var(--text-secondary);
+        background: transparent;
+        border: 0;
+        border-radius: 12px;
+        text-align: left;
+    }
+
+    .nav-item.active {
+        color: var(--on-primary-container);
+        background: var(--primary-container);
+        font-weight: 700;
+    }
+
+    .sidebar-divider {
+        height: 1px;
+        margin: 18px 12px;
+        background: var(--border-subtle);
+    }
+
+    .settings-content {
+        width: 100%;
+        max-width: 1040px;
+        padding: 32px 42px 90px;
+    }
+
+    .page-heading {
+        margin: 0 0 7px;
+        font-size: clamp(24px, 3vw, 34px);
+    }
+
+    .page-description {
+        margin: 0 0 28px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    /* ======================================================
+       Reusable components
+       ====================================================== */
+
+    .settings-section {
+        margin-bottom: 24px;
+        overflow: hidden;
+        background: var(--surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 22px 16px;
+    }
+
+    .section-heading {
+        margin: 0;
+        font-size: 18px;
+    }
+
+    .section-subtitle {
+        margin: 5px 0 0;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .setting-row {
+        display: grid;
+        grid-template-columns:
+            minmax(180px, 1fr)
+            minmax(180px, 320px);
+        align-items: center;
+        gap: 24px;
+        min-height: 74px;
+        padding: 14px 22px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .setting-label,
+    .row-title {
+        font-weight: 700;
+    }
+
+    .setting-help,
+    .row-description {
+        margin-top: 4px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .text-field,
+    .select-field {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 12px;
+        color: var(--text-primary);
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        outline: 0;
+    }
+
+    .switch {
+        position: relative;
+        justify-self: end;
+        width: 46px;
+        height: 26px;
+        background: var(--border);
+        border-radius: 20px;
+    }
+
+    .switch::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        background: white;
+        border-radius: 50%;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+    }
+
+    .switch.on {
+        background: var(--primary);
+    }
+
+    .switch.on::after {
+        left: 23px;
+    }
+
+    .outlined-button,
+    .primary-button,
+    .danger-button,
+    .text-button {
+        min-height: 40px;
+        padding: 0 18px;
+        border-radius: 20px;
+        font-weight: 700;
+    }
+
+    .outlined-button {
+        color: var(--primary);
+        background: transparent;
+        border: 1px solid var(--border);
+    }
+
+    .primary-button {
+        color: var(--on-primary);
+        background: var(--primary);
+        border: 1px solid var(--primary);
+    }
+
+    .danger-button {
+        color: white;
+        background: #c62828;
+        border: 1px solid #c62828;
+    }
+
+    .text-button {
+        min-height: 34px;
+        padding: 0 10px;
+        color: var(--primary);
+        background: transparent;
+        border: 0;
+        border-radius: 8px;
+    }
+
+    /* ======================================================
+       Overview
+       ====================================================== */
+
+    .overview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .overview-card {
+        display: flex;
+        gap: 16px;
+        min-height: 142px;
+        padding: 20px;
+        background: var(--surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 18px;
+    }
+
+    .overview-icon,
+    .row-icon {
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+        width: 48px;
+        height: 48px;
+        color: var(--on-primary-container);
+        background: var(--primary-container);
+        border-radius: 14px;
+    }
+
+    .overview-card h3 {
+        margin: 2px 0 6px;
+        font-size: 16px;
+    }
+
+    .overview-card p {
+        margin: 0 0 12px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    /* ======================================================
+       List rows
+       ====================================================== */
+
+    .calendar-row,
+    .notification-row,
+    .integration-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-height: 78px;
+        padding: 14px 22px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .calendar-color {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+    }
+
+    .row-main {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .status-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 0 11px;
+        color: var(--on-primary-container);
+        background: var(--primary-container);
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    /* ======================================================
+       Working hours
+       ====================================================== */
+
+    .day-selector {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 9px;
+    }
+
+    .day-chip {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        color: var(--text-secondary);
+        background: var(--surface-variant);
+        border: 1px solid var(--border);
+        border-radius: 50%;
+    }
+
+    .day-chip.selected {
+        color: var(--on-primary);
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .time-fields {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* ======================================================
+       Color selection and storage
+       ====================================================== */
+
+    .color-options {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 11px;
+    }
+
+    .color-option {
+        width: 28px;
+        height: 28px;
+        border: 3px solid var(--surface);
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px var(--border);
+    }
+
+    .color-option.selected {
+        box-shadow:
+            0 0 0 2px var(--surface),
+            0 0 0 4px var(--primary);
+    }
+
+    .storage-bar {
+        height: 10px;
+        margin-top: 14px;
+        overflow: hidden;
+        background: var(--surface-variant);
+        border-radius: 8px;
+    }
+
+    .storage-progress {
+        height: 100%;
+        background: var(--primary);
+        border-radius: inherit;
+    }
+
+    /* ======================================================
+       Popups
+       ====================================================== */
+
+    .popup-scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(8, 12, 20, .58);
+    }
+
+    .settings-dialog {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        z-index: 90;
+        width: min(520px, calc(100vw - 30px));
+        max-height: calc(100vh - 44px);
+        overflow: auto;
+        color: var(--text-primary);
+        background: var(--surface);
+        border-radius: 22px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, .36);
+        transform: translate(-50%, -50%);
+    }
+
+    .dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 20px 22px 12px;
+    }
+
+    .dialog-title {
+        margin: 0;
+        font-size: 21px;
+    }
+
+    .dialog-content {
+        padding: 10px 22px 22px;
+    }
+
+    .dialog-field {
+        margin-bottom: 18px;
+    }
+
+    .dialog-field label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 15px 22px 20px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .drop-zone {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 160px;
+        padding: 20px;
+        color: var(--text-secondary);
+        background: var(--background);
+        border: 2px dashed var(--border);
+        border-radius: 14px;
+        text-align: center;
+    }
+
+    .drop-zone > .material-symbols-rounded {
+        margin-bottom: 10px;
+        color: var(--primary);
+        font-size: 40px;
+    }
+
+    .warning-box {
+        display: flex;
+        gap: 12px;
+        padding: 15px;
+        color: #8b1a1a;
+        background: #ffebee;
+        border-radius: 12px;
+    }
+
+    .mobile-sheet {
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        max-height: 82vh;
+        border-radius: 24px 24px 0 0;
+        transform: none;
+    }
+
+    .sheet-handle {
+        width: 44px;
+        height: 4px;
+        margin: 10px auto 0;
+        background: var(--border);
+        border-radius: 4px;
+    }
+
+    .sheet-option {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        width: 100%;
+        min-height: 58px;
+        padding: 0 8px;
+        color: var(--text-primary);
+        background: transparent;
+        border: 0;
+        border-bottom: 1px solid var(--border-subtle);
+        text-align: left;
+    }
+
+    /* ======================================================
+       Responsive
+       ====================================================== */
+
+    @media (max-width: 900px) {
+        .brand {
+            min-width: auto;
+        }
+
+        .brand-name {
+            display: none;
+        }
+
+        .settings-search {
+            width: auto;
+            flex: 1;
+        }
+
+        .settings-layout {
+            grid-template-columns: 82px minmax(0, 1fr);
+        }
+
+        .settings-sidebar {
+            padding: 14px 8px;
+        }
+
+        .sidebar-title,
+        .nav-label,
+        .action-label {
+            display: none;
+        }
+
+        .nav-item,
+        .sidebar-action {
+            justify-content: center;
+            padding: 0;
+        }
+
+        .settings-content {
+            padding: 26px 24px 80px;
+        }
+    }
+
+    @media (max-width: 620px) {
+        .settings-header {
+            min-height: 60px;
+            padding: 8px 11px;
+        }
+
+        .settings-search {
+            display: none;
+        }
+
+        .profile-avatar {
+            margin-left: auto;
+        }
+
+        .settings-layout {
+            display: block;
+        }
+
+        .settings-sidebar {
+            display: none;
+        }
+
+        .settings-content {
+            padding: 20px 14px 76px;
+        }
+
+        .overview-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .setting-row {
+            grid-template-columns: 1fr;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .switch {
+            justify-self: start;
+        }
+
+        .section-header,
+        .calendar-row,
+        .notification-row,
+        .integration-row {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+
+        .integration-row {
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .integration-row > .outlined-button,
+        .integration-row > .primary-button {
+            margin-left: 60px;
+        }
+
+        .day-selector,
+        .color-options {
+            justify-content: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-app">
+
+    <!-- ==================================================
+         App bar
+         ================================================== -->
+
+    <header
+        class="settings-header"
+        data-class="app_bar"
+        data-semantic="settings_app_bar"
+        data-occluder="true"
+        {% if calendar.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="open_navigation"
+            aria-label="Open navigation"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="navigation_menu_icon"
+            >
+                menu
+            </span>
+        </button>
+
+        <div class="brand">
+            <span
+                class="brand-mark material-symbols-rounded"
+                data-class="logo"
+                data-semantic="calendar_logo"
+            >
+                calendar_month
+            </span>
+
+            <span class="brand-name">
+                Calendar
+            </span>
+        </div>
+
+        <label
+            class="settings-search"
+            data-class="search_bar"
+            data-semantic="settings_search"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="settings_search_icon"
+            >
+                search
+            </span>
+
+            <input
+                type="text"
+                placeholder="Search settings"
+                aria-label="Search settings"
+            >
+        </label>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="help_button"
+            aria-label="Help"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="help_icon"
+            >
+                help
+            </span>
+        </button>
+
+        <div
+            class="profile-avatar"
+            data-class="avatar"
+            data-semantic="profile_avatar"
+        >
+            {{ calendar.profile.initials }}
+        </div>
+    </header>
+
+    <!-- ==================================================
+         Background application content
+         ================================================== -->
+
+    <div
+        class="settings-layout"
+        {% if calendar.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+        <aside
+            class="settings-sidebar"
+            data-class="navigation_bar"
+            data-semantic="settings_navigation"
+        >
+            <div class="sidebar-title">
+                Calendar settings
+            </div>
+
+            <nav class="settings-nav">
+                {% for nav in calendar.navigation %}
+                <button
+                    class="nav-item
+                        {% if calendar.state == nav.id %}
+                        active
+                        {% endif %}"
+                    data-class="button"
+                    data-semantic="navigate_{{ nav.id }}"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="navigation_{{ nav.id }}_icon"
+                    >
+                        {{ nav.icon }}
+                    </span>
+
+                    <span class="nav-label">
+                        {{ nav.label }}
+                    </span>
+                </button>
+                {% endfor %}
+            </nav>
+
+            <div class="sidebar-divider"></div>
+
+            <button
+                class="sidebar-action"
+                data-class="button"
+                data-semantic="add_calendar"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="add_calendar_icon"
+                >
+                    add
+                </span>
+
+                <span class="action-label">
+                    Add calendar
+                </span>
+            </button>
+
+            <button
+                class="sidebar-action"
+                data-class="button"
+                data-semantic="import_export"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="import_export_icon"
+                >
+                    import_export
+                </span>
+
+                <span class="action-label">
+                    Import & export
+                </span>
+            </button>
+        </aside>
+
+        <section class="settings-content">
+            <h1 class="page-heading">
+                {{ calendar.page_title }}
+            </h1>
+
+            <!-- ==========================================
+                 Overview and popup background state
+                 ========================================== -->
+
+            {% if calendar.state in [
+                "overview",
+                "add_calendar_dialog",
+                "import_export_dialog",
+                "delete_calendar_dialog",
+                "mobile_settings_sheet"
+            ] %}
+            <p class="page-description">
+                Manage how Calendar looks, behaves, and connects
+                with your other applications.
+            </p>
+
+            <div class="overview-grid">
+                {% for nav in calendar.navigation[1:] %}
+                <article
+                    class="overview-card"
+                    data-class="card"
+                    data-semantic="overview_{{ nav.id }}"
+                >
+                    <div class="overview-icon">
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="overview_{{ nav.id }}_icon"
+                        >
+                            {{ nav.icon }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <h3>{{ nav.label }}</h3>
+
+                        <p>
+                            Configure your {{ nav.label | lower }}
+                            preferences and calendar behavior.
+                        </p>
+
+                        <button
+                            class="text-button"
+                            data-class="button"
+                            data-semantic="manage_{{ nav.id }}"
+                        >
+                            Manage
+                        </button>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+
+            <section
+                class="settings-section"
+                data-class="section"
+                data-semantic="my_calendars"
+                style="margin-top: 24px;"
+            >
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-heading">
+                            My calendars
+                        </h2>
+
+                        <p class="section-subtitle">
+                            Calendars connected to this account
+                        </p>
+                    </div>
+
+                    <button
+                        class="outlined-button"
+                        data-class="button"
+                        data-semantic="create_new_calendar"
+                    >
+                        Add calendar
+                    </button>
+                </div>
+
+                {% for item in calendar.calendars %}
+                <div class="calendar-row">
+                    <span
+                        class="calendar-color"
+                        style="background: {{ item.color }};"
+                        data-class="selection_indicator"
+                        data-semantic="calendar_color_{{ item.id }}"
+                    ></span>
+
+                    <div class="row-main">
+                        <div class="row-title">
+                            {{ item.name }}
+                        </div>
+
+                        <div class="row-description">
+                            {{ item.event_count }} events
+
+                            {% if item.primary %}
+                            · Primary
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <span
+                        class="switch
+                            {% if item.visible %}
+                            on
+                            {% endif %}"
+                        data-class="switch"
+                        data-semantic="calendar_visibility_{{ item.id }}"
+                    ></span>
+                </div>
+                {% endfor %}
+            </section>
+
+            <!-- ==========================================
+                 General settings
+                 ========================================== -->
+
+            {% elif calendar.state == "general" %}
+            <p class="page-description">
+                Choose language, formatting, and display preferences.
+            </p>
+
+            <section
+                class="settings-section"
+                data-class="section"
+                data-semantic="language_region_settings"
+            >
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-heading">
+                            Language and region
+                        </h2>
+
+                        <p class="section-subtitle">
+                            Regional formatting used throughout Calendar
+                        </p>
+                    </div>
+                </div>
+
+                {% set general_fields = [
+                    {
+                        "key": "language",
+                        "label": "Language",
+                        "value": calendar.general.language
+                    },
+                    {
+                        "key": "country",
+                        "label": "Country",
+                        "value": calendar.general.country
+                    },
+                    {
+                        "key": "date_format",
+                        "label": "Date format",
+                        "value": calendar.general.date_format
+                    },
+                    {
+                        "key": "time_format",
+                        "label": "Time format",
+                        "value": calendar.general.time_format
+                    },
+                    {
+                        "key": "week_start",
+                        "label": "Start week on",
+                        "value": calendar.general.week_start
+                    }
+                ] %}
+
+                {% for field in general_fields %}
+                <div class="setting-row">
+                    <div class="setting-label">
+                        {{ field.label }}
+                    </div>
+
+                    <select
+                        class="select-field"
+                        data-class="input_field"
+                        data-semantic="{{ field.key }}"
+                    >
+                        <option>{{ field.value }}</option>
+                    </select>
+                </div>
+                {% endfor %}
+            </section>
+
+            <section
+                class="settings-section"
+                data-class="section"
+                data-semantic="calendar_display_options"
+            >
+                <div class="section-header">
+                    <h2 class="section-heading">
+                        Display options
+                    </h2>
+                </div>
+
+                {% set display_options = [
+                    {
+                        "key": "show_weekends",
+                        "label": "Show weekends",
+                        "help": "Display Saturday and Sunday",
+                        "enabled": calendar.general.show_weekends
+                    },
+                    {
+                        "key": "show_declined",
+                        "label": "Show declined events",
+                        "help": "Keep declined invitations visible",
+                        "enabled": calendar.general.show_declined
+                    },
+                    {
+                        "key": "compact_events",
+                        "label": "Compact event density",
+                        "help": "Fit more events into each calendar row",
+                        "enabled": calendar.general.compact_events
+                    }
+                ] %}
+
+                {% for option in display_options %}
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">
+                            {{ option.label }}
+                        </div>
+
+                        <div class="setting-help">
+                            {{ option.help }}
+                        </div>
+                    </div>
+
+                    <span
+                        class="switch
+                            {% if option.enabled %}
+                            on
+                            {% endif %}"
+                        data-class="switch"
+                        data-semantic="{{ option.key }}"
+                    ></span>
+                </div>
+                {% endfor %}
+            </section>
+
+            <!-- ==========================================
+                 Notifications
+                 ========================================== -->
+
+            {% elif calendar.state == "notifications" %}
+            <p class="page-description">
+                Control when and how Calendar sends reminders.
+            </p>
+
+            <section
+                class="settings-section"
+                data-class="section"
+                data-semantic="notification_preferences"
+            >
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-heading">
+                            Notification preferences
+                        </h2>
+
+                        <p class="section-subtitle">
+                            These settings apply to new events
+                        </p>
+                    </div>
+
+                    <button
+                        class="outlined-button"
+                        data-class="button"
+                        data-semantic="add_notification"
+                    >
+                        Add notification
+                    </button>
+                </div>
+
+                {% for rule in calendar.notification_rules %}
+                <div class="notification-row">
+                    <div class="row-icon">
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="{{ rule.id }}_icon"
+                        >
+                            {{ rule.icon }}
+                        </span>
+                    </div>
+
+                    <div class="row-main">
+                        <div class="row-title">
+                            {{ rule.title }}
+                        </div>
+
+                        <div class="row-description">
+                            {{ rule.description }}
+                        </div>
+                    </div>
+
+                    <span
+                        class="switch
+                            {% if rule.enabled %}
+                            on
+                            {% endif %}"
+                        data-class="switch"
+                        data-semantic="{{ rule.id }}_switch"
+                    ></span>
+                </div>
+                {% endfor %}
+            </section>
+
+            <!-- ==========================================
+                 Working hours
+                 ========================================== -->
+
+            {% elif calendar.state == "working_hours" %}
+            <p class="page-description">
+                Let others know when you are normally available.
+            </p>
+
+            <section
+                class="settings-section"
+                data-class="section"
+                data-semantic="working_hours_settings"
+            >
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">
+                            Enable working hours
+                        </div>
+
+                        <div class="setting-help">
+                            Warn people when they schedule outside them
+                        </div>
+                    </div>
+
+                    <span
+                        class="switch
+                            {% if calendar.working_hours.enabled %}
+                            on
+                            {% endif %}"
+                        data-class="switch"
+                        data-semantic="working_hours_enabled"
+                    ></span>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">
+                            Working days
+                        </div>
+
+                        <div class="setting-help">
+                            Select your regular work week
+                        </div>
+                    </div>
+
+                    <div class="day-selector">
+                        {% for day in calendar.working_days %}
+                        <button
+                            class="day-chip
+                                {% if day.enabled %}
+                                selected
+                                {% endif %}"
+                            data-class="chip"
+                            data-semantic="working_day_{{ day.key }}"
+                            aria-label="{{ day.label }}"
+                        >
+                            {{ day.short }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">
+                            Daily hours
+                        </div>
+
+                        <div class="setting-help">
+                            Default availability for selected days
+                        </div>
+                    </div>
+
+                    <div class="time-fields">
+                        <input
+                            class="text-field"
+                            value="{{ calendar.working_hours.start }}"
+                            data-class="input_field"
+                            data-semantic="working_hours_start"
+                        >
+
+                        <span>to</span>
+
+                        <input
+                            class="text-field"
+                            value="{{ calendar.working_hours.end }}"
+                            data-class="input_field"
+                            data-semantic="working_hours_end"
+                        >
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-label">
+                        Work location
+                    </div>
+
+                    <select
+                        class="select-field"
+                        data-class="input_field"
+                        data-semantic="work_location"
+                    >
+                        <option>
+                            {{ calendar.working_hours.location }}
+                        </option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 Time zone
+                 ========================================== -->
+
+            {% elif calendar.state == "time_zone" %}
+            <p class="page-description">
+                Choose how event times appear across locations.
+            </p>
+
+            <section
+                class="settings-section"
+                data-class="section"
+                data-semantic="time_zone_settings"
+            >
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">
+                            Automatically detect time zone
+                        </div>
+
+                        <div class="setting-help">
+                            Update based on your current location
+                        </div>
+                    </div>
+
+                    <span
+                        class="switch
+                            {% if calendar.time_zone.auto_detect %}
+                            on
+                            {% endif %}"
+                        data-class="switch"
+                        data-semantic="automatic_time_zone"
+                    ></span>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-label">
+                        Primary time zone
+                    </div>
+
+                    <select
+                        class="select-field"
+                        data-class="input_field"
+                        data-semantic="primary_time_zone"
+                    >
+                        <option>
+                            {{ calendar.time_zone.primary }}
+                        </option>
+
+                        <option>UTC</option>
+                        <option>America/New_York</option>
+                        <option>Europe/London</option>
+                        <option>Asia/Tokyo</option>
+                    </select>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">
+                            Show secondary time zone
+                        </div>
+
+                        <div class="setting-help">
+                            Display another time zone beside event times
+                        </div>
+                    </div>
+
+                    <span
+                        class="switch
+                            {% if calendar.time_zone.show_secondary %}
+                            on
+                            {% endif %}"
+                        data-class="switch"
+                        data-semantic="show_secondary_time_zone"
+                    ></span>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-label">
+                        Secondary time zone
+                    </div>
+
+                    <select
+                        class="select-field"
+                        data-class="input_field"
+                        data-semantic="secondary_time_zone"
+                    >
+                        <option>
+                            {{ calendar.time_zone.secondary }}
+                        </option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 Event defaults
+                 ========================================== -->
+
+            {% elif calendar.state == "event_defaults" %}
+            <p class="page-description">
+                Set the initial options used when creating an event.
+            </p>
+
+            <section
+                class="settings-section"
+                data-class="section"
+                data-semantic="event_default_settings"
+            >
+                {% set event_fields = [
+                    {
+                        "key": "default_duration",
+                        "label": "Default event duration",
+                        "value":
+                            calendar.event_defaults.duration
+                            ~ " minutes"
+                    },
+                    {
+                        "key": "default_visibility",
+                        "label": "Default visibility",
+                        "value":
+                            calendar.event_defaults.visibility
+                    },
+                    {
+                        "key": "guest_permissions",
+                        "label": "Guest permissions",
+                        "value":
+                            calendar.event_defaults.guest_permission
+                    },
+                    {
+                        "key": "video_conferencing",
+                        "label": "Add video conferencing",
+                        "value":
+                            calendar.event_defaults.video_meeting
+                    }
+                ] %}
+
+                {% for field in event_fields %}
+                <div class="setting-row">
+                    <div class="setting-label">
+                        {{ field.label }}
+                    </div>
+
+                    <select
+                        class="select-field"
+                        data-class="input_field"
+                        data-semantic="{{ field.key }}"
+                    >
+                        <option>{{ field.value }}</option>
+                    </select>
+                </div>
+                {% endfor %}
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">
+                            Default event color
+                        </div>
+
+                        <div class="setting-help">
+                            Applied to events without a calendar color
+                        </div>
+                    </div>
+
+                    <div class="color-options">
+                        {% for color in [
+                            "#4285F4",
+                            "#34A853",
+                            "#FBBC04",
+                            "#EA4335",
+                            "#A142F4"
+                        ] %}
+                        <span
+                            class="color-option
+                                {% if color
+                                    == calendar.event_defaults.color %}
+                                selected
+                                {% endif %}"
+                            style="background: {{ color }};"
+                            data-class="selection_indicator"
+                            data-semantic="event_color_{{ loop.index }}"
+                        ></span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 Connected applications
+                 ========================================== -->
+
+            {% elif calendar.state == "connected_apps" %}
+            <p class="page-description">
+                Connect services that work with your calendar.
+            </p>
+
+            <section
+                class="settings-section"
+                data-class="section"
+                data-semantic="connected_applications"
+            >
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-heading">
+                            Applications
+                        </h2>
+
+                        <p class="section-subtitle">
+                            Manage third-party access
+                        </p>
+                    </div>
+                </div>
+
+                {% for app in calendar.connected_apps %}
+                <div class="integration-row">
+                    <div
+                        class="row-icon"
+                        data-class="logo"
+                        data-semantic="application_logo_{{ loop.index }}"
+                    >
+                        <span class="material-symbols-rounded" data-class="true">
+                            {{ app.icon }}
+                        </span>
+                    </div>
+
+                    <div class="row-main">
+                        <div class="row-title">
+                            {{ app.name }}
+                        </div>
+
+                        <div class="row-description">
+                            {{ app.description }}
+                        </div>
+                    </div>
+
+                    {% if app.connected %}
+                    <span
+                        class="status-chip"
+                        data-class="chip"
+                        data-semantic="application_status_{{ loop.index }}"
+                    >
+                        {{ app.status }}
+                    </span>
+
+                    <button
+                        class="outlined-button"
+                        data-class="button"
+                        data-semantic="disconnect_application_{{ loop.index }}"
+                    >
+                        Disconnect
+                    </button>
+                    {% else %}
+                    <button
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="connect_application_{{ loop.index }}"
+                    >
+                        Connect
+                    </button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </section>
+
+            <section
+                class="settings-section"
+                data-class="section"
+                data-semantic="calendar_storage"
+            >
+                <div class="section-header">
+                    <div style="width: 100%;">
+                        <h2 class="section-heading">
+                            Calendar storage
+                        </h2>
+
+                        <p class="section-subtitle">
+                            {{ calendar.storage.events }} events and
+                            {{ calendar.storage.attachments }} attachments
+                        </p>
+
+                        <div
+                            class="storage-bar"
+                            data-class="slider"
+                            data-semantic="calendar_storage_usage"
+                        >
+                            <div
+                                class="storage-progress"
+                                style="
+                                    width:
+                                    {{ calendar.storage.used }}%;
+                                "
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+        </section>
+    </div>
+
+    <!-- ==================================================
+         Popup scrim
+
+         This is visual only. Do not add data-occluder here.
+         ================================================== -->
+
+    {% if calendar.popup_open %}
+    <div class="popup-scrim"></div>
+    {% endif %}
+
+    <!-- ==================================================
+         Add calendar dialog
+         ================================================== -->
+
+    {% if calendar.state == "add_calendar_dialog" %}
+    <section
+        class="settings-dialog"
+        data-class="dialog"
+        data-semantic="add_calendar_dialog"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+    >
+        <div class="dialog-header">
+            <h2 class="dialog-title">
+                Create new calendar
+            </h2>
+
+            <button
+                class="close-button"
+                data-class="button"
+                data-semantic="close_add_calendar_dialog"
+                aria-label="Close"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_add_calendar_icon"
+                >
+                    close
+                </span>
+            </button>
+        </div>
+
+        <div class="dialog-content">
+            <div class="dialog-field">
+                <label for="calendar-name">
+                    Calendar name
+                </label>
+
+                <input
+                    id="calendar-name"
+                    class="text-field"
+                    value="Team projects"
+                    data-class="input_field"
+                    data-semantic="new_calendar_name"
+                >
+            </div>
+
+            <div class="dialog-field">
+                <label for="calendar-description">
+                    Description
+                </label>
+
+                <input
+                    id="calendar-description"
+                    class="text-field"
+                    placeholder="Add a description"
+                    data-class="input_field"
+                    data-semantic="new_calendar_description"
+                >
+            </div>
+
+            <div class="dialog-field">
+                <label for="calendar-time-zone">
+                    Time zone
+                </label>
+
+                <select
+                    id="calendar-time-zone"
+                    class="select-field"
+                    data-class="input_field"
+                    data-semantic="new_calendar_time_zone"
+                >
+                    <option>
+                        {{ calendar.time_zone.primary }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="dialog-field">
+                <label>Calendar color</label>
+
+                <div
+                    class="color-options"
+                    style="justify-content: flex-start;"
+                >
+                    {% for color in [
+                        "#4285F4",
+                        "#34A853",
+                        "#FBBC04",
+                        "#EA4335",
+                        "#A142F4"
+                    ] %}
+                    <span
+                        class="color-option
+                            {% if loop.index == 1 %}
+                            selected
+                            {% endif %}"
+                        style="background: {{ color }};"
+                        data-class="selection_indicator"
+                        data-semantic="
+                            new_calendar_color_{{ loop.index }}
+                        "
+                    ></span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="outlined-button"
+                data-class="button"
+                data-semantic="cancel_new_calendar"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="create_calendar"
+            >
+                Create calendar
+            </button>
+        </div>
+    </section>
+
+    <!-- ==================================================
+         Import and export dialog
+         ================================================== -->
+
+    {% elif calendar.state == "import_export_dialog" %}
+    <section
+        class="settings-dialog"
+        data-class="dialog"
+        data-semantic="import_export_dialog"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+    >
+        <div class="dialog-header">
+            <h2 class="dialog-title">
+                Import calendar
+            </h2>
+
+            <button
+                class="close-button"
+                data-class="button"
+                data-semantic="close_import_dialog"
+                aria-label="Close"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_import_icon"
+                >
+                    close
+                </span>
+            </button>
+        </div>
+
+        <div class="dialog-content">
+            <div
+                class="drop-zone"
+                data-class="input_field"
+                data-semantic="calendar_file_drop_zone"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="upload_calendar_file_icon"
+                >
+                    upload_file
+                </span>
+
+                <strong>
+                    Select a file from your computer
+                </strong>
+
+                <span style="margin-top: 5px;">
+                    ICS and CSV files are supported
+                </span>
+
+                <button
+                    class="outlined-button"
+                    style="margin-top: 16px;"
+                    data-class="button"
+                    data-semantic="choose_calendar_file"
+                >
+                    Choose file
+                </button>
+            </div>
+
+            <div
+                class="dialog-field"
+                style="margin-top: 18px;"
+            >
+                <label for="import-target">
+                    Add imported events to
+                </label>
+
+                <select
+                    id="import-target"
+                    class="select-field"
+                    data-class="input_field"
+                    data-semantic="import_calendar_target"
+                >
+                    {% for item in calendar.calendars %}
+                    <option>{{ item.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="outlined-button"
+                data-class="button"
+                data-semantic="export_calendars"
+            >
+                Export calendars
+            </button>
+
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="import_calendar"
+            >
+                Import
+            </button>
+        </div>
+    </section>
+
+    <!-- ==================================================
+         Delete confirmation dialog
+         ================================================== -->
+
+    {% elif calendar.state == "delete_calendar_dialog" %}
+    <section
+        class="settings-dialog"
+        data-class="dialog"
+        data-semantic="delete_calendar_dialog"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+    >
+        <div class="dialog-header">
+            <h2 class="dialog-title">
+                Delete calendar?
+            </h2>
+
+            <button
+                class="close-button"
+                data-class="button"
+                data-semantic="close_delete_dialog"
+                aria-label="Close"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_delete_icon"
+                >
+                    close
+                </span>
+            </button>
+        </div>
+
+        <div class="dialog-content">
+            <div class="warning-box">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="delete_warning_icon"
+                >
+                    warning
+                </span>
+
+                <div>
+                    <strong>
+                        This action cannot be undone.
+                    </strong>
+
+                    <div
+                        style="
+                            margin-top: 5px;
+                            font-size: 13px;
+                        "
+                    >
+                        All events in “Project Atlas” will be
+                        permanently deleted.
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="dialog-field"
+                style="margin-top: 20px;"
+            >
+                <label for="delete-confirmation">
+                    Type DELETE to confirm
+                </label>
+
+                <input
+                    id="delete-confirmation"
+                    class="text-field"
+                    placeholder="DELETE"
+                    data-class="input_field"
+                    data-semantic="delete_confirmation"
+                >
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="outlined-button"
+                data-class="button"
+                data-semantic="cancel_delete_calendar"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="danger-button"
+                data-class="button"
+                data-semantic="confirm_delete_calendar"
+            >
+                Delete permanently
+            </button>
+        </div>
+    </section>
+
+    <!-- ==================================================
+         Mobile settings sheet
+         ================================================== -->
+
+    {% elif calendar.state == "mobile_settings_sheet" %}
+    <section
+        class="settings-dialog mobile-sheet"
+        data-class="bottom_sheet"
+        data-semantic="mobile_settings_sheet"
+        data-occluder="true"
+        role="dialog"
+        aria-modal="true"
+    >
+        <div class="sheet-handle"></div>
+
+        <div class="dialog-header">
+            <h2 class="dialog-title">
+                Calendar options
+            </h2>
+
+            <button
+                class="close-button"
+                data-class="button"
+                data-semantic="close_mobile_settings"
+                aria-label="Close"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_mobile_settings_icon"
+                >
+                    close
+                </span>
+            </button>
+        </div>
+
+        <div class="dialog-content">
+            {% set sheet_options = [
+                {
+                    "key": "create_calendar",
+                    "icon": "add",
+                    "label": "Create calendar"
+                },
+                {
+                    "key": "import_calendar",
+                    "icon": "upload_file",
+                    "label": "Import calendar"
+                },
+                {
+                    "key": "share_calendar",
+                    "icon": "person_add",
+                    "label": "Share calendar"
+                },
+                {
+                    "key": "sync_now",
+                    "icon": "sync",
+                    "label": "Sync now"
+                },
+                {
+                    "key": "help_feedback",
+                    "icon": "help",
+                    "label": "Help and feedback"
+                }
+            ] %}
+
+            {% for option in sheet_options %}
+            <button
+                class="sheet-option"
+                data-class="button"
+                data-semantic="sheet_{{ option.key }}"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="sheet_{{ option.key }}_icon"
+                >
+                    {{ option.icon }}
+                </span>
+
+                <span>{{ option.label }}</span>
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

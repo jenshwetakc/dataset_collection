@@ -1,0 +1,1517 @@
+{% extends "base.html" %}
+
+{% block title %}
+Scheduling Assistant
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .scheduler-shell {
+        min-height: 100vh;
+        background: var(--background);
+    }
+
+    .scheduler-app-bar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 68px;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .scheduler-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-right: auto;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .scheduler-logo {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--icon);
+    }
+
+    .outline-button,
+    .primary-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 42px;
+        padding: 0 17px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text-primary);
+        font-weight: 700;
+    }
+
+    .primary-button {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .scheduler-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        min-height: calc(100vh - 68px);
+    }
+
+    .scheduler-main {
+        min-width: 0;
+        padding: 24px;
+    }
+
+    .scheduler-sidebar {
+        padding: 22px;
+        border-left: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 22px;
+    }
+
+    .page-header h1 {
+        color: var(--text-primary);
+        font-size: 26px;
+    }
+
+    .page-header p {
+        margin-top: 6px;
+        color: var(--text-secondary);
+    }
+
+    .date-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .date-chip {
+        min-height: 38px;
+        padding: 0 14px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+    }
+
+    .participant-list {
+        display: flex;
+        align-items: center;
+        margin: 14px 0 22px;
+    }
+
+    .participant-avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        margin-right: -8px;
+        border: 3px solid var(--surface);
+        border-radius: 50%;
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .participant-avatar.more {
+        background: var(--surface-variant);
+        color: var(--on-surface-variant);
+    }
+
+    .availability-section {
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        background: var(--surface);
+        overflow: hidden;
+    }
+
+    .availability-header,
+    .availability-row {
+        display: grid;
+        grid-template-columns: 120px repeat(
+            var(--participant-count),
+            minmax(54px, 1fr)
+        );
+        min-width: 620px;
+    }
+
+    .availability-scroll {
+        overflow-x: auto;
+    }
+
+    .time-heading,
+    .participant-heading {
+        display: grid;
+        place-items: center;
+        min-height: 68px;
+        padding: 8px;
+        border-right: 1px solid var(--border-subtle);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .participant-heading strong,
+    .participant-heading small {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .participant-heading small {
+        margin-top: 3px;
+        color: var(--text-secondary);
+        font-size: 10px;
+    }
+
+    .time-cell {
+        display: flex;
+        align-items: center;
+        min-height: 48px;
+        padding: 8px 12px;
+        border-right: 1px solid var(--border-subtle);
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .availability-cell {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 48px;
+        border-right: 1px solid var(--border-subtle);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .availability-cell.available {
+        background: color-mix(
+            in srgb,
+            var(--success) 18%,
+            var(--surface)
+        );
+    }
+
+    .availability-cell.busy {
+        background: color-mix(
+            in srgb,
+            var(--error) 14%,
+            var(--surface)
+        );
+    }
+
+    .availability-indicator {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--success);
+    }
+
+    .availability-cell.busy .availability-indicator {
+        background: var(--error);
+    }
+
+    .slot-actions {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fill,
+            minmax(150px, 1fr)
+        );
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    .time-slot-button {
+        position: relative;
+        min-height: 62px;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        text-align: left;
+    }
+
+    .time-slot-button.selected {
+        border: 2px solid var(--primary);
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .selection-dot {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 17px;
+        height: 17px;
+        border: 4px solid var(--primary);
+        border-radius: 50%;
+        background: var(--surface);
+    }
+
+    .sidebar-title {
+        margin-bottom: 14px;
+        color: var(--text-primary);
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .field-group {
+        margin-bottom: 16px;
+    }
+
+    .field-group label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .field-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--background);
+    }
+
+    .switch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 48px;
+    }
+
+    .scheduler-switch {
+        position: relative;
+        width: 42px;
+        height: 24px;
+        border-radius: 999px;
+        background: var(--border);
+    }
+
+    .scheduler-switch.on {
+        background: var(--primary);
+    }
+
+    .scheduler-switch::after {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: white;
+        content: "";
+    }
+
+    .scheduler-switch.on::after {
+        left: 21px;
+    }
+
+    .poll-grid {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fill,
+            minmax(220px, 1fr)
+        );
+        gap: 14px;
+    }
+
+    .poll-card {
+        position: relative;
+        padding: 18px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        background: var(--surface);
+    }
+
+    .poll-card.best {
+        border: 2px solid var(--success);
+    }
+
+    .best-badge {
+        display: inline-flex;
+        margin-bottom: 10px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: var(--success);
+        color: var(--on-success);
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .poll-card h3 {
+        margin-bottom: 5px;
+    }
+
+    .poll-card p {
+        margin-bottom: 12px;
+        color: var(--text-secondary);
+    }
+
+    .vote-bar {
+        height: 7px;
+        border-radius: 999px;
+        background: var(--surface-variant);
+        overflow: hidden;
+    }
+
+    .vote-progress {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--primary);
+    }
+
+    .empty-state {
+        display: grid;
+        place-items: center;
+        min-height: 440px;
+        text-align: center;
+    }
+
+    .empty-state .material-symbols-rounded {
+        color: var(--primary);
+        font-size: 64px;
+    }
+
+    .popup-scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(0, 0, 0, 0.48);
+    }
+
+    .scheduler-dialog {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        z-index: 90;
+        width: min(500px, calc(100vw - 28px));
+        max-height: calc(100vh - 34px);
+        padding: 22px;
+        border-radius: 18px;
+        background: var(--surface);
+        box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+        overflow-y: auto;
+        transform: translate(-50%, -50%);
+    }
+
+    .dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+    }
+
+    .dialog-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 48px;
+        padding: 8px;
+        border-radius: 9px;
+    }
+
+    .dialog-option.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .conflict-card {
+        display: flex;
+        gap: 12px;
+        padding: 14px;
+        border-radius: 12px;
+        background: color-mix(
+            in srgb,
+            var(--warning) 18%,
+            var(--surface)
+        );
+    }
+
+    .confirmation-icon {
+        display: grid;
+        place-items: center;
+        width: 68px;
+        height: 68px;
+        margin: 0 auto 16px;
+        border-radius: 50%;
+        background: var(--success);
+        color: var(--on-success);
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    @media (max-width: 1023px) {
+
+        .scheduler-app-bar {
+            height: 60px;
+            padding: 0 12px;
+        }
+
+        .scheduler-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .scheduler-sidebar {
+            border-top: 1px solid var(--border-subtle);
+            border-left: none;
+        }
+
+        .scheduler-main {
+            padding: 16px;
+        }
+
+        .scheduler-brand-name {
+            display: none;
+        }
+    }
+
+    @media (max-width: 599px) {
+
+        .scheduler-main {
+            padding: 12px;
+        }
+
+        .page-header {
+            display: block;
+        }
+
+        .date-controls {
+            margin-top: 14px;
+        }
+
+        .scheduler-sidebar {
+            padding: 16px;
+        }
+
+        .availability-header,
+        .availability-row {
+            grid-template-columns: 86px repeat(
+                var(--participant-count),
+                54px
+            );
+        }
+
+        .poll-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .scheduler-dialog.mobile-sheet {
+            top: auto;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            max-height: 82vh;
+            border-radius: 20px 20px 0 0;
+            transform: none;
+        }
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="scheduler-shell">
+
+
+    <!-- =====================================================
+         Background Application
+         ===================================================== -->
+
+    <div
+        {% if scheduling.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+
+        <header
+            class="scheduler-app-bar"
+            data-class="app_bar"
+            data-semantic="scheduling_app_bar"
+            data-occluder="true"
+        >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="back_button"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="back_icon"
+                >
+                    arrow_back
+                </span>
+            </button>
+
+
+            <div class="scheduler-brand">
+
+                <span
+                    class="
+                        scheduler-logo
+                        material-symbols-rounded
+                    "
+                    data-class="logo"
+                    data-semantic="scheduling_logo"
+                >
+                    group_add
+                </span>
+
+                <span class="scheduler-brand-name">
+                    Scheduling Assistant
+                </span>
+
+            </div>
+
+
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="save_draft"
+            >
+                Save draft
+            </button>
+
+
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="send_invitation"
+            >
+                Send
+            </button>
+
+        </header>
+
+
+        <div class="scheduler-layout">
+
+
+            <!-- =================================================
+                 Main Content
+                 ================================================= -->
+
+            <main class="scheduler-main">
+
+                <div class="page-header">
+
+                    <div>
+
+                        <h1>
+                            {{ scheduling.meeting_title }}
+                        </h1>
+
+                        <p>
+                            Find a time that works for everyone.
+                        </p>
+
+                    </div>
+
+
+                    <div class="date-controls">
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="previous_date"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                chevron_left
+                            </span>
+                        </button>
+
+                        <button
+                            class="date-chip"
+                            data-class="button"
+                            data-semantic="selected_date"
+                        >
+                            {{ scheduling.meeting_date_text }}
+                        </button>
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="next_date"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                            >
+                                chevron_right
+                            </span>
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div class="participant-list">
+
+                    {% for participant in scheduling.participants %}
+
+                    <span
+                        class="
+                            participant-avatar
+                            {{ participant.color }}
+                        "
+                        data-class="avatar"
+                        data-semantic="participant_{{ participant.id }}"
+                    >
+                        {{ participant.initials }}
+                    </span>
+
+                    {% endfor %}
+
+
+                    <button
+                        class="
+                            participant-avatar
+                            more
+                        "
+                        data-class="button"
+                        data-semantic="add_participant"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            add
+                        </span>
+                    </button>
+
+                </div>
+
+
+                <!-- =============================================
+                     Meeting Poll
+                     ============================================= -->
+
+                {% if scheduling.state == "meeting_poll" %}
+
+                <section
+                    class="poll-grid"
+                    data-class="section"
+                    data-semantic="meeting_poll"
+                >
+
+                    {% for poll_option in scheduling.poll_options %}
+
+                    <article
+                        class="
+                            poll-card
+
+                            {% if poll_option.best %}
+                            best
+                            {% endif %}
+                        "
+                        data-class="card"
+                        data-semantic="{{ poll_option.id }}"
+                    >
+
+                        {% if poll_option.best %}
+
+                        <span
+                            class="best-badge"
+                            data-class="badge"
+                            data-semantic="best_time_badge"
+                        >
+                            Best time
+                        </span>
+
+                        {% endif %}
+
+
+                        <h3>
+                            {{ poll_option.day_name }}
+                        </h3>
+
+                        <p>
+                            {{ poll_option.date_text }}
+                            <br>
+                            {{ poll_option.time_text }}
+                        </p>
+
+
+                        <div class="vote-bar">
+
+                            <div
+                                class="vote-progress"
+                                style="
+                                    width:
+                                    {{ poll_option.votes * 10 }}%;
+                                "
+                            ></div>
+
+                        </div>
+
+
+                        <p>
+                            {{ poll_option.votes }} votes
+                        </p>
+
+
+                        <button
+                            class="outline-button"
+                            data-class="button"
+                            data-semantic="vote_{{ poll_option.id }}"
+                        >
+                            Vote
+                        </button>
+
+                    </article>
+
+                    {% endfor %}
+
+                </section>
+
+
+                <!-- =============================================
+                     Empty Availability
+                     ============================================= -->
+
+                {% elif scheduling.state == "empty_availability" %}
+
+                <section
+                    class="empty-state"
+                    data-class="section"
+                    data-semantic="empty_availability"
+                >
+
+                    <div>
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="empty_availability_icon"
+                        >
+                            event_busy
+                        </span>
+
+                        <h2>
+                            No common availability
+                        </h2>
+
+                        <p>
+                            Try another day or adjust the meeting duration.
+                        </p>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =============================================
+                     Availability Grid
+                     ============================================= -->
+
+                {% else %}
+
+                <section
+                    class="availability-section"
+                    data-class="section"
+                    data-semantic="availability_grid"
+                    style="
+                        --participant-count:
+                        {{ scheduling.participant_count }};
+                    "
+                >
+
+                    <div class="availability-scroll">
+
+                        <div class="availability-header">
+
+                            <div class="time-heading">
+                                Time
+                            </div>
+
+
+                            {% for participant in scheduling.participants %}
+
+                            <div class="participant-heading">
+
+                                <span
+                                    class="
+                                        participant-avatar
+                                        {{ participant.color }}
+                                    "
+                                    data-class="avatar"
+                                    data-semantic="grid_avatar_{{ participant.id }}"
+                                >
+                                    {{ participant.initials }}
+                                </span>
+
+                                <strong>
+                                    {{ participant.name }}
+                                </strong>
+
+                                <small>
+                                    {{ participant.role }}
+                                </small>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        {% for slot in scheduling.time_slots %}
+
+                        <div class="availability-row">
+
+                            <div class="time-cell">
+                                {{ slot.label }}
+                            </div>
+
+
+                            {% for is_available in slot.availability %}
+
+                            <div
+                                class="
+                                    availability-cell
+
+                                    {% if is_available %}
+                                    available
+                                    {% else %}
+                                    busy
+                                    {% endif %}
+                                "
+                            >
+
+                                <span
+                                    class="availability-indicator"
+                                    data-class="selection_indicator"
+                                    data-semantic="
+                                        availability_
+                                        {{ slot.id }}_
+                                        {{ loop.index }}
+                                    "
+                                ></span>
+
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </section>
+
+
+                <section
+                    class="slot-actions"
+                    data-class="section"
+                    data-semantic="recommended_time_slots"
+                >
+
+                    {% for slot in scheduling.time_slots %}
+
+                        {% if slot.mostly_available %}
+
+                        <button
+                            class="
+                                time-slot-button
+
+                                {% if slot.selected %}
+                                selected
+                                {% endif %}
+                            "
+                            data-class="button"
+                            data-semantic="time_slot_{{ slot.id }}"
+                        >
+
+                            <strong>
+                                {{ slot.label }}
+                            </strong>
+
+                            <br>
+
+                            <small>
+                                {{ slot.available_count }}
+                                of
+                                {{ scheduling.participant_count }}
+                                available
+                            </small>
+
+
+                            {% if slot.selected %}
+
+                            <span
+                                class="selection-dot"
+                                data-class="selection_indicator"
+                                data-semantic="selected_time_slot"
+                            ></span>
+
+                            {% endif %}
+
+                        </button>
+
+                        {% endif %}
+
+                    {% endfor %}
+
+                </section>
+
+                {% endif %}
+
+            </main>
+
+
+            <!-- =================================================
+                 Meeting Editor
+                 ================================================= -->
+
+            <aside
+                class="scheduler-sidebar"
+                data-class="section"
+                data-semantic="meeting_editor"
+            >
+
+                <div class="sidebar-title">
+                    Meeting details
+                </div>
+
+
+                <div class="field-group">
+
+                    <label>
+                        Title
+                    </label>
+
+                    <div
+                        class="field-value"
+                        data-class="input_field"
+                        data-semantic="meeting_title"
+                    >
+                        {{ scheduling.meeting_title }}
+                    </div>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label>
+                        Date
+                    </label>
+
+                    <div
+                        class="field-value"
+                        data-class="input_field"
+                        data-semantic="meeting_date"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            calendar_today
+                        </span>
+
+                        {{ scheduling.meeting_date }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label>
+                        Duration
+                    </label>
+
+                    <div
+                        class="field-value"
+                        data-class="input_field"
+                        data-semantic="meeting_duration"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            schedule
+                        </span>
+
+                        {{ scheduling.duration }} minutes
+
+                    </div>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label>
+                        Location
+                    </label>
+
+                    <div
+                        class="field-value"
+                        data-class="input_field"
+                        data-semantic="meeting_location"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            location_on
+                        </span>
+
+                        {{ scheduling.location }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label>
+                        Time zone
+                    </label>
+
+                    <button
+                        class="field-value"
+                        data-class="button"
+                        data-semantic="timezone_selector"
+                    >
+
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                        >
+                            language
+                        </span>
+
+                        {{ scheduling.timezone }}
+
+                    </button>
+
+                </div>
+
+
+                <div class="switch-row">
+
+                    <span>
+                        Notify attendees
+                    </span>
+
+                    <span
+                        class="
+                            scheduler-switch
+
+                            {% if scheduling.notify_attendees %}
+                            on
+                            {% endif %}
+                        "
+                        data-class="switch"
+                        data-semantic="notify_attendees"
+                    ></span>
+
+                </div>
+
+
+                <div class="switch-row">
+
+                    <span>
+                        Allow guests
+                    </span>
+
+                    <span
+                        class="
+                            scheduler-switch
+
+                            {% if scheduling.allow_guests %}
+                            on
+                            {% endif %}
+                        "
+                        data-class="switch"
+                        data-semantic="allow_guests"
+                    ></span>
+
+                </div>
+
+            </aside>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         Popup States
+         ===================================================== -->
+
+    {% if scheduling.popup_open %}
+
+    <!-- Visual backdrop only. Do not use data-occluder. -->
+    <div
+        class="popup-scrim"
+        aria-hidden="true"
+    ></div>
+
+
+    <section
+        class="
+            scheduler-dialog
+
+            {% if scheduling.is_mobile_sheet %}
+            mobile-sheet
+            {% endif %}
+        "
+        data-class="{% if scheduling.is_mobile_sheet %}bottom_sheet{% else %}dialog{% endif %}"
+        data-semantic="{{ scheduling.state }}"
+        data-occluder="true"
+    >
+
+        <div class="dialog-header">
+
+            <h2>
+
+                {% if scheduling.state == "conflict_warning" %}
+                    Scheduling conflict
+
+                {% elif scheduling.state == "timezone_menu" %}
+                    Select time zone
+
+                {% elif scheduling.state == "invitee_panel" %}
+                    Invite participants
+
+                {% elif scheduling.state == "recurring_dialog" %}
+                    Repeat meeting
+
+                {% else %}
+                    Meeting scheduled
+                {% endif %}
+
+            </h2>
+
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_popup"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    close
+                </span>
+            </button>
+
+        </div>
+
+
+        <!-- Conflict -->
+
+        {% if scheduling.state == "conflict_warning" %}
+
+        <div
+            class="conflict-card"
+            data-class="card"
+            data-semantic="conflict_details"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                warning
+            </span>
+
+            <div>
+
+                <strong>
+                    Some participants are unavailable
+                </strong>
+
+                <p>
+                    Choose another time or send the invitation anyway.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- Time Zone -->
+
+        {% elif scheduling.state == "timezone_menu" %}
+
+            {% for timezone in scheduling.timezones %}
+
+            <button
+                class="
+                    dialog-option
+
+                    {% if timezone == scheduling.timezone %}
+                    selected
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="timezone_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    public
+                </span>
+
+                {{ timezone }}
+
+
+                {% if timezone == scheduling.timezone %}
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="selection_indicator"
+                >
+                    check
+                </span>
+
+                {% endif %}
+
+            </button>
+
+            {% endfor %}
+
+
+        <!-- Invitees -->
+
+        {% elif scheduling.state == "invitee_panel" %}
+
+        <div
+            class="field-value"
+            data-class="search_bar"
+            data-semantic="invitee_search"
+        >
+
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+            >
+                search
+            </span>
+
+            Search people
+
+        </div>
+
+
+            {% for participant in scheduling.participants %}
+
+            <div class="dialog-option">
+
+                <span
+                    class="
+                        participant-avatar
+                        {{ participant.color }}
+                    "
+                    data-class="avatar"
+                    data-semantic="invitee_{{ participant.id }}"
+                >
+                    {{ participant.initials }}
+                </span>
+
+                <div>
+
+                    <strong>
+                        {{ participant.name }}
+                    </strong>
+
+                    <br>
+
+                    <small>
+                        {{ participant.email }}
+                    </small>
+
+                </div>
+
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="selection_indicator"
+                    data-semantic="invitee_selected_{{ loop.index }}"
+                >
+                    check_circle
+                </span>
+
+            </div>
+
+            {% endfor %}
+
+
+        <!-- Recurrence -->
+
+        {% elif scheduling.state == "recurring_dialog" %}
+
+            {% for recurrence in scheduling.recurrence_options %}
+
+            <button
+                class="
+                    dialog-option
+
+                    {% if recurrence == scheduling.selected_recurrence %}
+                    selected
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="recurrence_{{ loop.index }}"
+            >
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                >
+                    repeat
+                </span>
+
+                {{ recurrence }}
+
+
+                {% if recurrence == scheduling.selected_recurrence %}
+
+                <span
+                    class="material-symbols-rounded"
+                    data-class="selection_indicator"
+                >
+                    check
+                </span>
+
+                {% endif %}
+
+            </button>
+
+            {% endfor %}
+
+
+        <!-- Confirmation -->
+
+        {% else %}
+
+        <div style="text-align: center;">
+
+            <span
+                class="
+                    confirmation-icon
+                    material-symbols-rounded
+                "
+                data-class="icon"
+                data-semantic="confirmation_icon"
+            >
+                check
+            </span>
+
+            <h3>
+                {{ scheduling.meeting_title }}
+            </h3>
+
+            <p>
+                {{ scheduling.meeting_date_text }}
+            </p>
+
+            {% if scheduling.selected_slot %}
+
+            <p>
+                {{ scheduling.selected_slot.label }}
+                ·
+                {{ scheduling.duration }} minutes
+            </p>
+
+            {% endif %}
+
+        </div>
+
+        {% endif %}
+
+
+        <div class="dialog-actions">
+
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="popup_cancel"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="popup_confirm"
+            >
+                Confirm
+            </button>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

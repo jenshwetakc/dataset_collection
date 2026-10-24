@@ -1,0 +1,1710 @@
+{% extends "base.html" %}
+
+{% block title %}
+Calendar · Shared Calendars
+{% endblock %}
+
+{% block head %}
+<style>
+* {
+    box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+.shared-app {
+    min-height: calc(100vh - var(--status-h));
+    background: var(--background);
+}
+
+.top-bar {
+    height: 68px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.icon-button {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+}
+
+.brand {
+    min-width: 220px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.brand-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    color: var(--on-primary);
+    background: var(--primary);
+    border-radius: 10px;
+}
+
+.search {
+    width: min(560px, 45vw);
+    height: 44px;
+    margin-left: auto;
+    padding: 0 15px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--text-secondary);
+    background: var(--surface-variant);
+    border-radius: 24px;
+}
+
+.search input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+}
+
+.avatar {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    color: var(--on-primary);
+    background: var(--primary);
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.page-layout {
+    min-height: calc(100vh - 96px);
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+}
+
+.sidebar {
+    padding: 18px 12px;
+    background: var(--surface);
+    border-right: 1px solid var(--border-subtle);
+}
+
+.invite-button {
+    width: 100%;
+    min-height: 48px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    color: var(--on-primary);
+    background: var(--primary);
+    border: 0;
+    border-radius: 14px;
+    font-weight: 700;
+}
+
+.navigation-button {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    text-align: left;
+}
+
+.navigation-button.active {
+    color: var(--on-primary-container);
+    background: var(--primary-container);
+    font-weight: 700;
+}
+
+.navigation-count {
+    margin-left: auto;
+    padding: 3px 7px;
+    background: var(--surface-variant);
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+.content {
+    min-width: 0;
+    padding: 28px 32px 90px;
+}
+
+.page-heading {
+    margin-bottom: 22px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.page-heading h1 {
+    margin: 0 0 6px;
+    font-size: clamp(25px, 3vw, 34px);
+}
+
+.subtle {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.primary-button,
+.outline-button,
+.danger-button {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+.primary-button {
+    color: var(--on-primary);
+    background: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.outline-button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.danger-button {
+    color: white;
+    background: #c62828;
+    border: 1px solid #c62828;
+}
+
+.summary {
+    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.summary-card {
+    padding: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+}
+
+.summary-value {
+    margin-top: 7px;
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.panel {
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 18px;
+}
+
+.panel-heading {
+    min-height: 64px;
+    padding: 13px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.panel-heading h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.member-row {
+    min-height: 82px;
+    padding: 13px 18px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.member-row:last-child {
+    border-bottom: 0;
+}
+
+.avatar-container {
+    position: relative;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    right: 0;
+    bottom: 1px;
+    border: 2px solid var(--surface);
+    border-radius: 50%;
+}
+
+.status-dot.available {
+    background: #22a447;
+}
+
+.status-dot.busy {
+    background: #d93025;
+}
+
+.status-dot.away {
+    background: #f9ab00;
+}
+
+.status-dot.offline {
+    background: #9aa0a6;
+}
+
+.member-information {
+    min-width: 0;
+}
+
+.member-name,
+.calendar-name {
+    font-weight: 700;
+}
+
+.member-meta {
+    margin-top: 5px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.member-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-chip {
+    padding: 6px 10px;
+    color: var(--on-primary-container);
+    background: var(--primary-container);
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.calendar-card {
+    padding: 18px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 13px;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+}
+
+.calendar-color {
+    width: 15px;
+    height: 48px;
+    border-radius: 8px;
+}
+
+.toggle {
+    width: 40px;
+    height: 23px;
+    padding: 3px;
+    border: 0;
+    background: var(--border);
+    border-radius: 14px;
+}
+
+.toggle::after {
+    content: "";
+    display: block;
+    width: 17px;
+    height: 17px;
+    background: white;
+    border-radius: 50%;
+}
+
+.toggle.on {
+    background: var(--primary);
+}
+
+.toggle.on::after {
+    margin-left: 17px;
+}
+
+.matrix-wrapper {
+    overflow: auto;
+}
+
+.matrix {
+    min-width: 850px;
+}
+
+.matrix-header,
+.matrix-row {
+    display: grid;
+    grid-template-columns: 190px repeat(10, 66px);
+    align-items: center;
+}
+
+.matrix-header {
+    height: 52px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.matrix-row {
+    min-height: 62px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.matrix-member {
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--surface);
+}
+
+.small-avatar {
+    width: 31px;
+    height: 31px;
+    display: grid;
+    place-items: center;
+    color: var(--on-primary);
+    background: var(--primary);
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.time-slot {
+    height: 32px;
+    margin: 0 3px;
+    border-radius: 6px;
+}
+
+.time-slot.free {
+    background: #22a44755;
+}
+
+.time-slot.busy {
+    background: var(--primary);
+}
+
+.time-slot.tentative {
+    background: repeating-linear-gradient(
+        135deg,
+        var(--primary-container),
+        var(--primary-container) 5px,
+        transparent 5px,
+        transparent 10px
+    );
+}
+
+.time-slot.outside {
+    background: var(--surface-variant);
+    opacity: 0.5;
+}
+
+.permission-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.permission-table th,
+.permission-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.permission-select,
+.field {
+    width: 100%;
+    min-height: 42px;
+    padding: 9px 11px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+}
+
+.state-container {
+    min-height: 500px;
+    padding: 30px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 18px;
+}
+
+.state-icon {
+    font-size: 66px;
+    color: var(--primary);
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    margin: auto;
+    border: 5px solid var(--primary-container);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+}
+
+.mobile-navigation {
+    display: none;
+}
+
+.scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: #080c1494;
+}
+
+.dialog {
+    width: min(570px, calc(100vw - 30px));
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    position: fixed;
+    z-index: 90;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--surface);
+    border-radius: 22px;
+    box-shadow: 0 25px 75px #0007;
+}
+
+.dialog-heading {
+    padding: 20px 22px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dialog-heading h2 {
+    margin: 0;
+}
+
+.dialog-body {
+    padding: 10px 22px 22px;
+}
+
+.dialog-actions {
+    padding: 15px 22px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.field-group {
+    margin-bottom: 16px;
+}
+
+.field-group label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.member-hero {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--primary-container);
+    border-radius: 14px;
+}
+
+.detail-row,
+.sheet-action {
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.warning {
+    padding: 14px;
+    display: flex;
+    gap: 12px;
+    color: #8b1a1a;
+    background: #ffebee;
+    border-radius: 12px;
+}
+
+.sheet {
+    width: 100%;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    border-radius: 24px 24px 0 0;
+}
+
+.sheet-action {
+    width: 100%;
+    padding: 0 6px;
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
+    background: transparent;
+}
+
+@media (max-width: 900px) {
+    .brand {
+        min-width: auto;
+    }
+
+    .brand-label,
+    .navigation-label {
+        display: none;
+    }
+
+    .page-layout {
+        grid-template-columns: 78px minmax(0, 1fr);
+    }
+
+    .navigation-button {
+        justify-content: center;
+    }
+
+    .calendar-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 620px) {
+    .top-bar {
+        height: 60px;
+        padding: 8px 10px;
+    }
+
+    .search,
+    .sidebar {
+        display: none;
+    }
+
+    .profile-avatar {
+        margin-left: auto;
+    }
+
+    .page-layout {
+        display: block;
+    }
+
+    .content {
+        padding: 17px 11px 80px;
+    }
+
+    .summary {
+        gap: 7px;
+    }
+
+    .summary-card {
+        padding: 12px 9px;
+    }
+
+    .summary-value {
+        font-size: 22px;
+    }
+
+    .member-row {
+        padding: 12px;
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .member-actions {
+        grid-column: 2;
+    }
+
+    .mobile-navigation {
+        height: 64px;
+        position: fixed;
+        z-index: 50;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: space-around;
+        background: var(--surface);
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    .mobile-navigation button {
+        width: 25%;
+        border: 0;
+        background: transparent;
+        font-size: 10px;
+    }
+
+    .mobile-navigation span {
+        display: block;
+        margin: auto;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="shared-app">
+
+    <header
+        class="top-bar"
+        data-class="app_bar"
+        data-semantic="shared_calendars_app_bar"
+        data-occluder="true"
+        {% if calendar.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="open_menu"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="menu_icon"
+            >menu</span>
+        </button>
+
+        <div class="brand">
+            <span
+                class="brand-icon material-symbols-rounded"
+                data-class="icon"
+                data-semantic="calendar_logo"
+            >calendar_month</span>
+
+            <span class="brand-label">
+                Calendar
+            </span>
+        </div>
+
+        <label
+            class="search"
+            data-class="search_bar"
+            data-semantic="team_search"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="search_icon"
+            >search</span>
+
+            <input
+                value="{{ calendar.search_query }}"
+                placeholder="Search people and calendars"
+            >
+        </label>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="settings"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="settings_icon"
+            >settings</span>
+        </button>
+
+        <div
+            class="avatar profile-avatar"
+            data-class="avatar"
+            data-semantic="profile_avatar"
+        >
+            {{ calendar.profile.initials }}
+        </div>
+    </header>
+
+    <div
+        class="page-layout"
+        {% if calendar.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+        <aside
+            class="sidebar"
+            data-class="navigation_bar"
+            data-semantic="shared_calendar_navigation"
+        >
+            <button
+                class="invite-button"
+                data-class="button"
+                data-semantic="invite_people"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="invite_people_icon"
+                >person_add</span>
+
+                <span class="navigation-label">
+                    Invite people
+                </span>
+            </button>
+
+            {% set navigation = [
+                ("team_overview", "group", "Team"),
+                ("availability_matrix", "calendar_view_week", "Availability"),
+                ("shared_calendars", "calendar_month", "Calendars"),
+                ("permissions", "admin_panel_settings", "Permissions")
+            ] %}
+
+            {% for navigation_item in navigation %}
+            <button
+                class="navigation-button
+                {% if calendar.state == navigation_item[0] %}
+                active
+                {% endif %}"
+                data-semantic="navigation_{{ navigation_item[0] }}"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="navigation_{{ navigation_item[0] }}_icon"
+                >
+                    {{ navigation_item[1] }}
+                </span>
+
+                <span class="navigation-label">
+                    {{ navigation_item[2] }}
+                </span>
+
+                {% if navigation_item[0] == "team_overview" %}
+                <span
+                    class="navigation-count"
+                    data-class="badge"
+                    data-semantic="team_count"
+                >
+                    {{ calendar.all_members_count }}
+                </span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </aside>
+
+        <main class="content">
+            <div class="page-heading">
+                <div>
+                    <h1>{{ calendar.team_name }}</h1>
+
+                    <div class="subtle">
+                        Shared calendars and working availability
+                        · {{ calendar.date_label }}
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button
+                        class="outline-button"
+                        data-class="button"
+                        data-semantic="date_range"
+                    >
+                        {{ calendar.date_range }}
+                    </button>
+
+                    <button
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="invite_member"
+                    >
+                        Invite
+                    </button>
+                </div>
+            </div>
+
+            {% if calendar.state == "loading" %}
+
+            <section
+                class="state-container"
+                data-class="section"
+                data-semantic="team_loading"
+            >
+                <div>
+                    <div
+                        class="spinner"
+                        data-class="slider"
+                        data-semantic="loading_indicator"
+                    ></div>
+
+                    <h2>Loading team availability</h2>
+                </div>
+            </section>
+
+            {% elif calendar.state == "error" %}
+
+            <section
+                class="state-container"
+                data-class="section"
+                data-semantic="team_error"
+            >
+                <div>
+                    <span
+                        class="material-symbols-rounded state-icon"
+                        data-class="icon"
+                        data-semantic="error_icon"
+                    >cloud_off</span>
+
+                    <h2>Availability unavailable</h2>
+
+                    <p class="subtle">
+                        {{ calendar.error_message }}
+                    </p>
+
+                    <button
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="retry_loading"
+                    >
+                        Try again
+                    </button>
+                </div>
+            </section>
+
+            {% elif calendar.state == "empty_team" %}
+
+            <section
+                class="state-container"
+                data-class="section"
+                data-semantic="empty_team"
+            >
+                <div>
+                    <span
+                        class="material-symbols-rounded state-icon"
+                        data-class="icon"
+                        data-semantic="empty_team_icon"
+                    >group_add</span>
+
+                    <h2>Build your team calendar</h2>
+
+                    <p class="subtle">
+                        Invite teammates to compare availability.
+                    </p>
+
+                    <button
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="empty_invite_member"
+                    >
+                        Invite teammates
+                    </button>
+                </div>
+            </section>
+
+            {% elif calendar.state == "availability_matrix" %}
+
+            <section
+                class="panel"
+                data-class="section"
+                data-semantic="availability_matrix"
+            >
+                <div class="panel-heading">
+                    <div>
+                        <h2>Team availability</h2>
+
+                        <span class="subtle">
+                            Suggested time:
+                            {{ calendar.suggested_time }}
+                        </span>
+                    </div>
+
+                    <button
+                        class="primary-button"
+                        data-class="button"
+                        data-semantic="create_event"
+                    >
+                        Create event
+                    </button>
+                </div>
+
+                <div class="matrix-wrapper">
+                    <div class="matrix">
+                        <div class="matrix-header">
+                            <div class="matrix-member">
+                                Team member
+                            </div>
+
+                            {% for hour in range(8, 18) %}
+                            <div>
+                                {{ hour if hour <= 12 else hour - 12 }}
+                                {{ "AM" if hour < 12 else "PM" }}
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        {% for availability_row in calendar.availability %}
+                        <div class="matrix-row">
+                            <div class="matrix-member">
+                                <span
+                                    class="small-avatar"
+                                    data-class="avatar"
+                                    data-semantic="matrix_avatar_{{ availability_row.member.id }}"
+                                >
+                                    {{ availability_row.member.initials }}
+                                </span>
+
+                                <span>
+                                    {{ availability_row.member.name }}
+                                </span>
+                            </div>
+
+                            {% for availability_cell in availability_row.cells %}
+                            <div
+                                class="time-slot {{ availability_cell.state }}"
+                                data-class="button"
+                                data-semantic="availability_{{ availability_row.member.id }}_{{ availability_cell.hour }}"
+                            ></div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            {% elif calendar.state == "shared_calendars" %}
+
+            <section
+                class="calendar-grid"
+                data-class="section"
+                data-semantic="shared_calendar_grid"
+            >
+                {% for shared_calendar in calendar.calendars %}
+                <article
+                    class="calendar-card"
+                    data-class="card"
+                    data-semantic="shared_calendar_{{ shared_calendar.id }}"
+                >
+                    <span
+                        class="calendar-color"
+                        style="background: {{ shared_calendar.color }}"
+                    ></span>
+
+                    <div>
+                        <div class="calendar-name">
+                            {{ shared_calendar.name }}
+                        </div>
+
+                        <div class="member-meta">
+                            {{ shared_calendar.owner }}
+                            ·
+                            {{ shared_calendar.member_count }} members
+                        </div>
+
+                        <div class="member-meta">
+                            {{ shared_calendar.permission }}
+                        </div>
+                    </div>
+
+                    <button
+                        class="toggle {% if shared_calendar.visible %}on{% endif %}"
+                        data-class="switch"
+                        data-semantic="calendar_visibility_{{ shared_calendar.id }}"
+                    ></button>
+                </article>
+                {% endfor %}
+            </section>
+
+            {% elif calendar.state == "permissions" %}
+
+            <section
+                class="panel"
+                data-class="section"
+                data-semantic="permission_management"
+            >
+                <div class="panel-heading">
+                    <div>
+                        <h2>Sharing permissions</h2>
+
+                        <span class="subtle">
+                            {{ calendar.selected_calendar.name }}
+                        </span>
+                    </div>
+                </div>
+
+                <table class="permission-table">
+                    <thead>
+                        <tr>
+                            <th>Person</th>
+                            <th>Email</th>
+                            <th>Permission</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for member in calendar.members %}
+                        <tr>
+                            <td>{{ member.name }}</td>
+
+                            <td class="subtle">
+                                {{ member.email }}
+                            </td>
+
+                            <td>
+                                <select
+                                    class="permission-select"
+                                    data-class="input_field"
+                                    data-semantic="permission_{{ member.id }}"
+                                >
+                                    <option>
+                                        {{ member.permission }}
+                                    </option>
+
+                                    <option>
+                                        See free/busy
+                                    </option>
+
+                                    <option>
+                                        See event details
+                                    </option>
+
+                                    <option>
+                                        Make changes
+                                    </option>
+                                </select>
+                            </td>
+
+                            <td>
+                                <button
+                                    class="icon-button"
+                                    data-class="button"
+                                    data-semantic="permission_more_{{ member.id }}"
+                                >
+                                    <span
+                                        class="material-symbols-rounded"
+                                        data-class="icon"
+                                        data-semantic="permission_more_{{ member.id }}_icon"
+                                    >more_vert</span>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+
+            {% else %}
+
+            <section
+                class="summary"
+                data-class="section"
+                data-semantic="team_summary"
+            >
+                <article
+                    class="summary-card"
+                    data-class="card"
+                    data-semantic="member_count_card"
+                >
+                    <span class="subtle">Team members</span>
+
+                    <div class="summary-value">
+                        {{ calendar.all_members_count }}
+                    </div>
+                </article>
+
+                <article
+                    class="summary-card"
+                    data-class="card"
+                    data-semantic="available_count_card"
+                >
+                    <span class="subtle">Available now</span>
+
+                    <div class="summary-value">
+                        {{ calendar.available_count }}
+                    </div>
+                </article>
+
+                <article
+                    class="summary-card"
+                    data-class="card"
+                    data-semantic="busy_count_card"
+                >
+                    <span class="subtle">In meetings</span>
+
+                    <div class="summary-value">
+                        {{ calendar.busy_count }}
+                    </div>
+                </article>
+            </section>
+
+            <section
+                class="panel"
+                data-class="section"
+                data-semantic="team_member_list"
+            >
+                <div class="panel-heading">
+                    <div>
+                        <h2>
+                            {% if calendar.state == "search_results" %}
+                            Search results
+                            {% else %}
+                            Team members
+                            {% endif %}
+                        </h2>
+                    </div>
+
+                    <button
+                        class="outline-button"
+                        data-class="button"
+                        data-semantic="filter_members"
+                    >
+                        Filter
+                    </button>
+                </div>
+
+                {% for member in calendar.members %}
+                <article
+                    class="member-row"
+                    data-class="card"
+                    data-semantic="team_member_{{ member.id }}"
+                >
+                    <div class="avatar-container">
+                        <div
+                            class="avatar"
+                            data-class="avatar"
+                            data-semantic="member_avatar_{{ member.id }}"
+                        >
+                            {{ member.initials }}
+                        </div>
+
+                        <span
+                            class="status-dot {{ member.status }}"
+                            data-class="badge"
+                            data-semantic="member_status_{{ member.id }}"
+                        ></span>
+                    </div>
+
+                    <div class="member-information">
+                        <div class="member-name">
+                            {{ member.name }}
+                        </div>
+
+                        <div class="member-meta">
+                            {{ member.role }}
+                            ·
+                            {{ member.timezone }}
+                            ·
+                            {{ member.working_hours }}
+                        </div>
+                    </div>
+
+                    <div class="member-actions">
+                        <span
+                            class="status-chip"
+                            data-class="badge"
+                            data-semantic="status_label_{{ member.id }}"
+                        >
+                            {{ member.status_label }}
+                        </span>
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="member_more_{{ member.id }}"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="member_more_{{ member.id }}_icon"
+                            >more_vert</span>
+                        </button>
+                    </div>
+                </article>
+                {% endfor %}
+            </section>
+
+            {% endif %}
+        </main>
+
+        <nav
+            class="mobile-navigation"
+            data-class="navigation_bar"
+            data-semantic="mobile_shared_navigation"
+        >
+            {% set mobile_navigation = [
+                ("group", "Team"),
+                ("calendar_view_week", "Availability"),
+                ("calendar_month", "Calendars"),
+                ("more_horiz", "More")
+            ] %}
+
+            {% for navigation_item in mobile_navigation %}
+            <button
+                data-semantic="mobile_navigation_{{ navigation_item[1] | lower }}"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="mobile_navigation_{{ navigation_item[1] | lower }}_icon"
+                >
+                    {{ navigation_item[0] }}
+                </span>
+
+                {{ navigation_item[1] }}
+            </button>
+            {% endfor %}
+        </nav>
+    </div>
+
+    {% if calendar.popup_open %}
+    <div class="scrim"></div>
+    {% endif %}
+
+    {% set selected_member = calendar.selected_member %}
+    {% set selected_calendar = calendar.selected_calendar %}
+
+    {% if calendar.state == "member_details_dialog" %}
+
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="member_details_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-heading">
+            <h2>Team member</h2>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_member_details"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_member_details_icon"
+                >close</span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <div class="member-hero">
+                <div
+                    class="avatar"
+                    data-class="avatar"
+                    data-semantic="dialog_member_avatar"
+                >
+                    {{ selected_member.initials }}
+                </div>
+
+                <div>
+                    <strong>
+                        {{ selected_member.name }}
+                    </strong>
+
+                    <div class="subtle">
+                        {{ selected_member.role }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="member_email_icon"
+                >mail</span>
+
+                {{ selected_member.email }}
+            </div>
+
+            <div class="detail-row">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="member_hours_icon"
+                >schedule</span>
+
+                {{ selected_member.working_hours }}
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="remove_member"
+            >
+                Remove
+            </button>
+
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="view_member_calendar"
+            >
+                View calendar
+            </button>
+        </div>
+    </section>
+
+    {% elif calendar.state == "invite_member_dialog" %}
+
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="invite_member_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-heading">
+            <h2>Invite people</h2>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_invite_dialog"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_invite_dialog_icon"
+                >close</span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <div class="field-group">
+                <label>Email address</label>
+
+                <input
+                    class="field"
+                    value="{{ calendar.invite_email }}"
+                    data-class="input_field"
+                    data-semantic="invite_email"
+                >
+            </div>
+
+            <div class="field-group">
+                <label>Permission</label>
+
+                <select
+                    class="field"
+                    data-class="input_field"
+                    data-semantic="invite_permission"
+                >
+                    <option>See free/busy</option>
+                    <option>See event details</option>
+                    <option>Make changes</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label>Message</label>
+
+                <textarea
+                    class="field"
+                    data-class="input_field"
+                    data-semantic="invite_message"
+                    placeholder="Add an optional message"
+                ></textarea>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="cancel_invite"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="send_invite"
+            >
+                Send invitation
+            </button>
+        </div>
+    </section>
+
+    {% elif calendar.state == "sharing_settings_dialog" %}
+
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="sharing_settings_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-heading">
+            <h2>Sharing settings</h2>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_sharing_settings"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_sharing_settings_icon"
+                >close</span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <div class="member-hero">
+                <span
+                    class="calendar-color"
+                    style="background: {{ selected_calendar.color }}"
+                ></span>
+
+                <div>
+                    <strong>
+                        {{ selected_calendar.name }}
+                    </strong>
+
+                    <div class="subtle">
+                        Owned by {{ selected_calendar.owner }}
+                    </div>
+                </div>
+            </div>
+
+            {% set permission_options = [
+                ("free_busy", "See only free/busy"),
+                ("details", "See all event details"),
+                ("edit", "Make changes to events")
+            ] %}
+
+            {% for permission_option in permission_options %}
+            <label class="detail-row">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="selection_indicator"
+                    data-semantic="sharing_permission_{{ permission_option[0] }}"
+                >
+                    {% if loop.first %}
+                    radio_button_checked
+                    {% else %}
+                    radio_button_unchecked
+                    {% endif %}
+                </span>
+
+                {{ permission_option[1] }}
+            </label>
+            {% endfor %}
+
+            <label class="detail-row">
+                <button
+                    class="toggle on"
+                    data-class="switch"
+                    data-semantic="allow_member_invites"
+                ></button>
+
+                Allow members to invite others
+            </label>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="cancel_sharing_settings"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="primary-button"
+                data-class="button"
+                data-semantic="save_sharing_settings"
+            >
+                Save changes
+            </button>
+        </div>
+    </section>
+
+    {% elif calendar.state == "remove_member_dialog" %}
+
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="remove_member_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-heading">
+            <h2>Remove team member?</h2>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_remove_member"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_remove_member_icon"
+                >close</span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <div class="warning">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="remove_member_warning_icon"
+                >person_remove</span>
+
+                <div>
+                    <strong>
+                        Remove {{ selected_member.name }}
+                    </strong>
+
+                    <div>
+                        This person will lose access to the
+                        team calendars and availability.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="outline-button"
+                data-class="button"
+                data-semantic="cancel_remove_member"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="danger-button"
+                data-class="button"
+                data-semantic="confirm_remove_member"
+            >
+                Remove member
+            </button>
+        </div>
+    </section>
+
+    {% elif calendar.state == "mobile_member_sheet" %}
+
+    <section
+        class="dialog sheet"
+        data-class="bottom_sheet"
+        data-semantic="member_actions_sheet"
+        data-occluder="true"
+    >
+        <div class="dialog-heading">
+            <div class="member-hero">
+                <div
+                    class="avatar"
+                    data-class="avatar"
+                    data-semantic="sheet_member_avatar"
+                >
+                    {{ selected_member.initials }}
+                </div>
+
+                <div>
+                    <strong>
+                        {{ selected_member.name }}
+                    </strong>
+
+                    <div class="subtle">
+                        {{ selected_member.role }}
+                    </div>
+                </div>
+            </div>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="close_member_sheet"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_member_sheet_icon"
+                >close</span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            {% set sheet_actions = [
+                ("calendar_month", "view_calendar", "View calendar"),
+                ("schedule", "find_time", "Find a time"),
+                ("admin_panel_settings", "change_permission", "Change permission"),
+                ("person_remove", "remove_member", "Remove from team")
+            ] %}
+
+            {% for sheet_action in sheet_actions %}
+            <button
+                class="sheet-action"
+                data-class="button"
+                data-semantic="sheet_{{ sheet_action[1] }}"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="sheet_{{ sheet_action[1] }}_icon"
+                >
+                    {{ sheet_action[0] }}
+                </span>
+
+                {{ sheet_action[2] }}
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% endif %}
+</div>
+{% endblock %}

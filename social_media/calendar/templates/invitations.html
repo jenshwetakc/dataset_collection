@@ -1,0 +1,654 @@
+{% extends "base.html" %}
+
+{% block title %}
+Calendar · Invitations
+{% endblock %}
+
+{% block content %}
+<div class="invite-app">
+
+    <!-- Background app bar -->
+    <header
+        class="top"
+        data-class="app_bar"
+        data-semantic="invitations_app_bar"
+        {% if calendar.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+        <button
+            class="icon-btn"
+            data-class="button"
+            data-semantic="open_menu"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="menu_icon"
+            >
+                menu
+            </span>
+        </button>
+
+        <div class="brand">
+            <span
+                class="brand-icon material-symbols-rounded"
+                data-class="logo"
+                data-semantic="calendar_logo"
+            >
+                calendar_month
+            </span>
+
+            <span>Calendar</span>
+        </div>
+
+        <label
+            class="search"
+            data-class="search_bar"
+            data-semantic="invitation_search"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="search_icon"
+            >
+                search
+            </span>
+
+            <input
+                value="{{ calendar.search_query }}"
+                placeholder="Search invitations"
+            >
+        </label>
+
+        <button
+            class="icon-btn"
+            data-class="button"
+            data-semantic="settings"
+        >
+            <span
+                class="material-symbols-rounded"
+                data-class="icon"
+                data-semantic="settings_icon"
+            >
+                settings
+            </span>
+        </button>
+
+        <div
+
+        >
+            <span class="avatar"
+            data-class="avatar"
+            data-semantic="profile_avatar"></span>
+            {{ calendar.profile.initials }}
+        </div>
+    </header>
+
+    <!-- Entire background is skipped when popup is visible -->
+    <div
+        class="layout"
+        {% if calendar.popup_open %}
+        data-annotation-skip="true"
+        {% endif %}
+    >
+        <aside
+            class="side"
+            data-class="navigation_bar"
+            data-semantic="invitation_filters"
+        >
+            <div class="side-title">
+                Invitations
+            </div>
+
+            {% for filter in calendar.filters %}
+            <button
+                class="filter
+                    {% if calendar.state == filter.id %}
+                    active
+                    {% elif
+                        calendar.state == "inbox"
+                        and filter.id == "inbox"
+                    %}
+                    active
+                    {% endif %}"
+                data-class="button"
+                data-semantic="filter_{{ filter.id }}"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="filter_{{ filter.id }}_icon"
+                >
+                    {{ filter.icon }}
+                </span>
+
+                <span class="filter-label">
+                    {{ filter.label }}
+                </span>
+
+                <span
+                    class="count"
+                    data-class="badge"
+                    data-semantic="filter_{{ filter.id }}_count"
+                >
+                    {{ filter.count }}
+                </span>
+            </button>
+            {% endfor %}
+        </aside>
+
+        <main class="content">
+            <div class="heading">
+                <div>
+                    <h1>{{ calendar.page_title }}</h1>
+                    <p>
+                        Respond to invitations and review event changes.
+                    </p>
+                </div>
+
+                <div class="toolbar">
+                    <button
+                        class="pill"
+                        data-class="button"
+                        data-semantic="filter_button"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="filter_icon"
+                        >
+                            filter_list
+                        </span>
+
+                        Filter
+                    </button>
+
+                    <button
+                        class="pill"
+                        data-class="button"
+                        data-semantic="mark_all_read"
+                    >
+                        <span
+                            class="material-symbols-rounded"
+                            data-class="icon"
+                            data-semantic="mark_read_icon"
+                        >
+                            done_all
+                        </span>
+
+                        Mark read
+                    </button>
+                </div>
+            </div>
+
+            {% if calendar.state == "empty_inbox" %}
+            <section
+                class="empty"
+                data-class="section"
+                data-semantic="empty_inbox"
+            >
+                <div>
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="empty_inbox_icon"
+                    >
+                        mark_email_read
+                    </span>
+
+                    <h2>You are all caught up</h2>
+
+                    <p>
+                        No invitations or event updates need
+                        your attention.
+                    </p>
+                </div>
+            </section>
+
+            {% else %}
+            <section
+                class="list"
+                data-class="section"
+                data-semantic="invitation_list"
+            >
+                {% for invite in calendar.invitations %}
+                <article
+                    class="invite
+                        {% if invite.unread %}
+                        unread
+                        {% endif %}"
+                    data-class="card"
+                    data-semantic="invitation_{{ invite.id }}"
+                >
+                    <div
+                        class="person"
+                        data-class="avatar"
+                        data-semantic="organizer_{{ invite.id }}"
+                    >
+                        {{ invite.organizer_initials }}
+                    </div>
+
+                    <div class="invite-main">
+                        <div class="invite-title">
+                            {{ invite.title }}
+
+                            {% if invite.unread %}
+                            <span
+                                class="unread-dot"
+                                data-class="badge"
+                                data-semantic="unread_{{ invite.id }}"
+                            ></span>
+                            {% endif %}
+                        </div>
+
+                        <div class="meta">
+                            {{ invite.organizer }}
+                            · {{ invite.date }}
+                            · {{ invite.time }}
+                        </div>
+
+                        <div class="meta">
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="location_{{ invite.id }}"
+                            >
+                                location_on
+                            </span>
+
+                            {{ invite.location }}
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        {% if invite.status == "pending" %}
+                        <button
+                            class="primary"
+                            data-class="button"
+                            data-semantic="accept_{{ invite.id }}"
+                        >
+                            Accept
+                        </button>
+
+                        <button
+                            class="pill"
+                            data-class="button"
+                            data-semantic="decline_{{ invite.id }}"
+                        >
+                            Decline
+                        </button>
+                        {% else %}
+                        <span
+                            class="status"
+                            data-class="chip"
+                            data-semantic="status_{{ invite.id }}"
+                        >
+                            {{ invite.status | title }}
+                        </span>
+                        {% endif %}
+
+                        <button
+                            class="icon-btn"
+                            data-class="button"
+                            data-semantic="more_{{ invite.id }}"
+                        >
+                            <span
+                                class="material-symbols-rounded"
+                                data-class="icon"
+                                data-semantic="more_{{ invite.id }}_icon"
+                            >
+                                more_vert
+                            </span>
+                        </button>
+                    </div>
+                </article>
+                {% endfor %}
+            </section>
+            {% endif %}
+        </main>
+    </div>
+
+    <!-- Visual scrim only: it must not use data-occluder -->
+    {% if calendar.popup_open %}
+    <div class="scrim"></div>
+    {% endif %}
+
+    {% set invite = calendar.selected_invitation %}
+
+    {% if calendar.state == "invitation_details_dialog" %}
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="invitation_details_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-head">
+            <h2>Invitation details</h2>
+
+            <button
+                class="icon-btn"
+                data-class="button"
+                data-semantic="close_details"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_details_icon"
+                >
+                    close
+                </span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <div class="detail-hero">
+                <div><span  class="person"
+                    data-class="avatar"
+                    data-semantic="dialog_organizer_avatar"></span>
+                    {{ invite.organizer_initials }}
+                </div>
+
+                <div>
+                    <strong>{{ invite.title }}</strong>
+
+                    <div class="help">
+                        Organized by {{ invite.organizer }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="dialog_time_icon"
+                >
+                    schedule
+                </span>
+
+                <div>
+                    {{ invite.date }}<br>
+                    {{ invite.time }}
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="dialog_location_icon"
+                >
+                    location_on
+                </span>
+
+                <div>{{ invite.location }}</div>
+            </div>
+
+            <div class="detail-row">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="dialog_guests_icon"
+                >
+                    group
+                </span>
+
+                <div>{{ invite.guest_count }} guests</div>
+            </div>
+
+            <p>{{ invite.description }}</p>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="pill"
+                data-class="button"
+                data-semantic="decline_invitation"
+            >
+                Decline
+            </button>
+
+            <button
+                class="pill"
+                data-class="button"
+                data-semantic="maybe_invitation"
+            >
+                Maybe
+            </button>
+
+            <button
+                class="primary"
+                data-class="button"
+                data-semantic="accept_invitation"
+            >
+                Accept
+            </button>
+        </div>
+    </section>
+
+    {% elif calendar.state == "decline_dialog" %}
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="decline_invitation_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-head">
+            <h2>Decline invitation?</h2>
+
+            <button
+                class="icon-btn"
+                data-class="button"
+                data-semantic="close_decline"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_decline_icon"
+                >
+                    close
+                </span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <div class="warning">
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="decline_warning_icon"
+                >
+                    event_busy
+                </span>
+
+                <div>
+                    <strong>{{ invite.title }}</strong>
+
+                    <div class="help">
+                        The organizer will be notified.
+                    </div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label>Optional message</label>
+
+                <textarea
+                    class="field"
+                    data-class="input_field"
+                    data-semantic="decline_message"
+                    placeholder="Add a note for {{ invite.organizer }}"
+                ></textarea>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="pill"
+                data-class="button"
+                data-semantic="cancel_decline"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="danger"
+                data-class="button"
+                data-semantic="confirm_decline"
+            >
+                Decline
+            </button>
+        </div>
+    </section>
+
+    {% elif calendar.state == "propose_time_dialog" %}
+    <section
+        class="dialog"
+        data-class="dialog"
+        data-semantic="propose_time_dialog"
+        data-occluder="true"
+    >
+        <div class="dialog-head">
+            <h2>Propose a new time</h2>
+
+            <button
+                class="icon-btn"
+                data-class="button"
+                data-semantic="close_proposal"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_proposal_icon"
+                >
+                    close
+                </span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            <div class="field-group">
+                <label>Date</label>
+
+                <input
+                    class="field"
+                    value="{{ invite.date }}"
+                    data-class="input_field"
+                    data-semantic="proposed_date"
+                >
+            </div>
+
+            <div class="field-group">
+                <label>Start time</label>
+
+                <input
+                    class="field"
+                    value="02:00 PM"
+                    data-class="input_field"
+                    data-semantic="proposed_start"
+                >
+            </div>
+
+            <div class="field-group">
+                <label>End time</label>
+
+                <input
+                    class="field"
+                    value="03:00 PM"
+                    data-class="input_field"
+                    data-semantic="proposed_end"
+                >
+            </div>
+
+            <div class="field-group">
+                <label>Message</label>
+
+                <textarea
+                    class="field"
+                    data-class="input_field"
+                    data-semantic="proposal_message"
+                    placeholder="Explain why this time works better"
+                ></textarea>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                class="pill"
+                data-class="button"
+                data-semantic="cancel_proposal"
+            >
+                Cancel
+            </button>
+
+            <button
+                class="primary"
+                data-class="button"
+                data-semantic="send_proposal"
+            >
+                Send proposal
+            </button>
+        </div>
+    </section>
+
+    {% elif calendar.state == "mobile_filter_sheet" %}
+    <section
+        class="dialog sheet"
+        data-class="bottom_sheet"
+        data-semantic="invitation_filter_sheet"
+        data-occluder="true"
+    >
+        <div class="handle"></div>
+
+        <div class="dialog-head">
+            <h2>Filter invitations</h2>
+
+            <button
+                class="icon-btn"
+                data-class="button"
+                data-semantic="close_filter_sheet"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="close_filter_sheet_icon"
+                >
+                    close
+                </span>
+            </button>
+        </div>
+
+        <div class="dialog-body">
+            {% for filter in calendar.filters %}
+            <button
+                class="sheet-option"
+                data-class="button"
+                data-semantic="sheet_filter_{{ filter.id }}"
+            >
+                <span
+                    class="material-symbols-rounded"
+                    data-class="icon"
+                    data-semantic="sheet_filter_{{ filter.id }}_icon"
+                >
+                    {{ filter.icon }}
+                </span>
+
+                <span style="flex: 1;">
+                    {{ filter.label }}
+                </span>
+
+                <span
+                    class="status"
+                    data-class="badge"
+                    data-semantic="sheet_filter_{{ filter.id }}_count"
+                >
+                    {{ filter.count }}
+                </span>
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
