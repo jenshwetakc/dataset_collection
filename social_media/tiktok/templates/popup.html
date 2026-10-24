@@ -1,0 +1,160 @@
+{% set state=tiktok['state'] %}
+<div class="overlay" >
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog_title" data-class="dialog"
+             data-semantic="{{tiktok['page']}}_{{state}}_dialog">
+        <header class="dialog-head row between"><h2 id="dialog_title">{{state|replace('_',' ')|title}}</h2>
+            {{btn('close','dialog_close',annotate=false)}}
+        </header>
+        <div class="dialog-body stack">
+            {% if state=='comments' %}{% for c in tiktok['comments'] %}
+            <div class="row">{{avatar(c['author'],'comment_avatar_' ~ loop.index)}}
+                <div class="grow"><strong>{{c['author']['username']}}</strong>
+                    <p>{{c['text']}}</p><span class="muted small">{{loop.index}}m · Reply</span></div>
+                {{btn('favorite','comment_like_' ~ loop.index,annotate=false)}}
+            </div>
+            {% endfor %}
+            {% elif state in ['share','new_message','viewer_list','followers'] %}
+            <div class="search" data-class="search_bar" data-semantic="recipient_search">
+                {{icon('search','recipient_search_icon')}}<input placeholder="Search people" aria-label="Search people"
+                                                                 data-class="input_field" data-semantic="popup_input_1">
+            </div>
+            {% for u in tiktok['users'][:12] %}
+            <div class="row">{{avatar(u,'recipient_avatar_' ~ loop.index)}}
+                <div class="grow"><strong>{{u['username']}}</strong>
+                    <p class="muted">{{u['name']}}</p></div>
+                {% if state in ['share','new_message'] %}{{checkbox('recipient_checkbox_' ~
+                loop.index,'Select',u['selected'])}}{% else %}
+                <button class="secondary" data-class="button" data-semantic="follow_user_{{loop.index}}"
+                        data-button-style="filled">Follow
+                </button>
+                {% endif %}
+            </div>
+            {% endfor %}{% if state=='share' %}
+            <div class="row">{{btn('link','copy_link','Copy link')}}{{btn('download','save_video','Save video')}}</div>
+            {% endif %}
+            {% elif state=='gift_picker' %}<p class="row">{{icon('monetization_on','coin_balance_icon')}}Balance: 1,280
+            coins</p>
+            <div class="gift-grid">{% for g in tiktok['gifts'] %}
+                <button class="gift" data-class="button" data-semantic="gift_{{loop.index}}" data-button-style="filled">
+                    {{icon(g['icon'],'gift_icon_' ~ loop.index)}}<strong>{{g['name']}}</strong><span>{{g['coins']}} coins</span>
+                </button>
+                {% endfor %}
+            </div>
+            <button class="primary" data-class="button" data-semantic="gift_send" data-button-style="filled">Send gift
+            </button>
+            {% elif state=='product_detail' %}
+            <div class="product-detail"><img src="{{tiktok['active_product']['image']}}" alt="Product photo"
+                                             data-class="image" data-semantic="product_detail_image">
+                <div class="stack"><h2>{{tiktok['active_product']['name']}}</h2><strong class="price">${{tiktok['active_product']['price']}}</strong>
+                    <p class="row">{{icon('star','product_rating_icon')}}{{tiktok['active_product']['rating']}} ·
+                        {{tiktok['active_product']['sold']}} sold</p>
+                    <p>Free shipping on eligible orders. Choose your preferred option.</p>
+                    <div class="row">{% for label in ['Black','White','Blue'] %}
+                        <button class="secondary" data-class="chip" data-semantic="product_variant_{{loop.index}}">
+                            {{label}}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <div class="row">{{btn('remove','product_quantity_minus',annotate=false)}}<span>1</span>{{btn('add','product_quantity_plus',annotate=false)}}
+                    </div>
+                    <button class="primary" data-class="button" data-semantic="product_buy" data-button-style="filled">
+                        Buy now
+                    </button>
+                </div>
+            </div>
+            {% elif state=='checkout' %}<h3>Shipping address</h3>{% for label in ['Full name','Street
+            address','City','Postal code'] %}<label class="stack">{{label}}<input data-class="input_field"
+                                                                                  data-semantic="checkout_{{loop.index}}"></label>{%
+            endfor %}<h3>Payment method</h3>
+            <div class="row">{{icon('credit_card','payment_card_icon')}}<span>Card ending in 4821</span>{{btn('edit','payment_edit',annotate=false)}}
+            </div>
+            {{checkbox('checkout_save_address','Save this address',true)}}<strong>Total:
+            ${{tiktok['cart_total']}}</strong>
+            <button class="primary" data-class="button" data-semantic="place_order" data-button-style="filled">Place
+                order
+            </button>
+            {% elif state=='order_success' %}{{icon('check_circle','order_success_icon')}}<h2>Order placed</h2>
+            <p>Your synthetic order is confirmed. Estimated delivery: 3–5 business days.</p>
+            {{btn('local_shipping','track_order','Track order')}}
+            {% elif state=='filters' %}<h3>Sort by</h3>{% for label in ['Relevance','Most liked','Most recent'] %}
+            <button style="justify-content:flex-start" data-action-key="sort_{{loop.index}}" data-button-style="text">
+                <span class="button-content" data-class="button" data-semantic="sort_{{loop.index}}"
+                      data-tight-button="true"><span class="radio-box {{'selected' if loop.first else ''}}"
+                                                     data-class="checkbox"
+                                                     data-semantic="sort_indicator_{{loop.index}}"></span>{{label}}</span>
+            </button>
+            {% endfor %}<h3>Additional filters</h3>{{checkbox('filter_watched','Unwatched
+            videos',true)}}{{checkbox('filter_liked','Liked videos',false)}}{{checkbox('filter_following','Accounts you
+            follow',false)}}
+            {% elif state=='use_sound' %}
+            <div class="row">
+                {{icon('music_note','selected_sound_icon')}}<strong>{{tiktok['sounds'][0]['title']}}</strong></div>
+            <img src="{{tiktok['active_video']['image']}}" style="max-height:320px;width:100%" alt="Camera preview"
+                 data-class="video" data-semantic="sound_camera_preview">
+            <div class="row">
+                {{btn('flip_camera_android','camera_flip',annotate=false)}}{{btn('timer','camera_timer',annotate=false)}}{{btn('auto_awesome','camera_effects',annotate=false)}}{{btn('radio_button_checked','camera_record','Record')}}
+            </div>
+            {% elif state=='date_range' %}<h3>Reporting period</h3>{% for label in ['Last 7 days','Last 28 days','Last
+            60 days','Custom range'] %}
+            <button class="secondary" data-class="button" data-semantic="date_preset_{{loop.index}}"
+                    data-button-style="filled">{{label}}
+            </button>
+            {% endfor %}<label class="stack">Start date<input type="text" value="2026-09-01" data-class="input_field"
+                                                              data-semantic="start_date"></label><label class="stack">End
+            date<input type="text" value="2026-09-28" data-class="input_field" data-semantic="end_date"></label>
+            {% elif state=='export' %}<h3>Select data to export</h3>{{checkbox('export_views','Video
+            views',true)}}{{checkbox('export_engagement','Engagement',true)}}{{checkbox('export_followers','Followers',false)}}{{checkbox('export_rewards','Rewards',false)}}
+            <button class="primary" data-class="button" data-semantic="download_report" data-button-style="filled">
+                {{icon('download','download_report_icon')}}Download CSV
+            </button>
+            {% elif state=='publish_confirmation' %}<h3>Ready to post?</h3>
+            <p>{{tiktok['active_video']['caption']}}</p>{{checkbox('publish_comments','Allow
+            comments',true)}}{{checkbox('publish_duet','Allow Duet',true)}}{{checkbox('publish_stitch','Allow
+            Stitch',false)}}{{checkbox('publish_disclosure','Disclose commercial content',false)}}
+            <button class="primary" data-class="button" data-semantic="publish_confirm" data-button-style="filled">
+                Post
+            </button>
+            {% elif state=='edit_profile'
+            %}{{avatar(tiktok['viewer'],'edit_avatar')}}{{btn('photo_camera','edit_photo','Change photo')}}{% for
+            label,value in [('Name',tiktok['viewer']['name']),('Username',tiktok['viewer']['username']),('Bio','Creating
+            little moments')] %}<label class="stack">{{label}}<input value="{{value}}" data-class="input_field"
+                                                                     data-semantic="profile_field_{{loop.index}}"></label>{%
+            endfor %}
+            {% elif state=='report_problem' %}<h3>Tell us what happened</h3><textarea rows="5"
+                                                                                      placeholder="Describe the problem…"
+                                                                                      aria-label="Problem description"
+                                                                                      data-class="input_field"
+                                                                                      data-semantic="problem_description"></textarea>{{btn('add_photo_alternate','attach_screenshot','Attach
+            screenshot')}}{{checkbox('report_contact','Allow us to contact you',true)}}
+            {% elif state=='delete_account' %}{{icon('warning','delete_warning_icon')}}<h3>Delete your account?</h3>
+            <p>This is a synthetic confirmation state. Your account can be deactivated before permanent deletion.</p>
+            {{checkbox('delete_acknowledge','I understand the consequences',false)}}
+            <button class="primary" data-class="button" data-semantic="delete_confirm" data-button-style="filled">
+                Continue
+            </button>
+            {% elif state=='report' %}<h3>Why are you reporting this LIVE?</h3>{% for label in ['Spam or
+            misleading','Bullying or harassment','Hate speech','Other'] %}
+            <button class="row" style="justify-content:flex-start" data-action-key="report_reason_{{loop.index}}"
+                    data-button-style="text"><span class="button-content" data-class="button"
+                                                   data-semantic="report_reason_{{loop.index}}"
+                                                   data-tight-button="true"><span
+                    class="radio-box {{'selected' if loop.first else ''}}" data-class="selection_indicator"
+                    data-semantic="report_indicator_{{loop.index}}"></span>{{label}}</span></button>
+            {% endfor %}
+            {% else %}{% for label,name in [('Add to favorites','bookmark'),('Share','share'),('Copy link','link'),('Not
+            interested','visibility_off'),('Report','flag')] %}{{btn(name,'option_' ~ loop.index,label)}}{% endfor %}{%
+            endif %}
+        </div>
+        {% if state in ['comments','share','new_message'] %}
+        <footer class="dialog-foot row"><input class="grow" placeholder="Write a message…" aria-label="Message"
+                                               data-class="input_field" data-semantic="dialog_message">{{btn('send','dialog_send',annotate=false)}}
+        </footer>
+        {% elif state in ['filters','date_range','edit_profile','report_problem','report'] %}
+        <footer class="dialog-foot">
+            <button class="primary full" data-class="button" data-semantic="dialog_apply" data-button-style="filled">
+                {{'Submit' if state in ['report','report_problem'] else 'Save'}}
+            </button>
+        </footer>
+        {% endif %}
+    </section>
+</div>
