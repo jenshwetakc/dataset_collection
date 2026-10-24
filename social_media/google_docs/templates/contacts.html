@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;background:var(--background);color:var(--text-primary);font-family:Arial,Helvetica,sans-serif}
+button,input{font:inherit}button{border:0;cursor:default}
+.material-symbols-rounded{font-family:"Material Symbols Rounded";font-size:22px;line-height:1;font-feature-settings:"liga"}
+.contacts-app{display:grid;grid-template-columns:265px minmax(0,1fr);height:100vh}
+.sidebar{padding:15px 10px;border-right:1px solid var(--border-subtle);background:var(--surface)}
+.logo{display:flex;align-items:center;gap:10px;padding:8px 11px 22px;color:var(--primary);font-size:21px;font-weight:500}
+.new-contact{display:flex;align-items:center;gap:9px;width:100%;height:48px;margin-bottom:16px;padding:0 16px;border-radius:24px;background:var(--primary);color:var(--on-primary);font-size:14px;font-weight:700}
+.nav-button{display:flex;align-items:center;gap:13px;width:100%;height:43px;padding:0 13px;border-radius:22px;background:transparent;color:var(--text-primary);text-align:left}
+.nav-button.active{background:var(--primary-container);color:var(--on-primary-container);font-weight:700}
+.nav-count{margin-left:auto;color:var(--text-secondary);font-size:12px}
+.main{display:flex;min-width:0;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;min-height:70px;padding:10px 28px;border-bottom:1px solid var(--border-subtle);background:var(--surface)}
+.icon-button{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:transparent;color:var(--icon)}
+.search{display:flex;align-items:center;gap:9px;max-width:700px;flex:1;padding:0 14px;border-radius:9px;background:var(--surface-variant)}
+.search input{width:100%;height:45px;border:0;outline:0;background:transparent;color:var(--text-primary)}
+.spacer{flex:1}.page{overflow-y:auto;padding:30px clamp(16px,4vw,65px)}.page-title{margin:0 0 20px;font-size:25px;font-weight:500}
+.contact-list,.info-card{overflow:hidden;border:1px solid var(--border-subtle);border-radius:13px;background:var(--surface)}
+.contact-row{display:flex;align-items:center;gap:13px;min-height:67px;padding:10px 16px;border-bottom:1px solid var(--border-subtle)}
+.contact-row:last-child,.info-row:last-child{border-bottom:0}
+.avatar{display:grid;flex:0 0 auto;place-items:center;width:39px;height:39px;border-radius:50%;color:#fff;font-size:12px;font-weight:700}
+.contact-copy,.info-copy{min-width:0;flex:1}.contact-name,.contact-email,.info-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.contact-name{font-size:14px;font-weight:650}.contact-email,.info-label{margin-top:4px;color:var(--text-secondary);font-size:12px}
+.detail{max-width:850px;margin:auto}.detail-head{display:flex;align-items:center;gap:18px;margin-bottom:27px}.detail-avatar{width:92px;height:92px;font-size:27px}.detail-name{font-size:27px;font-weight:500}.detail-company{margin-top:6px;color:var(--text-secondary);font-size:14px}.detail-actions{display:flex;gap:5px;margin-left:auto}
+.info-row{display:flex;align-items:center;gap:16px;min-height:65px;padding:12px 18px;border-bottom:1px solid var(--border-subtle)}.info-value{font-size:14px}
+.chip{display:inline-flex;min-height:28px;align-items:center;margin-top:14px;padding:0 11px;border-radius:14px;background:var(--primary-container);color:var(--on-primary-container);font-size:12px;font-weight:650}
+.dialog-backdrop{position:fixed;z-index:20;inset:0;background:rgba(0,0,0,.38)}
+.dialog{position:fixed;z-index:21;top:50%;left:50%;width:min(520px,calc(100vw - 32px));transform:translate(-50%,-50%);padding:24px;border-radius:17px;background:var(--surface);box-shadow:0 14px 44px rgba(0,0,0,.3)}
+.dialog-title{margin:0 0 19px;font-size:21px;font-weight:500}.field-label{display:block;margin:13px 0 6px;font-size:13px;font-weight:650}.field{width:100%;height:44px;padding:0 12px;border:1px solid var(--border);border-radius:7px;outline:0;background:transparent;color:var(--text-primary)}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:24px}.text-button{min-height:39px;padding:0 15px;border-radius:20px;background:transparent;color:var(--primary);font-size:14px;font-weight:700}.filled{background:var(--primary);color:var(--on-primary)}
+.merge-pair{display:grid;grid-template-columns:1fr 36px 1fr;align-items:center;gap:10px;margin:16px 0}.merge-card{padding:14px;border:1px solid var(--border);border-radius:12px;text-align:center}.merge-avatar{margin:auto}.merge-name{margin-top:8px;font-size:13px;font-weight:650}
+@media(max-width:650px){.contacts-app{grid-template-columns:1fr}.sidebar{display:none}.topbar{min-height:60px;padding:8px 12px}.page{padding:18px 12px}.detail-head{align-items:flex-start;flex-wrap:wrap}.detail-actions{margin-left:0}.detail-avatar{width:72px;height:72px}.detail-name{font-size:23px}}
+</style>
+
+{% set popup_open = contacts["state"] == "edit_contact_dialog" or contacts["state"] == "create_contact_dialog" or contacts["state"] == "merge_suggestions" %}
+{% set title = "Contacts" %}
+{% set display_contacts = contacts["contacts"] %}
+
+{% if contacts["state"] == "search_results" %}
+    {% set title = "Search results" %}
+    {% set display_contacts = contacts["search_contacts"] %}
+{% elif contacts["state"] == "label_contacts" %}
+    {% set title = contacts["selected_label"] %}
+    {% set display_contacts = contacts["label_contacts"] %}
+{% endif %}
+
+<div class="contacts-app"  {% if popup_open %}data-annotation-skip="true"{% endif %}>
+    <aside class="sidebar" data-class="navigation_bar" data-semantic="contacts_navigation">
+        <div class="logo">
+            <span class="material-symbols-rounded" data-class="icon">contacts</span>
+            Contacts
+        </div>
+
+        <button class="new-contact" data-class="button" data-semantic="create_contact">
+            <span class="material-symbols-rounded" data-class="icon">add</span>
+            Create contact
+        </button>
+
+        <button class="nav-button active" data-class="tab" data-semantic="all_contacts">
+            <span class="material-symbols-rounded" data-class="icon">person</span>
+            Contacts
+            <span class="nav-count">{{ contacts["contacts"] | length }}</span>
+        </button>
+
+        <button class="nav-button" data-class="tab" data-semantic="frequent_contacts">
+            <span class="material-symbols-rounded" data-class="icon">schedule</span>
+            Frequent
+        </button>
+
+        <button class="nav-button" data-class="tab" data-semantic="merge_fix">
+            <span class="material-symbols-rounded" data-class="icon">merge</span>
+            Merge &amp; fix
+        </button>
+
+        {% for label in contacts["labels"] %}
+        <button class="nav-button" data-class="tab" data-semantic="label_{{ loop.index }}">
+            <span class="material-symbols-rounded" data-class="icon">label</span>
+            {{ label }}
+        </button>
+        {% endfor %}
+    </aside>
+
+    <main class="main">
+        <header class="topbar" data-class="app_bar" data-semantic="contacts_header">
+            <button class="icon-button" data-class="button" data-semantic="open_navigation">
+                <span class="material-symbols-rounded" data-class="icon">menu</span>
+            </button>
+
+            <div class="search" data-class="search_bar" data-semantic="contact_search">
+                <span class="material-symbols-rounded" data-class="icon" data-semantic="search_icon">search</span>
+                <input
+                    placeholder="Search contacts"
+                    value="{% if contacts['state'] == 'search_results' %}{{ contacts['search_query'] }}{% endif %}"
+                    data-class="input_field"
+                    data-semantic="search_input"
+                >
+            </div>
+
+            <div class="spacer"></div>
+
+            <button class="icon-button" data-class="button" data-semantic="settings">
+                <span class="material-symbols-rounded" data-class="icon">settings</span>
+            </button>
+        </header>
+
+        <section class="page" data-class="section" data-semantic="contacts_content">
+            {% if contacts["state"] == "contact_detail" %}
+            {% set contact = contacts["selected_contact"] %}
+
+            <div class="detail">
+                <div class="detail-head">
+                    <div
+                        class="avatar detail-avatar"
+                        style="background:{{ contact['color'] }}"
+                        data-class="avatar"
+                        data-semantic="detail_avatar"
+                    >
+                        {{ contact["initials"] }}
+                    </div>
+
+                    <div>
+                        <div class="detail-name">{{ contact["name"] }}</div>
+                        <div class="detail-company">
+                            {{ contact["job_title"] }} · {{ contact["company"] }}
+                        </div>
+                    </div>
+
+                    <div class="detail-actions">
+                        <button class="icon-button" data-class="button" data-semantic="edit_contact">
+                            <span class="material-symbols-rounded" data-class="icon">edit</span>
+                        </button>
+
+                        <button class="icon-button" data-class="button" data-semantic="contact_more">
+                            <span class="material-symbols-rounded" data-class="icon">more_vert</span>
+                        </button>
+                    </div>
+                </div>
+
+                <section class="info-card" data-class="card" data-semantic="contact_information">
+                    <div class="info-row">
+                        <span class="material-symbols-rounded" data-class="icon" data-semantic="email_icon">mail</span>
+                        <div class="info-copy">
+                            <div class="info-label">Email</div>
+                            <div class="info-value">{{ contact["email"] }}</div>
+                        </div>
+                        <button class="icon-button" data-class="button" data-semantic="send_email">
+                            <span class="material-symbols-rounded" data-class="icon">send</span>
+                        </button>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="material-symbols-rounded" data-class="icon" data-semantic="phone_icon">call</span>
+                        <div class="info-copy">
+                            <div class="info-label">Phone</div>
+                            <div class="info-value">{{ contact["phone"] }}</div>
+                        </div>
+                        <button class="icon-button" data-class="button" data-semantic="call_contact">
+                            <span class="material-symbols-rounded" data-class="icon">call</span>
+                        </button>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="material-symbols-rounded" data-class="icon" data-semantic="address_icon">location_on</span>
+                        <div class="info-copy">
+                            <div class="info-label">Address</div>
+                            <div class="info-value">{{ contact["address"] }}</div>
+                        </div>
+                    </div>
+                </section>
+
+                <span class="chip" data-class="badge" data-semantic="contact_label">
+                    {{ contact["label"] }}
+                </span>
+            </div>
+
+            {% else %}
+
+            <h1 class="page-title">{{ title }}</h1>
+
+            <section class="contact-list" data-class="section" data-semantic="contact_list">
+                {% for contact in display_contacts %}
+                <article class="contact-row" data-class="card" data-semantic="contact_{{ loop.index }}">
+                    <div
+                        class="avatar"
+                        style="background:{{ contact['color'] }}"
+                        data-class="avatar"
+                        data-semantic="contact_avatar_{{ loop.index }}"
+                    >
+                        {{ contact["initials"] }}
+                    </div>
+
+                    <div class="contact-copy">
+                        <div class="contact-name">{{ contact["name"] }}</div>
+                        <div class="contact-email">{{ contact["email"] }}</div>
+                    </div>
+
+                    {% if contact["starred"] %}
+                    <span class="material-symbols-rounded" data-class="icon" data-semantic="starred_{{ loop.index }}">star</span>
+                    {% endif %}
+
+                    <button class="icon-button" data-class="button" data-semantic="contact_options_{{ loop.index }}">
+                        <span class="material-symbols-rounded" data-class="icon">more_vert</span>
+                    </button>
+                </article>
+                {% endfor %}
+            </section>
+
+            {% endif %}
+        </section>
+    </main>
+</div>
+
+{% if contacts["state"] == "edit_contact_dialog" %}
+{% set form_contact = contacts["selected_contact"] %}
+
+<div class="dialog-backdrop" data-annotation-skip="true"></div>
+
+<section class="dialog" data-class="dialog" data-semantic="edit_contact_dialog" data-occluder="true">
+    <h2 class="dialog-title">Edit contact</h2>
+
+    <label class="field-label">Name</label>
+    <input class="field" value="{{ form_contact['name'] }}" data-class="input_field" data-semantic="contact_name_input">
+
+    <label class="field-label">Email</label>
+    <input class="field" value="{{ form_contact['email'] }}" data-class="input_field" data-semantic="contact_email_input">
+
+    <label class="field-label">Phone</label>
+    <input class="field" value="{{ form_contact['phone'] }}" data-class="input_field" data-semantic="contact_phone_input">
+
+    <label class="field-label">Organization</label>
+    <input class="field" value="{{ form_contact['company'] }}" data-class="input_field" data-semantic="contact_company_input">
+
+    <div class="dialog-actions">
+        <button class="text-button" data-class="button" data-semantic="cancel_edit_contact">Cancel</button>
+        <button class="text-button filled" data-class="button" data-semantic="save_contact">Save</button>
+    </div>
+</section>
+
+{% elif contacts["state"] == "create_contact_dialog" %}
+{% set form_contact = contacts["new_contact"] %}
+
+<div class="dialog-backdrop" data-annotation-skip="true"></div>
+
+<section class="dialog" data-class="dialog" data-semantic="create_contact_dialog" data-occluder="true">
+    <h2 class="dialog-title">Create contact</h2>
+
+    <label class="field-label">Name</label>
+    <input class="field" value="{{ form_contact['name'] }}" data-class="input_field" data-semantic="contact_name_input">
+
+    <label class="field-label">Email</label>
+    <input class="field" value="{{ form_contact['email'] }}" data-class="input_field" data-semantic="contact_email_input">
+
+    <label class="field-label">Phone</label>
+    <input class="field" value="{{ form_contact['phone'] }}" data-class="input_field" data-semantic="contact_phone_input">
+
+    <label class="field-label">Organization</label>
+    <input class="field" value="{{ form_contact['company'] }}" data-class="input_field" data-semantic="contact_company_input">
+
+    <div class="dialog-actions">
+        <button class="text-button" data-class="button" data-semantic="cancel_create_contact">Cancel</button>
+        <button class="text-button filled" data-class="button" data-semantic="confirm_create_contact">Create</button>
+    </div>
+</section>
+
+{% elif contacts["state"] == "merge_suggestions" %}
+
+<div class="dialog-backdrop" data-annotation-skip="true"></div>
+
+<section class="dialog" data-class="dialog" data-semantic="merge_suggestions_dialog" data-occluder="true">
+    <h2 class="dialog-title">Merge duplicate contacts?</h2>
+
+    <p>These contacts may refer to the same person.</p>
+
+    <div class="merge-pair">
+        <article class="merge-card" data-class="card" data-semantic="merge_contact_one">
+            <div
+                class="avatar merge-avatar"
+                style="background:{{ contacts['merge_pair'][0]['color'] }}"
+                data-class="avatar"
+                data-semantic="merge_avatar_one"
+            >
+                {{ contacts["merge_pair"][0]["initials"] }}
+            </div>
+            <div class="merge-name">{{ contacts["merge_pair"][0]["name"] }}</div>
+            <div class="contact-email">{{ contacts["merge_pair"][0]["email"] }}</div>
+        </article>
+
+        <span class="material-symbols-rounded" data-class="icon" data-semantic="merge_icon">merge</span>
+
+        <article class="merge-card" data-class="card" data-semantic="merge_contact_two">
+            <div
+                class="avatar merge-avatar"
+                style="background:{{ contacts['merge_pair'][1]['color'] }}"
+                data-class="avatar"
+                data-semantic="merge_avatar_two"
+            >
+                {{ contacts["merge_pair"][1]["initials"] }}
+            </div>
+            <div class="merge-name">{{ contacts["merge_pair"][1]["name"] }}</div>
+            <div class="contact-email">{{ contacts["merge_pair"][1]["email"] }}</div>
+        </article>
+    </div>
+
+    <div class="dialog-actions">
+        <button class="text-button" data-class="button" data-semantic="dismiss_merge">Not now</button>
+        <button class="text-button filled" data-class="button" data-semantic="merge_contacts">Merge</button>
+    </div>
+</section>
+
+{% endif %}
+
+{% endblock %}

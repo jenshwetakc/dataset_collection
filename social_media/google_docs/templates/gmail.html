@@ -1,0 +1,1619 @@
+{% extends "base.html" %}
+
+{% block title %}
+Synthetic Gmail UI
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+    :root {
+
+        --gmail-red:
+            #ea4335;
+
+        --gmail-blue:
+            var(--primary);
+
+        --gmail-blue-soft:
+            var(--primary-container);
+
+        --gmail-surface:
+            var(--surface);
+
+        --gmail-background:
+            var(--background);
+
+        --gmail-hover:
+            var(--surface-variant);
+
+        --gmail-border:
+            var(--border);
+
+        --gmail-text:
+            var(--text-primary);
+
+        --gmail-muted:
+            var(--text-secondary);
+    }
+
+    .gmail-app {
+
+        min-height:
+            100vh;
+
+        background:
+            var(--gmail-background);
+
+        color:
+            var(--gmail-text);
+    }
+
+    .gmail-header {
+
+        display:
+            flex;
+
+        min-height:
+            64px;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        padding:
+            8px 16px;
+
+        border-bottom:
+            1px solid var(--gmail-border);
+
+        background:
+            var(--gmail-surface);
+    }
+
+    .gmail-logo {
+
+        display:
+            flex;
+
+        min-width:
+            116px;
+
+        align-items:
+            center;
+
+        gap:
+            7px;
+
+        color:
+            var(--gmail-red);
+
+        font-size:
+            22px;
+
+        font-weight:
+            700;
+    }
+
+    .gmail-logo .material-symbols-rounded {
+
+        font-size:
+            29px;
+    }
+
+    .gmail-search {
+
+        display:
+            flex;
+
+        width:
+            min(720px, 100%);
+
+        min-width:
+            0;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            0 12px;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--gmail-hover);
+    }
+
+    .gmail-search input {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        height:
+            46px;
+
+        background:
+            transparent;
+
+        color:
+            var(--gmail-text);
+    }
+
+    .gmail-search input::placeholder {
+
+        color:
+            var(--gmail-muted);
+    }
+
+    .header-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            3px;
+
+        margin-left:
+            auto;
+    }
+
+    .mail-layout {
+
+        display:
+            flex;
+
+        min-height:
+            calc(100vh - 64px);
+    }
+
+    .mail-navigation {
+
+        width:
+            256px;
+
+        flex:
+            0 0 auto;
+
+        padding:
+            12px;
+    }
+
+    .compose-button {
+
+        display:
+            inline-flex;
+
+        min-height:
+            54px;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        padding:
+            0 22px;
+
+        border-radius:
+            16px;
+
+        background:
+            var(--gmail-blue-soft);
+
+        color:
+            var(--on-primary-container);
+
+        font-weight:
+            700;
+    }
+
+    .navigation-item {
+
+        display:
+            flex;
+
+        width:
+            100%;
+
+        min-height:
+            40px;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        margin-top:
+            8px;
+
+        padding:
+            0 14px;
+
+        border-radius:
+            20px;
+
+        color:
+            var(--gmail-text);
+
+        text-align:
+            left;
+    }
+
+    .navigation-item.active {
+
+        background:
+            var(--gmail-blue-soft);
+
+        color:
+            var(--on-primary-container);
+
+        font-weight:
+            700;
+    }
+
+    .navigation-item .material-symbols-rounded {
+
+        font-size:
+            20px;
+    }
+
+    .label-heading {
+
+        margin:
+            24px 14px 8px;
+
+        color:
+            var(--gmail-muted);
+
+        font-size:
+            12px;
+
+        font-weight:
+            700;
+
+        text-transform:
+            uppercase;
+    }
+
+    .label-item {
+
+        display:
+            flex;
+
+        width:
+            100%;
+
+        min-height:
+            36px;
+
+        align-items:
+            center;
+
+        gap:
+            16px;
+
+        padding:
+            0 14px;
+
+        border-radius:
+            18px;
+
+        color:
+            var(--gmail-text);
+
+        text-align:
+            left;
+    }
+
+    .mail-main {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+
+        padding:
+            12px 20px 40px;
+    }
+
+    .mail-toolbar {
+
+        display:
+            flex;
+
+        min-height:
+            48px;
+
+        align-items:
+            center;
+
+        gap:
+            5px;
+
+        padding:
+            0 8px;
+
+        border-bottom:
+            1px solid var(--gmail-border);
+    }
+
+    .toolbar-spacer {
+
+        flex:
+            1;
+    }
+
+    .message-list {
+
+        overflow:
+            hidden;
+
+        border:
+            1px solid var(--gmail-border);
+
+        border-top:
+            0;
+
+        border-radius:
+            0 0 10px 10px;
+    }
+
+    .message-row {
+
+        display:
+            grid;
+
+        width:
+            100%;
+
+        grid-template-columns:
+            34px 34px minmax(110px, 220px) minmax(0, 1fr) auto;
+
+        min-height:
+            50px;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            0 12px;
+
+        border-bottom:
+            1px solid var(--gmail-border);
+
+        background:
+            var(--gmail-surface);
+
+        color:
+            var(--gmail-text);
+
+        text-align:
+            left;
+    }
+
+    .message-row.unread {
+
+        background:
+            var(--gmail-hover);
+
+        font-weight:
+            700;
+    }
+
+    .message-row:last-child {
+
+        border-bottom:
+            0;
+    }
+
+    .message-sender,
+    .message-subject,
+    .message-preview {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+    .message-subject {
+
+        padding-right:
+            4px;
+    }
+
+    .message-preview {
+
+        color:
+            var(--gmail-muted);
+
+        font-weight:
+            400;
+    }
+
+    .message-time {
+
+        color:
+            var(--gmail-muted);
+
+        font-size:
+            12px;
+
+        font-weight:
+            600;
+    }
+
+    .message-open {
+
+        min-height:
+            700px;
+
+        padding:
+            28px;
+
+        border:
+            1px solid var(--gmail-border);
+
+        border-radius:
+            12px;
+
+        background:
+            var(--gmail-surface);
+    }
+
+    .message-open h1 {
+
+        margin:
+            8px 0 24px;
+
+        font-size:
+            25px;
+
+        font-weight:
+            500;
+    }
+
+    .message-header-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        margin-bottom:
+            26px;
+    }
+
+    .message-avatar {
+
+        display:
+            grid;
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        place-items:
+            center;
+
+        border-radius:
+            50%;
+
+        color:
+            white;
+
+        font-size:
+            14px;
+
+        font-weight:
+            700;
+    }
+
+    .message-recipient {
+
+        color:
+            var(--gmail-muted);
+
+        font-size:
+            13px;
+    }
+
+    .message-date {
+
+        margin-left:
+            auto;
+
+        color:
+            var(--gmail-muted);
+
+        font-size:
+            12px;
+    }
+
+    .message-body {
+
+        max-width:
+            760px;
+
+        color:
+            var(--gmail-text);
+
+        font-size:
+            15px;
+
+        line-height:
+            1.65;
+    }
+
+    .message-body p {
+
+        margin:
+            0 0 18px;
+    }
+
+    .attachment-list {
+
+        display:
+            flex;
+
+        flex-wrap:
+            wrap;
+
+        gap:
+            10px;
+
+        margin:
+            26px 0;
+    }
+
+    .attachment-card {
+
+        display:
+            flex;
+
+        width:
+            180px;
+
+        min-height:
+            52px;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        padding:
+            8px;
+
+        border:
+            1px solid var(--gmail-border);
+
+        border-radius:
+            8px;
+
+        background:
+            var(--gmail-hover);
+
+        color:
+            var(--gmail-text);
+    }
+
+    .attachment-card span {
+
+        overflow:
+            hidden;
+
+        white-space:
+            nowrap;
+
+        text-overflow:
+            ellipsis;
+    }
+
+    .attachment-card small {
+
+        display:
+            block;
+
+        color:
+            var(--gmail-muted);
+    }
+
+    .reply-actions {
+
+        display:
+            flex;
+
+        gap:
+            10px;
+
+        margin-top:
+            30px;
+    }
+
+    .reply-button {
+
+        display:
+            inline-flex;
+
+        min-height:
+            38px;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            0 16px;
+
+        border:
+            1px solid var(--gmail-border);
+
+        border-radius:
+            19px;
+
+        color:
+            var(--gmail-text);
+    }
+
+    .popup-backdrop {
+
+        position:
+            fixed;
+
+        z-index:
+            50;
+
+        inset:
+            0;
+
+        background:
+            rgba(0, 0, 0, 0.36);
+    }
+
+    .labels-drawer {
+
+        position:
+            fixed;
+
+        z-index:
+            51;
+
+        top:
+            0;
+
+        left:
+            0;
+
+        width:
+            min(310px, calc(100vw - 36px));
+
+        min-height:
+            100vh;
+
+        padding:
+            20px 12px;
+
+        background:
+            var(--gmail-surface);
+
+        color:
+            var(--gmail-text);
+
+        box-shadow:
+            4px 0 20px rgba(0, 0, 0, 0.28);
+    }
+
+    .drawer-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        margin:
+            0 8px 20px;
+
+        font-size:
+            20px;
+    }
+
+    .compose-dialog {
+
+        position:
+            fixed;
+
+        z-index:
+            51;
+
+        right:
+            34px;
+
+        bottom:
+            0;
+
+        width:
+            min(560px, calc(100vw - 24px));
+
+        overflow:
+            hidden;
+
+        border-radius:
+            12px 12px 0 0;
+
+        background:
+            var(--gmail-surface);
+
+        color:
+            var(--gmail-text);
+
+        box-shadow:
+            0 2px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .compose-header {
+
+        display:
+            flex;
+
+        min-height:
+            46px;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        padding:
+            0 14px;
+
+        background:
+            var(--gmail-hover);
+
+        font-weight:
+            700;
+    }
+
+    .compose-fields {
+
+        padding:
+            0 16px;
+    }
+
+    .compose-input {
+
+        width:
+            100%;
+
+        min-height:
+            42px;
+
+        border-bottom:
+            1px solid var(--gmail-border);
+
+        background:
+            transparent;
+
+        color:
+            var(--gmail-text);
+    }
+
+    .compose-body {
+
+        width:
+            100%;
+
+        min-height:
+            220px;
+
+        padding:
+            16px 0;
+
+        border:
+            0;
+
+        outline:
+            0;
+
+        resize:
+            none;
+
+        background:
+            transparent;
+
+        color:
+            var(--gmail-text);
+    }
+
+    .compose-footer {
+
+        display:
+            flex;
+
+        min-height:
+            64px;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+
+        padding:
+            0 16px;
+    }
+
+    .send-button {
+
+        min-height:
+            36px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            18px;
+
+        background:
+            var(--gmail-blue);
+
+        color:
+            var(--on-primary);
+
+        font-weight:
+            700;
+    }
+
+    @media (max-width: 760px) {
+
+        .gmail-header {
+
+            gap:
+                6px;
+
+            padding:
+                8px;
+        }
+
+        .gmail-logo {
+
+            min-width:
+                34px;
+
+            font-size:
+                0;
+        }
+
+        .gmail-search {
+
+            border-radius:
+                22px;
+        }
+
+        .header-actions {
+
+            display:
+                none;
+        }
+
+        .mail-navigation {
+
+            display:
+                none;
+        }
+
+        .mail-main {
+
+            padding:
+                8px 0 24px;
+        }
+
+        .message-list {
+
+            border-right:
+                0;
+
+            border-left:
+                0;
+
+            border-radius:
+                0;
+        }
+
+        .message-row {
+
+            grid-template-columns:
+                28px 28px minmax(72px, 112px) minmax(0, 1fr);
+
+            gap:
+                5px;
+
+            padding:
+                0 8px;
+        }
+
+        .message-time {
+
+            display:
+                none;
+        }
+
+        .message-open {
+
+            min-height:
+                100vh;
+
+            padding:
+                20px 16px;
+
+            border-right:
+                0;
+
+            border-left:
+                0;
+
+            border-radius:
+                0;
+        }
+
+        .compose-dialog {
+
+            right:
+                12px;
+        }
+    }
+
+</style>
+
+{% set is_popup = gmail.state in ["compose_dialog", "labels_open"] %}
+
+<div
+    class="gmail-app"
+    {% if is_popup %}
+    data-annotation-skip="true"
+    {% endif %}
+>
+
+    <header
+        class="gmail-header"
+        data-class="app_bar"
+        data-semantic="gmail_header"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="main_menu"
+        >
+            <span class="material-symbols-rounded", data-class="icon">
+                menu
+            </span>
+        </button>
+
+        <div
+            class="gmail-logo"
+            data-class="icon"
+            data-semantic="gmail_logo"
+        >
+            <span class="material-symbols-rounded">
+                mail
+            </span>
+
+            Gmail
+        </div>
+
+        <div
+            class="gmail-search"
+            data-class="search_bar"
+            data-semantic="mail_search"
+        >
+            <span class="material-symbols-rounded">
+                search
+            </span>
+
+            <input
+                type="text"
+                placeholder="Search mail"
+                value="{% if gmail.state == 'search_results' %}{{ gmail.search_query }}{% endif %}"
+                aria-label="Search mail"
+            >
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="search_filters"
+            >
+                <span class="material-symbols-rounded">
+                    tune
+                </span>
+            </button>
+        </div>
+
+        <div class="header-actions">
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="help"
+            >
+                <span class="material-symbols-rounded">
+                    help
+                </span>
+            </button>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="settings"
+            >
+                <span class="material-symbols-rounded">
+                    settings
+                </span>
+            </button>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="google_apps"
+            >
+                <span class="material-symbols-rounded">
+                    apps
+                </span>
+            </button>
+
+            <button
+                class="icon-button"
+                data-class="avatar"
+                data-semantic="account"
+            >
+                SK
+            </button>
+
+        </div>
+
+    </header>
+
+    <div class="mail-layout">
+
+        <nav
+            class="mail-navigation"
+            data-class="navigation_bar"
+            data-semantic="gmail_navigation"
+        >
+
+            <button
+                class="compose-button"
+                data-class="button"
+                data-semantic="compose"
+            >
+                <span class="material-symbols-rounded" data-class="icon">
+                    edit
+                </span>
+
+                Compose
+            </button>
+
+            {% for item in gmail.navigation %}
+
+            <button
+                class="
+                    navigation-item
+                    {% if item[0] == gmail.state or (gmail.state == 'message_open' and item[0] == 'inbox') %}
+                    active
+                    {% endif %}
+                "
+                data-class="button"
+                data-semantic="nav_{{ item[0] }}"
+            >
+                <span class="material-symbols-rounded" data-class="icon">
+                    {{ item[2] }}
+                </span>
+
+                {{ item[1] }}
+
+                {% if item[0] == "inbox" and gmail.unread_count > 0 %}
+                <span class="toolbar-spacer"></span>
+                <span data-class="badge">
+                    {{ gmail.unread_count }}
+                </span>
+                {% endif %}
+            </button>
+
+            {% endfor %}
+
+            <p class="label-heading">
+                Labels
+            </p>
+
+            {% for label in gmail.labels %}
+
+            <button
+                class="label-item"
+                data-class="button"
+                data-semantic="label_{{ loop.index }}"
+            >
+                <span class="material-symbols-rounded" data-class="icon">
+                    label
+                </span>
+
+                {{ label }}
+            </button>
+
+            {% endfor %}
+
+        </nav>
+
+        <main class="mail-main">
+
+            {% if gmail.state == "message_open" %}
+
+            <section
+                class="message-open"
+                data-class="section"
+                data-semantic="opened_message"
+            >
+
+                <div class="mail-toolbar">
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="back_to_inbox"
+                    >
+                        <span class="material-symbols-rounded">
+                            arrow_back
+                        </span>
+                    </button>
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="archive"
+                    >
+                        <span class="material-symbols-rounded">
+                            archive
+                        </span>
+                    </button>
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="report_spam"
+                    >
+                        <span class="material-symbols-rounded">
+                            report
+                        </span>
+                    </button>
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="delete_message"
+                    >
+                        <span class="material-symbols-rounded">
+                            delete
+                        </span>
+                    </button>
+
+                </div>
+
+                <h1>
+                    {{ gmail.selected_message.subject }}
+                </h1>
+
+                <div class="message-header-row">
+
+                    <div
+                        class="message-avatar"
+                        style="background: {{ gmail.selected_message.avatar_color }};"
+                        data-class="avatar"
+                        data-semantic="sender_avatar"
+                    >
+                        {{ gmail.selected_message.initials }}
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            {{ gmail.selected_message.sender }}
+                        </strong>
+
+                        <div class="message-recipient">
+                            to me
+                        </div>
+
+                    </div>
+
+                    <span class="message-date">
+                        {{ gmail.selected_message.time }}
+                    </span>
+
+                </div>
+
+                <div class="message-body">
+
+                    {% for paragraph in gmail.selected_message.body %}
+
+                    <p>{{ paragraph }}</p>
+
+                    {% endfor %}
+
+                </div>
+
+                {% if gmail.selected_message.attachments %}
+
+                <div class="attachment-list">
+
+                    {% for attachment in gmail.selected_message.attachments %}
+
+                    <button
+                        class="attachment-card"
+                        data-class="card"
+                        data-semantic="attachment_{{ loop.index }}"
+                    >
+                        <span class="material-symbols-rounded">
+                            description
+                        </span>
+
+                        <span>
+                            {{ attachment.name }}
+
+                            <small>
+                                {{ attachment.size }}
+                            </small>
+                        </span>
+                    </button>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+                <div class="reply-actions">
+
+                    <button
+                        class="reply-button"
+                        data-class="button"
+                        data-semantic="reply"
+                    >
+                        <span class="material-symbols-rounded">
+                            reply
+                        </span>
+
+                        Reply
+                    </button>
+
+                    <button
+                        class="reply-button"
+                        data-class="button"
+                        data-semantic="forward"
+                    >
+                        <span class="material-symbols-rounded">
+                            forward
+                        </span>
+
+                        Forward
+                    </button>
+
+                </div>
+
+            </section>
+
+            {% else %}
+
+            <section
+                class="mail-toolbar"
+                data-class="app_bar"
+                data-semantic="message_toolbar"
+            >
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="select_messages"
+                >
+                    <span class="material-symbols-rounded">
+                        check_box_outline_blank
+                    </span>
+                </button>
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="refresh"
+                >
+                    <span class="material-symbols-rounded">
+                        refresh
+                    </span>
+                </button>
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="more_actions"
+                >
+                    <span class="material-symbols-rounded">
+                        more_vert
+                    </span>
+                </button>
+
+                <div class="toolbar-spacer"></div>
+
+                <span class="message-time">
+                    1–{{ gmail.messages|length }} of {{ gmail.messages|length }}
+                </span>
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="previous_page"
+                >
+                    <span class="material-symbols-rounded">
+                        chevron_left
+                    </span>
+                </button>
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="next_page"
+                >
+                    <span class="material-symbols-rounded">
+                        chevron_right
+                    </span>
+                </button>
+
+            </section>
+
+            <section
+                class="message-list"
+                data-class="section"
+                data-semantic="message_list"
+            >
+
+                {% for message in gmail.messages %}
+
+                <button
+                    class="
+                        message-row
+                        {% if message.unread %}
+                        unread
+                        {% endif %}
+                    "
+                    data-class="card"
+                    data-semantic="{{ message.id }}"
+                >
+
+                    <span class="material-symbols-rounded" data-class="icon">
+                        check_box_outline_blank
+                    </span>
+
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        style="
+                            color:
+                            {% if message.starred %}
+                            #fbbc04
+                            {% else %}
+                            var(--gmail-muted)
+                            {% endif %};
+                        "
+                    >
+                        {% if message.starred %}
+                        star
+                        {% else %}
+                        star_outline
+                        {% endif %}
+                    </span>
+
+                    <span class="message-sender">
+                        {{ message.sender }}
+                    </span>
+
+                    <span class="message-subject">
+                        {{ message.subject }}
+
+                        <span class="message-preview">
+                            — {{ message.preview }}
+                        </span>
+                    </span>
+
+                    <span class="message-time">
+                        {{ message.time }}
+                    </span>
+
+                </button>
+
+                {% endfor %}
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+</div>
+
+{% if gmail.state == "labels_open" %}
+
+<div
+    class="popup-backdrop"
+></div>
+
+<aside
+    class="labels-drawer"
+    data-class="dialog"
+    data-semantic="labels_drawer"
+    data-occluder="true"
+>
+
+    <div class="drawer-title">
+
+        Labels
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="close_labels"
+        >
+            <span class="material-symbols-rounded">
+                close
+            </span>
+        </button>
+
+    </div>
+
+    {% for label in gmail.labels %}
+
+    <button
+        class="label-item"
+        data-class="button"
+        data-semantic="drawer_label_{{ loop.index }}"
+    >
+        <span class="material-symbols-rounded" data-class="icon">
+            label
+        </span>
+
+        {{ label }}
+    </button>
+
+    {% endfor %}
+
+</aside>
+
+{% endif %}
+
+{% if gmail.state == "compose_dialog" %}
+
+<div
+    class="popup-backdrop"
+></div>
+
+<section
+    class="compose-dialog"
+    data-class="dialog"
+    data-semantic="compose_dialog"
+    data-occluder="true"
+>
+
+    <div class="compose-header">
+
+        New Message
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="close_compose"
+        >
+            <span class="material-symbols-rounded">
+                close
+            </span>
+        </button>
+
+    </div>
+
+    <div class="compose-fields">
+
+        <input
+            class="compose-input"
+            value="{{ gmail.compose.recipient }}"
+            placeholder="Recipients"
+            data-class="input_field"
+            data-semantic="compose_recipients"
+        >
+
+        <input
+            class="compose-input"
+            value="{{ gmail.compose.subject }}"
+            placeholder="Subject"
+            data-class="input_field"
+            data-semantic="compose_subject"
+        >
+
+        <textarea
+            class="compose-body"
+            placeholder="Compose email"
+            data-class="input_field"
+            data-semantic="compose_body"
+        >{{ gmail.compose.body }}</textarea>
+
+    </div>
+
+    <div class="compose-footer">
+
+        <button
+            class="send-button"
+            data-class="button"
+            data-semantic="send_email"
+        >
+            Send
+        </button>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="attach_file"
+        >
+            <span class="material-symbols-rounded">
+                attach_file
+            </span>
+        </button>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="discard_draft"
+        >
+            <span class="material-symbols-rounded">
+                delete
+            </span>
+        </button>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+{% endblock %}

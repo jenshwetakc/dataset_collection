@@ -1,0 +1,960 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        overflow: hidden;
+        background: var(--background);
+        color: var(--text-primary);
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    input,
+    textarea {
+        font: inherit;
+    }
+
+    button {
+        border: 0;
+        cursor: default;
+    }
+
+    .material-symbols-rounded {
+        font-family: "Material Symbols Rounded";
+        font-size: 23px;
+        line-height: 1;
+        font-feature-settings: "liga";
+    }
+
+    .translate-app {
+        min-height: 100vh;
+    }
+
+    .top-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        height: 68px;
+        padding: 0 24px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-right: 14px;
+        color: var(--primary);
+        font-size: 21px;
+        font-weight: 500;
+    }
+
+    .brand-icon {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    .top-spacer {
+        flex: 1;
+    }
+
+    .icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--icon);
+    }
+
+    .navigation {
+        display: flex;
+        gap: 6px;
+        padding: 12px 24px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--surface);
+    }
+
+    .navigation-button {
+        min-height: 38px;
+        padding: 0 16px;
+        border-radius: 20px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 650;
+    }
+
+    .navigation-button.active {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+    }
+
+    .content {
+        width: min(1180px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 30px 0;
+    }
+
+    .translation-card {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+    }
+
+    .language-row {
+        display: grid;
+        grid-template-columns: 1fr 52px 1fr;
+        align-items: center;
+        min-height: 62px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .language-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        height: 100%;
+        padding: 0 14px;
+        background: transparent;
+        color: var(--primary);
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .swap-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--surface-variant);
+        color: var(--icon);
+    }
+
+    .translation-panes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 290px;
+    }
+
+    .pane {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        padding: 20px;
+    }
+
+    .source-pane {
+        border-right: 1px solid var(--border-subtle);
+    }
+
+    .translation-text {
+        width: 100%;
+        min-height: 152px;
+        resize: none;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 20px;
+        line-height: 1.45;
+    }
+
+    .translation-output {
+        min-height: 152px;
+        color: var(--text-primary);
+        font-size: 20px;
+        line-height: 1.45;
+    }
+
+    .placeholder {
+        color: var(--text-disabled);
+    }
+
+    .pronunciation {
+        margin-top: 10px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .pane-actions {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: auto;
+    }
+
+    .pane-actions .icon-button {
+        width: 38px;
+        height: 38px;
+    }
+
+    .save-button {
+        margin-left: auto;
+    }
+
+    .empty-state {
+        display: grid;
+        min-height: 220px;
+        place-items: center;
+        padding: 35px;
+        color: var(--text-secondary);
+        text-align: center;
+    }
+
+    .empty-state span {
+        display: block;
+        margin-bottom: 10px;
+        color: var(--primary);
+        font-size: 48px;
+    }
+
+    .list-page {
+        max-width: 820px;
+        margin: 0 auto;
+    }
+
+    .list-page h1 {
+        margin: 4px 0 18px;
+        font-size: 25px;
+        font-weight: 500;
+    }
+
+    .translation-list {
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        background: var(--surface);
+    }
+
+    .list-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .list-item:last-child {
+        border-bottom: 0;
+    }
+
+    .list-copy {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .list-source,
+    .list-target {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .list-source {
+        font-size: 15px;
+        font-weight: 650;
+    }
+
+    .list-target {
+        margin-top: 5px;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .list-date {
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .popup-backdrop {
+        position: fixed;
+        z-index: 40;
+        inset: 0;
+        background: rgba(0, 0, 0, .36);
+    }
+
+    .language-menu {
+        position: fixed;
+        z-index: 41;
+        top: 112px;
+        left: 50%;
+        width: min(580px, calc(100vw - 32px));
+        transform: translateX(-50%);
+        overflow: hidden;
+        border-radius: 16px;
+        background: var(--surface);
+        box-shadow: 0 14px 42px rgba(0, 0, 0, .26);
+    }
+
+    .menu-heading {
+        padding: 20px 20px 10px;
+        font-size: 19px;
+        font-weight: 500;
+    }
+
+    .menu-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 18px 12px;
+        padding: 0 10px;
+        border-radius: 8px;
+        background: var(--surface-variant);
+    }
+
+    .menu-search input {
+        width: 100%;
+        height: 42px;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--text-primary);
+    }
+
+    .language-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        padding: 4px 10px 16px;
+    }
+
+    .menu-language {
+        min-height: 44px;
+        padding: 0 12px;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--text-primary);
+        text-align: left;
+    }
+
+    .menu-language.selected {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+        font-weight: 700;
+    }
+
+    .bottom-sheet {
+        position: fixed;
+        z-index: 41;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        padding: 14px 18px 28px;
+        border-radius: 22px 22px 0 0;
+        background: var(--surface);
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, .2);
+    }
+
+    .sheet-handle {
+        width: 34px;
+        height: 4px;
+        margin: 0 auto 18px;
+        border-radius: 999px;
+        background: var(--border);
+    }
+
+    .sheet-title {
+        margin-bottom: 10px;
+        font-size: 21px;
+        font-weight: 500;
+    }
+
+    .sheet-copy {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.45;
+    }
+
+    .voice-circle {
+        display: grid;
+        width: 88px;
+        height: 88px;
+        place-items: center;
+        margin: 24px auto 18px;
+        border-radius: 50%;
+        background: var(--primary-container);
+        color: var(--primary);
+    }
+
+    .voice-circle .material-symbols-rounded {
+        font-size: 38px;
+    }
+
+    .camera-preview {
+        display: grid;
+        min-height: 180px;
+        place-items: center;
+        margin: 18px 0;
+        border-radius: 13px;
+        background: var(--surface-variant);
+        color: var(--icon-secondary);
+    }
+
+    .camera-preview .material-symbols-rounded {
+        font-size: 52px;
+    }
+
+    .sheet-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    .text-button {
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 20px;
+        background: transparent;
+        color: var(--primary);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .filled-button {
+        background: var(--primary);
+        color: var(--on-primary);
+    }
+
+    @media (max-width: 700px) {
+        .top-bar {
+            height: 60px;
+            padding: 0 12px;
+        }
+
+        .brand {
+            margin-right: 0;
+            font-size: 18px;
+        }
+
+        .navigation {
+            overflow-x: auto;
+            padding: 9px 12px;
+        }
+
+        .content {
+            width: calc(100% - 24px);
+            padding-top: 18px;
+        }
+
+        .translation-panes {
+            grid-template-columns: 1fr;
+        }
+
+        .source-pane {
+            border-right: 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .translation-text,
+        .translation-output {
+            min-height: 112px;
+            font-size: 18px;
+        }
+    }
+
+    @media (max-width: 390px) {
+        .brand {
+            font-size: 0;
+        }
+
+        .language-row {
+            grid-template-columns: 1fr 44px 1fr;
+        }
+
+        .language-button {
+            padding: 0 6px;
+            font-size: 13px;
+        }
+    }
+</style>
+
+{% set popup = translate["state"] in ["language_menu", "camera_sheet", "voice_sheet"] %}
+{% set tab_state = "translate" %}
+
+<div
+    class="translate-app"
+    {% if popup %}data-annotation-skip="true"{% endif %}
+>
+    <header
+        class="top-bar"
+        data-class="app_bar"
+        data-semantic="translate_header"
+        data-occluder="true"
+    >
+        <div class="brand">
+            <div class="brand-icon">
+                <span class="material-symbols-rounded">translate</span>
+            </div>
+            Google Translate
+        </div>
+
+        <div class="top-spacer"></div>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="settings"
+        >
+            <span class="material-symbols-rounded">settings</span>
+        </button>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="account"
+        >
+            <span class="material-symbols-rounded">account_circle</span>
+        </button>
+    </header>
+
+    <nav
+        class="navigation"
+        data-class="navigation_bar"
+        data-semantic="translate_navigation"
+    >
+        <button
+            class="navigation-button {% if translate['state'] not in ['history', 'saved'] %}active{% endif %}"
+            data-class="tab"
+            data-semantic="translate_tab"
+        >
+            Text
+        </button>
+
+        <button
+            class="navigation-button"
+            data-class="tab"
+            data-semantic="images_tab"
+        >
+            Images
+        </button>
+
+        <button
+            class="navigation-button"
+            data-class="tab"
+            data-semantic="documents_tab"
+        >
+            Documents
+        </button>
+
+        <button
+            class="navigation-button {% if translate['state'] == 'history' %}active{% endif %}"
+            data-class="tab"
+            data-semantic="history_tab"
+        >
+            History
+        </button>
+
+        <button
+            class="navigation-button {% if translate['state'] == 'saved' %}active{% endif %}"
+            data-class="tab"
+            data-semantic="saved_tab"
+        >
+            Saved
+        </button>
+    </nav>
+
+    <main class="content">
+        {% if translate["state"] == "history" or translate["state"] == "saved" %}
+        {% set items = translate["history_items"] %}
+        {% if translate["state"] == "saved" %}
+            {% set items = translate["saved_items"] %}
+        {% endif %}
+
+        <section
+            class="list-page"
+            data-class="section"
+            data-semantic="{{ translate['state'] }}_page"
+        >
+            <h1>
+                {% if translate["state"] == "history" %}
+                    Translation history
+                {% else %}
+                    Saved translations
+                {% endif %}
+            </h1>
+
+            <div
+                class="translation-list"
+                data-class="section"
+                data-semantic="translation_list"
+            >
+                {% for item in items %}
+                <article
+                    class="list-item"
+                    data-class="card"
+                    data-semantic="translation_item_{{ loop.index }}"
+                >
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="history_language_{{ loop.index }}"
+                    >
+                        translate
+                    </span>
+
+                    <div class="list-copy">
+                        <div class="list-source">
+                            {{ item["source_text"] }}
+                        </div>
+
+                        <div class="list-target">
+                            {{ item["translated_text"] }}
+                        </div>
+                    </div>
+
+                    <div class="list-date">
+                        {{ item["date_label"] }}
+                    </div>
+
+                    <button
+                        class="icon-button"
+                        data-class="button"
+                        data-semantic="save_translation_{{ loop.index }}"
+                    >
+                        <span class="material-symbols-rounded">
+                            {% if item["saved"] %}
+                                bookmark
+                            {% else %}
+                                bookmark_border
+                            {% endif %}
+                        </span>
+                    </button>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        {% else %}
+        <section
+            class="translation-card"
+            data-class="card"
+            data-semantic="translation_workspace"
+        >
+            <div
+                class="language-row"
+                data-class="toolbar"
+                data-semantic="language_selector"
+            >
+                <button
+                    class="language-button"
+                    data-class="button"
+                    data-semantic="source_language"
+                >
+                    {{ translate["source_language"] }}
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="source_language_menu"
+                    >
+                        arrow_drop_down
+                    </span>
+                </button>
+
+                <button
+                    class="swap-button"
+                    data-class="button"
+                    data-semantic="swap_languages"
+                >
+                    <span class="material-symbols-rounded">
+                        swap_horiz
+                    </span>
+                </button>
+
+                <button
+                    class="language-button"
+                    data-class="button"
+                    data-semantic="target_language"
+                >
+                    {{ translate["target_language"] }}
+                    <span
+                        class="material-symbols-rounded"
+                        data-class="icon"
+                        data-semantic="target_language_menu"
+                    >
+                        arrow_drop_down
+                    </span>
+                </button>
+            </div>
+
+            {% if translate["state"] == "empty" %}
+            <div
+                class="empty-state"
+                data-class="section"
+                data-semantic="empty_translation_state"
+            >
+                <div>
+                    <span class="material-symbols-rounded">
+                        translate
+                    </span>
+                    Enter text to translate.
+                </div>
+            </div>
+
+            {% else %}
+            <div class="translation-panes">
+                <section
+                    class="pane source-pane"
+                    data-class="section"
+                    data-semantic="source_pane"
+                >
+                    <textarea
+                        class="translation-text"
+                        data-class="input_field"
+                        data-semantic="source_text"
+                    >{{ translate["translation"]["source_text"] }}</textarea>
+
+                    <div class="pane-actions">
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="clear_source"
+                        >
+                            <span class="material-symbols-rounded">close</span>
+                        </button>
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="voice_input"
+                        >
+                            <span class="material-symbols-rounded">mic</span>
+                        </button>
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="camera_input"
+                        >
+                            <span class="material-symbols-rounded">photo_camera</span>
+                        </button>
+                    </div>
+                </section>
+
+                <section
+                    class="pane"
+                    data-class="section"
+                    data-semantic="translated_pane"
+                >
+                    <div
+                        class="translation-output"
+                        data-class="card"
+                        data-semantic="translated_text"
+                    >
+                        {{ translate["translation"]["translated_text"] }}
+                    </div>
+
+                    <div class="pronunciation">
+                        {{ translate["translation"]["target_pronunciation"] }}
+                    </div>
+
+                    <div class="pane-actions">
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="listen_translation"
+                        >
+                            <span class="material-symbols-rounded">volume_up</span>
+                        </button>
+
+                        <button
+                            class="icon-button"
+                            data-class="button"
+                            data-semantic="copy_translation"
+                        >
+                            <span class="material-symbols-rounded">content_copy</span>
+                        </button>
+
+                        <button
+                            class="icon-button save-button"
+                            data-class="button"
+                            data-semantic="save_translation"
+                        >
+                            <span class="material-symbols-rounded">
+                                {% if translate["translation"]["saved"] %}
+                                    bookmark
+                                {% else %}
+                                    bookmark_border
+                                {% endif %}
+                            </span>
+                        </button>
+                    </div>
+                </section>
+            </div>
+            {% endif %}
+        </section>
+        {% endif %}
+    </main>
+</div>
+
+{% if translate["state"] == "language_menu" %}
+<div
+    class="popup-backdrop"
+    data-annotation-skip="true"
+></div>
+
+<section
+    class="language-menu"
+    data-class="dialog"
+    data-semantic="language_menu"
+    data-occluder="true"
+>
+    <div class="menu-heading">Choose a language</div>
+
+    <div
+        class="menu-search"
+        data-class="search_bar"
+        data-semantic="language_search"
+    >
+        <span
+            class="material-symbols-rounded"
+            data-class="icon"
+            data-semantic="language_search_icon"
+        >
+            search
+        </span>
+
+        <input
+            placeholder="Search languages"
+            data-class="input_field"
+            data-semantic="language_search_input"
+        >
+    </div>
+
+    <div class="language-grid">
+        {% for language in translate["languages"] %}
+        <button
+            class="menu-language {% if language == translate['source_language'] %}selected{% endif %}"
+            data-class="button"
+            data-semantic="language_option_{{ loop.index }}"
+        >
+            {{ language }}
+        </button>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if translate["state"] == "voice_sheet" %}
+<div
+    class="popup-backdrop"
+    data-annotation-skip="true"
+></div>
+
+<section
+    class="bottom-sheet"
+    data-class="bottom_sheet"
+    data-semantic="voice_input_sheet"
+    data-occluder="true"
+>
+    <div class="sheet-handle"></div>
+
+    <div class="sheet-title">Speak now</div>
+
+    <div class="sheet-copy">
+        Listening in {{ translate["source_language"] }}.
+    </div>
+
+    <div
+        class="voice-circle"
+        data-class="button"
+        data-semantic="voice_record_button"
+    >
+        <span class="material-symbols-rounded">mic</span>
+    </div>
+
+    <div
+        class="sheet-copy"
+        data-semantic="voice_transcript"
+    >
+        {{ translate["voice_text"] }}
+    </div>
+
+    <div class="sheet-actions">
+        <button
+            class="text-button"
+            data-class="button"
+            data-semantic="cancel_voice"
+        >
+            Cancel
+        </button>
+
+        <button
+            class="text-button filled-button"
+            data-class="button"
+            data-semantic="confirm_voice"
+        >
+            Use text
+        </button>
+    </div>
+</section>
+{% endif %}
+
+{% if translate["state"] == "camera_sheet" %}
+<div
+    class="popup-backdrop"
+    data-annotation-skip="true"
+></div>
+
+<section
+    class="bottom-sheet"
+    data-class="bottom_sheet"
+    data-semantic="camera_input_sheet"
+    data-occluder="true"
+>
+    <div class="sheet-handle"></div>
+
+    <div class="sheet-title">Translate with camera</div>
+
+    <div class="sheet-copy">
+        Point the camera at text to translate it.
+    </div>
+
+    <div
+        class="camera-preview"
+        data-class="image"
+        data-semantic="camera_preview"
+    >
+        <span class="material-symbols-rounded" data-class="icon">photo_camera</span>
+    </div>
+
+    <div class="sheet-actions">
+        <button
+            class="text-button"
+            data-class="button"
+            data-semantic="cancel_camera"
+        >
+            Cancel
+        </button>
+
+        <button
+            class="text-button filled-button"
+            data-class="button"
+            data-semantic="open_camera"
+        >
+            Open camera
+        </button>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

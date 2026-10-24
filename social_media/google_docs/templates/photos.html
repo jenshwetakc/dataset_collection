@@ -1,0 +1,1452 @@
+{% extends "base.html" %}
+
+{% block title %}
+Synthetic Google Photos UI
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+    .photos-app {
+
+        min-height:
+            100vh;
+
+        background:
+            var(--background);
+
+        color:
+            var(--text-primary);
+    }
+
+    .photos-header {
+
+        position:
+            sticky;
+
+        z-index:
+            10;
+
+        top:
+            0;
+
+        display:
+            flex;
+
+        min-height:
+            72px;
+
+        align-items:
+            center;
+
+        gap:
+            14px;
+
+        padding:
+            10px 24px;
+
+        border-bottom:
+            1px solid var(--border);
+
+        background:
+            var(--surface);
+    }
+
+    .photos-logo {
+
+        display:
+            flex;
+
+        min-width:
+            164px;
+
+        align-items:
+            center;
+
+        gap:
+            9px;
+
+        color:
+            var(--text-primary);
+
+        font-size:
+            21px;
+
+        font-weight:
+            600;
+    }
+
+    .photos-logo .material-symbols-rounded {
+
+        color:
+            var(--primary);
+
+        font-size:
+            30px;
+    }
+
+    .photos-search {
+
+        display:
+            flex;
+
+        width:
+            min(720px, 100%);
+
+        min-width:
+            0;
+
+        align-items:
+            center;
+
+        gap:
+            10px;
+
+        padding:
+            0 14px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface-variant);
+    }
+
+    .photos-search input {
+
+        width:
+            100%;
+
+        min-width:
+            0;
+
+        height:
+            46px;
+
+        border:
+            0;
+
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+    }
+
+    .header-actions {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            4px;
+
+        margin-left:
+            auto;
+    }
+
+    .photos-layout {
+
+        display:
+            flex;
+
+        min-height:
+            calc(100vh - 72px);
+    }
+
+    .photos-nav {
+
+        width:
+            236px;
+
+        flex:
+            0 0 auto;
+
+        padding:
+            18px 12px;
+    }
+
+    .nav-button {
+
+        display:
+            flex;
+
+        width:
+            100%;
+
+        min-height:
+            44px;
+
+        align-items:
+            center;
+
+        gap:
+            15px;
+
+        padding:
+            0 14px;
+
+        border-radius:
+            22px;
+
+        color:
+            var(--text-primary);
+
+        text-align:
+            left;
+    }
+
+    .nav-button.active {
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+
+        font-weight:
+            700;
+    }
+
+    .photos-main {
+
+        min-width:
+            0;
+
+        flex:
+            1;
+
+        padding:
+            22px 26px 70px;
+    }
+
+    .photos-heading {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        gap:
+            16px;
+
+        margin-bottom:
+            20px;
+    }
+
+    .photos-heading h1 {
+
+        margin:
+            0;
+
+        font-size:
+            26px;
+
+        font-weight:
+            500;
+    }
+
+    .photos-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(auto-fill, minmax(160px, 1fr));
+
+        grid-auto-rows:
+            160px;
+
+        gap:
+            6px;
+    }
+
+    .photo-tile {
+
+        position:
+            relative;
+
+        overflow:
+            hidden;
+
+        border-radius:
+            8px;
+
+        background:
+            var(--surface-variant);
+    }
+
+    .photo-tile:nth-child(7n + 2),
+    .photo-tile:nth-child(9n + 5) {
+
+        grid-row:
+            span 2;
+    }
+
+    .photo-tile img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+    .photo-fallback {
+
+        display:
+            grid;
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        place-items:
+            center;
+
+        color:
+            rgba(0, 0, 0, 0.45);
+    }
+
+    .photo-fallback .material-symbols-rounded {
+
+        font-size:
+            42px;
+    }
+
+    .photo-overlay {
+
+        position:
+            absolute;
+
+        top:
+            8px;
+
+        right:
+            8px;
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        width:
+            30px;
+
+        height:
+            30px;
+
+        border-radius:
+            50%;
+
+        background:
+            rgba(0, 0, 0, 0.38);
+
+        color:
+            white;
+    }
+
+    .photo-overlay.selected {
+
+        background:
+            var(--primary);
+    }
+
+    .album-grid {
+
+        display:
+            grid;
+
+        grid-template-columns:
+            repeat(auto-fill, minmax(190px, 1fr));
+
+        gap:
+            18px;
+    }
+
+    .album-card {
+
+        overflow:
+            hidden;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--surface);
+    }
+
+    .album-cover {
+
+        height:
+            150px;
+
+        background:
+            var(--surface-variant);
+    }
+
+    .album-cover img {
+
+        width:
+            100%;
+
+        height:
+            100%;
+
+        object-fit:
+            cover;
+    }
+
+    .album-info {
+
+        padding:
+            12px;
+    }
+
+    .album-info small {
+
+        display:
+            block;
+
+        margin-top:
+            4px;
+
+        color:
+            var(--text-secondary);
+    }
+
+    .selection-bar {
+
+        display:
+            flex;
+
+        min-height:
+            50px;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        margin-bottom:
+            16px;
+
+        padding:
+            0 14px;
+
+        border-radius:
+            10px;
+
+        background:
+            var(--primary-container);
+
+        color:
+            var(--on-primary-container);
+    }
+
+    .viewer-backdrop {
+
+        position:
+            fixed;
+
+        z-index:
+            40;
+
+        inset:
+            0;
+
+        background:
+            rgba(0, 0, 0, 0.93);
+    }
+
+    .photo-viewer {
+
+        position:
+            fixed;
+
+        z-index:
+            41;
+
+        inset:
+            0;
+
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        padding:
+            16px 24px;
+
+        color:
+            white;
+    }
+
+    .viewer-toolbar {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            8px;
+    }
+
+    .viewer-toolbar .icon-button {
+
+        color:
+            white;
+    }
+
+    .viewer-title {
+
+        flex:
+            1;
+
+        margin-left:
+            10px;
+
+        font-size:
+            15px;
+    }
+
+    .viewer-image {
+
+        display:
+            flex;
+
+        min-height:
+            0;
+
+        flex:
+            1;
+
+        align-items:
+            center;
+
+        justify-content:
+            center;
+
+        padding:
+            20px 0;
+    }
+
+    .viewer-image img {
+
+        max-width:
+            94vw;
+
+        max-height:
+            78vh;
+
+        border-radius:
+            6px;
+
+        object-fit:
+            contain;
+    }
+
+    .viewer-placeholder {
+
+        display:
+            grid;
+
+        width:
+            min(720px, 88vw);
+
+        height:
+            min(520px, 65vh);
+
+        place-items:
+            center;
+
+        border-radius:
+            8px;
+    }
+
+    .viewer-placeholder .material-symbols-rounded {
+
+        font-size:
+            70px;
+
+        color:
+            rgba(0, 0, 0, 0.45);
+    }
+
+    .popup-backdrop {
+
+        position:
+            fixed;
+
+        z-index:
+            50;
+
+        inset:
+            0;
+
+        background:
+            rgba(0, 0, 0, 0.42);
+    }
+
+    .share-dialog,
+    .album-dialog {
+
+        position:
+            fixed;
+
+        z-index:
+            51;
+
+        top:
+            50%;
+
+        left:
+            50%;
+
+        width:
+            min(500px, calc(100vw - 32px));
+
+        padding:
+            24px;
+
+        border-radius:
+            14px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+
+        box-shadow:
+            0 8px 26px rgba(0, 0, 0, 0.34);
+
+        transform:
+            translate(-50%, -50%);
+    }
+
+    .dialog-title {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        justify-content:
+            space-between;
+
+        margin:
+            0 0 20px;
+
+        font-size:
+            21px;
+    }
+
+    .dialog-input {
+
+        width:
+            100%;
+
+        min-height:
+            46px;
+
+        margin-bottom:
+            14px;
+
+        padding:
+            0 12px;
+
+        border:
+            1px solid var(--border);
+
+        border-radius:
+            6px;
+
+        background:
+            var(--surface);
+
+        color:
+            var(--text-primary);
+    }
+
+    .share-row {
+
+        display:
+            flex;
+
+        align-items:
+            center;
+
+        gap:
+            12px;
+
+        padding:
+            14px 0;
+
+        border-top:
+            1px solid var(--border);
+    }
+
+    .share-avatar {
+
+        display:
+            grid;
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        place-items:
+            center;
+
+        border-radius:
+            50%;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-weight:
+            700;
+    }
+
+    .dialog-spacer {
+
+        flex:
+            1;
+    }
+
+    .primary-button {
+
+        min-height:
+            38px;
+
+        padding:
+            0 18px;
+
+        border-radius:
+            19px;
+
+        background:
+            var(--primary);
+
+        color:
+            var(--on-primary);
+
+        font-weight:
+            700;
+    }
+
+    @media (max-width: 720px) {
+
+        .photos-header {
+
+            min-height:
+                62px;
+
+            gap:
+                7px;
+
+            padding:
+                8px;
+        }
+
+        .photos-logo {
+
+            min-width:
+                34px;
+
+            font-size:
+                0;
+        }
+
+        .photos-search {
+
+            border-radius:
+                24px;
+        }
+
+        .header-actions {
+
+            display:
+                none;
+        }
+
+        .photos-nav {
+
+            display:
+                none;
+        }
+
+        .photos-main {
+
+            padding:
+                16px 10px 50px;
+        }
+
+        .photos-grid {
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            grid-auto-rows:
+                150px;
+        }
+
+        .photo-tile:nth-child(7n + 2),
+        .photo-tile:nth-child(9n + 5) {
+
+            grid-row:
+                span 1;
+        }
+
+        .album-grid {
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap:
+                10px;
+        }
+
+        .album-cover {
+
+            height:
+                115px;
+        }
+
+        .photo-viewer {
+
+            padding:
+                10px;
+        }
+    }
+
+</style>
+
+{% set is_popup = photos.state in ["photo_viewer", "sharing_dialog", "create_album_dialog"] %}
+
+<div
+    class="photos-app"
+    data-occluder="true"
+    {% if is_popup %}
+    data-annotation-skip="true"
+    {% endif %}
+>
+
+    <header
+        class="photos-header"
+        data-class="app_bar"
+        data-semantic="photos_header"
+        data-occluder="true"
+    >
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="main_menu"
+        >
+            <span class="material-symbols-rounded">
+                menu
+            </span>
+        </button>
+
+        <div
+            class="photos-logo"
+            data-class="icon"
+            data-semantic="photos_logo"
+        >
+            <span class="material-symbols-rounded" data-class="icon">
+                photo_library
+            </span>
+
+            Photos
+        </div>
+
+        <div
+            class="photos-search"
+            data-class="search_bar"
+            data-semantic="photos_search"
+        >
+            <span class="material-symbols-rounded" data-class="icon">
+                search
+            </span>
+
+            <input
+                type="text"
+                placeholder="Search your photos"
+                value="{% if photos.state == 'search_results' %}{{ photos.search_query }}{% endif %}"
+                aria-label="Search photos"
+            >
+
+        </div>
+
+        <div class="header-actions">
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="upload"
+            >
+                <span class="material-symbols-rounded" data-class="icon">
+                    upload
+                </span>
+            </button>
+
+            <button
+                class="icon-button"
+                data-class="button"
+                data-semantic="settings"
+            >
+                <span class="material-symbols-rounded" data-class="icon">
+                    settings
+                </span>
+            </button>
+
+            <button
+                class="icon-button"
+                data-class="avatar"
+                data-semantic="account"
+            >
+                SK
+            </button>
+
+        </div>
+
+    </header>
+
+    <div class="photos-layout">
+
+        <nav
+            class="photos-nav"
+            data-class="navigation_bar"
+            data-semantic="photos_navigation"
+        >
+
+            <button
+                class="nav-button {% if photos.state in ['photos_grid', 'search_results', 'photo_viewer', 'selection_mode', 'sharing_dialog'] %}active{% endif %}"
+                data-class="button"
+                data-semantic="photos_tab"
+            >
+                <span class="material-symbols-rounded" data-class="icon">
+                    photo
+                </span>
+
+                Photos
+            </button>
+
+            <button
+                class="nav-button {% if photos.state == 'album_open' %}active{% endif %}"
+                data-class="button"
+                data-semantic="albums_tab"
+            >
+                <span class="material-symbols-rounded" data-class="icon">
+                    photo_album
+                </span>
+
+                Albums
+            </button>
+
+            <button
+                class="nav-button {% if photos.state == 'trash' %}active{% endif %}"
+                data-class="button"
+                data-semantic="trash_tab"
+            >
+                <span class="material-symbols-rounded" data-class="icon">
+                    delete
+                </span>
+
+                Trash
+            </button>
+
+        </nav>
+
+        <main class="photos-main">
+
+            {% if photos.state == "selection_mode" %}
+
+            <section
+                class="selection-bar"
+                data-class="app_bar"
+                data-semantic="selection_toolbar"
+            >
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="close_selection"
+                >
+                    <span class="material-symbols-rounded" data-class="icon">
+                        close
+                    </span>
+                </button>
+
+                <strong>
+                    {{ photos.selection_count }} selected
+                </strong>
+
+                <span class="dialog-spacer"></span>
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="share_selected"
+                >
+                    <span class="material-symbols-rounded" data-class="icon">
+                        share
+                    </span>
+                </button>
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="delete_selected"
+                >
+                    <span class="material-symbols-rounded" data-class="icon">
+                        delete
+                    </span>
+                </button>
+
+            </section>
+
+            {% endif %}
+
+            <div class="photos-heading">
+
+                <h1>
+
+                    {% if photos.state == "search_results" %}
+                    Search results for "{{ photos.search_query }}"
+
+                    {% elif photos.state == "album_open" %}
+                    {{ photos.selected_album.name }}
+
+                    {% elif photos.state == "trash" %}
+                    Trash
+
+                    {% else %}
+                    Photos
+                    {% endif %}
+
+                </h1>
+
+                {% if photos.state == "album_open" %}
+
+                <button
+                    class="icon-button"
+                    data-class="button"
+                    data-semantic="album_options"
+                >
+                    <span class="material-symbols-rounded" data-class="icon">
+                        more_vert
+                    </span>
+                </button>
+
+                {% endif %}
+
+            </div>
+
+            {% if photos.state == "album_open" %}
+
+            <section
+                class="album-grid"
+                data-class="section"
+                data-semantic="albums"
+            >
+
+                {% for album in photos.albums %}
+
+                <article
+                    class="album-card"
+                    data-class="card"
+                    data-semantic="{{ album.id }}"
+                >
+
+                    <div
+                        class="album-cover"
+                        data-class="image"
+                        data-semantic="{{ album.id }}_cover"
+                    >
+
+                        {% if album.cover.src %}
+
+                        <img
+                            src="{{ album.cover.src }}"
+                            alt="{{ album.name }}"
+                        >
+
+                        {% else %}
+
+                        <div
+                            class="photo-fallback"
+                            style="background: {{ album.cover.fallback }};"
+                        >
+                            <span class="material-symbols-rounded" data-class="icon">
+                                image
+                            </span>
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+                    <div class="album-info">
+
+                        <strong>{{ album.name }}</strong>
+
+                        <small>
+                            {{ album.count }} photos
+                            {% if album.shared %}
+                            · Shared
+                            {% endif %}
+                        </small>
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+            {% else %}
+
+            <section
+                class="photos-grid"
+                data-class="section"
+                data-semantic="photo_grid"
+            >
+
+                {% for photo in photos.photos %}
+
+                <article
+                    class="photo-tile"
+                    data-class="image"
+                    data-semantic="{{ photo.id }}"
+                >
+
+                    {% if photo.src %}
+
+                    <img
+                        src="{{ photo.src }}"
+                        alt="{{ photo.title }}"
+                    >
+
+                    {% else %}
+
+                    <div
+                        class="photo-fallback"
+                        style="background: {{ photo.fallback }};"
+                    >
+                        <span class="material-symbols-rounded" data-class="icon">
+                            image
+                        </span>
+                    </div>
+
+                    {% endif %}
+
+                    {% if photos.state == "selection_mode" %}
+
+                    <span
+                        class="photo-overlay {% if photo.selected %}selected{% endif %}"
+                        data-class="selection_indicator"
+                        data-semantic="{{ photo.id }}_selection"
+                    >
+                        <span class="material-symbols-rounded" data-class="icon">
+                            {% if photo.selected %}
+                            check
+                            {% else %}
+                            check_box_outline_blank
+                            {% endif %}
+                        </span>
+                    </span>
+
+                    {% elif photo.favorite %}
+
+                    <span class="photo-overlay">
+                        <span class="material-symbols-rounded" data-class="icon">
+                            star
+                        </span>
+                    </span>
+
+                    {% endif %}
+
+                </article>
+
+                {% endfor %}
+
+            </section>
+
+            {% endif %}
+
+        </main>
+
+    </div>
+
+</div>
+
+{% if photos.state == "photo_viewer" %}
+
+<div class="viewer-backdrop"></div>
+
+<section
+    class="photo-viewer"
+    data-class="dialog"
+    data-semantic="photo_viewer"
+    data-occluder="true"
+>
+
+    <div class="viewer-toolbar">
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="close_viewer"
+        >
+            <span class="material-symbols-rounded" data-class="icon">
+                close
+            </span>
+        </button>
+
+        <span class="viewer-title">
+            {{ photos.selected_photo.date }}
+        </span>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="share_photo"
+        >
+            <span class="material-symbols-rounded" data-class="icon">
+                share
+            </span>
+        </button>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="favorite_photo"
+        >
+            <span class="material-symbols-rounded" data-class="icon">
+                {% if photos.selected_photo.favorite %}
+                star
+                {% else %}
+                star_outline
+                {% endif %}
+            </span>
+        </button>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="more_photo_actions"
+        >
+            <span class="material-symbols-rounded" data-class="icon">
+                more_vert
+            </span>
+        </button>
+
+    </div>
+
+    <div class="viewer-image">
+
+        {% if photos.selected_photo.src %}
+
+        <img
+            src="{{ photos.selected_photo.src }}"
+            alt="{{ photos.selected_photo.title }}"
+            data-class="image"
+            data-semantic="viewer_photo"
+        >
+
+        {% else %}
+
+        <div
+            class="viewer-placeholder"
+            style="background: {{ photos.selected_photo.fallback }};"
+            data-class="image"
+            data-semantic="viewer_photo"
+        >
+            <span class="material-symbols-rounded" data-class="icon">
+                image
+            </span>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+{% endif %}
+
+{% if photos.state == "sharing_dialog" %}
+
+<div class="popup-backdrop"></div>
+
+<section
+    class="share-dialog"
+    data-class="dialog"
+    data-semantic="share_dialog"
+    data-occluder="true"
+>
+
+    <div class="dialog-title">
+
+        Share with people
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="close_share"
+        >
+            <span class="material-symbols-rounded" data-class="icon">
+                close
+            </span>
+        </button>
+
+    </div>
+
+    <input
+        class="dialog-input"
+        placeholder="Add people and groups"
+        data-class="input_field"
+        data-semantic="share_people"
+    >
+
+    <div class="share-row">
+
+        <div
+            class="share-avatar"
+            data-class="avatar"
+            data-semantic="share_person_avatar"
+        >
+            {{ photos.share.name[0] }}
+        </div>
+
+        <div>
+
+            <strong>{{ photos.share.name }}</strong>
+
+            <small>{{ photos.share.email }}</small>
+
+        </div>
+
+        <span class="dialog-spacer"></span>
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="share_person_role"
+        >
+            <span class="material-symbols-rounded" data-class="icon">
+                edit
+            </span>
+        </button>
+
+    </div>
+
+    <div class="share-row">
+
+        <div>
+
+            <strong>General access</strong>
+
+            <small>{{ photos.share.general_access }}</small>
+
+        </div>
+
+        <span class="dialog-spacer"></span>
+
+        <button
+            class="primary-button"
+            data-class="button"
+            data-semantic="copy_link"
+        >
+            Copy link
+        </button>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+{% if photos.state == "create_album_dialog" %}
+
+<div class="popup-backdrop"></div>
+
+<section
+    class="album-dialog"
+    data-class="dialog"
+    data-semantic="create_album_dialog"
+    data-occluder="true"
+>
+
+    <div class="dialog-title">
+
+        Create album
+
+        <button
+            class="icon-button"
+            data-class="button"
+            data-semantic="close_album_dialog"
+        >
+            <span class="material-symbols-rounded" data-class="icon">
+                close
+            </span>
+        </button>
+
+    </div>
+
+    <input
+        class="dialog-input"
+        value="New album"
+        aria-label="Album title"
+        data-class="input_field"
+        data-semantic="album_title"
+    >
+
+    <div class="dialog-footer">
+
+        <button
+            class="primary-button"
+            data-class="button"
+            data-semantic="create_album"
+        >
+            Create
+        </button>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+{% endblock %}
