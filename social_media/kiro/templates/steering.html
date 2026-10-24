@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% block page %}{% set state=kiro["state"] %}
+<div class="pad stack">
+    <header class="row between wrap" data-class="section"><h1>Agent Steering</h1>{{action('steering_generate','Generate Steering
+        Docs',true)}}{{btn('add','steering_add',annotate=false)}}
+    </header>
+    {% if state in ['always','file_match','manual','editing'] %}
+    <section class="card stack" data-class="section" data-semantic="steering_file_editor"><h2>{{'frontend.md' if
+        state=='file_match' else 'release.md' if state=='manual' else 'product.md'}}</h2>
+        {{select('steering_inclusion','Inclusion','fileMatch' if state=='file_match' else 'manual' if state=='manual'
+        else 'always')}}{% if state=='file_match' %}{{field('steering_pattern','File match pattern','src/**/*.tsx')}}{%
+        endif %}<label class="field">Markdown guidance<textarea rows="12" spellcheck="false" data-class="input_field"
+                                                                data-semantic="steering_markdown">---
+inclusion: {{'fileMatch' if state=='file_match' else 'manual' if state=='manual' else 'always'}}
+---
+# Trail Notes conventions
+Use TypeScript and existing component patterns.
+Keep search inputs keyboard accessible.
+Add tests for changed repository behavior.</textarea></label>{% if state=='editing' %}{{field('steering_new_rule','Add
+        guidance','Preserve original note titles when comparing.')}}{% elif state=='manual' %}
+        <div class="notice">{{icon('info','steering_manual_icon')}}Attach this file as context when needed.</div>
+        {% endif %}{{action('steering_save','Save',true)}}
+    </section>
+    {% else %}{% for file in kiro['steering'] %}
+    <article class="list-card row wrap" data-class="card" data-semantic="steering_file_{{loop.index}}">
+        {{icon('description','steering_file_icon_' ~ loop.index)}}
+        <div class="grow"><h3>{{file['name']}}</h3>
+            <p>{{file['description']}}</p></div>
+        {{badge('steering_mode_' ~ loop.index,file['mode'])}}{{action('steering_edit_' ~
+        loop.index,'Edit')}}{{btn('delete_outline','steering_delete_' ~ loop.index,annotate=false)}}
+    </article>
+    {% endfor %}{% endif %}
+</div>{% endblock %}

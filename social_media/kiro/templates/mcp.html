@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% block page %}{% set state=kiro["state"] %}
+<div class="pad stack">
+    <header class="row between wrap" data-class="section"><h1>MCP Servers</h1>{{action('mcp_add','Add
+        Server',true)}}{{btn('refresh','mcp_refresh',annotate=false)}}
+    </header>
+    {% if state=='configuration' %}{{editor('mcp_config','{
+    "mcpServers": {
+    "demo-docs": {
+    "command": "demo-server",
+    "args": ["--fixtures"],
+    "disabled": false
+    }
+    }
+    }','mcp.json')}}<p class="caption">Fixture configuration; demo-server is not executed.</p>{% else %}{% for server in
+    kiro['servers'] %}
+    <article class="list-card stack" data-class="card" data-semantic="mcp_server_{{loop.index}}">
+        <header class="row between wrap"><h3>{{server['name']}}</h3>{{badge('mcp_status_' ~ loop.index,'Disconnected' if
+            state=='disconnected' and loop.first else 'Connected')}}{{btn('more_horiz','mcp_more_' ~
+            loop.index,annotate=false)}}
+        </header>
+        <p>{{server['tools']|length}} tools available</p>{% if state=='tools' %}{% for tool in server['tools'] %}
+        <div class="row">{{icon('build','mcp_tool_icon_' ~ server['name'] ~ '_' ~ loop.index)}}<strong>{{tool}}</strong>{{check('mcp_tool_allowed_'
+            ~ server['name'] ~ '_' ~ loop.index,'Allow',false)}}
+        </div>
+        {% endfor %}{% elif state=='disconnected' and loop.first %}
+        <div class="notice">{{icon('link_off','mcp_disconnected_icon')}}Connection failed: fixture server unavailable
+        </div>
+        {{action('mcp_reconnect','Reconnect',true)}}{% elif state=='connected' %}<p class="small muted">Last refresh:
+        just now · connection healthy</p>{% endif %}
+        <div class="row wrap">{{action('mcp_tools_' ~ loop.index,'Show Tools')}}{{action('mcp_config_' ~
+            loop.index,'Configure')}}
+        </div>
+    </article>
+    {% endfor %}{% endif %}
+</div>{% endblock %}

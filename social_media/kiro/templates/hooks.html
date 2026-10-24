@@ -1,0 +1,43 @@
+{% extends "base.html" %}{% block page %}{% set state=kiro["state"] %}
+<div class="pad stack">
+    <header class="row between wrap" data-class="section"><h1>Agent Hooks</h1>{{action('hooks_new','Create
+        Hook',true)}}{{btn('refresh','hooks_refresh',annotate=false)}}
+    </header>
+    {% if state in ['create','editing'] %}
+    <section class="card stack" data-class="card" data-semantic="hook_editor">{{field('hook_name','Name','check-tests'
+        if state=='editing' else 'validate-search')}}{{select('hook_event','Trigger','Agent file
+        saved')}}{{field('hook_pattern','File pattern','src/**/*.ts')}}<label class="field">Instructions<textarea
+                rows="5" data-class="input_field" data-semantic="hook_prompt">Review the changed TypeScript file and run the related unit tests. Summarize failures.</textarea></label>{{toggle('hook_enabled','Enabled',true)}}{{action('hook_save','Save
+        Hook',true)}}
+    </section>
+    {% elif state=='run_history' %}<h2>Recent runs</h2>
+    <div class="table-scroll" data-class="section" data-semantic="hook_history">
+        <table>
+            <tr>
+                <th>Hook</th>
+                <th>Trigger</th>
+                <th>Result</th>
+                <th>Actions</th>
+            </tr>
+            {% for result in ['Completed','Failed','Completed'] %}
+            <tr>
+                <td>check-tests</td>
+                <td>NoteRepository.ts saved</td>
+                <td>{{result}}</td>
+                <td>{{action('hook_run_details_' ~ loop.index,'Details')}}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% else %}{% for hook in kiro['hooks'] %}
+    <article class="list-card stack" data-class="card" data-semantic="hook_{{loop.index}}">
+        <div class="row between"><h3>{{hook['name']}}</h3>{{toggle('hook_toggle_' ~
+            loop.index,'Enabled',not(state=='disabled' and loop.first))}}
+        </div>
+        <p>{{hook['event']}} · {{hook['pattern']}}</p>
+        <div class="row wrap">{{action('hook_edit_' ~ loop.index,'Edit')}}{{btn('delete_outline','hook_delete_' ~
+            loop.index,annotate=false)}}
+        </div>
+    </article>
+    {% endfor %}{% endif %}<p class="caption">Synthetic hook configurations · no event handler runs</p>
+</div>{% endblock %}

@@ -1,0 +1,144 @@
+{% from 'macros.html' import icon,btn,action,select,field,check,radio,toggle,badge,code with context %}
+{% macro editor(key,text=none,title='NoteRepository.ts') %}
+<section class="editor" data-class="section" data-semantic="{{key}}">
+    <header class="editor-header row between" data-class="navigation_bar" data-semantic="{{key}}_toolbar"><span>{{title}}</span>
+        <div class="row">{{btn('save',key ~ '_save',annotate=false)}}{{btn('vertical_split',key ~
+            '_split',annotate=false)}}{{btn('more_horiz',key ~ '_more',annotate=false)}}
+        </div>
+    </header>
+    <div class="source-frame">
+        <div class="line-numbers" aria-hidden="true">{% for line in (text if text is not none else
+            kiro['code']).splitlines() %}<span>{{loop.index}}</span>{% endfor %}
+        </div>
+        <pre class="source-code" data-class="section" data-semantic="{{key}}_source">{{text if text is not none else kiro['code']}}</pre>
+    </div>
+</section>{% endmacro %}
+{% macro chat(key,chat_state='conversation') %}
+<section class="chat" data-class="section" data-semantic="{{key}}">
+    <header class="panel-header row between" data-class="app_bar" data-semantic="{{key}}_header"><strong>Kiro</strong>
+        <div class="row">{{btn('add',key ~ '_new',annotate=false)}}{{btn('history',key ~
+            '_history',annotate=false)}}{{btn('more_horiz',key ~ '_menu',annotate=false)}}
+        </div>
+    </header>
+    <div class="chat-messages">{% if chat_state=='empty' %}
+        <div class="empty"><h2>What do you want to build?</h2>
+            <p>Describe a feature or ask about your project.</p>{{action(key ~ '_suggestion','Add search to my notes')}}
+        </div>
+        {% else %}
+        <article class="message user-message" data-class="card" data-semantic="{{key}}_user"><strong>You</strong>
+            <p>Add case-insensitive search to Trail Notes.</p></article>
+        <article class="message" data-class="card" data-semantic="{{key}}_assistant"><strong>Kiro</strong>
+            <p>{{'Inspecting the repository and planning changes…' if chat_state=='generating' else 'I can add search to
+                the repository and connect it to the notes screen. I will use the existing Note interface.'}}</p>{% if
+            chat_state=='generating' %}
+            <div class="progress" data-class="progress_bar" data-semantic="{{key}}_progress"><span
+                    style="width:55%"></span></div>
+            {% else %}
+            <ul>
+                <li>Review repository and component behavior</li>
+                <li>Add matching logic and regression tests</li>
+                <li>Show an accessible empty-results state</li>
+            </ul>
+            {% endif %}
+        </article>
+        {% if chat_state=='context_attached' %}
+        <article class="message" data-class="card" data-semantic="{{key}}_context"><strong>Context attached</strong>{{badge(key
+            ~ '_context_file','NoteRepository.ts')}}{{badge(key ~ '_context_spec','note-search spec')}}
+        </article>
+        {% endif %}{% endif %}
+    </div>
+    <footer class="composer"><textarea rows="3" aria-label="Message Kiro"
+                                       placeholder="Ask a question or describe a task" data-class="input_field"
+                                       data-semantic="{{key}}_input"></textarea>
+        <div class="row wrap between">
+            <div class="row">{{btn('attach_file',key ~ '_attach',annotate=false)}}{{select(key ~
+                '_model','Model','Auto')}}{{select(key ~ '_mode','Mode','Spec' if kiro['page'] in
+                ['requirements','design','tasks'] else 'Chat')}}
+            </div>
+            {{btn('stop' if chat_state=='generating' else 'arrow_upward',key ~ '_send',annotate=false)}}
+        </div>
+    </footer>
+</section>{% endmacro %}
+{% macro spec_tabs(key,active) %}
+<nav class="spec-tabs" data-class="navigation_bar" data-semantic="{{key}}">{% for label in
+    ['Requirements','Design','Task list'] %}
+    <button type="button" class="{{'active' if label==active else ''}}" data-class="tab"
+            data-semantic="{{key}}_{{loop.index}}">{{label}}
+    </button>
+    {% endfor %}
+</nav>{% endmacro %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Kiro · {{kiro['page']|replace('_',' ')}}</title>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+    <style>
+        :root{ {% for role,color in theme['semantic'].items() %}--{{role|replace('_','-')}}:{{color}};{% endfor %}--top:{{system['layout']['height'] if system['layout']['position']=='top' else 0}}px;--bottom:{{system['layout']['height'] if system['layout']['position']=='bottom' else 0}}px;--accent:#9d7bea;--sidebar:220px}
+        *{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden}body{font:13px/1.5 Arial,sans-serif;background:var(--background);color:var(--on-background);padding-top:var(--top);padding-bottom:var(--bottom)}h1,h2,h3,p{margin:0}h1{font-size:25px}h2{font-size:19px}h3{font-size:14px}button,input,textarea{font:inherit;color:inherit}button{display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;cursor:pointer;padding:5px 8px;max-width:100%;min-height:28px;flex-shrink:0}button:hover{background:var(--surface-variant)}.button-content{display:inline-flex;align-items:center;gap:6px;flex:0 1 auto;width:max-content;max-width:100%;min-width:0;line-height:1.3;padding:0;margin:0;overflow-wrap:anywhere}.button-content>span:last-child{min-width:0}.icon-button{padding:5px;width:28px;height:28px;min-width:28px;flex:0 0 28px}.icon-button .button-content{flex:none}.label-button{justify-content:flex-start;width:fit-content}.action{width:fit-content;border:1px solid var(--border);padding:6px 12px}.primary{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}.select-button{border:1px solid var(--border);width:fit-content;white-space:nowrap;padding:4px 8px}.material-symbols-rounded.icon-glyph{font-family:'Material Symbols Rounded';font-feature-settings:'liga';font-style:normal;font-weight:normal;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;display:inline-flex;align-items:center;justify-content:center;width:var(--icon-size);height:var(--icon-size);min-width:var(--icon-size);max-width:var(--icon-size);min-height:var(--icon-size);max-height:var(--icon-size);flex:0 0 var(--icon-size);font-size:var(--icon-size);line-height:1;letter-spacing:0;white-space:nowrap;overflow:hidden;contain:layout paint;padding:0!important;margin:0!important;border:0}.row{display:flex;align-items:center;gap:8px;min-width:0}.between{justify-content:space-between}.wrap{flex-wrap:wrap}.grow{flex:1;min-width:0}.stack{display:grid;gap:15px;align-content:start}.muted{color:var(--text-secondary)}.small{font-size:11px}.field{display:grid;gap:5px;min-width:0}input,textarea{min-width:0;max-width:100%;padding:7px;border:1px solid var(--border);background:var(--surface);border-radius:0}.field input{width:100%}.check-label{display:flex;gap:8px;align-items:center;position:relative;min-width:0}.check-label input{position:absolute;opacity:0;width:1px;height:1px;padding:0}.check-box{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px;border:1px solid var(--icon);font-size:13px;line-height:1}.check-box.on{background:var(--primary);color:var(--on-primary)}.radio-label{justify-content:flex-start}.radio-box{width:18px;height:18px;border:1px solid var(--icon);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 18px}.radio-box.on:after{content:'';width:10px;height:10px;border-radius:50%;background:var(--primary)}.switch{width:38px;height:22px;min-height:22px;padding:3px;border-radius:14px;background:var(--border);justify-content:flex-start}.switch.on{background:var(--primary);justify-content:flex-end}.switch span{width:16px;height:16px;border-radius:50%;background:white}.badge{font-size:10px;background:var(--primary-container);color:var(--on-primary-container);padding:2px 5px}.card{padding:15px;border:1px solid var(--border-subtle);min-width:0;background:var(--surface)}.code{margin:0;padding:12px;font:13px/1.7 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.notice{display:flex;align-items:center;gap:8px;background:var(--primary-container);color:var(--on-primary-container);padding:10px 12px;overflow-wrap:anywhere}.progress{height:4px;background:var(--border-subtle)}.progress span{display:block;height:100%;background:var(--primary)}
+
+        .system{position:fixed;left:0;right:0;height:{{system['layout']['height']}}px;padding:0 9px;background:var(--surface-variant);display:flex;align-items:center;justify-content:space-between;z-index:5;overflow:hidden;font-size:11px}.system.top{top:0}.system.bottom{bottom:0}.system-group{display:flex;align-items:center;gap:6px;min-width:0}.shell{height:100%;display:grid;grid-template-rows:34px 28px minmax(0,1fr) 24px;min-width:0}.titlebar{display:flex;align-items:center;gap:8px;background:var(--surface-variant);border-bottom:1px solid var(--border-subtle);padding:0 8px;min-width:0}.wordmark{color:var(--accent);font-size:17px;font-weight:bold}.command-search{display:flex;align-items:center;gap:6px;min-width:0;max-width:500px;margin:auto;flex:1;background:var(--surface);border:1px solid var(--border);padding:0 6px}.command-search input{border:0;flex:1;width:0;padding:3px;background:transparent}.menu{display:flex;gap:1px;align-items:center;min-width:0;overflow-x:auto;scrollbar-width:none;background:var(--surface);border-bottom:1px solid var(--border-subtle)}.menu .action{border:0;padding:2px 8px;min-height:26px;white-space:nowrap}.workbench{display:grid;grid-template-columns:42px 240px minmax(0,1fr);min-height:0;min-width:0;overflow:hidden}.rail{display:flex;flex-direction:column;align-items:center;gap:14px;background:var(--surface-variant);border-right:1px solid var(--border-subtle);padding:8px 0;overflow-y:auto;min-height:0}.rail-bottom{margin-top:auto}.sidebar{background:var(--surface-variant);border-right:1px solid var(--border-subtle);padding:10px;min-width:0;overflow:auto;min-height:0}.side-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.side-section{padding:6px 0 15px}.side-heading{display:flex;align-items:center;gap:4px;font-size:11px;letter-spacing:1px;margin-bottom:7px}.side-item{display:flex;align-items:center;gap:3px;min-width:0}.side-item .label-button{min-width:0;padding:4px 3px}.side-item .button-content{white-space:nowrap;overflow:hidden}.side-item .button-content>span:last-child{overflow:hidden;text-overflow:ellipsis}.view{min-width:0;min-height:0;overflow:auto;background:var(--background)}.workspace{height:100%;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:1px;background:var(--border-subtle)}.workspace>section{min-width:0;min-height:0;overflow:auto;background:var(--background)}.document{display:flex;flex-direction:column;min-height:0;min-width:0}.document-tab{display:flex;align-items:center;gap:8px;background:var(--surface-variant);height:34px;min-height:34px;border-bottom:1px solid var(--border-subtle);padding:0 10px}.document-tab span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.doc-body{min-width:0;min-height:0;overflow:auto;flex:1}.pad{padding:22px;max-width:1300px;margin:auto;min-width:0}.stack{gap:18px}.editor{display:flex;flex-direction:column;min-width:0;min-height:300px;height:100%}.editor-header{padding:4px 9px;background:var(--surface-variant);border-bottom:1px solid var(--border-subtle);font-size:12px}.source-frame{display:flex;min-width:0;min-height:0;flex:1;overflow:auto;padding:10px 0}.line-numbers{display:grid;align-content:start;font:13px/1.75 Consolas,monospace;text-align:right;padding:0 13px;color:var(--text-secondary);flex-shrink:0}.source-code{font:13px/1.75 Consolas,monospace;margin:0;padding:0 10px;white-space:pre;overflow:auto;min-width:0;flex:1}.spec-tabs{display:flex;gap:5px;border-bottom:1px solid var(--border-subtle);padding:4px 10px;overflow-x:auto;scrollbar-width:thin;min-height:36px}.spec-tabs button{padding:5px 8px;white-space:nowrap;width:fit-content}.spec-tabs .active{border-bottom:2px solid var(--accent)}.prose{line-height:1.75}.prose p{margin-top:10px}.prose h2{margin-top:20px}.prose li{margin:7px 0}.chat{display:flex;flex-direction:column;min-height:350px;height:100%;min-width:0;background:var(--surface)}.panel-header{padding:7px 10px;border-bottom:1px solid var(--border-subtle)}.chat-messages{overflow:auto;min-height:0;flex:1;padding:13px;display:flex;flex-direction:column;gap:15px}.message{padding:12px;border:1px solid var(--border-subtle);background:var(--surface);min-width:0}.message p{margin-top:8px;overflow-wrap:anywhere}.message ul{padding-left:20px}.user-message{background:var(--surface-variant)}.composer{padding:10px;display:grid;gap:8px;border-top:1px solid var(--border-subtle);flex-shrink:0}.composer textarea{width:100%;resize:vertical}.composer .select-button{font-size:11px;padding:3px 5px}.chat-page{max-width:1050px;margin:auto;height:100%}.task-row{padding:17px 0;border-bottom:1px solid var(--border-subtle);display:flex;gap:12px;align-items:flex-start;min-width:0}.task-row .grow p{overflow-wrap:anywhere;margin:7px 0}.task-row .check-label{padding-top:3px}.task-actions{display:flex;gap:8px;flex-wrap:wrap}.diagram{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;align-items:start}.diagram>article{min-width:0;text-align:center;border:1px solid var(--primary);padding:15px;overflow-wrap:anywhere;background:var(--primary-container);color:var(--on-primary-container)}.diagram>article p{font-size:11px}.diagram-label{padding:10px;color:var(--text-secondary);font-size:12px}.two-col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;border-bottom:1px solid var(--border-subtle);background:var(--surface-variant)}.task-status{font-size:11px;color:var(--text-secondary)}.table-scroll{min-width:0;overflow:auto}.table-scroll table{border-collapse:collapse;width:100%;min-width:450px;font-size:12px}.table-scroll th,.table-scroll td{border-bottom:1px solid var(--border-subtle);padding:10px;text-align:left;white-space:nowrap}.list-card{padding:16px;border:1px solid var(--border-subtle);background:var(--surface);min-width:0}.list-card p{overflow-wrap:anywhere;margin-top:6px}.diff-line{padding:4px 12px;font:12px/1.7 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.diff-remove{background:#ffe8e8;color:#7b2121}.diff-add{background:#e1f6df;color:#215222}.settings-layout{display:grid;grid-template-columns:160px minmax(0,1fr);gap:22px}.settings-nav{display:grid;gap:5px;align-content:start}.settings-nav .action{border:0;text-align:left;justify-content:flex-start}.settings-form{min-width:0;display:grid;gap:20px}.settings-form .field{max-width:450px}.empty{display:grid;justify-items:center;text-align:center;gap:14px;padding:35px 12px}.statusbar{display:flex;align-items:center;gap:7px;padding:0 7px;background:var(--surface-variant);font-size:11px;min-width:0;overflow:hidden;border-top:1px solid var(--border-subtle)}.statusbar .action{border:0;padding:2px 3px;min-height:20px;font-size:11px;white-space:nowrap}.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0006;padding:14px;z-index:50}.dialog{width:500px;max-width:100%;max-height:calc(100dvh - 28px);display:flex;flex-direction:column;min-height:0;background:var(--surface);border:1px solid var(--border)}.dialog-head{padding:12px 16px;border-bottom:1px solid var(--border-subtle);flex-shrink:0}.dialog-head h2{overflow-wrap:anywhere}.dialog-body{padding:16px;display:grid;gap:15px;overflow:auto;min-height:0}.dialog-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--border-subtle);flex-shrink:0}.caption{font-size:11px;color:var(--text-secondary)}
+        @media(min-width:1900px){.workbench{grid-template-columns:44px 270px minmax(0,1fr)}.workspace{grid-template-columns:minmax(0,1fr) 390px}.pad{padding:32px}}@media(max-width:1200px){.workspace{height:auto;min-height:100%;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto}.workspace>.document{min-height:430px}.workspace>.chat{height:450px}.workbench{grid-template-columns:38px 210px minmax(0,1fr)}.two-col{grid-template-columns:1fr}}
+        @media(max-width:700px){.workbench{grid-template-columns:34px minmax(0,1fr)}.sidebar{display:none}.pad{padding:13px}.workspace>.document{min-height:320px}.workspace>.chat{height:420px}.diagram{grid-template-columns:1fr}.settings-layout{grid-template-columns:1fr;gap:12px}.settings-nav{display:flex;overflow:auto;gap:4px}.settings-nav .action{white-space:nowrap;flex-shrink:0}.line-numbers{font-size:12px;padding:0 7px}.source-code{font-size:12px;padding:0 6px}.task-row{gap:8px}.system-label{display:none}.statusbar .optional{display:none}.titlebar>.icon-button:nth-last-child(2){display:none}.overlay{padding:10px}.dialog{max-height:calc(100dvh - 20px)}.dialog-head,.dialog-body,.dialog-actions{padding:10px}.command-search{max-width:100%}}@media(max-height:500px){.shell{grid-template-rows:28px 25px minmax(0,1fr) 22px}.workspace>.document{min-height:250px}.chat-messages{padding:9px}.dialog-head,.dialog-actions{padding-top:8px;padding-bottom:8px}}
+        .outlined-button{border:1px solid var(--border)}.text-button{border:0!important;background:transparent}.label-button.primary{background:var(--primary);color:var(--on-primary);border:1px solid var(--primary)}.action.primary{background:var(--primary);color:var(--on-primary)}
+    </style>
+</head>
+<body>{% set state=kiro['state'] %}
+<div class="system {{system['layout']['position']}}" data-class="status_bar" data-semantic="system_chrome"
+     data-annotation-skip="{{'true' if kiro['popup_visible'] else 'false'}}">
+    <div class="system-group"><strong>{{system['time_text']}}</strong>{% for x in system['left_icons']
+        %}{{icon(x['icon'],'system_left_' ~ x['id'],16)}}{% endfor %}
+    </div>
+    <div class="system-group">{% for x in system['right_icons'] %}{{icon(x['icon'],'system_right_' ~ x['id'],16)}}{% if
+        x['text'] %}<span class="system-label">{{x['text']}}</span>{% endif %}{% endfor %}
+    </div>
+</div>
+<div class="shell" data-annotation-skip="{{'true' if kiro['popup_visible'] else 'false'}}">
+    <header class="titlebar" data-class="app_bar" data-semantic="titlebar"><span class="wordmark" data-class="logo"
+                                                                                 data-semantic="kiro_logo">Kiro</span>
+        <div class="command-search" data-class="search_bar" data-semantic="command_center">
+            {{icon('search','command_center_icon')}}<input type="text" aria-label="Command center" value="trail-notes"
+                                                           data-class="input_field"
+                                                           data-semantic="command_center_input"></div>
+        {{btn('vertical_split','layout_toggle',annotate=false)}}{{btn('minimize','window_minimize',annotate=false)}}{{btn('crop_square','window_maximize',annotate=false)}}{{btn('close','window_close',annotate=false)}}
+    </header>
+    <nav class="menu" data-class="navigation_bar" data-semantic="application_menu">{% for label in
+        ['File','Edit','Selection','View','Go','Run','Terminal','Help'] %}{{action('menu_' ~
+        loop.index,label,variant='text')}}{% endfor %}
+    </nav>
+    <div class="workbench">
+        <nav class="rail" data-class="navigation_bar" data-semantic="activity_bar">{% for name,key in
+            [('auto_awesome','kiro'),('folder','explorer'),('search','search'),('fork_right','source_control'),('bug_report','debug'),('extension','extensions')]
+            %}{{btn(name,'activity_' ~ key,annotate=false)}}{% endfor %}
+            <div class="rail-bottom">
+                {{btn('account_circle','activity_account',annotate=false)}}{{btn('settings','activity_settings',annotate=false)}}
+            </div>
+        </nav>
+        <aside class="sidebar" data-class="section" data-semantic="kiro_sidebar">
+            <header class="side-header"><strong>KIRO</strong>{{btn('more_horiz','sidebar_more',annotate=false)}}
+            </header>
+            {% for label,items in [('SPECS',['note-search']),('AGENT HOOKS',['check-tests','update-docs']),('AGENT
+            STEERING',['product.md','tech.md','frontend.md']),('MCP SERVERS',['demo-docs','demo-project'])] %}
+            <section class="side-section" data-class="section" data-semantic="sidebar_section_{{loop.index}}">
+                <div class="side-heading">{{btn('expand_more','sidebar_expand_' ~ loop.index,annotate=false)}}<span
+                        class="grow">{{label}}</span>{{btn('add','sidebar_add_' ~ loop.index,annotate=false)}}
+                </div>
+                {% set group=loop.index %}{% for item in items %}
+                <div class="side-item">{{btn('description','sidebar_item_' ~ group ~ '_' ~ loop.index,item)}}</div>
+                {% endfor %}
+            </section>
+            {% endfor %}
+        </aside>
+        <main class="view" data-class="section" data-semantic="page_content">{% block page %}{% endblock %}</main>
+    </div>
+    <footer class="statusbar" data-class="navigation_bar" data-semantic="statusbar">
+        {{btn('fork_right','status_branch','main')}}{{btn('sync','status_sync',annotate=false)}}<span class="optional">0 errors · 1 warning</span>
+        <div class="grow"></div>
+        {{action('status_indent','Spaces: 2',variant='text')}}<span class="optional">UTF-8</span>{{btn('notifications_none','status_notifications',annotate=false)}}
+    </footer>
+</div>
+{% if kiro['popup_visible'] %}{% include 'popup.html' %}{% endif %}
+</body>
+</html>
