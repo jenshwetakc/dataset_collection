@@ -1,0 +1,115 @@
+{% set state=instagram['state'] %}
+<div class="overlay" data-occluder="true">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog_title" data-class="dialog"
+             data-semantic="{{instagram['page']}}_{{state}}_dialog">
+        <header class="dialog-head row between"><h2 id="dialog_title">{{state|replace('_',' ')|title}}</h2>
+            {{btn('close','dialog_close','', annotate=false)}}
+        </header>
+        <div class="dialog-body stack">
+            {% if state=='comments' %}{% for c in instagram['comments'] %}
+            <div class="row">{{avatar(c['author'],'comment_avatar_' ~ loop.index)}}
+                <div class="grow"><strong>{{c['author']['username']}}</strong>
+                    <p>{{c['text']}}</p><small class="muted">{{c['age']}} · Reply</small></div>
+                {{btn('favorite','comment_like_' ~ loop.index)}}
+            </div>
+            {% endfor %}
+            {% elif state in ['share','new_message','followers','viewers'] %}
+            <div class="search" data-class="search_bar" data-semantic="people_search">
+                {{icon('search','people_search_icon')}}<input placeholder="Search people" aria-label="Search people">
+            </div>
+            {% for u in instagram['users'][:12] %}
+            <div class="row">{{avatar(u,'people_avatar_' ~ loop.index)}}
+                <div class="grow"><strong>{{u['username']}}</strong>
+                    <p class="muted small">{{u['name']}}</p></div>
+                {% if state in ['share','new_message'] %}<label
+                                class="checkbox-label"
+                                data-class="checkbox"
+                                data-semantic="recipient_checkbox_{{ loop.index }}"
+                            >
+                                <input
+                                    type="checkbox"
+                                    aria-label="Select {{ u['username'] }}"
+                                    {% if u['selected'] %}checked{% endif %}
+                                >
+
+                                <!-- The label provides the single checkbox annotation. -->
+                                <span
+                                    class="material-symbols-rounded checkbox-symbol"
+                                    aria-hidden="true"
+                                >{{ 'check_box' if u['selected'] else 'check_box_outline_blank' }}</span>
+                            </label>{% else %}
+                <button class="secondary" data-class="button" data-semantic="follow_{{loop.index}}">Follow</button>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% elif state=='post_detail' %}<img src="{{instagram['active_post']['image']}}" alt="Selected post"
+                                                data-class="image" data-semantic="detail_image">
+            <div class="row">{{avatar(instagram['active_post']['author'],'detail_author')}}<strong>{{instagram['active_post']['author']['username']}}</strong>
+            </div>
+            <p>{{instagram['active_post']['caption']}}</p>
+            <div class="row">
+                {{btn('favorite','detail_like', annotate=false)}}{{btn('chat_bubble','detail_comments', annotate=false)}}{{btn('send','detail_share', annotate=false)}}{{btn('bookmark','detail_save', annotate=false)}}
+            </div>
+            {% elif state in ['edit_profile','new_collection','edit_collection'] %}<label class="stack">{{'Name' if
+            state=='edit_profile' else 'Collection name'}}<input
+                    value="{{instagram['viewer']['name'] if state=='edit_profile' else 'Weekend ideas'}}"
+                    data-class="input_field" data-semantic="edit_name"></label>{% if state=='edit_profile' %}<label
+                class="stack">Bio<textarea rows="3" data-class="input_field" data-semantic="edit_bio">{{instagram['bio']}}</textarea></label>{{btn('photo_camera','change_profile_photo','Change
+            profile photo', annotate=false)}}{% else %}<p class="muted">Choose a collection cover</p>
+            <div class="grid">{% for p in instagram['posts'][:6] %}
+                <button data-class="button" data-semantic="cover_{{loop.index}}"><img src="{{p['image']}}"
+                                                                                      alt="Cover option"
+                                                                                      data-class="image"
+                                                                                      data-semantic="cover_image_{{loop.index}}">
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% elif state in
+            ['discard','delete_chat','delete_collection','logout','delete_account','remove_notification']
+            %}{{icon('warning','confirmation_warning')}}<h3>{{state|replace('_',' ')|title}}?</h3>
+            <p>Confirm this action for this synthetic account.</p>
+            <button class="primary full" data-class="button" data-semantic="confirm_action">Confirm</button>
+            <button class="secondary full" data-class="button" data-semantic="cancel_action">Cancel</button>
+            {% elif state=='published' %}{{icon('check_circle','published_success')}}<h3>Your post has been shared.</h3>
+            <img src="{{instagram['upload_image']}}" alt="Published photo" data-class="image"
+                 data-semantic="published_image">
+            {% elif state=='reply' %}<p>Reply to {{instagram['active_post']['author']['username']}}'s story</p><textarea
+                rows="4" placeholder="Write a reply…" aria-label="Story reply" data-class="input_field"
+                data-semantic="story_reply"></textarea>
+            <div class="row">
+                {{btn('favorite','reply_heart', annotate=false)}}{{btn('sentiment_satisfied','reply_emoji', annotate=false)}}{{btn('send','reply_send','Send')}}
+            </div>
+            {% elif state=='search_filters' %}{% for label in ['Accounts','Photos','Places','Recent posts','Verified
+            accounts'] %}
+            <div class="row between"><strong>{{label}}</strong>
+                <button role="switch" aria-checked="true" class="switch" data-class="switch"
+                        data-semantic="filter_{{loop.index}}" aria-label="{{label}}"></button>
+            </div>
+            {% endfor %}
+            {% elif state=='chat_details' %}{{avatar(instagram['users'][1],'chat_details_avatar')}}<h3>
+            {{instagram['users'][1]['username']}}</h3>{% for label,name in [('Mute
+            messages','notifications_off'),('Search conversation','search'),('Shared media','photo_library'),('Block
+            account','block')] %}{{btn(name,'chat_detail_' ~ loop.index,label)}}{% endfor %}
+            {% else %}{% for label,name in [('Report','flag'),('Mute','volume_off'),('Add to favorites','star'),('Copy
+            link','link'),('About this account','info'),('Hide','visibility_off')] %}
+            <button class="full row" style="justify-content:flex-start">
+                    <span
+                        data-class="button"
+                        data-semantic="option_{{loop.index}}">
+                        {{icon(name, 'option_icon_' ~ loop.index)}}{{label}}
+                    </span>
+                </button>
+            {% endfor %}{% endif %}
+        </div>
+        {% if state in ['comments','share','new_message'] %}
+        <footer class="dialog-foot row"><input class="grow" placeholder="Write a message…" aria-label="Message"
+                                               data-class="input_field" data-semantic="popup_message">{{btn('send','popup_send','Send')}}
+        </footer>
+        {% elif state in ['edit_profile','new_collection','edit_collection','search_filters'] %}
+        <footer class="dialog-foot">
+            <button class="primary full" data-class="button" data-semantic="popup_save">Save</button>
+        </footer>
+        {% endif %}
+    </section>
+</div>

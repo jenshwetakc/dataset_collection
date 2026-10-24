@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .ig-messages {
+        display: grid;
+        grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        min-height: 600px;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .ig-messages > * {
+        min-width: 0;
+    }
+
+    .ig-inbox {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-content: start;
+        gap: 16px;
+        padding: 16px;
+        border-right: 1px solid var(--border-subtle);
+    }
+
+    .ig-inbox-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .ig-inbox-heading h2 {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .ig-inbox .search {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .ig-inbox .search input {
+        flex: 1 1 0;
+        width: 0;
+        min-width: 0;
+    }
+
+    .ig-inbox-tabs {
+        display: flex;
+        gap: 6px;
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: auto;
+        margin-bottom: 0;
+    }
+
+    .ig-inbox-tabs button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .ig-thread {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        padding: 10px 6px;
+        text-align: left;
+    }
+
+    .ig-thread > .avatar {
+        flex: 0 0 40px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .ig-thread-copy {
+        display: block;
+        flex: 1 1 0;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .ig-thread-name,
+    .ig-thread-preview {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .ig-thread-preview {
+        margin-top: 4px;
+    }
+
+    .ig-thread > .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .ig-chat {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-width: 0;
+        padding: 20px;
+    }
+
+    .ig-chat-heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .ig-chat-heading > .avatar {
+        flex-shrink: 0;
+    }
+
+    .ig-chat-name {
+        flex: 1 1 0;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .ig-chat-actions {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 2px;
+    }
+
+    .ig-chat-actions button {
+        flex: 0 0 auto;
+        padding: 6px;
+    }
+
+    .ig-chat .bubble {
+        min-width: 0;
+        max-width: 80%;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        line-height: 1.5;
+    }
+
+    .ig-composer {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        max-width: 100%;
+        margin-top: auto;
+    }
+
+    .ig-composer input {
+        flex: 1 1 0;
+        width: 0;
+        min-width: 0;
+    }
+
+    .ig-composer button {
+        flex: 0 0 auto;
+        padding: 6px;
+    }
+
+    @media (max-width: 900px) {
+        .ig-messages {
+            grid-template-columns: minmax(220px, 270px) minmax(0, 1fr);
+        }
+
+        .ig-inbox,
+        .ig-chat {
+            padding: 12px;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .ig-messages {
+            grid-template-columns: minmax(0, 1fr);
+            min-height: 500px;
+        }
+
+        .ig-inbox {
+            border-right: 0;
+        }
+
+        .ig-chat {
+            display: none;
+        }
+
+        .ig-messages.conversation .ig-inbox {
+            display: none;
+        }
+
+        .ig-messages.conversation .ig-chat {
+            display: flex;
+        }
+
+        .ig-chat-heading {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .ig-chat-name {
+            flex: 1 1 100px;
+        }
+
+        .ig-chat-actions {
+            margin-left: auto;
+        }
+
+        .ig-chat .bubble {
+            max-width: 88%;
+            padding: 10px 12px;
+        }
+
+        .ig-inbox-tabs {
+            gap: 4px;
+        }
+
+        .ig-inbox-tabs button {
+            padding: 8px;
+            font-size: 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page %}
+<div
+    class="card ig-messages {{ 'conversation' if instagram['state'] == 'conversation' else '' }}"
+>
+    <aside
+        class="ig-inbox"
+        data-class="section"
+        data-semantic="inbox"
+    >
+        <div class="ig-inbox-heading">
+            <h2>Messages</h2>
+            {{ btn('edit_square', 'compose_message') }}
+        </div>
+
+        <div
+            class="search"
+            data-class="search_bar"
+            data-semantic="inbox_search"
+        >
+            {{ icon('search', 'inbox_search_icon') }}
+            <input
+                placeholder="Search messages"
+                aria-label="Search messages"
+            >
+        </div>
+
+        <div class="tabs ig-inbox-tabs">
+            {% for label in ['Primary', 'General', 'Requests'] %}
+            <button
+                type="button"
+                data-class="tab"
+                data-semantic="inbox_tab_{{ loop.index }}"
+            >{{ label }}</button>
+            {% endfor %}
+        </div>
+
+        {% for m in instagram['messages'] %}
+        <button
+            type="button"
+            class="ig-thread"
+            data-semantic="conversation_{{ loop.index }}"
+        >
+            {{ avatar(
+                m['author'],
+                'inbox_avatar_' ~ loop.index
+            ) }}
+
+            <span class="ig-thread-copy">
+                <strong class="ig-thread-name">
+                    {{ m['author']['username'] }}
+                </strong>
+
+                <span class="ig-thread-preview muted small">
+                    {{ 'Wants to message you'
+                       if instagram['state'] == 'requests'
+                       else m['text'] }}
+                </span>
+            </span>
+
+            {% if m['unread'] %}
+            <span
+                class="badge"
+                data-class="badge"
+                data-semantic="unread_{{ loop.index }}"
+            >1</span>
+            {% endif %}
+        </button>
+        {% endfor %}
+    </aside>
+
+    <section
+        class="ig-chat"
+        data-class="section"
+        data-semantic="conversation_panel"
+    >
+        <header class="ig-chat-heading">
+            {{ avatar(instagram['users'][1], 'chat_avatar') }}
+
+            <strong class="ig-chat-name">
+                {{ instagram['users'][1]['username'] }}
+            </strong>
+
+            <div class="ig-chat-actions">
+                {{ btn('call', 'chat_call', annotate=false) }}
+                {{ btn('videocam', 'chat_video', annotate=false) }}
+                {{ btn('info', 'chat_info', annotate=false) }}
+            </div>
+        </header>
+
+        {% for c in instagram['comments'][:8] %}
+        <div
+            class="bubble {{ 'mine' if loop.index % 2 == 0 else '' }}"
+            data-semantic="chat_bubble_{{ loop.index }}"
+        >{{ c['text'] }}</div>
+        {% endfor %}
+
+        <div class="ig-composer">
+            {{ btn(
+                'sentiment_satisfied',
+                'chat_emoji',
+                annotate=false
+            ) }}
+
+            <input
+                placeholder="Message…"
+                aria-label="Message"
+                data-class="input_field"
+                data-semantic="chat_input"
+            >
+
+            {{ btn('send', 'chat_send', annotate=false) }}
+        </div>
+    </section>
+</div>
+{% endblock %}
