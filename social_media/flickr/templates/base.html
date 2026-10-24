@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Flickr Synthetic UI{% endblock %}</title>
+<style>
+@font-face{font-family:"Material Symbols Rounded";font-style:normal;font-weight:400;font-display:block;src:url("{{ app_data['font_uri'] }}") format("woff2")}
+
+:root { {% for role,color in theme['semantic'].items() %} --{{ role|replace('_','-') }}:{{ color }};{% endfor %}
+--chrome-height:{{ system['layout']['height'] }}px; --bottom-chrome:{{ system['layout']['height'] if system['layout']['position']=='bottom' else 0 }}px; }
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;background:var(--background);color:var(--on-background)}body{padding-bottom:var(--bottom-chrome)}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer;border:0;background:transparent}input{min-width:0}h1,h2,h3,p{margin:0}img{display:block;max-width:100%;object-fit:cover}
+.material-symbols-rounded{font-family:'Material Symbols Rounded';font-size:22px;font-weight:normal;font-style:normal;line-height:1;display:inline-block;white-space:nowrap;font-feature-settings:'liga';-webkit-font-smoothing:antialiased}
+.primary-button,.secondary-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border-radius:8px;font-weight:700}
+.primary-button{background:var(--primary);color:var(--on-primary)}.secondary-button{background:var(--surface);color:var(--on-surface);border:1px solid var(--border)}
+.icon-button{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;flex-shrink:0;border-radius:50%;color:var(--icon)}button:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.system-chrome{height:var(--chrome-height);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 10px;background:var(--surface);color:var(--on-surface);font-size:11px;overflow:hidden}
+.system-chrome.bottom{position:fixed;bottom:0;left:0;right:0;z-index:40}.system-group{display:flex;align-items:center;gap:{{ system['display']['icon_gap'] }}px;min-width:0}.system-group.left{overflow:hidden}.system-group.right{flex-shrink:0}.system-item{display:inline-flex;align-items:center;gap:3px;flex-shrink:0}.system-icon{font-size:{{ system['display']['icon_size'] }}px;color:var(--icon)}.system-clock{white-space:nowrap}.ios-cutout{width:60px;height:20px;border-radius:20px;background:#000;flex-shrink:0}
+@media(max-width:600px){.desktop-menu{display:none}.system-group.right .low-priority{display:none}.system-label{display:none}.system-group.left .system-item:nth-of-type(n+4){display:none}}
+@media(max-width:359px){.system-group{gap:2px}.ios-cutout{width:35px}.system-group.left .system-item:nth-of-type(n+3){display:none}}
+{% include 'styles.css' %}{% block styles %}{% endblock %}
+</style>{% block head %}{% endblock %}
+</head>
+<body>
+{% set popup_visible = app_data['popup_visible']|default(false) %}
+<div class="system-chrome {{ system['layout']['position'] }}" data-class="status_bar" data-semantic="system_chrome" data-occluder="{{ 'true' if system['layout']['position']=='bottom' else 'false' }}" data-annotation-skip="{{ 'true' if popup_visible else 'false' }}">
+<div class="system-group left">
+{% if system['layout']['clock_position']=='left' %}<strong class="system-clock">{{ system['time_text'] }}</strong>{% endif %}
+{% for item in system['left_icons'] %}<span class="system-item"><span class="material-symbols-rounded system-icon" data-class="{{ item['annotation_class'] }}" data-semantic="system_{{ item['id'] }}">{{ item['icon'] }}</span></span>{% endfor %}
+{% if system['style']=='macos' %}<strong class="desktop-menu">Flickr</strong>{% for label in system['desktop']['menu_items'] %}<span class="desktop-menu">{{ label }}</span>{% endfor %}{% elif system['style']=='ubuntu' %}<strong>Activities</strong>{% endif %}
+</div>
+{% if system['style']=='ios' and system['ios_device_variant']!='classic' %}<div class="ios-cutout" aria-hidden="true"></div>{% elif system['layout']['clock_position']=='center' %}<span class="system-clock">{{ system['desktop_time_text'] }}</span>{% endif %}
+<div class="system-group right">{% for item in system['right_icons'] %}<span class="system-item {{ 'low-priority' if item['id'] in system['system_states'] else '' }}"><span class="material-symbols-rounded system-icon" data-class="{{ item['annotation_class'] }}" data-semantic="system_{{ item['id'] }}">{{ item['icon'] }}</span>{% if item['text'] %}<span class="system-label">{{ item['text'] }}</span>{% endif %}</span>{% endfor %}
+{% if system['layout']['clock_position']=='right' %}<span class="system-clock">{{ system['time_text'] }} {{ system['time_period'] or '' }}</span>{% endif %}</div>
+</div>
+{% block content %}{% endblock %}
+</body></html>
